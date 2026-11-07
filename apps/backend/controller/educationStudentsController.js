@@ -1,8 +1,17 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
+const normalizeGender = (g) => {
+  if (!g) return null;
+  const upper = String(g).trim().toUpperCase();
+  if (upper === 'MALE' || upper === 'FEMALE') return upper;
+  if (upper === 'ذكر' || upper === 'M') return 'MALE';
+  if (upper === 'أنثى' || upper === 'انثى' || upper === 'F') return 'FEMALE';
+  return null;
+};
+
 const getAll = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { customerId } = req.query;
@@ -25,7 +34,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -51,13 +60,17 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     let { customerId, firstName, lastName, phone, gender, grade, notes, guardianName, guardianPhone, isSelfGuardian } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
 
     const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
+    const safeGender = normalizeGender(gender);
+    const safePhone = (phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null;
+    const safeGrade = (grade && typeof grade === 'string' && grade.trim()) ? grade.trim() : null;
+    const safeNotes = (notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null;
 
     if (!customerId) {
       let gFirstName = 'ولي أمر';
@@ -75,7 +88,9 @@ const create = async (req, res) => {
         gLastName = safeLastName || '—';
       }
 
-      const gPhone = guardianPhone || phone || null;
+      const gPhone = (guardianPhone && typeof guardianPhone === 'string' && guardianPhone.trim()) 
+        ? guardianPhone.trim() 
+        : (safePhone || null);
 
       let customer = null;
       if (gPhone) {
@@ -107,10 +122,10 @@ const create = async (req, res) => {
         customerId,
         firstName: firstName.trim(),
         lastName: safeLastName,
-        phone: phone || null,
-        gender: gender || null,
-        grade: grade || null,
-        notes: notes || null
+        phone: safePhone,
+        gender: safeGender,
+        grade: safeGrade,
+        notes: safeNotes
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
     });
@@ -123,7 +138,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -132,17 +147,31 @@ const update = async (req, res) => {
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
 
+    const safeCustomerId = (customerId && typeof customerId === 'string' && customerId.trim())
+      ? customerId.trim()
+      : undefined;
+
+    if (safeCustomerId && safeCustomerId !== existing.customerId) {
+      const cust = await getSharedPrismaClient().customer.findFirst({ where: { id: safeCustomerId, companyId } });
+      if (!cust) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
+    }
+
     const safeLastName = lastName !== undefined ? ((lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '') : undefined;
+    const safeGender = gender !== undefined ? normalizeGender(gender) : undefined;
+    const safePhone = phone !== undefined ? ((phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null) : undefined;
+    const safeGrade = grade !== undefined ? ((grade && typeof grade === 'string' && grade.trim()) ? grade.trim() : null) : undefined;
+    const safeNotes = notes !== undefined ? ((notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null) : undefined;
+
     const data = await getSharedPrismaClient().educationStudent.update({
       where: { id },
       data: {
-        customerId,
+        customerId: safeCustomerId,
         firstName: firstName ? firstName.trim() : undefined,
         lastName: safeLastName,
-        phone,
-        gender,
-        grade,
-        notes,
+        phone: safePhone,
+        gender: safeGender,
+        grade: safeGrade,
+        notes: safeNotes,
         isActive
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
@@ -156,7 +185,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -173,7 +202,7 @@ const remove = async (req, res) => {
 
 const searchGuardians = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const rawQ = req.query.q || req.query.query || '';

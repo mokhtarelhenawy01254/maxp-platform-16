@@ -24,11 +24,15 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     firstName: "",
     lastName: "",
     phone: "",
-    gender: "male",
     grade: "",
     notes: "",
     customerId: "",
     ...student,
+    gender: student?.gender
+      ? String(student.gender).toUpperCase() === "FEMALE"
+        ? "FEMALE"
+        : "MALE"
+      : "MALE",
   });
 
   const initialCustomer =
@@ -97,7 +101,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     if (!form.firstName.trim() || saving) return;
     setSaving(true);
     try {
-      const payload: any = { ...form };
+      const payload: any = {
+        ...form,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName ? form.lastName.trim() : "",
+        phone: form.phone ? form.phone.trim() : "",
+        gender: form.gender ? (String(form.gender).toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") : "MALE",
+      };
       if (isSelfGuardian) {
         payload.isSelfGuardian = true;
         payload.customerId = "";
@@ -176,11 +186,11 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               <label className="text-xs font-medium text-foreground">الجنس</label>
               <select
                 className={INPUT_CLS}
-                value={form.gender}
+                value={form.gender || "MALE"}
                 onChange={(e) => setForm({ ...form, gender: e.target.value })}
               >
-                <option value="male">ذكر</option>
-                <option value="female">أنثى</option>
+                <option value="MALE">ذكر</option>
+                <option value="FEMALE">أنثى</option>
               </select>
             </div>
           </div>
