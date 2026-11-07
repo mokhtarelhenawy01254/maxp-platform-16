@@ -1,34 +1,28 @@
 import React from 'react';
-import type { Product } from '../../../hooks/useProducts';
-import type { StorefrontTheme } from '../../../types/theme.types';
+import type { ProductInfoController } from '../productInfoTypes';
 import PlayfulStory from '../components/PlayfulStory';
 import ProductDescription from '../components/ProductDescription';
 
 export interface PlayfulStoryBuyboxProps {
-  product: Product;
-  theme: StorefrontTheme;
-  displayPrice: string;
-  originalPrice: string | null;
-  commonVariantSelector: React.ReactNode;
-  inlinePdpQuickOrderBeforeDescription?: React.ReactNode;
-  inlinePdpQuickOrderAfterDescription?: React.ReactNode;
-  commonActions: React.ReactNode;
-  safeDescription: string;
-  prefersArabicCopy: boolean;
+  ctrl: ProductInfoController;
 }
 
-export const PlayfulStoryBuybox: React.FC<PlayfulStoryBuyboxProps> = ({
-  product,
-  theme,
-  displayPrice,
-  originalPrice,
-  commonVariantSelector,
-  inlinePdpQuickOrderBeforeDescription,
-  inlinePdpQuickOrderAfterDescription,
-  commonActions,
-  safeDescription,
-  prefersArabicCopy,
-}) => {
+export const PlayfulStoryBuybox: React.FC<PlayfulStoryBuyboxProps> = ({ ctrl }) => {
+  const {
+    product,
+    displayPrice,
+    originalPrice,
+    commonVariantSelector,
+    commonActions,
+    safeDescription,
+    prefersArabicCopy,
+    mergedInlinePdpQuickOrder,
+  } = ctrl;
+
+  // The PDP renders before the product query resolves. Every sibling buybox returns null
+  // here; without this guard `product.category` throws and the whole PDP screen goes blank.
+  if (!product) return null;
+
   return (
     <section className="w-full py-4 px-1">
       <PlayfulStory
@@ -55,18 +49,17 @@ export const PlayfulStoryBuybox: React.FC<PlayfulStoryBuyboxProps> = ({
         variants={commonVariantSelector}
         description={
           <div className="space-y-6">
-            {inlinePdpQuickOrderBeforeDescription}
+            {mergedInlinePdpQuickOrder ?? null}
             <div className="prose prose-sm dark:prose-invert">
               <ProductDescription
                 safeDescription={safeDescription}
                 emptyText={
                   prefersArabicCopy
-                    ? '?? ???? ??? ???? ???? ?????? ??? ????.'
+                    ? 'لسه مفيش وصف للمنتج ده، هيتضاف قريب.'
                     : 'No description is available for this product yet.'
                 }
               />
             </div>
-            {inlinePdpQuickOrderAfterDescription}
           </div>
         }
         actions={commonActions}
