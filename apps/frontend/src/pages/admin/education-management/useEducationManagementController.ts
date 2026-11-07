@@ -224,12 +224,21 @@ export function useEducationManagementController() {
     body: any,
     fallback: string
   ): Promise<any | null> => {
-    try {
-      const res = await fetch(url, {
+    const send = () =>
+      fetch(url, {
         method,
         headers: getAuthHeaders(),
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
+
+    try {
+      let res = await send();
+      // 502 أثناء إعادة تشغيل السيرفر = الطلب عمره ما وصل للتطبيق، فإعادة
+      // المحاولة مرة واحدة آمنة (بنستثني 504 عشان ممكن يكون اتنفّذ فعلًا).
+      if (res.status === 502) {
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await send();
+      }
       const result = await readJsonSafe(res);
       if (!res.ok || !result?.success) {
         alert(describeFailure(res, result, fallback));
