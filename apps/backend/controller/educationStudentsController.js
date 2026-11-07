@@ -71,7 +71,7 @@ const create = async (req, res) => {
         gFirstName = firstName.trim();
         gLastName = safeLastName || '—';
       } else {
-        gFirstName = ولي أمر ;
+        gFirstName = 'ولي أمر';
         gLastName = safeLastName || '—';
       }
 
