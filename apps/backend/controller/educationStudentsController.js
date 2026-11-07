@@ -54,15 +54,64 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { customerId, firstName, lastName, phone, gender, grade, notes } = req.body;
+    let { customerId, firstName, lastName, phone, gender, grade, notes, guardianName, guardianPhone, isSelfGuardian } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
-    if (!customerId) return res.status(400).json({ success: false, error: 'ولي الأمر مطلوب' });
 
-    const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
-    if (!customer) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
+    const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
+
+    if (!customerId) {
+      let gFirstName = 'ولي أمر';
+      let gLastName = safeLastName || 'الطالب';
+
+      if (guardianName && guardianName.trim()) {
+        const parts = guardianName.trim().split(/\s+/);
+        gFirstName = parts[0] || 'ولي أمر';
+        gLastName = parts.slice(1).join(' ') || safeLastName || 'العائلة';
+      } else if (isSelfGuardian) {
+        gFirstName = firstName.trim();
+        gLastName = safeLastName || '—';
+      } else {
+        gFirstName = ولي أمر ;
+        gLastName = safeLastName || '—';
+      }
+
+      const gPhone = guardianPhone || phone || null;
+
+      let customer = null;
+      if (gPhone) {
+        customer = await getSharedPrismaClient().customer.findFirst({
+          where: { companyId, phone: gPhone }
+        });
+      }
+
+      if (!customer) {
+        customer = await getSharedPrismaClient().customer.create({
+          data: {
+            companyId,
+            firstName: gFirstName,
+            lastName: gLastName,
+            phone: gPhone,
+            status: 'ACTIVE'
+          }
+        });
+      }
+      customerId = customer.id;
+    } else {
+      const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
+      if (!customer) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
+    }
 
     const data = await getSharedPrismaClient().educationStudent.create({
-      data: { companyId, customerId, firstName: firstName.trim(), lastName, phone, gender, grade, notes },
+      data: {
+        companyId,
+        customerId,
+        firstName: firstName.trim(),
+        lastName: safeLastName,
+        phone: phone || null,
+        gender: gender || null,
+        grade: grade || null,
+        notes: notes || null
+      },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
     });
     res.json({ success: true, data });
@@ -83,9 +132,19 @@ const update = async (req, res) => {
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
 
+    const safeLastName = lastName !== undefined ? ((lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '') : undefined;
     const data = await getSharedPrismaClient().educationStudent.update({
       where: { id },
-      data: { customerId, firstName, lastName, phone, gender, grade, notes, isActive },
+      data: {
+        customerId,
+        firstName: firstName ? firstName.trim() : undefined,
+        lastName: safeLastName,
+        phone,
+        gender,
+        grade,
+        notes,
+        isActive
+      },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
     });
     res.json({ success: true, data });

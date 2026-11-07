@@ -46,6 +46,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const [customerSearch, setCustomerSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isSelfGuardian, setIsSelfGuardian] = useState(false);
+  const [isManualGuardian, setIsManualGuardian] = useState(false);
+  const [manualGuardian, setManualGuardian] = useState({ name: "", phone: "" });
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on click outside
@@ -91,10 +94,19 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!form.firstName.trim() || !form.customerId || saving) return;
+    if (!form.firstName.trim() || saving) return;
     setSaving(true);
     try {
-      await onSave(form);
+      const payload: any = { ...form };
+      if (isSelfGuardian) {
+        payload.isSelfGuardian = true;
+        payload.customerId = "";
+      } else if (isManualGuardian && manualGuardian.name.trim()) {
+        payload.guardianName = manualGuardian.name.trim();
+        payload.guardianPhone = manualGuardian.phone.trim();
+        payload.customerId = "";
+      }
+      await onSave(payload);
     } finally {
       setSaving(false);
     }
@@ -183,11 +195,35 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               placeholder="مثال: الصف الأول الإعدادي"
             />
           </div>
-          <div className="space-y-1" ref={searchContainerRef}>
-            <label className="text-xs font-medium text-foreground">
-              ولي الأمر (العميل) *
-            </label>
-            {selectedCustomer ? (
+          <div className="space-y-2" ref={searchContainerRef}>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground">
+                ولي الأمر (العميل) *
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+                <input
+                  type="checkbox"
+                  className="rounded text-primary focus:ring-primary"
+                  checked={isSelfGuardian}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsSelfGuardian(checked);
+                    if (checked) {
+                      setIsManualGuardian(false);
+                      handleClearCustomer();
+                    }
+                  }}
+                />
+                <span>الطالب هو ولي أمر نفسه (بالغ/مباشر)</span>
+              </label>
+            </div>
+
+            {isSelfGuardian ? (
+              <div className="p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs text-primary flex items-center gap-2">
+                <User className="w-4 h-4 shrink-0" />
+                <span>سيتم تسجيل الطالب كولي أمر نفسه تلقائياً برقم هاتفه.</span>
+              </div>
+            ) : selectedCustomer ? (
               <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/40 bg-primary/5 text-xs">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -214,8 +250,35 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   <span>تغيير</span>
                 </button>
               </div>
+            ) : isManualGuardian ? (
+              <div className="p-2.5 rounded-lg border border-border bg-muted/30 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-foreground">إدخال ولي أمر جديد:</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsManualGuardian(false)}
+                    className="text-muted-foreground hover:text-foreground text-[11px]"
+                  >
+                    العودة للبحث
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className={INPUT_CLS}
+                    placeholder="اسم ولي الأمر *"
+                    value={manualGuardian.name}
+                    onChange={(e) => setManualGuardian({ ...manualGuardian, name: e.target.value })}
+                  />
+                  <input
+                    className={INPUT_CLS}
+                    placeholder="هاتف ولي الأمر"
+                    value={manualGuardian.phone}
+                    onChange={(e) => setManualGuardian({ ...manualGuardian, phone: e.target.value })}
+                  />
+                </div>
+              </div>
             ) : (
-              <div className="relative">
+              <div className="relative space-y-1.5">
                 <div className="relative">
                   <input
                     type="text"
@@ -242,6 +305,19 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualGuardian({ name: customerSearch, phone: "" });
+                      setIsManualGuardian(true);
+                    }}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    + إدخال ولي أمر جديد يدوياً
+                  </button>
                 </div>
 
                 {showResults && customerSearch.trim().length > 0 && (
@@ -273,8 +349,19 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                         </div>
                       ))
                     ) : (
-                      <div className="px-3 py-3 text-center text-xs text-muted-foreground">
-                        لا يوجد ولي أمر مطابق للبحث "{customerSearch}"
+                      <div className="px-3 py-3 text-center text-xs space-y-1.5">
+                        <p className="text-muted-foreground">لا يوجد ولي أمر مطابق للبحث "{customerSearch}"</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualGuardian({ name: customerSearch, phone: "" });
+                            setIsManualGuardian(true);
+                            setShowResults(false);
+                          }}
+                          className="text-xs text-primary font-semibold hover:underline block mx-auto"
+                        >
+                          + إضافة "{customerSearch}" كولي أمر جديد
+                        </button>
                       </div>
                     )}
                   </div>
@@ -306,7 +393,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!form.firstName.trim() || !form.customerId || saving}
+            disabled={!form.firstName.trim() || saving}
             className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
