@@ -131,7 +131,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { teacherId, amountPaid, paymentStatus, remainingHours, expiresAt } = req.body;
+    const { teacherId, amountPaid, paymentStatus, remainingHours, expiresAt, isActive } = req.body;
 
     const existing = await getSharedPrismaClient().educationEnrollment.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'التسجيل غير موجود' });
@@ -164,6 +164,8 @@ const update = async (req, res) => {
         paymentStatus: safePaymentStatus,
         remainingHours: remainingHours !== undefined ? Number(remainingHours) || 0 : undefined,
         expiresAt: parsedExpiresAt,
+        // تفعيل/تعطيل التسجيل — كان بيتجاهله تمامًا فيرجّع 200 من غير أي أثر
+        isActive: isActive !== undefined ? !!isActive : undefined,
       },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },

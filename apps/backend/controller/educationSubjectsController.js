@@ -24,8 +24,17 @@ const create = async (req, res) => {
     const { name, description } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم المادة مطلوب' });
 
+    const subjectName = name.trim();
+    const duplicate = await getSharedPrismaClient().educationSubject.findFirst({
+      where: { companyId, name: { equals: subjectName, mode: 'insensitive' } },
+      select: { id: true }
+    });
+    if (duplicate) {
+      return res.status(409).json({ success: false, error: `مادة بنفس الاسم «${subjectName}» موجودة بالفعل` });
+    }
+
     const data = await getSharedPrismaClient().educationSubject.create({
-      data: { companyId, name: name.trim(), description }
+      data: { companyId, name: subjectName, description }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -45,9 +54,22 @@ const update = async (req, res) => {
     const existing = await getSharedPrismaClient().educationSubject.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المادة غير موجودة' });
 
+    let nextName = name;
+    if (typeof name === 'string' && name.trim()) {
+      const subjectName = name.trim();
+      const duplicate = await getSharedPrismaClient().educationSubject.findFirst({
+        where: { companyId, id: { not: id }, name: { equals: subjectName, mode: 'insensitive' } },
+        select: { id: true }
+      });
+      if (duplicate) {
+        return res.status(409).json({ success: false, error: `مادة بنفس الاسم «${subjectName}» موجودة بالفعل` });
+      }
+      nextName = subjectName;
+    }
+
     const data = await getSharedPrismaClient().educationSubject.update({
       where: { id },
-      data: { name, description, isActive }
+      data: { name: nextName, description, isActive }
     });
     res.json({ success: true, data });
   } catch (error) {

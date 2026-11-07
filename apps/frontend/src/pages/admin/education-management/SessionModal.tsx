@@ -94,7 +94,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 >
                   {selectedEnrollment.teacher
                     ? `المتبقي: ${selectedEnrollment.remainingHours} ساعة - المدرس: ${selectedEnrollment.teacher.name}`
-                    : "تنبيه: يجب تعيين مدرس للتسجيل أولاً"}
+                    : "التسجيل ده مفيهوش مدرس — الحصة مش هتتحفظ. روح تبويب «التسجيلات» وحدّد المدرس، وبعدها ارجع هنا."}
                 </p>
               )}
             </div>
@@ -181,7 +181,11 @@ export const SessionModal: React.FC<SessionModalProps> = ({
             <button
               type="button"
               onClick={() => onSave(form)}
-              disabled={!form.enrollmentId || !form.scheduledAt}
+              disabled={
+                !form.enrollmentId ||
+                !form.scheduledAt ||
+                (!!selectedEnrollment && !selectedEnrollment.teacher)
+              }
               className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50"
             >
               حفظ

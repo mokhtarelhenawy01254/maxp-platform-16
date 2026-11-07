@@ -170,7 +170,11 @@ export function useEducationManagementController() {
         .finally(() => setLoading(false));
     } else if (activeTab === "sessions") {
       setLoading(true);
-      fetchSessions().finally(() => setLoading(false));
+      // مودال «إضافة حصة» بيعتمد على قائمة التسجيلات — من غير تحميلها هنا
+      // كانت القائمة بتفضل فاضية على طول (السبب الحقيقي للمشكلة).
+      Promise.all([fetchSessions(), fetchEnrollments(), fetchTeachers()])
+        .catch((e: any) => setError(e.message || "فشل تحميل البيانات"))
+        .finally(() => setLoading(false));
     }
   }, [activeTab]);
 
@@ -188,34 +192,77 @@ export function useEducationManagementController() {
   };
 
   // CRUD helpers
+  // 502/504 بيرجعوا HTML مش JSON — من غير الهاندلينج ده الواجهة كانت بتفشل بصمت
+  // (المستخدم يشوف الشاشة قفلت من غير أي رسالة، أو "فشل الحفظ" من غير سبب).
+  const readJsonSafe = async (res: Response): Promise<any> => {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      return {};
+    }
+  };
+
+  const describeFailure = (res: Response, body: any, fallback: string) => {
+    if (body && typeof body.error === "string" && body.error.trim()) {
+      return body.error;
+    }
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      return "السيرفر بيرجّع خطأ مؤقت (502) — استنى لحظة وجرّب تاني";
+    }
+    if (res.status === 401 || res.status === 403) {
+      return "الجلسة انتهت أو مفيش صلاحية — اعمل تحديث للصفحة وادخل تاني";
+    }
+    if (res.status === 409) return "البيانات مكررة";
+    return `${fallback} (كود ${res.status})`;
+  };
+
+  const writeRequest = async (
+    url: string,
+    method: string,
+    body: any,
+    fallback: string
+  ): Promise<any | null> => {
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: getAuthHeaders(),
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+      const result = await readJsonSafe(res);
+      if (!res.ok || !result?.success) {
+        alert(describeFailure(res, result, fallback));
+        return null;
+      }
+      return result;
+    } catch (e: any) {
+      alert(`تعذر الاتصال بالسيرفر: ${e?.message || "خطأ شبكة"}`);
+      return null;
+    }
+  };
+
   const saveItem = async (entity: string, data: any) => {
     const isEdit = !!data.id;
     const url = isEdit ? api(`${entity}/${data.id}`) : api(entity);
-    const res = await fetch(url, {
-      method: isEdit ? "PUT" : "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
-    if (!result.success) {
-      alert(result.error || "فشل الحفظ");
-      return false;
-    }
-    return true;
+    const result = await writeRequest(
+      url,
+      isEdit ? "PUT" : "POST",
+      data,
+      isEdit ? "فشل التحديث" : "فشل الحفظ"
+    );
+    return !!result;
   };
 
   const deleteItem = async (entity: string, id: string) => {
     if (!confirm("تأكيد الحذف؟")) return false;
-    const res = await fetch(api(`${entity}/${id}`), {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      alert(data.error || "فشل الحذف");
-      return false;
-    }
-    return true;
+    const result = await writeRequest(
+      api(`${entity}/${id}`),
+      "DELETE",
+      undefined,
+      "فشل الحذف"
+    );
+    return !!result;
   };
 
   const toggleActive = async (
@@ -223,17 +270,13 @@ export function useEducationManagementController() {
     id: string,
     current: boolean
   ) => {
-    const res = await fetch(api(`${entity}/${id}`), {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ isActive: !current }),
-    });
-    const data = await res.json();
-    if (!data.success) {
-      alert(data.error || "فشل التحديث");
-      return false;
-    }
-    return true;
+    const result = await writeRequest(
+      api(`${entity}/${id}`),
+      "PUT",
+      { isActive: !current },
+      "فشل التحديث"
+    );
+    return !!result;
   };
 
   // Subject handlers
