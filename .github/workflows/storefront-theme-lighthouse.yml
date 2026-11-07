@@ -72,10 +72,18 @@ jobs:
       - name: Run Lighthouse CI (desktop preset, default throttling)
         run: |
           set -euo pipefail
-          lhci collect \
-            --url="${{ inputs.urls }}" \
-            --numberOfRuns=${{ inputs.runs }} \
-            --settings.preset=desktop 2>&1 | tee lhci-collect.log
+          IFS=',' read -ra LIST <<< "${{ inputs.urls }}"
+          for u in "${LIST[@]}"; do
+            u="$(echo "$u" | xargs)"
+            [ -z "$u" ] && continue
+            echo "=== collecting: $u"
+            lhci collect \
+              --url="$u" \
+              --numberOfRuns=${{ inputs.runs }} \
+              --settings.preset=desktop 2>&1 | tee -a lhci-collect.log
+          done
+          echo "=== output directory contents ==="
+          ls -la .lighthouseci || true
 
       - name: Upload raw Lighthouse JSON results
         if: always()
@@ -83,10 +91,10 @@ jobs:
         with:
           name: lighthouse-raw-json
           path: |
-            .lighthouseci/*.json
+            .lighthouseci/
             lhci-collect.log
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Summarize the raw numbers (no scores invented)
         if: always()
