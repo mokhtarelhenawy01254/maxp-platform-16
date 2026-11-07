@@ -81,6 +81,8 @@ export const DispatchInternalCourierModal: React.FC<DispatchInternalCourierModal
       title="إسناد لمندوب توصيل داخلي"
       description={`تجهيز وخروج ${orderIds.length} طلب في مأمورية توزيع تابعة للشركة`}
       subtitle={`تجهيز وخروج ${orderIds.length} طلب في مأمورية توزيع تابعة للشركة`}
+      showCancel={false}
+      busy={submitting}
       size="md"
     >
       <div className="space-y-4 py-2 text-xs sm:text-sm">
