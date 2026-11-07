@@ -57,6 +57,17 @@ const SubscriptionSuccess: React.FC = () => {
       ? `purchase_${transactionId}`
       : `purchase_${bundle || (isStoreBundle ? "store-complete-bundle" : "bundle")}_fallback`;
 
+    const rawAmount =
+      searchParams.get("amount") ||
+      searchParams.get("value") ||
+      searchParams.get("total");
+    const parsedAmount = rawAmount ? parseFloat(rawAmount) : NaN;
+    // ممنوع اختراع سعر: لو الـamount مش موجود/غير صالح منفعش نبعت حدث شراء بقيمة ثابتة
+    const value = !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : null;
+    if (value === null) {
+      return;
+    }
+
     const storageKey = `meta_pixel_purchase_${eventId}`;
     try {
       if (typeof window !== "undefined" && window.sessionStorage) {
@@ -67,17 +78,6 @@ const SubscriptionSuccess: React.FC = () => {
       }
     } catch {
       // ignore storage errors
-    }
-
-    const rawAmount =
-      searchParams.get("amount") ||
-      searchParams.get("value") ||
-      searchParams.get("total");
-    const parsedAmount = rawAmount ? parseFloat(rawAmount) : NaN;
-    // ممنوع اختراع سعر: لو الـamount مش موجود/غير صالح منفعش نبعت حدث شراء بقيمة 999
-    const value = !isNaN(parsedAmount) && parsedAmount > 0 ? parsedAmount : null;
-    if (value === null) {
-      return;
     }
 
     const contentName =

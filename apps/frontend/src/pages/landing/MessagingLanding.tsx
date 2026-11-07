@@ -121,14 +121,14 @@ const MessagingLanding: React.FC = () => {
       el.content = content;
     };
     setMeta("og:title", "Max P Inbox — كل رسايل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد");
-    setMeta("og:description", "صندوق وارد موحّد لكل المنصات + AI Agent يرد على العملاء ويعمل حجوزات وطلبات. ٩٩٩ ج.م/شهر — وفّر ٦٠٪ من وقت فريقك.");
+    setMeta("og:description", "صندوق وارد موحّد لكل المنصات + AI Agent يرد على العملاء ويعمل حجوزات وطلبات. بسعر الباقة الشهري — وفّر ٦٠٪ من وقت فريقك.");
     setMeta("og:type", "website");
     setMeta("og:url", window.location.href);
     setMeta("og:image", "https://maxp.online/og-messaging.svg");
     setMeta("og:locale", "ar_AR");
     let descEl = document.querySelector("meta[name=\"description\"]") as HTMLMetaElement | null;
     if (!descEl) { descEl = document.createElement("meta"); descEl.name = "description"; document.head.appendChild(descEl); }
-    descEl.content = "صندوق وارد موحّد لكل منصات المحادثات + AI Agent يرد وينشئ طلبات. باقات من ٩٩٩ ج.م/شهر.";
+    descEl.content = "صندوق وارد موحّد لكل منصات المحادثات + AI Agent يرد وينشئ طلبات. بسعر الباقة الشهري.";
 
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);

@@ -105,13 +105,13 @@ const AiInboxLanding: React.FC = () => {
       el.content = content;
     };
     setMeta("og:title", "Max P AI + Inbox Bundle — AI Agent + Unified Inbox في باقة واحدة");
-    setMeta("og:description", "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات. ٩٩٩ ج.م/شهر — AI Agent يرد وينشئ الطلبات تلقائياً.");
+    setMeta("og:description", "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات. بسعر الباقة الشهري — AI Agent يرد وينشئ الطلبات تلقائياً.");
     setMeta("og:type", "website");
     setMeta("og:url", window.location.href);
     setMeta("og:locale", "ar_AR");
     let descEl = document.querySelector("meta[name=\"description\"]") as HTMLMetaElement | null;
     if (!descEl) { descEl = document.createElement("meta"); descEl.name = "description"; document.head.appendChild(descEl); }
-    descEl.content = "باقة AI + Inbox من Max P — الذكاء الاصطناعي وصندوق الوارد الموحد لكل منصات المحادثات. بسعر ٩٩٩ ج.م/شهر.";
+    descEl.content = "باقة AI + Inbox من Max P — الذكاء الاصطناعي وصندوق الوارد الموحد لكل منصات المحادثات. بسعر الباقة الشهري.";
 
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
