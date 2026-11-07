@@ -14537,6 +14537,9 @@ declare module 'react-i18next' {
         trash: string;
         turboSettings: string;
         exportExcel: string;
+        exportExcelRunning: string;
+        exportExcelDone: string;
+        exportExcelEmpty: string;
         statistics: string;
         deleteAll: string;
         deleting: string;
