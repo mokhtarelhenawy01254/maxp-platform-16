@@ -1,11 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, Pencil, Trash2, Check, X, Package, Loader2, Shirt } from 'lucide-react';
-import { manufacturingApi, SampleComponent, ProductOption } from '../../manufacturingApi';
+import {
+  manufacturingApi,
+  SampleComponent,
+  SampleComponentMutationResult,
+  ProductOption,
+} from '../../manufacturingApi';
 
 export interface SampleComponentsTabProps {
   sampleId: string;
   /** مقفولة لو العينة اتحوّلت لأوردر — الباك إند بيرفض التعديل في الحالة دي */
   readOnly?: boolean;
+  /** بتتنادى بعد أي إضافة/تعديل/حذف عشان إجمالي العينة في الدرج يتحدّث فورًا */
+  onChanged?: () => void;
 }
 
 interface DraftComponent {
@@ -33,7 +40,7 @@ const lineTotal = (quantity: string | number, unitPrice: string | number) =>
  * تبويب «مكونات العينة» (Task 83791d03 + Task HZ-G).
  * اختيار منتج من المخزن أو إدخال حر + شارة «مرتبط بالمخزن» / «غير مرتبط».
  */
-export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sampleId, readOnly = false }) => {
+export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sampleId, readOnly = false, onChanged }) => {
   const [components, setComponents] = useState<SampleComponent[]>([]);
   const [totalCost, setTotalCost] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -82,7 +89,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
     try {
       const data = await manufacturingApi.listSampleComponents(sampleId);
       setComponents(data.components);
-      setTotalCost(data.totalCost);
+      setTotalCost(data.componentsTotal !== undefined ? data.componentsTotal : data.totalCost);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'تعذّر تحميل مكونات العينة');
     } finally {
@@ -93,6 +100,24 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * تطبيق نتيجة أي عملية (إضافة/تعديل/حذف) فورًا: المكونات + إجمالي المكونات
+   * من رد السيرفر، ونداء onChanged عشان إجمالي العينة كامل يتحدّث في الدرج.
+   * لو الرد قديم/ناقص → fallback لإعادة تحميل القائمة.
+   */
+  const applyMutationResult = useCallback(
+    (result?: SampleComponentMutationResult | null): boolean => {
+      if (!result || !Array.isArray(result.components)) return false;
+      setComponents(result.components);
+      const nextTotal =
+        result.componentsTotal !== undefined ? Number(result.componentsTotal) : Number(result.totalCost);
+      if (Number.isFinite(nextTotal)) setTotalCost(nextTotal);
+      onChanged?.();
+      return true;
+    },
+    [onChanged]
+  );
 
   const draftTotal = useMemo(
     () => lineTotal(draft.quantity, draft.unitPrice),
@@ -125,7 +150,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
     setSaving(true);
     setError(null);
     try {
-      await manufacturingApi.addSampleComponent(sampleId, {
+      const result = await manufacturingApi.addSampleComponent(sampleId, {
         productId: draft.productId || null,
         name: draft.name.trim(),
         quantity: toNumber(draft.quantity),
@@ -134,7 +159,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
       });
       setDraft(EMPTY_DRAFT);
       setIsAdding(false);
-      await load();
+      if (!applyMutationResult(result)) await load();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل إضافة المكوّن');
     } finally {
@@ -162,7 +187,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
     setSaving(true);
     setError(null);
     try {
-      await manufacturingApi.updateSampleComponent(sampleId, componentId, {
+      const result = await manufacturingApi.updateSampleComponent(sampleId, componentId, {
         productId: editDraft.productId || null,
         name: editDraft.name.trim(),
         quantity: toNumber(editDraft.quantity),
@@ -170,7 +195,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
         unitPrice: toNumber(editDraft.unitPrice),
       });
       setEditingId(null);
-      await load();
+      if (!applyMutationResult(result)) await load();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل تعديل المكوّن');
     } finally {
@@ -183,8 +208,8 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
     setSaving(true);
     setError(null);
     try {
-      await manufacturingApi.deleteSampleComponent(sampleId, componentId);
-      await load();
+      const result = await manufacturingApi.deleteSampleComponent(sampleId, componentId);
+      if (!applyMutationResult(result)) await load();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'فشل حذف المكوّن');
     } finally {

@@ -213,23 +213,9 @@ class ManufacturingSampleService {
         );`,
         `CREATE INDEX IF NOT EXISTS "sample_order_expenses_sampleOrderId_idx" ON "sample_order_expenses"("sampleOrderId");`,
         `CREATE INDEX IF NOT EXISTS "sample_order_expenses_catalogId_idx" ON "sample_order_expenses"("catalogId");`,
-        `CREATE TABLE IF NOT EXISTS "sample_order_components" (
-          "id" TEXT PRIMARY KEY,
-          "companyId" TEXT NOT NULL,
-          "sampleOrderId" TEXT NOT NULL REFERENCES "sample_orders"("id") ON DELETE CASCADE,
-          "name" TEXT NOT NULL,
-          "quantity" DECIMAL(12,3) NOT NULL DEFAULT 1,
-          "unit" TEXT NOT NULL DEFAULT 'قطعة',
-          "unitPrice" DECIMAL(12,2) NOT NULL DEFAULT 0,
-          "totalCost" DECIMAL(12,2) NOT NULL DEFAULT 0,
-          "priceSnapshotAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "sortOrder" INTEGER NOT NULL DEFAULT 0,
-          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );`,
-        `CREATE INDEX IF NOT EXISTS "sample_order_components_company_sample_idx" ON "sample_order_components"("companyId","sampleOrderId");`,
-        `ALTER TABLE "sample_order_components" ADD COLUMN IF NOT EXISTS "productId" TEXT;`,
-        `CREATE INDEX IF NOT EXISTS "sample_order_components_companyId_productId_idx" ON "sample_order_components"("companyId","productId");`,
+        // جدول sample_order_components بقى managed بالكامل عن طريق Prisma schema + migration
+        // (apps/backend/prisma/migrations/20261108000000_sample_order_components).
+        // ممنوع إنشاء/تعديل الجدول وقت التشغيل هنا.
         `CREATE TABLE IF NOT EXISTS "sample_order_items" (
           "id" TEXT PRIMARY KEY,
           "companyId" TEXT NOT NULL,
@@ -879,6 +865,7 @@ class ManufacturingSampleService {
           priceSnapshotAt: new Date(),
         });
       }
+      this.assertNoDuplicateComponentsInPayload(componentsToCreate);
     }
 
     const itemsTotalQty = itemsToCreate ? itemsToCreate.reduce((sum, it) => sum + it.quantity, 0) : 0;
@@ -1393,6 +1380,7 @@ class ManufacturingSampleService {
           priceSnapshotAt: new Date(),
         });
       }
+      this.assertNoDuplicateComponentsInPayload(componentsToUpdate);
     }
 
     let updatedRecord;
@@ -2513,6 +2501,88 @@ class ManufacturingSampleService {
     return sample;
   }
 
+  static normalizeComponentName(name) {
+    return String(name || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  /**
+   * منع التكرار داخل قائمة مكونات مرسلة في نفس الطلب (create/update inline).
+   */
+  static assertNoDuplicateComponentsInPayload(components) {
+    const seenProducts = new Set();
+    const seenNames = new Set();
+    for (const item of Array.isArray(components) ? components : []) {
+      const productKey = item && item.productId ? String(item.productId) : null;
+      const nameKey = item ? this.normalizeComponentName(item.name) : '';
+      if (productKey && seenProducts.has(productKey)) {
+        const err = new Error(`المكوّن "${item.name || productKey}" مكرر في نفس العينة — عدّل الكمية بدل إضافته مرتين`);
+        err.statusCode = 409;
+        throw err;
+      }
+      if (nameKey && seenNames.has(nameKey)) {
+        const err = new Error(`المكوّن "${item.name}" مكرر في نفس العينة — عدّل الكمية بدل إضافته مرتين`);
+        err.statusCode = 409;
+        throw err;
+      }
+      if (productKey) seenProducts.add(productKey);
+      if (nameKey) seenNames.add(nameKey);
+    }
+  }
+
+  /**
+   * منع تكرار نفس المكوّن داخل نفس العينة (Task 83791d03 — مرتجع المالكة).
+   * التكرار = نفس productId، أو نفس الاسم بعد التطبيع (trim + مسافات + case).
+   */
+  static async assertNoDuplicateComponent(prisma, companyId, sampleId, { productId = null, name = '', excludeId = null } = {}) {
+    const existing = await prisma.sampleComponent.findMany({
+      where: { companyId, sampleOrderId: sampleId },
+      select: { id: true, productId: true, name: true },
+    });
+    const normalizedName = this.normalizeComponentName(name);
+    const duplicate = (Array.isArray(existing) ? existing : []).find((item) => {
+      if (excludeId && item.id === excludeId) return false;
+      if (productId && item.productId && String(item.productId) === String(productId)) return true;
+      return Boolean(normalizedName) && this.normalizeComponentName(item.name) === normalizedName;
+    });
+    if (duplicate) {
+      const label = name || duplicate.name || 'المكوّن';
+      const err = new Error(`المكوّن "${label}" مضاف بالفعل في هذه العينة — عدّل الكمية بدل إضافته من جديد`);
+      err.statusCode = 409;
+      throw err;
+    }
+  }
+
+  /**
+   * قراءة كل مكونات العينة + إجمالي المكونات + إجمالي العينة الكامل
+   * (fee + مصاريف + مكونات) في رد واحد بعد أي عملية.
+   */
+  static async collectComponentTotals(prisma, companyId, sampleId) {
+    const [components, sample] = await Promise.all([
+      prisma.sampleComponent.findMany({
+        where: { companyId, sampleOrderId: sampleId },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+      prisma.sampleOrder.findFirst({
+        where: { id: sampleId, companyId },
+        include: { expenses: { orderBy: { createdAt: 'asc' } } },
+      }),
+    ]);
+    const decorated = this.decorateTotals({
+      ...(sample || {}),
+      components,
+    });
+    return {
+      components,
+      totalCost: this.sumComponentTotals(components),
+      componentsTotal: decorated.componentsTotal,
+      sampleTotalCost: decorated.totalCost,
+      count: components.length,
+    };
+  }
+
   static async listSampleComponents(companyId, sampleId) {
     await this.ensureSchema();
     const prisma = getSharedPrismaClient();
@@ -2527,16 +2597,7 @@ class ManufacturingSampleService {
       throw err;
     }
 
-    const components = await prisma.sampleComponent.findMany({
-      where: { companyId, sampleOrderId: sampleId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
-
-    return {
-      components,
-      totalCost: this.sumComponentTotals(components),
-      count: components.length,
-    };
+    return await this.collectComponentTotals(prisma, companyId, sampleId);
   }
 
   static sumComponentTotals(components) {
@@ -2583,10 +2644,12 @@ class ManufacturingSampleService {
       throw err;
     }
 
+    await this.assertNoDuplicateComponent(prisma, companyId, sampleId, { productId, name });
+
     const unit = String(data.unit || '').trim() || 'قطعة';
     const totalCost = this.computeComponentTotal(quantity, unitPrice);
 
-    return await prisma.sampleComponent.create({
+    const created = await prisma.sampleComponent.create({
       data: {
         companyId,
         sampleOrderId: sampleId,
@@ -2599,6 +2662,9 @@ class ManufacturingSampleService {
         sortOrder: Number.isFinite(Number(data.sortOrder)) ? Number(data.sortOrder) : 0,
       },
     });
+
+    const totals = await this.collectComponentTotals(prisma, companyId, sampleId);
+    return { component: created, ...totals };
   }
 
   static async updateSampleComponent(companyId, user, sampleId, componentId, data = {}) {
@@ -2684,10 +2750,23 @@ class ManufacturingSampleService {
       patch.sortOrder = Number(data.sortOrder);
     }
 
-    return await prisma.sampleComponent.update({
+    if (data.name !== undefined || data.productId !== undefined) {
+      const effectiveProductId = patch.productId !== undefined ? patch.productId : component.productId;
+      const effectiveName = patch.name !== undefined ? patch.name : component.name;
+      await this.assertNoDuplicateComponent(prisma, companyId, sampleId, {
+        productId: effectiveProductId,
+        name: effectiveName,
+        excludeId: componentId,
+      });
+    }
+
+    const updated = await prisma.sampleComponent.update({
       where: { id: componentId },
       data: patch,
     });
+
+    const totals = await this.collectComponentTotals(prisma, companyId, sampleId);
+    return { component: updated, ...totals };
   }
 
   static async deleteSampleComponent(companyId, user, sampleId, componentId) {
@@ -2707,7 +2786,13 @@ class ManufacturingSampleService {
 
     await prisma.sampleComponent.delete({ where: { id: componentId } });
 
-    return { success: true, message: 'تم حذف المكوّن بنجاح' };
+    const totals = await this.collectComponentTotals(prisma, companyId, sampleId);
+    return {
+      success: true,
+      message: 'تم حذف المكوّن بنجاح',
+      deletedId: componentId,
+      ...totals,
+    };
   }
 }
 
