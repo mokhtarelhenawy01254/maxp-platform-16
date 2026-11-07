@@ -203,7 +203,7 @@ describe('NotificationLogDetailsDialog', () => {
     );
 
     expect(screen.getAllByText('محمود حسن').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('+201****8888').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('+201099998888').length).toBeGreaterThan(0);
     // MESSAGE_TYPE_LABELS.TEMPLATE — never the raw enum
     expect(screen.getAllByText('قالب ميتا').length).toBeGreaterThan(0);
     expect(screen.queryByText('TEMPLATE')).not.toBeInTheDocument();
