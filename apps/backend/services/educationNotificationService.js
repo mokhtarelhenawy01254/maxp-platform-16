@@ -104,17 +104,23 @@ const STAFF_SUBSCRIBED_EVENTS = [
   EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
 ];
 
-function replaceVariables(template, vars) {
-  let text = template;
-  for (const [key, val] of Object.entries(vars)) {
+function replaceVariables(template, vars = {}) {
+  if (!template) return '';
+  const rawText = typeof template === 'string'
+    ? template
+    : (template.parent || template.content || (typeof template === 'object' ? Object.values(template)[0] : '') || '');
+
+  let text = String(rawText || '');
+  for (const [key, val] of Object.entries(vars || {})) {
     text = text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val ?? ''));
   }
   return text;
 }
 
-async function sendEducationNotification({ companyId, eventType, templates, variables, recipientPhone, recipientName, recipientType = 'CUSTOMER' }) {
+async function sendEducationNotification({ companyId, eventType, templates, variables = {}, recipientPhone, recipientName, recipientType = 'CUSTOMER' }) {
   try {
-    const content = replaceVariables(templates, variables);
+    const rawTemplate = templates || NOTIFICATION_TEMPLATES[eventType]?.parent || NOTIFICATION_TEMPLATES[eventType];
+    const content = replaceVariables(rawTemplate, variables);
     if (!content) return { success: false, reason: 'no_template' };
 
     const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
@@ -125,6 +131,7 @@ async function sendEducationNotification({ companyId, eventType, templates, vari
       recipientType,
       category: 'education',
       eventType,
+      contentOverride: content,
       variables: { ...variables, contentOverride: content },
       priority: 4,
     });
@@ -256,7 +263,7 @@ async function notifySessionCancelled(companyId, session) {
 
 async function getFunnelStats(companyId) {
   const prisma = getSharedPrismaClient();
-  const totalCustomers = await prisma.customer.count({ where: { companyId, isArchived: false } });
+  const totalCustomers = await prisma.customer.count({ where: { companyId, status: { not: 'BLOCKED' } } });
   const totalStudents = await prisma.educationStudent.count({ where: { companyId, isActive: true } });
   const totalEnrollments = await prisma.educationEnrollment.count({ where: { companyId } });
   const totalSessions = await prisma.educationSession.count({ where: { companyId } });

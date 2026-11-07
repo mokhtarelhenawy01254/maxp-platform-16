@@ -2386,7 +2386,7 @@ const updateCustomer = async (req, res) => {
     // التحقق من وجود العميل وانتمائه للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
       where: { id: customerId },
-      select: { id: true, companyId: true, metadata: true }
+      select: { id: true, companyId: true, metadata: true, firstName: true, lastName: true, email: true, status: true, notes: true }
     });
 
     if (!customer) {
@@ -2473,14 +2473,14 @@ const updateCustomer = async (req, res) => {
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
-        firstName,
-        lastName,
-        email: email || null,
+        firstName: firstName !== undefined ? firstName : customer.firstName,
+        lastName: lastName !== undefined ? lastName : customer.lastName,
+        ...(email !== undefined ? { email: email || null } : {}),
         ...phoneFields,
         ...ratingFields,
-        password: hashedPassword,
-        status: status || 'LEAD',
-        notes: notes || null,
+        ...(hashedPassword !== undefined ? { password: hashedPassword } : {}),
+        status: status !== undefined ? status : customer.status,
+        notes: notes !== undefined ? (notes || null) : customer.notes,
         metadata: newMetadata,
         updatedAt: new Date()
       }

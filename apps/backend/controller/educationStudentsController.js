@@ -41,7 +41,7 @@ const getById = async (req, res) => {
     const data = await getSharedPrismaClient().educationStudent.findFirst({
       where: { id, companyId },
       include: {
-        customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true, password: true } },
         enrollments: {
           include: {
             package: { include: { subject: { select: { id: true, name: true } } } },
@@ -51,6 +51,10 @@ const getById = async (req, res) => {
       }
     });
     if (!data) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
+    if (data.customer) {
+      data.customer.hasPassword = !!data.customer.password;
+      delete data.customer.password;
+    }
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching student:', error);
