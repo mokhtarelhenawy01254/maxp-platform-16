@@ -229,32 +229,59 @@ async function convertSingleIncompleteCart({
 
     if (result?.success && result?.data) {
       // 🏷️ تمييز الطلب المحول بتاج وملاحظات واضحة لفريق خدمة العملاء
-      if (result.data?.id) {
+      if (result.data?.orderNumber) {
         try {
-          let orderMeta = {};
-          if (result.data.metadata) {
-            orderMeta = typeof result.data.metadata === 'string'
-              ? JSON.parse(result.data.metadata)
-              : result.data.metadata;
-          }
-          orderMeta.isRecoveredFromCart = true;
-          orderMeta.recoveredCartId = cartId;
-          orderMeta.recoveredChannel = channel;
-          orderMeta.tag = 'سلة مستعادة 🛒';
-
-          const existingNotes = result.data.notes || notes || '';
-          const updatedNotes = existingNotes
-            ? `[سلة مستعادة 🛒]\n${existingNotes}`
-            : '[سلة مستعادة 🛒 - تم التحويل تلقائياً من سلة متروكة]';
-
-          await prisma.order.update({
-            where: { id: result.data.id },
-            data: {
-              sourceType: 'incomplete_cart_auto',
-              notes: updatedNotes,
-              metadata: JSON.stringify(orderMeta)
-            }
+          const orderRecord = await prisma.order.findFirst({
+            where: { companyId, orderNumber: result.data.orderNumber }
           });
+          if (orderRecord) {
+            let orderMeta = {};
+            try {
+              orderMeta = typeof orderRecord.metadata === 'string'
+                ? JSON.parse(orderRecord.metadata)
+                : (orderRecord.metadata || {});
+            } catch (e) {
+              orderMeta = {};
+            }
+            orderMeta.isRecoveredFromCart = true;
+            orderMeta.recoveredCartId = cartId;
+            orderMeta.recoveredChannel = channel;
+            orderMeta.tag = 'سلة مستعادة 🛒';
+
+            const existingNotes = orderRecord.notes || notes || '';
+            const updatedNotes = existingNotes
+              ? `[سلة مستعادة 🛒]\n${existingNotes}`
+              : '[سلة مستعادة 🛒 - تم التحويل تلقائياً من سلة متروكة]';
+
+            await prisma.order.update({
+              where: { id: orderRecord.id },
+              data: {
+                sourceType: 'incomplete_cart_auto',
+                notes: updatedNotes,
+                metadata: JSON.stringify(orderMeta)
+              }
+            });
+          }
+
+          const guestOrderRecord = await prisma.guestOrder.findFirst({
+            where: { companyId, orderNumber: result.data.orderNumber }
+          });
+          if (guestOrderRecord) {
+            let gMeta = {};
+            try {
+              gMeta = typeof guestOrderRecord.metadata === 'string'
+                ? JSON.parse(guestOrderRecord.metadata)
+                : (guestOrderRecord.metadata || {});
+            } catch (e) {
+              gMeta = {};
+            }
+            gMeta.isRecoveredFromCart = true;
+            gMeta.tag = 'سلة مستعادة 🛒';
+            await prisma.guestOrder.update({
+              where: { id: guestOrderRecord.id },
+              data: { metadata: JSON.stringify(gMeta) }
+            });
+          }
         } catch (metaErr) {
           console.warn('⚠️ [INCOMPLETE-CONVERT] Could not update order recovery metadata:', metaErr.message);
         }
