@@ -151,7 +151,7 @@ export const ClothingStoreLanding: React.FC = () => {
     const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
 
     if (!token) {
-      const q = buildQueryString({ plan: "999", tier: "bundle", source: "clothing", action: "paid" });
+      const q = buildQueryString({ tier: "bundle", source: "clothing", action: "paid" });
       navigate(`/auth/register?${q}`);
       return;
     }

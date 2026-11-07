@@ -1,0 +1,66 @@
+{
+ "base": "http://127.0.0.1:3100",
+ "company": "qr5vitkkllbbksib3tu9walg",
+ "steps": [
+  {
+   "step": "messaging-checkout",
+   "http": 200,
+   "response": {
+    "success": true,
+    "data": {
+     "walletPaid": true,
+     "billingId": "cmw6u8iv80003vjm8pa9r1tr4"
+    },
+    "message": "تم تفعيل باقة AI + Inbox وخصم 999 ج.م من رصيد المحفظة"
+   },
+   "db_subscription": "ACTIVE|999.00|2026-12-07 20:10:28.099",
+   "db_billing": "PLATFORM_FEE|999.00|SUCCESS",
+   "wallet": "4001.00|999.00",
+   "apps": "unified-inbox=ACTIVE\r\nwhatsapp-business=ACTIVE"
+  },
+  {
+   "step": "lp-checkout",
+   "http": 200,
+   "response": {
+    "success": true,
+    "data": {
+     "walletPaid": true,
+     "billingId": "cmw6u8je7000dvjm8nsjo9r2w"
+    },
+    "message": "تم تفعيل باقة المراسلة وخصم 999 ج.م من رصيد المحفظة"
+   },
+   "db_subscription": "ACTIVE|999.00|2026-12-07 20:10:28.782",
+   "db_billing": "PLATFORM_FEE|999.00|SUCCESS",
+   "wallet": "4001.00|1998.00",
+   "apps": "unified-inbox=ACTIVE"
+  }
+ ],
+ "health": {
+  "status": 200,
+  "body": {
+   "status": "OK",
+   "timestamp": "2026-11-07T20:10:27.601Z",
+   "uptime": 26.0852415,
+   "environment": "development",
+   "security": "OK",
+   "version": "1.0.0",
+   "database": "Connected",
+   "dbStats": {
+    "queryCount": 0,
+    "latency": 1,
+    "queue": 0,
+    "active": 0
+   },
+   "integrity": "OK"
+  }
+ },
+ "login": {
+  "status": 200,
+  "token_found": true,
+  "body": {
+   "success": true,
+   "message": "تم تسجيل الدخول بنجاح"
+  }
+ },
+ "ok": true
+}

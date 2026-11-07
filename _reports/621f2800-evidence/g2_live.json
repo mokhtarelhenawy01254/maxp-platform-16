@@ -1,0 +1,127 @@
+{
+ "checks": [
+  {
+   "name": "marketplace HTTP 200",
+   "ok": true
+  },
+  {
+   "name": "marketplace DOM non-empty (>300 chars)",
+   "ok": true
+  },
+  {
+   "name": "marketplace mentions bundle/apps (باقة|تطبيق|أداة)",
+   "ok": false
+  },
+  {
+   "name": "LP /messaging HTTP 200",
+   "ok": true
+  },
+  {
+   "name": "LP /messaging DOM >200 chars",
+   "ok": true
+  },
+  {
+   "name": "LP /ai-inbox HTTP 200",
+   "ok": true
+  },
+  {
+   "name": "LP /ai-inbox DOM >200 chars",
+   "ok": true
+  },
+  {
+   "name": "LP /medical HTTP 200",
+   "ok": true
+  },
+  {
+   "name": "LP /medical DOM >200 chars",
+   "ok": true
+  },
+  {
+   "name": "LP /store-complete-bundle HTTP 200",
+   "ok": true
+  },
+  {
+   "name": "LP /store-complete-bundle DOM >200 chars",
+   "ok": true
+  },
+  {
+   "name": "GET /api/v1/marketplace/bundles = 200",
+   "ok": true
+  },
+  {
+   "name": "bundles API returns >=1 bundle",
+   "ok": true
+  },
+  {
+   "name": "deployed bundle has NO SubscriptionCenter",
+   "ok": true
+  },
+  {
+   "name": "deployed bundle has NO BillingOverview",
+   "ok": true
+  }
+ ],
+ "shots": [
+  "C:\\Users\\ali wazery\\maxp-qa\\task-runner\\evidence\\621f_marketplace.png",
+  "C:\\Users\\ali wazery\\maxp-qa\\task-runner\\evidence\\621f_lp_messaging.png",
+  "C:\\Users\\ali wazery\\maxp-qa\\task-runner\\evidence\\621f_lp_ai_inbox.png",
+  "C:\\Users\\ali wazery\\maxp-qa\\task-runner\\evidence\\621f_lp_medical.png",
+  "C:\\Users\\ali wazery\\maxp-qa\\task-runner\\evidence\\621f_lp_store_complete.png"
+ ],
+ "pages": [
+  {
+   "name": "marketplace",
+   "url": "https://maxp.online/auth/login?next=%2Fmarketplace",
+   "status": 200,
+   "title": "تسجيل الدخول | MaxP",
+   "textLen": 474,
+   "textHead": "نظام تشغيل الأعمال\nكل أعمالك\nفي نظام واحد\n\nمنصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — في مساحة عمل واحدة.\n\nابدأ الآن\nخلال دقائق\nبدون بطاقة بنكية\nفترة تجريبية مجانية\nماكس بي لنظام تشغيل الأعمال\nتسجيل دخول آمن\nالدخول إلى مساحة العمل\n\nأدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.\n\nالبريد الإلكتروني\nنسيت كلمة المرور؟\nكلمة المرور\nتذكرني\nدخول إلى النظام\nتحميل للأندرويد (APK)\nتثبيت للآيفون (iOS)\nليس لديك حساب؟\nإنشاء حساب جديد"
+  },
+  {
+   "name": "lp_messaging",
+   "url": "https://maxp.online/lp/messaging",
+   "status": 200,
+   "title": "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد",
+   "textLen": 5252,
+   "textHead": "Max P Inbox\nالمميزات\nطريقة العمل\nAI Agent\nالأسعار\nالأسئلة\nتسجيل الدخول\nجرب مجانا\nاشترك ٩٩٩ ج.م\n٤ منصات محادثات في شاشة واحدة\nكل رسايل واتساب وتلجرام وانستجرام وماسنجر\nفي مكان واحد والـ AI يرد نيابة عنك\n\nوفر ٦٠٪ من وقت فريقك. كل المحادثات من ٤ منصات في صندوق واحد. فريق كامل يشتغل عليها والذكاء الاصطناعي يرد على العملاء ويعمل طلبات وحجوزات بشكل تلقائي — ٢٤ ساعة.\n\nجرب مجانا\nاشترك ب ٩٩٩ ج.م\nشوف المميزات\nأ\nن\nخ\nع\nأكتر من ١٠٠٠+ تاجر بيستخدم Max P\nWhatsApp\nTelegram\nInstagram\nMessenger\nمحادثة واردة — ماسنجر\nالسلام عليكم .. عايز استفسر عن طلب رقم #2431\nوعليكم السلام 👋 طلبك رقم #2431: تم الشحن وهو في الطريق، هيوصلك بكره بمشيئة الله.\nAI Agent · رد تلقائي\nطب ممكن أغير العنوان؟\nتمام، حولتك لموظف الدعم ال"
+  },
+  {
+   "name": "lp_ai_inbox",
+   "url": "https://maxp.online/lp/ai-inbox",
+   "status": 200,
+   "title": "Max P AI + Inbox | الذكاء الاصطناعي وصندوق الوارد الموحد",
+   "textLen": 4934,
+   "textHead": "Max P AI + Inbox\nالمميزات\nAI Agent\nالأسعار\nالأسئلة\nتسجيل الدخول\nجرب مجانا\nاشترك ٩٩٩ ج.م\nAI Agent + Unified Inbox\nالذكاء الاصطناعي + صندوق وارد موحد\nفي باقة واحدة بسعر ثابت\n\nوفر ٦٠٪ من وقت فريقك. كل المحادثات من ٤ منصات في صندوق واحد. والذكاء الاصطناعي يرد على العملاء وينشئ طلبات وحجوزات — ٢٤ ساعة.\n\nجرب مجانا\nاشترك ب ٩٩٩ ج.م\nشوف المميزات\nأ\nن\nخ\nع\nأكتر من ١٠٠٠+ تاجر بيستخدم Max P\nWhatsApp\nTelegram\nInstagram\nMessenger\nمحادثة واردة — ماسنجر\nالسلام عليكم .. عايز استفسر عن طلب رقم #2431\nوعليكم السلام 👋 طلبك رقم #2431: تم الشحن وهو في الطريق، هيوصلك بكره بمشيئة الله.\nAI Agent · رد تلقائي\nطب ممكن أغير العنوان؟\nتمام، حولتك لموظف الدعم المختص. دقيقة من فضلك 🤝\nAI Agent · رد تلقائي\nتمت المحادثة · رد آل"
+  },
+  {
+   "name": "lp_medical",
+   "url": "https://maxp.online/lp/medical",
+   "status": 200,
+   "title": "Max P الباقة الطبية | النظام الطبي + واتساب + AI Agents",
+   "textLen": 6395,
+   "textHead": "Max P الطبية\nالمشكلة\nالمميزات\nالوكلاء\nالأسعار\nالأسئلة\nتسجيل الدخول\nجرب ١٤ يوم مجانا\n٩٩٩ ج.م\nالنظام الطبي + واتساب + AI Agents\nعياداتك كلها في نظام واحد\nوالـ AI يرد على مرضاك ويسجّل الطلب\n\nإدارة الفروع والأطباء والمواعيد — كل حاجة من لوحة تحكم واحدة. ٥ وكلاء ذكاء اصطناعي بشخصيات بشرية يردوا على مرضاك على واتساب — ٢٤ ساعة، وأي طلب حجز بيتسجل ويتأكد من فريق العيادة. واتساب بزنس مربوط — كل حاجة في باقة واحدة.\n\nجرب ١٤ يوم مجانا\nاشترك ب ٩٩٩ ج.م\nشوف المميزات\nم\nك\nع\nأكتر من ٢٠٠+ مركز طبي وعيادة شغالة على Max P\nواتساب العيادة — محادثة واردة\nAI Agent شغال\nمحادثة حجز موعد\nالسلام عليكم .. عايز أحجز عند دكتور أحمد بكره\nوعليكم السلام 👋 دكتور أحمد متاح بكره الساعة ٤ العصر و ٦ المساء. أي وقت يناسب حضرتك؟\nAI"
+  },
+  {
+   "name": "lp_store_complete",
+   "url": "https://maxp.online/lp/store-complete-bundle",
+   "status": 200,
+   "title": "باقة المتجر الكاملة — متجرك كله في نظام واحد بـ999 ج.م/شهر | MaxP",
+   "textLen": 8147,
+   "textHead": "الفاتورة\nرحلة الأوردر\nالأدوات\nاحسب توفيرك\nأسئلة شائعة\nواتساب\nدخول\nاشترك — 999/شهر\nباقة المتجر الكاملة — نظام واحد لأي متجر أونلاين\nمتجرك كله في نظام واحد — 999 ج.م في الشهر\n\nمن رسالة العميل لحد صافي الربح: المتجر والواتساب والشحن والمخزون والمرتجعات والتحليلات — بـ33 ج.م في اليوم تقريبًا، بدل 2,737 لو اشتريت الأدوات واحدة واحدة.\n\nاشترك الآن — 999 ج.م/شهر\nاسأل قبل ما تشترك\nتفعيل فوري للأدوات بعد الدفع\nإلغاء في أي وقت\nاشتراك واحد بيشمل كل حاجة\nفاتورة اشتراكات المتجر\n15 أداة مدفوعة + 2 إضافة شاملة ببلاش\nالمتجر\n699 ج.م\n\nكتالوج وسلة وطلبات — واجهة بيع جاهزة من أول يوم.\n\nمسار الطلبات\n149 ج.م\n\nحالات الأوردر بالترتيب اللي يناسب شغلك، من الاستلام للتسليم.\n\nWhatsApp Business API\n350 ج.م\n\nقناة واتساب ر"
+  }
+ ],
+ "api": [
+  {
+   "url": "https://maxp.online/api/v1/marketplace/bundles",
+   "status": 200,
+   "count": 8
+  }
+ ],
+ "consoleErrors": [],
+ "failedRequests": [],
+ "deployedBundle": {
+  "scriptsChecked": 2,
+  "chars": 13290
+ },
+ "ok": false
+}

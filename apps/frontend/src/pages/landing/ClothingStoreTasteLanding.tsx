@@ -148,7 +148,7 @@ export const ClothingStoreTasteLanding: React.FC = () => {
     const token = tokenManager.getAccessToken ? tokenManager.getAccessToken() : tokenManager.getToken?.();
 
     if (!token) {
-      const q = buildQueryString({ plan: "999", tier: "bundle", source: "clothing-taste", action: "paid" });
+      const q = buildQueryString({ tier: "bundle", source: "clothing-taste", action: "paid" });
       navigate(`/auth/register?${q}`);
       return;
     }

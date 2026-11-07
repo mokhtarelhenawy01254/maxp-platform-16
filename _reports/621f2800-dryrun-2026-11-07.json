@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-07T20:11:06.713Z",
+ "generatedAt": "2026-11-07T20:23:15.576Z",
  "mode": "dry-run (read-only)",
  "bundles": {
   "total": 8,
@@ -34,21 +34,75 @@
  "subscriptions": {
   "total": 121,
   "byStatus": {
-   "SUSPENDED": 1,
    "ACTIVE": 115,
+   "SUSPENDED": 1,
    "TRIAL": 5
-  }
+  },
+  "activeCompanies": 120,
+  "rowsInTable": 121,
+  "unaccounted": 0
  },
  "landingPages": {
-  "total": 0,
-  "withBundleSlug": 0,
-  "note": "عمود bundle_slug غير موجود على lp_pages في هذه البيئة — تم تخطي العدّ"
+  "total": 11,
+  "withBundleSlug": 4,
+  "column": "bundleSlug"
  },
+ "bundleSafety": [
+  {
+   "slug": "ai-inbox-bundle",
+   "orphaned": false,
+   "activeSubscriberCompanies": 85,
+   "safeToClean": false
+  },
+  {
+   "slug": "cafe-complete-bundle",
+   "orphaned": true,
+   "activeSubscriberCompanies": 37,
+   "safeToClean": false
+  },
+  {
+   "slug": "facebook-complete-bundle",
+   "orphaned": true,
+   "activeSubscriberCompanies": 51,
+   "safeToClean": false
+  },
+  {
+   "slug": "financial-pricing-suite",
+   "orphaned": true,
+   "activeSubscriberCompanies": 5,
+   "safeToClean": false
+  },
+  {
+   "slug": "hr-complete-bundle",
+   "orphaned": true,
+   "activeSubscriberCompanies": 20,
+   "safeToClean": false
+  },
+  {
+   "slug": "medical-bundle",
+   "orphaned": false,
+   "activeSubscriberCompanies": 85,
+   "safeToClean": false
+  },
+  {
+   "slug": "messaging-bundle",
+   "orphaned": false,
+   "activeSubscriberCompanies": 44,
+   "safeToClean": false
+  },
+  {
+   "slug": "store-complete-bundle",
+   "orphaned": false,
+   "activeSubscriberCompanies": 82,
+   "safeToClean": false
+  }
+ ],
  "destructiveActions": "none — this script never deletes or updates rows",
  "verdict": {
   "bundlesReferencedButMissing": 0,
   "orphanBundles": 4,
-  "safeToCleanCount": 4,
-  "blockedByActiveSubscriptions": 115
+  "safeToCleanCount": 0,
+  "blockedByActiveSubscriptions": 115,
+  "bundlesWithActiveSubscribers": 8
  }
 }

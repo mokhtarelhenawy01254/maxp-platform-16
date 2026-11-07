@@ -1,0 +1,24 @@
+{
+ "repeat_messaging": {
+  "http": 200,
+  "response": {
+   "success": true,
+   "data": {
+    "walletPaid": true,
+    "alreadyActive": true,
+    "billingId": "cmw6u8jei000fvjm8sqi2hnux"
+   },
+   "message": "الاشتراك مفعّل بالفعل — لم يتم أي خصم"
+  },
+  "wallet_before": "4001.00",
+  "wallet_after": "4001.00"
+ },
+ "missing_bundle": {
+  "http": 404,
+  "response": {
+   "success": false,
+   "message": "الباقة غير موجودة"
+  }
+ },
+ "ok": true
+}

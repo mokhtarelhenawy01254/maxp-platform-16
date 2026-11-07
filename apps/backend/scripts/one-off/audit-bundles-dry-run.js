@@ -16,7 +16,12 @@
  *   - الباقات المفقودة (مشاور عليها ومش موجودة) = خطر 500 في الشاشات
  *   - الباقات اليتيمة (موجودة ومحدش بيشاور عليها) = مرشحة للتنضيف
  *   - عدد صفوف platform_subscriptions (حماية: ممنوع حذف باقة عليها اشتراك نشط)
- *   - عدد صفحات lp_pages اللي فيها bundle_slug
+ *   - عدد صفحات lp_pages اللي فيها bundleSlug (أو bundle_slug في المخططات القديمة)
+ *   - لكل باقة يتيمة: عدد الشركات اللي عليها اشتراك نشط وبتستخدم أي تطبيق من تطبيقاتها
+ *     → الباقة تتحسب safeToClean **بس** لو العدد ده صفر.
+ *
+ * أي فشل في أي استعلام = خروج بكود 1 مع رسالة واضحة (fail-closed) — ممنوع
+ * ما نعرضش صفر كأنه نتيجة ناجحة.
  */
 
 const fs = require('fs');
@@ -36,6 +41,19 @@ function extractLandingBundleSlugs() {
   return Array.from(slugs).sort();
 }
 
+function normalizeAppIds(appIds) {
+  if (Array.isArray(appIds)) return appIds.map((v) => String(v)).filter(Boolean);
+  if (typeof appIds === 'string') {
+    try {
+      const parsed = JSON.parse(appIds);
+      return Array.isArray(parsed) ? parsed.map((v) => String(v)).filter(Boolean) : [];
+    } catch (err) {
+      return [];
+    }
+  }
+  return [];
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const asJson = argv.includes('--json');
@@ -45,8 +63,9 @@ async function main() {
     mode: 'dry-run (read-only)',
     bundles: { total: 0, active: 0, inactive: 0, slugs: [] },
     landingReferences: { slugs: [], missing: [], orphaned: [] },
-    subscriptions: { total: 0, byStatus: {} },
+    subscriptions: { total: 0, byStatus: {}, activeCompanies: 0 },
     landingPages: { total: 0, withBundleSlug: 0 },
+    bundleSafety: [],
     destructiveActions: 'none — this script never deletes or updates rows',
   };
 
@@ -64,10 +83,21 @@ async function main() {
     return;
   }
 
+  // أي فشل قراءة يتوقف فورًا — ممنوع .catch(() => []) لأنه بيحوّل الأعطال لأصفار كاذبة
+  const query = async (label, sql) => {
+    try {
+      const rows = await prisma.$queryRawUnsafe(sql);
+      return Array.isArray(rows) ? rows : [];
+    } catch (err) {
+      throw new Error(`${label}: ${err.message}`);
+    }
+  };
+
   // 1) الباقات
-  const bundles = await prisma.$queryRawUnsafe(
-    'SELECT slug, name, "isActive" FROM "app_bundles" ORDER BY slug'
-  ).catch(() => []);
+  const bundles = await query(
+    'app_bundles',
+    'SELECT id, slug, name, "isActive", "appIds" FROM "app_bundles" ORDER BY slug'
+  );
 
   report.bundles.total = bundles.length;
   report.bundles.slugs = bundles.map((b) => b.slug);
@@ -79,12 +109,13 @@ async function main() {
   report.landingReferences.orphaned = report.bundles.slugs.filter((slug) => !referenced.includes(slug));
 
   // 2) الاشتراكات — الحالة NULL بتظهر صريحة بدل ما تتوه في التجميع
-  const subs = await prisma.$queryRawUnsafe(
+  const subs = await query(
+    'platform_subscriptions',
     `SELECT COALESCE("status"::text, 'NULL') AS status, COUNT(*)::int AS count
      FROM "platform_subscriptions"
      GROUP BY 1
      ORDER BY 1`
-  ).catch(() => []);
+  );
 
   report.subscriptions.byStatus = subs.reduce((acc, row) => {
     acc[row.status] = Number(row.count) || 0;
@@ -92,42 +123,105 @@ async function main() {
     return acc;
   }, {});
 
-  const rawSubTotal = await prisma.$queryRawUnsafe(
+  const rawSubTotal = await query(
+    'platform_subscriptions total',
     'SELECT COUNT(*)::int AS total FROM "platform_subscriptions"'
-  ).catch(() => []);
+  );
 
-  const totalRows = Array.isArray(rawSubTotal) && rawSubTotal[0] ? Number(rawSubTotal[0].total) || 0 : 0;
+  const totalRows = rawSubTotal[0] ? Number(rawSubTotal[0].total) || 0 : 0;
   report.subscriptions.rowsInTable = totalRows;
   report.subscriptions.unaccounted = totalRows - report.subscriptions.total;
 
-  // 3) صفحات الهبوط المرجعية (العمود مش مضمون في كل البيئات)
-  const pageColumns = await prisma.$queryRawUnsafe(
+  // 3) الشركات اللي عليها اشتراك نشط/تجريبي (حماية الباقات)
+  const activeSubCompanies = await query(
+    'active subscriptions companies',
+    `SELECT DISTINCT "companyId" FROM "platform_subscriptions"
+     WHERE "status"::text IN ('ACTIVE', 'TRIAL')`
+  );
+  const activeCompanyIds = activeSubCompanies.map((r) => String(r.companyId));
+  report.subscriptions.activeCompanies = activeCompanyIds.length;
+
+  // 4) تطبيقات الشركات النشطة (لربط الباقة بأصحابها الفعليين)
+  const appRows = await query(
+    'marketplace_apps',
+    'SELECT id, slug FROM "marketplace_apps"'
+  );
+  const slugById = new Map(appRows.map((a) => [String(a.id), String(a.slug)]));
+
+  let activeCompanyApps = [];
+  if (activeCompanyIds.length > 0) {
+    activeCompanyApps = await query(
+      'company_apps',
+      `SELECT ca."companyId", a.slug
+       FROM "company_apps" ca
+       JOIN "marketplace_apps" a ON a.id = ca."appId"
+       WHERE ca."status" = 'ACTIVE'
+         AND ca."companyId" = ANY(ARRAY[${activeCompanyIds.map((id) => `'${id.replace(/'/g, "''")}'`).join(',')}]::text[])`
+    );
+  }
+  const appsByCompany = new Map();
+  for (const row of activeCompanyApps) {
+    const cid = String(row.companyId);
+    if (!appsByCompany.has(cid)) appsByCompany.set(cid, new Set());
+    appsByCompany.get(cid).add(String(row.slug));
+  }
+
+  // 5) لكل باقة: كام شركة نشطة بتستخدم أي تطبيق من تطبيقاتها
+  report.bundleSafety = bundles.map((bundle) => {
+    const resolvedSlugs = new Set(
+      normalizeAppIds(bundle.appIds).map((raw) => slugById.get(raw) || raw)
+    );
+    let subscriberCompanies = 0;
+    for (const cid of activeCompanyIds) {
+      const owned = appsByCompany.get(cid);
+      if (!owned) continue;
+      for (const slug of owned) {
+        if (resolvedSlugs.has(slug)) {
+          subscriberCompanies += 1;
+          break;
+        }
+      }
+    }
+    const orphaned = !referenced.includes(bundle.slug);
+    return {
+      slug: bundle.slug,
+      orphaned,
+      activeSubscriberCompanies: subscriberCompanies,
+      safeToClean: orphaned && subscriberCompanies === 0,
+    };
+  });
+
+  // 6) صفحات الهبوط المرجعية — العمود اسمه "bundleSlug" في المخطط الحالي وbundle_slug في القديم
+  const pageColumns = await query(
+    'lp_pages columns',
     `SELECT column_name FROM information_schema.columns
-     WHERE table_name = 'lp_pages' AND column_name = 'bundle_slug'`
-  ).catch(() => []);
+     WHERE table_name = 'lp_pages' AND column_name IN ('bundle_slug', 'bundleSlug')`
+  );
 
-  const hasBundleSlugColumn = Array.isArray(pageColumns) && pageColumns.length > 0;
-
-  if (hasBundleSlugColumn) {
-    const pages = await prisma.$queryRawUnsafe(
+  const columnName = pageColumns.map((r) => r.column_name).find((name) => name === 'bundle_slug' || name === 'bundleSlug');
+  if (columnName) {
+    const quoted = `"${columnName}"`;
+    const pages = await query(
+      'lp_pages counts',
       `SELECT COUNT(*)::int AS total,
-              COUNT(NULLIF("bundle_slug", ''))::int AS with_bundle
+              COUNT(NULLIF(${quoted}, ''))::int AS with_bundle
        FROM "lp_pages"`
-    ).catch(() => []);
-
-    if (Array.isArray(pages) && pages[0]) {
+    );
+    report.landingPages.column = columnName;
+    if (pages[0]) {
       report.landingPages.total = Number(pages[0].total) || 0;
       report.landingPages.withBundleSlug = Number(pages[0].with_bundle) || 0;
     }
   } else {
-    report.landingPages.note = 'عمود bundle_slug غير موجود على lp_pages في هذه البيئة — تم تخطي العدّ';
+    report.landingPages.note = 'عمود bundleSlug/bundle_slug غير موجود على lp_pages — تم تخطي العدّ';
   }
 
   report.verdict = {
     bundlesReferencedButMissing: report.landingReferences.missing.length,
     orphanBundles: report.landingReferences.orphaned.length,
-    safeToCleanCount: report.landingReferences.orphaned.length,
+    safeToCleanCount: report.bundleSafety.filter((b) => b.safeToClean).length,
     blockedByActiveSubscriptions: report.subscriptions.byStatus.ACTIVE || 0,
+    bundlesWithActiveSubscribers: report.bundleSafety.filter((b) => b.activeSubscriberCompanies > 0).length,
   };
 
   if (asJson) {
@@ -144,11 +238,14 @@ async function main() {
   if (report.landingReferences.orphaned.length) {
     console.log(`  🧹 يتيمة: ${report.landingReferences.orphaned.join(', ')}`);
   }
-  console.log(`الاشتراكات: ${report.subscriptions.total} — ${JSON.stringify(report.subscriptions.byStatus)}`);
+  console.log(`الاشتراكات: ${report.subscriptions.total} — ${JSON.stringify(report.subscriptions.byStatus)} · شركات نشطة: ${report.subscriptions.activeCompanies}`);
   if (report.subscriptions.rowsInTable !== undefined) {
     console.log(`صفوف الجدول: ${report.subscriptions.rowsInTable} · غير محسوب: ${report.subscriptions.unaccounted}`);
   }
-  console.log(`صفحات الهبوط: ${report.landingPages.total} (بها bundle_slug: ${report.landingPages.withBundleSlug})`);
+  console.log(`صفحات الهبوط: ${report.landingPages.total} (بها ${report.landingPages.column || 'bundleSlug'}: ${report.landingPages.withBundleSlug})`);
+  for (const b of report.bundleSafety) {
+    console.log(`  - ${b.slug}: orphan=${b.orphaned} · شركات نشطة=${b.activeSubscriberCompanies} · safe=${b.safeToClean}`);
+  }
   console.log('مفيش أي كتابة أو حذف في السكربت ده.');
 }
 
