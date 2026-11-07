@@ -17,6 +17,7 @@ function normalizeAppIds(raw) {
     return { slugs: [], valid: false, issue: 'appIds missing' };
   }
   if (Array.isArray(raw)) {
+    if (raw.length === 0) return { slugs: [], valid: false, issue: 'appIds empty' };
     const invalid = raw.some((v) => typeof v !== 'string' || v.trim() === '');
     if (invalid) return { slugs: [], valid: false, issue: 'appIds contains non-string entry' };
     return { slugs: raw.map((v) => v.trim()), valid: true, issue: null };
@@ -29,6 +30,7 @@ function normalizeAppIds(raw) {
       if (!Array.isArray(parsed)) {
         return { slugs: [], valid: false, issue: 'appIds is not an array' };
       }
+      if (parsed.length === 0) return { slugs: [], valid: false, issue: 'appIds empty' };
       const invalid = parsed.some((v) => typeof v !== 'string' || v.trim() === '');
       if (invalid) return { slugs: [], valid: false, issue: 'appIds contains non-string entry' };
       return { slugs: parsed.map((v) => v.trim()), valid: true, issue: null };

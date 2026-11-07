@@ -12,6 +12,8 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
     expect(normalizeAppIds(null).valid).toBe(false);
     expect(normalizeAppIds([{ unexpected: 'object' }]).valid).toBe(false);
     expect(normalizeAppIds(['ok-slug', 123]).valid).toBe(false);
+    expect(normalizeAppIds([]).valid).toBe(false);
+    expect(normalizeAppIds('[]').valid).toBe(false);
 
     const [row] = computeBundleSafety({
       bundles: [{ slug: 'orphan-bundle', appIds: '{not-json' }],
@@ -23,6 +25,20 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
     expect(row.orphaned).toBe(true);
     expect(row.metadataIssue).toBe('appIds malformed JSON');
     expect(row.safeToClean).toBe(false);
+  });
+
+  it('never marks an orphan with empty appIds safe to clean', () => {
+    for (const appIds of [[], '[]']) {
+      const [row] = computeBundleSafety({
+        bundles: [{ slug: 'orphan-bundle', appIds }],
+        referencedSlugs: [],
+        activeCompanyIds: ['c1'],
+        appsByCompany: new Map([['c1', new Set(['unified-inbox'])]]),
+        slugById: new Map(),
+      });
+      expect(row.metadataIssue).toBe('appIds empty');
+      expect(row.safeToClean).toBe(false);
+    }
   });
 
   it('never marks an orphan with an object inside appIds safe to clean', () => {
