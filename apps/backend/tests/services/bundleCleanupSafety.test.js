@@ -21,6 +21,7 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
       activeCompanyIds: ['c1'],
       appsByCompany: new Map([['c1', new Set(['unified-inbox'])]]),
       slugById: new Map(),
+      knownSlugs: new Set(['app-a', 'app-b', 'unified-inbox', 'currently-used-app']),
     });
     expect(row.orphaned).toBe(true);
     expect(row.metadataIssue).toBe('appIds malformed JSON');
@@ -35,6 +36,7 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
         activeCompanyIds: ['c1'],
         appsByCompany: new Map([['c1', new Set(['unified-inbox'])]]),
         slugById: new Map(),
+      knownSlugs: new Set(['app-a', 'app-b', 'unified-inbox', 'currently-used-app']),
       });
       expect(row.metadataIssue).toBe('appIds empty');
       expect(row.safeToClean).toBe(false);
@@ -48,6 +50,7 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
       activeCompanyIds: [],
       appsByCompany: new Map(),
       slugById: new Map(),
+      knownSlugs: new Set(['app-a', 'app-b', 'unified-inbox', 'currently-used-app']),
     });
     expect(row.metadataIssue).toBe('appIds contains non-string entry');
     expect(row.safeToClean).toBe(false);
@@ -63,6 +66,7 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
       activeCompanyIds: ['c1'],
       appsByCompany: new Map([['c1', new Set(['app-b'])]]),
       slugById: new Map(),
+      knownSlugs: new Set(['app-a', 'app-b', 'unified-inbox', 'currently-used-app']),
     });
     expect(rows.find((r) => r.slug === 'orphan-empty').safeToClean).toBe(true);
     expect(rows.find((r) => r.slug === 'orphan-used').activeSubscriberCompanies).toBe(1);
@@ -81,6 +85,19 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
     expect(row.safeToClean).toBe(false);
   });
 
+  it('never marks a bundle with an unknown app reference safe to clean', () => {
+    const [row] = computeBundleSafety({
+      bundles: [{ slug: 'orphan-stale', appIds: ['deleted-app-id'] }],
+      referencedSlugs: [],
+      activeCompanyIds: ['c1'],
+      appsByCompany: new Map([['c1', new Set(['currently-used-app'])]]),
+      slugById: new Map(),
+      knownSlugs: new Set(['currently-used-app']),
+    });
+    expect(row.metadataIssue).toBe('appIds contains unknown app reference');
+    expect(row.safeToClean).toBe(false);
+  });
+
   it('never marks a referenced bundle safe even with zero subscribers', () => {
     const [row] = computeBundleSafety({
       bundles: [{ slug: 'messaging-bundle', appIds: ['app-a'] }],
@@ -88,6 +105,7 @@ describe('bundle cleanup safety — fail-closed (task 621f2800)', () => {
       activeCompanyIds: [],
       appsByCompany: new Map(),
       slugById: new Map(),
+      knownSlugs: new Set(['app-a', 'app-b', 'unified-inbox', 'currently-used-app']),
     });
     expect(row.orphaned).toBe(false);
     expect(row.safeToClean).toBe(false);

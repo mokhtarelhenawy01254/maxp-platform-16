@@ -50,14 +50,23 @@ function normalizeAppIds(raw) {
  * @param {Map<string, string>} input.slugById تحويل id التطبيق إلى slug
  * @returns {Array<{slug, orphaned, activeSubscriberCompanies, safeToClean, metadataIssue}>}
  */
-function computeBundleSafety({ bundles = [], referencedSlugs = [], activeCompanyIds = [], appsByCompany = new Map(), slugById = new Map() }) {
+function computeBundleSafety({ bundles = [], referencedSlugs = [], activeCompanyIds = [], appsByCompany = new Map(), slugById = new Map(), knownSlugs = new Set() }) {
   const referenced = new Set(referencedSlugs);
   return bundles.map((bundle) => {
     const normalized = normalizeAppIds(bundle.appIds);
-    const resolvedSlugs = new Set(normalized.slugs.map((raw) => slugById.get(raw) || raw));
+    const resolvedSlugs = new Set();
+    let unknownReference = null;
+    for (const raw of normalized.slugs) {
+      const resolved = slugById.get(raw) || (knownSlugs.has(raw) ? raw : null);
+      if (!resolved) {
+        unknownReference = 'appIds contains unknown app reference';
+        break;
+      }
+      resolvedSlugs.add(resolved);
+    }
 
     let subscriberCompanies = 0;
-    if (normalized.valid) {
+    if (normalized.valid && !unknownReference) {
       for (const cid of activeCompanyIds) {
         const owned = appsByCompany.get(String(cid));
         if (!owned) continue;
@@ -71,12 +80,12 @@ function computeBundleSafety({ bundles = [], referencedSlugs = [], activeCompany
     }
 
     const orphaned = !referenced.has(String(bundle.slug));
-    const metadataIssue = normalized.valid ? null : normalized.issue;
+    const metadataIssue = !normalized.valid ? normalized.issue : unknownReference;
     return {
       slug: bundle.slug,
       orphaned,
       activeSubscriberCompanies: subscriberCompanies,
-      safeToClean: orphaned && normalized.valid && subscriberCompanies === 0,
+      safeToClean: orphaned && normalized.valid && !unknownReference && subscriberCompanies === 0,
       metadataIssue,
     };
   });

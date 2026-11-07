@@ -19,7 +19,7 @@ const MessagingCheckout: React.FC = () => {
     apiClient.post("/platform-subscription/messaging-checkout", {})
       .then((res: any) => {
         if (res.data?.success && res.data?.data?.walletPaid) {
-          setSuccessMsg(res.data?.message || "تم الاشتراك وخصم 999 ج.م من رصيد المحفظة");
+          setSuccessMsg(res.data?.message || "تم الاشتراك وخصم المبلغ من رصيد المحفظة");
           setStatus("success");
         } else if (res.data?.success && res.data?.data?.sessionUrl) {
           setStatus("redirecting");
@@ -43,7 +43,7 @@ const MessagingCheckout: React.FC = () => {
       setStatus("loading");
       const res = await apiClient.post("/platform-subscription/messaging-upgrade", {});
       if (res.data?.success && res.data?.data?.walletPaid) {
-        setSuccessMsg(res.data?.message || "تم تفعيل الاشتراك وخصم 999 ج.م من رصيد المحفظة");
+        setSuccessMsg(res.data?.message || "تم تفعيل الاشتراك وخصم المبلغ من رصيد المحفظة");
         setStatus("success");
       } else if (res.data?.success && res.data?.data?.sessionUrl) {
         setStatus("redirecting");
@@ -87,7 +87,7 @@ const MessagingCheckout: React.FC = () => {
                 ابدأ الآن
               </button>
               <button onClick={handleUpgrade} className="px-8 py-2 rounded-full bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20">
-                اشترك الآن — ٩٩٩ ج.م/شهر
+                اشترك الآن — بسعر الباقة الشهري
               </button>
             </div>
           </>

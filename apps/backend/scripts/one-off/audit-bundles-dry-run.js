@@ -136,6 +136,7 @@ async function main() {
     'SELECT id, slug FROM "marketplace_apps"'
   );
   const slugById = new Map(appRows.map((a) => [String(a.id), String(a.slug)]));
+  const knownSlugs = new Set(appRows.map((a) => String(a.slug)));
 
   let activeCompanyApps = [];
   if (activeCompanyIds.length > 0) {
@@ -162,6 +163,7 @@ async function main() {
     activeCompanyIds,
     appsByCompany,
     slugById,
+    knownSlugs,
   });
 
   // 6) صفحات الهبوط المرجعية — العمود اسمه "bundleSlug" في المخطط الحالي وbundle_slug في القديم
