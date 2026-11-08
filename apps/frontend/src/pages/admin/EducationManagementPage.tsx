@@ -157,7 +157,28 @@ export default function EducationManagementPage() {
               stats={stats}
               sessions={sessions}
               enrollments={enrollments}
+              students={students}
+              teachers={teachers}
+              subjects={subjects}
+              packages={packages}
               setActiveTab={setActiveTab}
+              studentModal={studentModal}
+              setStudentModal={setStudentModal}
+              sessionModal={sessionModal}
+              setSessionModal={setSessionModal}
+              enrollmentModal={enrollmentModal}
+              setEnrollmentModal={setEnrollmentModal}
+              teacherModal={teacherModal}
+              setTeacherModal={setTeacherModal}
+              handleConfirmSession={handleConfirmSession}
+              handleCancelSession={handleCancelSession}
+              handleSaveStudent={handleSaveStudent}
+              handleSaveTeacher={handleSaveTeacher}
+              handleSaveSession={handleSaveSession}
+              handleSaveEnrollment={handleSaveEnrollment}
+              customers={customers}
+              customerResults={customerResults}
+              searchCustomers={searchCustomers}
             />
           )}
           {activeTab === "subjects" && (
