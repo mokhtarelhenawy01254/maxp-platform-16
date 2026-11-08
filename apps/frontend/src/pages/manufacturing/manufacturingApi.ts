@@ -1033,7 +1033,17 @@ export interface SampleComponent {
 export interface SampleComponentsResponse {
   components: SampleComponent[];
   totalCost: number;
+  componentsTotal?: number;
+  sampleTotalCost?: number;
   count: number;
+}
+
+/** نتيجة أي عملية على مكوّن: المكوّن + إجماليات العينة المحدّثة فورًا (Task 83791d03). */
+export interface SampleComponentMutationResult extends SampleComponentsResponse {
+  component?: SampleComponent;
+  message?: string;
+  success?: boolean;
+  deletedId?: string;
 }
 
 export interface SamplePayment {
@@ -1458,7 +1468,7 @@ export const manufacturingApi = {
       return [];
     }
   },
-  getProducts: async (params?: { search?: string }): Promise<ProductOption[]> => {
+  getProducts: async (params?: { search?: string; limit?: number }, options?: { throwOnError?: boolean }): Promise<ProductOption[]> => {
     try {
       const res = await apiClient.get('/products', { params });
       const list = Array.isArray(res.data?.data?.products)
@@ -1475,7 +1485,8 @@ export const manufacturingApi = {
         price: Number(p.price || 0),
         cost: Number(p.cost || 0),
       }));
-    } catch {
+    } catch (err) {
+      if (options?.throwOnError) throw err;
       return [];
     }
   },
@@ -2161,25 +2172,28 @@ export const manufacturingApi = {
   listSampleComponents: async (sampleId: string): Promise<SampleComponentsResponse> => {
     const res = await apiClient.get(`/manufacturing/sample-orders/${sampleId}/components`);
     const payload = res.data?.data || {};
+    const totalCost = Number(payload.totalCost) || 0;
     return {
       components: Array.isArray(payload.components) ? payload.components : [],
-      totalCost: Number(payload.totalCost) || 0,
+      totalCost,
+      componentsTotal: payload.componentsTotal !== undefined ? Number(payload.componentsTotal) || 0 : totalCost,
+      sampleTotalCost: payload.sampleTotalCost !== undefined ? Number(payload.sampleTotalCost) || 0 : undefined,
       count: Number(payload.count) || 0,
     };
   },
   addSampleComponent: async (
     sampleId: string,
     data: { productId?: string | null; name?: string; quantity: number; unit?: string; unitPrice?: number; sortOrder?: number }
-  ): Promise<SampleComponent> =>
+  ): Promise<SampleComponentMutationResult> =>
     (await apiClient.post(`/manufacturing/sample-orders/${sampleId}/components`, data)).data?.data,
   updateSampleComponent: async (
     sampleId: string,
     componentId: string,
     data: Partial<{ productId?: string | null; name: string; quantity: number; unit: string; unitPrice: number; sortOrder: number }>
-  ): Promise<SampleComponent> =>
+  ): Promise<SampleComponentMutationResult> =>
     (await apiClient.patch(`/manufacturing/sample-orders/${sampleId}/components/${componentId}`, data)).data?.data,
-  deleteSampleComponent: async (sampleId: string, componentId: string) =>
-    (await apiClient.delete(`/manufacturing/sample-orders/${sampleId}/components/${componentId}`)).data,
+  deleteSampleComponent: async (sampleId: string, componentId: string): Promise<SampleComponentMutationResult> =>
+    (await apiClient.delete(`/manufacturing/sample-orders/${sampleId}/components/${componentId}`)).data?.data,
 
 
   // ==========================================================================

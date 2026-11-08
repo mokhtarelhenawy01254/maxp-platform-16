@@ -1334,7 +1334,7 @@ class ManufacturingController {
         req.params.id,
         req.params.componentId
       );
-      res.json({ success: true, message: data.message || 'تم حذف المكوّن بنجاح' });
+      res.json({ success: true, message: data.message || 'تم حذف المكوّن بنجاح', data });
     } catch (error) {
       res.status(error.statusCode || error.status || 400).json({ success: false, message: error.message });
     }
