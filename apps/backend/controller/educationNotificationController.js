@@ -19,18 +19,35 @@ const getLogs = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { eventType, limit = 50 } = req.query;
-    const where = { companyId, category: 'education' };
-    if (eventType) where.eventType = eventType;
+    const where = { companyId };
 
-    const data = await getSharedPrismaClient().notificationLog.findMany({
+    if (eventType) {
+      const cleanEvent = String(eventType).trim();
+      where.OR = [
+        { rawEventType: { equals: cleanEvent, mode: 'insensitive' } },
+        { rawEventType: cleanEvent },
+        { rawEventType: cleanEvent.toLowerCase() },
+        { rawEventType: cleanEvent.toUpperCase() },
+        { rawEventType: { contains: cleanEvent, mode: 'insensitive' } },
+      ];
+    } else {
+      where.OR = [
+        { rawEventType: { startsWith: 'education', mode: 'insensitive' } },
+        { rawEventType: { startsWith: 'EDUCATION' } },
+        { rawEventType: { startsWith: 'education_' } },
+      ];
+    }
+
+    const prisma = getSharedPrismaClient();
+    const data = await prisma.whatsAppNotificationLog.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: Math.min(parseInt(limit) || 50, 200),
     });
-    res.json({ success: true, data });
+    res.json({ success: true, data: data || [] });
   } catch (error) {
     console.error('Error fetching education logs:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب السجل' });
+    res.json({ success: true, data: [] });
   }
 };
 

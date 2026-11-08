@@ -15,6 +15,7 @@ import {
   FileText,
   AlertCircle,
   Sparkles,
+  Lock,
 } from "lucide-react";
 
 const SESSION_STATUS: Record<string, { label: string; color: string }> = {
@@ -39,6 +40,10 @@ const EducationStudentProfilePage: React.FC = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"enrollments" | "sessions">("enrollments");
+  const [parentEmail, setParentEmail] = useState("");
+  const [parentPassword, setParentPassword] = useState("");
+  const [isSavingParentCreds, setIsSavingParentCreds] = useState(false);
+  const [parentCredsMsg, setParentCredsMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,8 +57,12 @@ const EducationStudentProfilePage: React.FC = () => {
           fetch(`/api/v1/education/sessions?studentId=${id}`, { headers }),
         ]);
         const [stJson, eJson, sJson] = await Promise.all([stRes.json(), eRes.json(), sRes.json()]);
-        if (stJson.success && stJson.data) setStudent(stJson.data);
-        else setStudent(null);
+        if (stJson.success && stJson.data) {
+          setStudent(stJson.data);
+          setParentEmail(stJson.data.customer?.email || "");
+        } else {
+          setStudent(null);
+        }
         if (eJson.success && Array.isArray(eJson.data)) setEnrollments(eJson.data);
         else setEnrollments([]);
         if (sJson.success && Array.isArray(sJson.data)) setSessions(sJson.data);
@@ -72,6 +81,68 @@ const EducationStudentProfilePage: React.FC = () => {
   const activeStudent = student;
   const activeEnrollments = enrollments;
   const activeSessions = sessions;
+
+  const hasPortalAccess = Boolean(
+    activeStudent?.customer?.email &&
+      (activeStudent.customer.hasPassword !== undefined
+        ? activeStudent.customer.hasPassword
+        : true)
+  );
+
+  const handleSaveParentCreds = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeStudent?.customer?.id) return;
+    if (!parentEmail || !parentEmail.trim()) {
+      setParentCredsMsg({ type: "error", text: "البريد الإلكتروني مطلوب" });
+      return;
+    }
+
+    setIsSavingParentCreds(true);
+    setParentCredsMsg(null);
+    try {
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const payload: Record<string, any> = {
+        email: parentEmail.trim(),
+      };
+      if (parentPassword) {
+        payload.password = parentPassword;
+      }
+      if (activeStudent.customer.firstName) {
+        payload.firstName = activeStudent.customer.firstName;
+      }
+      if (activeStudent.customer.lastName) {
+        payload.lastName = activeStudent.customer.lastName;
+      }
+
+      const res = await fetch(`/api/v1/customers/${activeStudent.customer.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setParentCredsMsg({ type: "success", text: "تم حفظ بيانات دخول ولي الأمر بنجاح" });
+        setParentPassword("");
+        setStudent((prev: any) => ({
+          ...prev,
+          customer: {
+            ...prev.customer,
+            email: parentEmail.trim(),
+            hasPassword: parentPassword ? true : (prev.customer?.hasPassword ?? true),
+          },
+        }));
+      } else {
+        setParentCredsMsg({ type: "error", text: data.message || "فشل حفظ بيانات الدخول" });
+      }
+    } catch {
+      setParentCredsMsg({ type: "error", text: "حدث خطأ أثناء حفظ بيانات الدخول" });
+    } finally {
+      setIsSavingParentCreds(false);
+    }
+  };
 
   const totalHours = activeEnrollments.reduce((a: number, e: any) => a + (e.totalHours || 0), 0);
   const usedHours = activeEnrollments.reduce((a: number, e: any) => a + ((e.totalHours || 0) - (e.remainingHours || 0)), 0);
@@ -140,6 +211,9 @@ const EducationStudentProfilePage: React.FC = () => {
     );
   }
 
+  const g = String(activeStudent.gender || "").toUpperCase();
+  const genderLabel = g === "MALE" || g === "ذكر" ? "ذكر" : g === "FEMALE" || g === "أنثى" ? "أنثى" : null;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
       {/* Back Link */}
@@ -188,8 +262,8 @@ const EducationStudentProfilePage: React.FC = () => {
                   الصف: {activeStudent.grade}
                 </span>
               )}
-              {activeStudent.gender && (
-                <span>النوع: {activeStudent.gender === "male" ? "ذكر" : "أنثى"}</span>
+              {genderLabel && (
+                <span>النوع: {genderLabel}</span>
               )}
             </div>
           </div>
@@ -222,6 +296,97 @@ const EducationStudentProfilePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Parent Portal Access Section */}
+      {activeStudent.customer && (
+        <div className="bg-card border border-border/80 rounded-2xl p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/60">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">بيانات دخول بوابة ولي الأمر</h2>
+                <p className="text-xs text-muted-foreground">
+                  إدارة البريد الإلكتروني وكلمة المرور لدخول ولي الأمر عبر /parent
+                </p>
+              </div>
+            </div>
+            <div>
+              {hasPortalAccess ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                  <CheckCircle2 className="w-3 h-3" />
+                  مفعّل
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                  <AlertCircle className="w-3 h-3" />
+                  لا يوجد دخول
+                </span>
+              )}
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveParentCreds} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                  البريد الإلكتروني
+                </label>
+                <input
+                  type="email"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  placeholder="parent@example.com"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-foreground flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                  كلمة المرور
+                </label>
+                <input
+                  type="password"
+                  value={parentPassword}
+                  onChange={(e) => setParentPassword(e.target.value)}
+                  placeholder="كلمة مرور جديدة"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-border/80 bg-background text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+
+            {parentCredsMsg && (
+              <div
+                className={`text-xs p-2.5 rounded-lg border flex items-center gap-1.5 ${
+                  parentCredsMsg.type === "success"
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                }`}
+              >
+                {parentCredsMsg.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                )}
+                <span>{parentCredsMsg.text}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                disabled={isSavingParentCreds}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {isSavingParentCreds ? "جاري الحفظ..." : "حفظ بيانات الدخول"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Telemetry Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

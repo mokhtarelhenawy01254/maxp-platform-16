@@ -1,6 +1,16 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const educationNotificationService = require('../services/educationNotificationService');
 
+const ALLOWED_PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'REFUNDED'];
+
+const normalizePaymentStatus = (status, fallback = 'PENDING') => {
+  if (!status) return fallback;
+  const upper = String(status).toUpperCase();
+  if (upper === 'PAID') return 'COMPLETED';
+  if (ALLOWED_PAYMENT_STATUSES.includes(upper)) return upper;
+  return fallback;
+};
+
 const getAll = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -60,20 +70,43 @@ const create = async (req, res) => {
     if (!studentId) return res.status(400).json({ success: false, error: 'الطالب مطلوب' });
     if (!packageId) return res.status(400).json({ success: false, error: 'الباقة مطلوبة' });
 
-    const pkg = await getSharedPrismaClient().educationPackage.findFirst({ where: { id: packageId, companyId } });
+    // Multi-tenant validation: ensure student belongs to company
+    const student = await getSharedPrismaClient().educationStudent.findFirst({
+      where: { id: studentId, companyId }
+    });
+    if (!student) return res.status(400).json({ success: false, error: 'الطالب غير موجود' });
+
+    // Multi-tenant validation: ensure package belongs to company
+    const pkg = await getSharedPrismaClient().educationPackage.findFirst({
+      where: { id: packageId, companyId }
+    });
     if (!pkg) return res.status(400).json({ success: false, error: 'الباقة غير موجودة' });
+
+    // Multi-tenant validation: ensure teacher belongs to company if assigned
+    const safeTeacherId = teacherId || null;
+    if (safeTeacherId) {
+      const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+        where: { id: safeTeacherId, companyId }
+      });
+      if (!teacher) return res.status(400).json({ success: false, error: 'المدرس المعين غير موجود' });
+    }
+
+    const parsedExpiresAt = (expiresAt && !isNaN(new Date(expiresAt).getTime()))
+      ? new Date(expiresAt)
+      : null;
+    const safePaymentStatus = normalizePaymentStatus(paymentStatus, 'PENDING');
 
     const data = await getSharedPrismaClient().educationEnrollment.create({
       data: {
         companyId,
         studentId,
         packageId,
-        teacherId: teacherId || null,
-        totalHours: pkg.hoursCount,
-        remainingHours: pkg.hoursCount,
-        amountPaid: amountPaid || 0,
-        paymentStatus: paymentStatus || 'PENDING',
-        expiresAt
+        teacherId: safeTeacherId,
+        totalHours: Number(pkg.hoursCount) || 0,
+        remainingHours: Number(pkg.hoursCount) || 0,
+        amountPaid: Number(amountPaid) || 0,
+        paymentStatus: safePaymentStatus,
+        expiresAt: parsedExpiresAt
       },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
@@ -81,6 +114,7 @@ const create = async (req, res) => {
         teacher: { select: { id: true, name: true } }
       }
     });
+
     educationNotificationService.notifyEnrollmentCreated(companyId, data).catch(e =>
       console.error('[EnrollmentNotify]', e.message)
     );
@@ -102,9 +136,37 @@ const update = async (req, res) => {
     const existing = await getSharedPrismaClient().educationEnrollment.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'التسجيل غير موجود' });
 
+    // Validate teacher tenant isolation if teacherId is being updated
+    let safeTeacherId = undefined;
+    if (teacherId !== undefined) {
+      safeTeacherId = teacherId || null;
+      if (safeTeacherId) {
+        const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+          where: { id: safeTeacherId, companyId }
+        });
+        if (!teacher) return res.status(400).json({ success: false, error: 'المدرس المعين غير موجود' });
+      }
+    }
+
+    const parsedExpiresAt = expiresAt !== undefined
+      ? ((expiresAt && !isNaN(new Date(expiresAt).getTime())) ? new Date(expiresAt) : null)
+      : undefined;
+
+    const safePaymentStatus = paymentStatus !== undefined
+      ? normalizePaymentStatus(paymentStatus, existing.paymentStatus)
+      : undefined;
+
     const data = await getSharedPrismaClient().educationEnrollment.update({
       where: { id },
-      data: { teacherId, amountPaid, paymentStatus, remainingHours, expiresAt, isActive },
+      data: {
+        teacherId: safeTeacherId,
+        amountPaid: amountPaid !== undefined ? Number(amountPaid) || 0 : undefined,
+        paymentStatus: safePaymentStatus,
+        remainingHours: remainingHours !== undefined ? Number(remainingHours) || 0 : undefined,
+        expiresAt: parsedExpiresAt,
+        // تفعيل/تعطيل التسجيل — كان بيتجاهله تمامًا فيرجّع 200 من غير أي أثر
+        isActive: isActive !== undefined ? !!isActive : undefined,
+      },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
         package: { include: { subject: { select: { id: true, name: true } } } },
