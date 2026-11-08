@@ -7437,6 +7437,12 @@ async function getMyCompaniesOrders(req, res) {
       const { getSharedPrismaClient } = require("../services/sharedDatabase");
       const prisma = getSharedPrismaClient();
       const permissionService = require("../services/permissionService");
+      const {
+        buildGuestWhere,
+        dedupeTwins,
+        mergeAndSort,
+        computeTotal,
+      } = require("../services/sharedWorkspaceOrders");
 
       // 1. Resolve user's active company memberships across all companies
       const userCompanies = await prisma.userCompany.findMany({
@@ -7657,19 +7663,60 @@ async function getMyCompaniesOrders(req, res) {
         filterWhere.status = { not: "TRASH" };
       }
 
+      // بناء فلتر مكافئ لطلبات الضيوف
+      const guestWhere = buildGuestWhere(filterWhere);
+
       // 5. Calculate per-company totals across ALL active viewable companies (including 0 counts)
       const totalsByCompany = await Promise.all(
         allViewableCompanyIds.map(async (cId) => {
-          const count = await prisma.order.count({
-            where: {
-              ...filterWhere,
-              companyId: cId,
-            },
-          });
+          const [regCount, guestCount] = await Promise.all([
+            prisma.order.count({
+              where: {
+                ...filterWhere,
+                companyId: cId,
+              },
+            }),
+            prisma.guestOrder.count({
+              where: {
+                ...guestWhere,
+                companyId: cId,
+              },
+            }),
+          ]);
+
+          let twinCount = 0;
+          if (regCount > 0 && guestCount > 0) {
+            const guestOrdersForCompany = await prisma.guestOrder.findMany({
+              where: {
+                ...guestWhere,
+                companyId: cId,
+              },
+              select: { orderNumber: true, companyId: true },
+            });
+
+            const guestNumbers = (guestOrdersForCompany || [])
+              .map((g) => String(g.orderNumber || "").trim())
+              .filter(Boolean);
+
+            if (guestNumbers.length > 0) {
+              const twinOrders = await prisma.order.findMany({
+                where: {
+                  companyId: cId,
+                  orderNumber: { in: guestNumbers, mode: "insensitive" },
+                },
+                select: { orderNumber: true, companyId: true },
+              });
+              const dedupeRes = dedupeTwins(twinOrders, guestOrdersForCompany);
+              twinCount = dedupeRes.twinCount;
+            }
+          }
+
+          const count = computeTotal(regCount, guestCount, twinCount);
+
           return {
             companyId: cId,
             companyName: companiesMap[cId]?.name || cId,
-            count: count || 0,
+            count,
           };
         }),
       );
@@ -7707,29 +7754,42 @@ async function getMyCompaniesOrders(req, res) {
         ...(keysetWhere.OR ? { AND: [...(filterWhere.AND || []), { OR: keysetWhere.OR }] } : {}),
       };
 
-      const rows = targetViewableCompanyIds.length > 0
-        ? await prisma.order.findMany({
-            where: queryWhere,
-            take: limit + 1,
-            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-            include: {
-              company: { select: { id: true, name: true, currency: true } },
-              customer: { select: { firstName: true, lastName: true, phone: true } },
-            },
-          })
-        : [];
-
-      let hasNextPage = false;
-      let nextCursor = null;
-      if (rows.length > limit) {
-        hasNextPage = true;
-        rows.pop();
-        const lastRow = rows[rows.length - 1];
-        nextCursor = encodeOrderKeysetCursor(lastRow.createdAt, lastRow.id);
+      const guestAndConditions = [];
+      if (guestWhere.OR) {
+        guestAndConditions.push({ OR: guestWhere.OR });
+      }
+      if (keysetWhere.OR) {
+        guestAndConditions.push({ OR: keysetWhere.OR });
       }
 
+      const guestQueryWhere = {
+        companyId: { in: targetViewableCompanyIds },
+        ...(guestWhere.status ? { status: guestWhere.status } : {}),
+        ...(guestWhere.createdAt ? { createdAt: guestWhere.createdAt } : {}),
+        ...(guestAndConditions.length > 0 ? { AND: guestAndConditions } : {}),
+      };
+
+      const [regularRows, guestRows] = targetViewableCompanyIds.length > 0
+        ? await Promise.all([
+            prisma.order.findMany({
+              where: queryWhere,
+              take: limit + 1,
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+              include: {
+                company: { select: { id: true, name: true, currency: true } },
+                customer: { select: { firstName: true, lastName: true, phone: true } },
+              },
+            }),
+            prisma.guestOrder.findMany({
+              where: guestQueryWhere,
+              take: limit + 1,
+              orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            }),
+          ])
+        : [[], []];
+
       // 7. Format order rows with company information and permissions
-      const formattedOrders = rows.map((order) => {
+      const formattedRegular = regularRows.map((order) => {
         const companyPerms = permissionsMap[order.companyId] || {
           canView: false,
           canEdit: false,
@@ -7762,15 +7822,78 @@ async function getMyCompaniesOrders(req, res) {
           currency: order.currency || order.company?.currency || "EGP",
           createdAt: order.createdAt,
           permissions: companyPerms,
+          isGuest: false,
         };
       });
+
+      const formattedGuests = guestRows.map((guest) => {
+        const companyPerms = permissionsMap[guest.companyId] || {
+          canView: false,
+          canEdit: false,
+          canChangeStatus: false,
+          canCancel: false,
+        };
+
+        const customerName = guest.guestName || "عميل زائر";
+        const customerPhone = guest.guestPhone || "";
+
+        return {
+          id: guest.id,
+          companyId: guest.companyId,
+          companyName: companiesMap[guest.companyId]?.name || "غير معروف",
+          orderNumber: guest.orderNumber,
+          customer: {
+            name: customerName,
+            phone: customerPhone,
+          },
+          customerName,
+          customerPhone,
+          status: (guest.status || "PENDING").toLowerCase(),
+          total: Number(guest.finalTotal ?? guest.total ?? 0),
+          currency: companiesMap[guest.companyId]?.currency || "EGP",
+          createdAt: guest.createdAt,
+          permissions: companyPerms,
+          isGuest: true,
+        };
+      });
+
+      let regularScopeForDedupe = formattedRegular;
+      const guestNumbers = formattedGuests
+        .map((g) => String(g.orderNumber || "").trim())
+        .filter(Boolean);
+
+      if (guestNumbers.length > 0 && targetViewableCompanyIds.length > 0) {
+        const twinRows = await prisma.order.findMany({
+          where: {
+            companyId: { in: targetViewableCompanyIds },
+            orderNumber: { in: guestNumbers, mode: "insensitive" },
+          },
+          select: { orderNumber: true, companyId: true },
+        });
+        if (twinRows && twinRows.length > 0) {
+          regularScopeForDedupe = [...formattedRegular, ...twinRows];
+        }
+      }
+
+      const { keptGuestRows } = dedupeTwins(regularScopeForDedupe, formattedGuests);
+      const allMerged = mergeAndSort(formattedRegular, keptGuestRows);
+
+      let hasNextPage = false;
+      let nextCursor = null;
+      const pagedRows = allMerged.slice(0, limit + 1);
+      if (pagedRows.length > limit) {
+        hasNextPage = true;
+        pagedRows.pop();
+        const lastRow = pagedRows[pagedRows.length - 1];
+        nextCursor = encodeOrderKeysetCursor(lastRow.createdAt, lastRow.id);
+      }
 
       return res.json({
         success: true,
         data: {
           totalsByCompany,
           totalOrders: totalOrdersCount,
-          orders: formattedOrders,
+          orders: pagedRows,
           pageInfo: {
             hasNextPage,
             nextCursor,
