@@ -41,7 +41,7 @@ const OwnerAttendanceReport: React.FC = () => {
 
   if (isLoading && !reportData) {
     return (
-      <div className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="space-y-6 w-full pb-8">
         <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse"></div>
         <div className="grid grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -58,7 +58,7 @@ const OwnerAttendanceReport: React.FC = () => {
 
   return (
     <div
-      className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+      className="space-y-6 w-full pb-8"
       dir="rtl"
     >
       <OwnerAttendanceHeaderAndFilters

@@ -76,7 +76,7 @@ export const MonitorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-full space-y-4 p-3 sm:p-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <MonitorControlHeader
         activeNow={stats.activeNow}
         searchQuery={searchQuery}

@@ -44,7 +44,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = (
   } = useEmployeeMonitorDetailsController(props);
 
   return (
-    <div className="min-h-full space-y-4 p-3 sm:p-6" dir="rtl">
+    <div className="space-y-6 w-full pb-8" dir="rtl">
       <EmployeeMonitorHeaderChassis
         employeeName={employeeName}
         departmentName={departmentName}

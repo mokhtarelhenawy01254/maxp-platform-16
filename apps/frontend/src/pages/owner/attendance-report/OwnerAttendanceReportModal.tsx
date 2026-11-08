@@ -218,20 +218,20 @@ export const OwnerAttendanceReportModal: React.FC<
             </label>
           </div>
 
-          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-4">
+          <div className="bg-muted/30 border border-border/70 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <CalendarDaysIcon className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-primary/10 border border-primary/20 text-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <CalendarDaysIcon className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <div className="font-medium text-indigo-900 dark:text-indigo-300 mb-1">
+                <div className="font-medium text-foreground mb-1">
                   نطاق التقرير
                 </div>
-                <div className="text-sm text-indigo-700 dark:text-indigo-400 font-mono tabular-nums">
+                <div className="text-sm text-muted-foreground font-mono tabular-nums">
                   من <span className="font-bold">{startDate}</span> إلى{" "}
                   <span className="font-bold">{endDate}</span>
                 </div>
-                <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
+                <div className="text-xs text-muted-foreground mt-2">
                   سيتم تضمين{" "}
                   <span className="font-bold font-mono tabular-nums">
                     {filteredCount}
@@ -254,7 +254,7 @@ export const OwnerAttendanceReportModal: React.FC<
             <button
               onClick={onGenerateReport}
               disabled={isGeneratingReport}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-semibold shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isGeneratingReport ? (
                 <>

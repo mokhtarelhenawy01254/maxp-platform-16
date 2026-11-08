@@ -68,12 +68,16 @@ export const OwnerAttendanceHeaderAndFilters: React.FC<
 }) => {
   return (
     <>
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-col md:flex-row justify-between items-center pb-4 border-b border-border/70 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <UserGroupIcon className="w-7 h-7 text-indigo-600" />
-            تقرير حضور الموظفين
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <UserGroupIcon className="w-5 h-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              تقرير حضور الموظفين
+            </h1>
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             تتبُّع انضباط الموظفين في جميع شركاتك
           </p>
@@ -109,7 +113,7 @@ export const OwnerAttendanceHeaderAndFilters: React.FC<
           </div>
           <button
             onClick={onOpenReportModal}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-colors text-sm font-semibold shadow-xs"
           >
             <DocumentChartBarIcon className="w-4 h-4" />
             إنشاء تقرير
@@ -117,7 +121,7 @@ export const OwnerAttendanceHeaderAndFilters: React.FC<
           <button
             onClick={onExport}
             disabled={isExporting}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-muted/40 hover:bg-muted text-foreground border border-border/70 rounded-xl transition-colors disabled:opacity-50 text-sm font-medium"
           >
             {isExporting ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
