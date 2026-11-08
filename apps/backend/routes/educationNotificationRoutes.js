@@ -5,10 +5,11 @@ const controller = require('../controller/educationNotificationController');
 
 router.use(verifyToken.authenticateToken);
 
-// Restrict access: only staff/admin roles are permitted (block STUDENT, CUSTOMER, COURIER)
+// Restrict access: block non-staff roles (STUDENT, CUSTOMER, COURIER, SHIPPING_CLIENT)
+const DISALLOWED_ROLES = ['STUDENT', 'CUSTOMER', 'COURIER', 'SHIPPING_CLIENT'];
 router.use((req, res, next) => {
   const role = req.user?.role;
-  if (role === 'STUDENT' || role === 'CUSTOMER' || role === 'COURIER') {
+  if (!role || DISALLOWED_ROLES.includes(role)) {
     return res.status(403).json({ success: false, error: 'غير مصرح بالوصول إلى لوحة إدارة التعليم' });
   }
   next();

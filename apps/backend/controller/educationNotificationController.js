@@ -4,6 +4,16 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 // Rate limiting in-memory store for test notifications: max 5 requests per 60 seconds per company/user
 const testRateLimits = new Map();
 
+// Periodically clean up expired rate limit entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of testRateLimits.entries()) {
+    const valid = timestamps.filter((t) => now - t < 60000);
+    if (valid.length === 0) testRateLimits.delete(key);
+    else testRateLimits.set(key, valid);
+  }
+}, 300000);
+
 function checkTestRateLimit(key, limit = 5, windowMs = 60000) {
   const now = Date.now();
   const timestamps = (testRateLimits.get(key) || []).filter((t) => now - t < windowMs);
@@ -23,8 +33,8 @@ function sanitizePhone(phone) {
 
 function isValidPhone(phone) {
   if (!phone || typeof phone !== 'string') return false;
-  const digits = phone.replace(/\D/g, '');
-  return digits.length >= 8 && digits.length <= 15;
+  const clean = sanitizePhone(phone);
+  return /^\+?[0-9]{8,15}$/.test(clean);
 }
 
 function maskPhoneNumber(phone) {
@@ -76,9 +86,9 @@ const getLogs = async (req, res) => {
     }
 
     if (status === 'success') {
-      where.success = true;
+      where.status = { in: ['SENT', 'DELIVERED', 'READ'] };
     } else if (status === 'failed') {
-      where.success = false;
+      where.status = 'FAILED';
     }
 
     if (search && typeof search === 'string') {
@@ -97,7 +107,9 @@ const getLogs = async (req, res) => {
 
     const maskedData = (data || []).map((log) => ({
       ...log,
-      recipientPhoneOriginal: log.recipientPhone,
+      eventType: log.rawEventType || log.eventType,
+      success: ['SENT', 'DELIVERED', 'READ'].includes(log.status),
+      reason: log.failureReason || log.reason || null,
       recipientPhone: maskPhoneNumber(log.recipientPhone),
     }));
 
@@ -157,10 +169,18 @@ const sendTest = async (req, res) => {
         teacherName: 'المدرس',
         actualDuration: '60',
         remainingHours: '15',
+        expiryDate: new Date(Date.now() + 7 * 86400000).toLocaleDateString('ar-EG'),
       },
       recipientPhone: cleanPhone,
       recipientName: 'اختبار',
     });
+
+    if (!result || result.success === false) {
+      return res.status(400).json({
+        success: false,
+        error: result?.reason || result?.error || 'فشل إرسال الإشعار عبر مزود الخدمة',
+      });
+    }
 
     res.json({ success: true, data: result });
   } catch (error) {

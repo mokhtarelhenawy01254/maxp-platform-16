@@ -190,6 +190,16 @@ export default function EducationFunnelPage() {
     setLogs(data);
   };
 
+  // Debounced search for phone number to prevent race conditions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!loading) {
+        fetchLogsData(logLimit, eventFilter, statusFilter, phoneSearch).then(setLogs);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [phoneSearch, logLimit, eventFilter, statusFilter, fetchLogsData, loading]);
+
   const sendTest = async () => {
     const cleanDigits = testPhone.replace(/\D/g, "");
     if (!cleanDigits || cleanDigits.length < 8) {
@@ -564,10 +574,7 @@ export default function EducationFunnelPage() {
                     className="bg-background border border-input rounded-lg pr-8 pl-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-36 sm:w-44 font-mono tabular-nums"
                     placeholder="بحث برقم الهاتف..."
                     value={phoneSearch}
-                    onChange={(e) => {
-                      setPhoneSearch(e.target.value);
-                      handleLogsFilterChange(logLimit, eventFilter, statusFilter, e.target.value);
-                    }}
+                    onChange={(e) => setPhoneSearch(e.target.value)}
                     dir="ltr"
                   />
                 </div>
@@ -663,7 +670,7 @@ export default function EducationFunnelPage() {
                             ) : (
                               <>
                                 <XCircle className="w-3 h-3" />
-                                فشل {log.reason ? `(${log.reason})` : ""}
+                                فشل {log.reason || log.failureReason ? `(${log.reason || log.failureReason})` : ""}
                               </>
                             )}
                           </span>

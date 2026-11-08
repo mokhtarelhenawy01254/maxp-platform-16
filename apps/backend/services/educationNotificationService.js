@@ -145,13 +145,13 @@ async function notifyEnrollmentCreated(companyId, enrollment) {
   const prisma = getSharedPrismaClient();
   const student = await prisma.educationStudent.findUnique({ where: { id: enrollment.studentId }, include: { customer: true } });
   const pkg = await prisma.educationPackage.findUnique({ where: { id: enrollment.packageId }, include: { subject: true } });
-  if (!student?.customer) return;
+  if (!student?.customer || !pkg) return;
 
   const vars = {
     parentName: student.customer.firstName || student.customer.lastName || 'وليّ الأمر',
     studentName: `${student.firstName} ${student.lastName}`,
-    packageName: pkg.name,
-    subjectName: pkg.subject.name,
+    packageName: pkg.name || '',
+    subjectName: pkg.subject?.name || '',
     totalHours: enrollment.totalHours,
     amountPaid: enrollment.amountPaid,
     currency: 'ج.م',
@@ -209,19 +209,19 @@ async function notifySessionConfirmed(companyId, sessionId) {
     where: { id: sessionId },
     include: { student: { include: { customer: true } }, subject: true, enrollment: true },
   });
-  if (!full?.student.customer?.phone) return;
+  if (!full?.student?.customer?.phone) return;
 
   const d = new Date(full.scheduledAt);
   await sendEducationNotification({
     companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED,
     templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED].parent,
     variables: {
-      parentName: full.student.customer?.firstName || 'وليّ الأمر',
-      studentName: `${full.student.firstName} ${full.student.lastName}`,
-      subjectName: full.subject.name,
+      parentName: full.student?.customer?.firstName || 'وليّ الأمر',
+      studentName: `${full.student?.firstName || ''} ${full.student?.lastName || ''}`.trim(),
+      subjectName: full.subject?.name || '',
       sessionDate: d.toLocaleDateString('ar-EG'),
       actualDuration: full.actualDuration || full.plannedDuration,
-      remainingHours: full.enrollment.remainingHours,
+      remainingHours: full.enrollment?.remainingHours ?? 0,
     },
     recipientPhone: full.student.customer.phone,
     recipientName: full.student.customer.firstName || 'وليّ الأمر',
