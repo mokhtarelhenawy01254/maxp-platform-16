@@ -28,8 +28,8 @@ function checkTestRateLimit(key, limit = 5, windowMs = 60000) {
   return { allowed: true };
 }
 
-function resolveCompanyId(req) {
-  return (
+async function resolveCompanyId(req) {
+  let cid = (
     req.user?.companyId ||
     req.user?.effectiveCompanyId ||
     req.headers['x-company-id'] ||
@@ -38,6 +38,17 @@ function resolveCompanyId(req) {
     req.body?.companyId ||
     null
   );
+  if (!cid && req.user?.role === 'SUPER_ADMIN') {
+    try {
+      const first = await getSharedPrismaClient().company.findFirst({
+        where: { isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (first?.id) cid = first.id;
+    } catch (_) {}
+  }
+  return cid;
 }
 
 function sanitizePhone(phone) {
@@ -61,6 +72,7 @@ function maskPhoneNumber(phone) {
 
 const ERROR_TRANSLATIONS = {
   no_session: 'لا توجد جلسة واتساب متصلة حالياً للشركة — يرجى ربط حساب واتساب (Meta Cloud أو مسح رمز QR) من إعدادات الشركة أولاً.',
+  no_template_configured: 'قالب واتساب ميتا المعتمد غير مربوط بهذا الحدث — يرجى ربط قالب Meta معتمد من صفحة القوالب، أو استخدام جلسة واتساب عبر رمز QR.',
   notifications_disabled: 'إشعارات الواتساب معطلة في إعدادات المنصة للشركة.',
   module_disabled: 'إشعارات وحدة التعليم معطلة في إعدادات المنصة.',
   event_type_disabled: 'نوع الإشعار المحدد معطل في إعدادات إشعارات الواتساب.',
@@ -72,16 +84,25 @@ const ERROR_TRANSLATIONS = {
 };
 
 function getReadableError(result) {
-  if (result?.error && typeof result.error === 'string' && result.error.length > 5 && !ERROR_TRANSLATIONS[result.error]) {
+  if (result?.message && typeof result.message === 'string' && /[\u0600-\u06FF]/.test(result.message)) {
+    return result.message;
+  }
+  if (result?.error && typeof result.error === 'string' && /[\u0600-\u06FF]/.test(result.error)) {
     return result.error;
   }
-  const code = result?.reason || result?.errorCode || result?.error;
-  return ERROR_TRANSLATIONS[code] || result?.error || result?.reason || 'فشل إرسال الإشعار عبر مزود الخدمة';
+  const code = result?.reason || result?.errorCode || (typeof result?.error === 'string' ? result.error : null);
+  return (
+    ERROR_TRANSLATIONS[code] ||
+    (typeof result?.message === 'string' ? result.message : null) ||
+    (typeof result?.error === 'string' ? result.error : result?.error?.message) ||
+    (typeof result?.reason === 'string' ? result.reason : null) ||
+    'فشل إرسال الإشعار عبر مزود الخدمة'
+  );
 }
 
 const getFunnel = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
+    const companyId = await resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     const { period = 'all' } = req.query;
@@ -95,7 +116,7 @@ const getFunnel = async (req, res) => {
 
 const getLogs = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
+    const companyId = await resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     const { eventType, limit = 50, status, search } = req.query;
@@ -155,7 +176,7 @@ const getLogs = async (req, res) => {
 
 const sendTest = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
+    const companyId = await resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     // Rate Limiting check
@@ -169,7 +190,8 @@ const sendTest = async (req, res) => {
       });
     }
 
-    const { phone, eventType } = req.body;
+    const phone = req.body.phone || req.body.recipientPhone;
+    const { eventType } = req.body;
     if (!phone) return res.status(400).json({ success: false, error: 'رقم الهاتف مطلوب' });
     if (!eventType) return res.status(400).json({ success: false, error: 'نوع الإشعار مطلوب' });
 

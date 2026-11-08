@@ -16,24 +16,16 @@ import {
   Repeat,
   RefreshCw,
   Search,
-  Filter,
-  Calendar,
+  ExternalLink,
 } from "lucide-react";
+import {
+  getCompanyId as getEducationCompanyId,
+  getAuthHeaders as getEducationAuthHeaders,
+} from "./education-management/api";
 
-const getCompanyId = () => {
-  try {
-    return JSON.parse(localStorage.getItem("user") || "{}").companyId || null;
-  } catch {
-    return null;
-  }
-};
+const getCompanyId = () => getEducationCompanyId();
 
-const getAuthHeaders = () => {
-  const headers = tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
-  const cid = getCompanyId();
-  if (cid) headers["X-Company-Id"] = cid;
-  return headers;
-};
+const getAuthHeaders = () => getEducationAuthHeaders();
 
 const api = (path: string) => {
   const base = buildApiUrl(`education/notifications/${path}`);
@@ -232,7 +224,11 @@ export default function EducationFunnelPage() {
         setLogs(updatedLogs);
       } else {
         setTestStatus("error");
-        setTestMessage(d.error || "فشل إرسال الإشعار التجريبي");
+        let errMsg = d.error || "فشل إرسال الإشعار التجريبي";
+        if (errMsg === "no_session" || d.details?.reason === "no_session") {
+          errMsg = "لا توجد جلسة واتساب متصلة حالياً للشركة — يرجى ربط حساب واتساب (مسح رمز QR أو Meta Cloud) من إعدادات الشركة أولاً.";
+        }
+        setTestMessage(errMsg);
       }
     } catch {
       setTestStatus("error");
@@ -247,10 +243,11 @@ export default function EducationFunnelPage() {
 
   return (
     <div
-      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 rtl font-sans"
+      className="w-full h-full min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
       dir="rtl"
     >
-      {/* Header */}
+      <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-28 sm:pb-20 space-y-4 sm:space-y-5 rtl font-sans">
+        {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -495,10 +492,23 @@ export default function EducationFunnelPage() {
                     </span>
                   )}
                   {testStatus === "error" && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      {testMessage}
-                    </span>
+                    <div className="w-full mt-2 p-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span className="leading-relaxed">{testMessage}</span>
+                      </div>
+                      {(testMessage.includes("واتساب") || testMessage.includes("جلسة") || testMessage.includes("no_session")) && (
+                        <a
+                          href="/whatsapp"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-600 text-white rounded-md font-medium text-[11px] hover:bg-red-700 transition-colors shrink-0"
+                        >
+                          <span>ربط واتساب</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -690,6 +700,7 @@ export default function EducationFunnelPage() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
