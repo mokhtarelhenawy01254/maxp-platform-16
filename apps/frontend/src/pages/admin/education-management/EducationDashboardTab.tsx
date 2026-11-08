@@ -643,7 +643,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           </div>
 
           {/* Sessions List */}
-          <div className="space-y-2.5 max-h-[520px] overflow-y-auto no-scrollbar pr-0.5">
+          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1.5">
             {filteredSessions.map((s) => {
               const { time } = formatSafeDateTime(s.scheduledAt, isEn);
               return (
@@ -823,7 +823,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           </div>
 
           {/* Instructors List */}
-          <div className="space-y-2.5 max-h-[520px] overflow-y-auto no-scrollbar pr-0.5">
+          <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1.5">
             {filteredTeachers.map((teacher) => {
               const assignedCount = enrollments.filter(
                 (e) => e.teacherId === teacher.id

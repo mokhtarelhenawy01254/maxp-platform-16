@@ -79,7 +79,7 @@ export default function EducationManagementPage() {
 
   return (
     <div
-      className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans"
+      className="w-full h-full overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans"
       dir="rtl"
     >
       {/* Top Header */}

@@ -100,6 +100,17 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [drawer, onClose]);
 
+  // Lock body scroll while drawer is open
+  useEffect(() => {
+    if (drawer) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [drawer]);
+
   if (!drawer) return null;
 
   // Resolve target entity
@@ -1124,7 +1135,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           } duration-200`}
         >
           {/* Drawer Top Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/80 bg-muted/20">
+          <div className="flex items-center justify-between p-4 border-b border-border/80 bg-muted/20 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <h2 className="text-sm font-bold text-foreground">
