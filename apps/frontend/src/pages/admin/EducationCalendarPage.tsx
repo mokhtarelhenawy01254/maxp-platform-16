@@ -400,7 +400,10 @@ const EducationCalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-3 sm:p-5 lg:p-6 space-y-4 rtl font-sans" dir="rtl">
+    <div
+      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 rtl font-sans"
+      dir="rtl"
+    >
       {/* Header & Main Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">

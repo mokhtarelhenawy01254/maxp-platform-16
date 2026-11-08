@@ -309,4 +309,81 @@ describe('Education Enrollment & Student Controllers', () => {
     assert.strictEqual(capturedCustomerData.lastName, 'جامعي');
     assert.strictEqual(capturedCustomerData.phone, '01055556666');
   });
+
+  it('student create saves guardianEmail and guardianPassword on customer', async () => {
+    mockPrisma.customer.findFirst = async () => null;
+    let capturedCustomerData = null;
+    mockPrisma.customer.create = async ({ data }) => {
+      capturedCustomerData = data;
+      return { id: 'cust-email-1', ...data };
+    };
+
+    mockPrisma.educationStudent.create = async ({ data }) => ({ id: 'stu-email-1', ...data });
+
+    const req = {
+      user: { companyId: 'comp-1' },
+      body: {
+        firstName: 'علي',
+        lastName: 'حسن',
+        guardianName: 'حسن محمود',
+        guardianPhone: '01011112222',
+        guardianEmail: 'parent@example.com',
+        guardianPassword: 'SecretPassword123',
+      },
+    };
+
+    let jsonResult = null;
+    const res = {
+      status: () => res,
+      json: (data) => {
+        jsonResult = data;
+      },
+    };
+
+    await studentController.create(req, res);
+
+    assert.strictEqual(jsonResult.success, true);
+    assert.strictEqual(capturedCustomerData.email, 'parent@example.com');
+    assert.ok(capturedCustomerData.password);
+  });
+
+  it('student update saves guardianEmail and guardianPassword on customer', async () => {
+    mockPrisma.educationStudent.findFirst = async () => ({
+      id: 'stu-upd-1',
+      companyId: 'comp-1',
+      customerId: 'cust-upd-1',
+    });
+
+    let updatedCustomerData = null;
+    mockPrisma.customer.update = async ({ where, data }) => {
+      updatedCustomerData = data;
+      return { id: where.id, ...data };
+    };
+
+    mockPrisma.educationStudent.update = async ({ data }) => ({ id: 'stu-upd-1', ...data });
+
+    const req = {
+      user: { companyId: 'comp-1' },
+      params: { id: 'stu-upd-1' },
+      body: {
+        firstName: 'علي المعدل',
+        guardianEmail: 'new_parent@example.com',
+        guardianPassword: 'NewPassword456',
+      },
+    };
+
+    let jsonResult = null;
+    const res = {
+      status: () => res,
+      json: (data) => {
+        jsonResult = data;
+      },
+    };
+
+    await studentController.update(req, res);
+
+    assert.strictEqual(jsonResult.success, true);
+    assert.strictEqual(updatedCustomerData.email, 'new_parent@example.com');
+    assert.ok(updatedCustomerData.password);
+  });
 });

@@ -1,3 +1,9 @@
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch {
+  bcrypt = null;
+}
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizeGender = (g) => {
@@ -21,7 +27,7 @@ const getAll = async (req, res) => {
     const data = await getSharedPrismaClient().educationStudent.findMany({
       where,
       include: {
-        customer: { select: { id: true, firstName: true, lastName: true, phone: true } }
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }
       },
       orderBy: { firstName: 'asc' }
     });
@@ -67,7 +73,7 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { customerId, firstName, lastName, phone, gender, grade, notes, guardianName, guardianPhone, isSelfGuardian } = req.body;
+    let { customerId, firstName, lastName, phone, gender, grade, notes, guardianName, guardianPhone, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
 
     const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
@@ -75,6 +81,12 @@ const create = async (req, res) => {
     const safePhone = (phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null;
     const safeGrade = (grade && typeof grade === 'string' && grade.trim()) ? grade.trim() : null;
     const safeNotes = (notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null;
+    const safeGuardianEmail = (guardianEmail && typeof guardianEmail === 'string' && guardianEmail.trim())
+      ? guardianEmail.trim().toLowerCase()
+      : null;
+    const safeHashedPassword = (guardianPassword && typeof guardianPassword === 'string' && guardianPassword.trim())
+      ? (bcrypt ? await bcrypt.hash(guardianPassword.trim(), 10) : guardianPassword.trim())
+      : null;
 
     if (!customerId) {
       const typedGuardianName = (guardianName && typeof guardianName === 'string') ? guardianName.trim() : '';
@@ -122,13 +134,24 @@ const create = async (req, res) => {
             firstName: gFirstName,
             lastName: gLastName,
             phone: gPhone,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            email: safeGuardianEmail,
+            password: safeHashedPassword
           }
+        });
+      }
+      else if (safeGuardianEmail || safeHashedPassword) {
+        const custUpdate = {};
+        if (safeGuardianEmail) custUpdate.email = safeGuardianEmail;
+        if (safeHashedPassword) custUpdate.password = safeHashedPassword;
+        customer = await getSharedPrismaClient().customer.update({
+          where: { id: customer.id },
+          data: custUpdate
         });
       }
       customerId = customer.id;
     } else {
-      const customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
+      let customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
       if (!customer) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
     }
 
@@ -143,7 +166,7 @@ const create = async (req, res) => {
         grade: safeGrade,
         notes: safeNotes
       },
-      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
+      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } } }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -158,7 +181,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { customerId, firstName, lastName, phone, gender, grade, notes, isActive } = req.body;
+    const { customerId, firstName, lastName, phone, gender, grade, notes, isActive, guardianEmail, guardianPassword } = req.body;
 
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
@@ -170,6 +193,23 @@ const update = async (req, res) => {
     if (safeCustomerId && safeCustomerId !== existing.customerId) {
       const cust = await getSharedPrismaClient().customer.findFirst({ where: { id: safeCustomerId, companyId } });
       if (!cust) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
+    }
+
+    const targetCustomerId = safeCustomerId || existing.customerId;
+    if (targetCustomerId && (guardianEmail !== undefined || guardianPassword)) {
+      const custUpdate = {};
+      if (guardianEmail !== undefined && typeof guardianEmail === 'string' && guardianEmail.trim()) {
+        custUpdate.email = guardianEmail.trim().toLowerCase();
+      }
+      if (guardianPassword && typeof guardianPassword === 'string' && guardianPassword.trim()) {
+        custUpdate.password = bcrypt ? await bcrypt.hash(guardianPassword.trim(), 10) : guardianPassword.trim();
+      }
+      if (Object.keys(custUpdate).length > 0) {
+        await getSharedPrismaClient().customer.update({
+          where: { id: targetCustomerId },
+          data: custUpdate
+        });
+      }
     }
 
     const safeLastName = lastName !== undefined ? ((lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '') : undefined;
@@ -190,7 +230,7 @@ const update = async (req, res) => {
         notes: safeNotes,
         isActive
       },
-      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true } } }
+      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } } }
     });
     res.json({ success: true, data });
   } catch (error) {

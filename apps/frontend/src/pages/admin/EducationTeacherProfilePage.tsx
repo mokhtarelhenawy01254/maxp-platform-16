@@ -113,7 +113,7 @@ export default function EducationTeacherProfilePage() {
   const totalPaid = payments.reduce((acc, p) => acc + (p.status === "PAID" ? p.netAmount : 0), 0);
 
   return (
-    <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
+    <div className="w-full h-full min-h-0 flex-1 overflow-y-auto bg-background text-foreground flex flex-col font-sans pb-24 sm:pb-12" dir="rtl">
       {/* Breadcrumb Header Bar */}
       <div className="border-b border-border/70 bg-card px-4 sm:px-6 py-3">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">

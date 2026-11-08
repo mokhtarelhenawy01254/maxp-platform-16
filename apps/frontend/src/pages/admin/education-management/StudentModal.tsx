@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Search, User, Loader2 } from "lucide-react";
+import { X, Search, User, Loader2, Mail, Lock } from "lucide-react";
 import type { EducationStudent, Customer } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
 
@@ -53,6 +53,12 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const [isSelfGuardian, setIsSelfGuardian] = useState(false);
   const [isManualGuardian, setIsManualGuardian] = useState(false);
   const [manualGuardian, setManualGuardian] = useState({ name: "", phone: "" });
+  const [guardianEmail, setGuardianEmail] = useState(
+    student?.customer?.email ||
+    (initialCustomer && "email" in initialCustomer ? (initialCustomer as any).email : "") ||
+    ""
+  );
+  const [guardianPassword, setGuardianPassword] = useState("");
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on click outside

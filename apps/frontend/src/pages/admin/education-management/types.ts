@@ -38,7 +38,7 @@ export interface EducationStudent {
   grade?: string;
   notes?: string;
   isActive: boolean;
-  customer?: { id: string; firstName: string; lastName: string; phone: string };
+  customer?: { id: string; firstName: string; lastName: string; phone: string; email?: string };
   enrollments?: EducationEnrollment[];
 }
 
@@ -100,6 +100,7 @@ export interface Customer {
   firstName: string;
   lastName: string;
   phone: string;
+  email?: string;
 }
 
 export type TabId =
