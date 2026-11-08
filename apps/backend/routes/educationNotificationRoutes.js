@@ -18,5 +18,7 @@ router.use((req, res, next) => {
 router.get('/funnel', controller.getFunnel);
 router.get('/logs', controller.getLogs);
 router.post('/test', controller.sendTest);
+router.get('/schedule', controller.getSchedule);
+router.put('/schedule', controller.updateSchedule);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import {
@@ -17,11 +18,15 @@ import {
   RefreshCw,
   Search,
   ExternalLink,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import {
   getCompanyId as getEducationCompanyId,
   getAuthHeaders as getEducationAuthHeaders,
 } from "./education-management/api";
+import TemplateCenter from "../templates/TemplateCenter";
+import { educationScopeConfig } from "../templates/scopes/educationScope";
 
 const getCompanyId = () => getEducationCompanyId();
 
@@ -48,6 +53,10 @@ const EVENT_LABELS: Record<string, string> = {
   education_session_reminder: "تذكير بحصة",
   education_enrollment_low_hours: "رصيد منخفض",
   education_enrollment_expiring: "باقة على وشك الانتهاء",
+  education_session_scheduled_teacher: "حصة جديدة (معلم)",
+  education_session_cancelled_teacher: "إلغاء حصة (معلم)",
+  education_session_reminder_teacher: "تذكير بحصة (معلم)",
+  education_enrollment_created_staff: "تسجيل جديد (إدارة)",
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -58,6 +67,10 @@ const EVENT_COLORS: Record<string, string> = {
   education_session_reminder: "text-purple-600 dark:text-purple-400",
   education_enrollment_low_hours: "text-orange-600 dark:text-orange-400",
   education_enrollment_expiring: "text-rose-600 dark:text-rose-400",
+  education_session_scheduled_teacher: "text-indigo-600 dark:text-indigo-400",
+  education_session_cancelled_teacher: "text-rose-600 dark:text-rose-400",
+  education_session_reminder_teacher: "text-violet-600 dark:text-violet-400",
+  education_enrollment_created_staff: "text-teal-600 dark:text-teal-400",
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -76,6 +89,12 @@ const asPercent = (value: any): string => {
 };
 
 export default function EducationFunnelPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeView, setActiveView] = useState<"templates" | "funnel" | "logs">(
+    initialTab === "funnel" ? "funnel" : initialTab === "logs" ? "logs" : "templates"
+  );
+
   const [funnel, setFunnel] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +116,13 @@ export default function EducationFunnelPage() {
   const [sending, setSending] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
   const [testMessage, setTestMessage] = useState("");
+
+  const changeView = (view: "templates" | "funnel" | "logs") => {
+    setActiveView(view);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", view);
+    setSearchParams(newParams, { replace: true });
+  };
 
   const fetchFunnelData = useCallback(async (selectedPeriod: string) => {
     try {
@@ -248,329 +274,389 @@ export default function EducationFunnelPage() {
     >
       <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-28 sm:pb-20 space-y-4 sm:space-y-5 rtl font-sans">
         {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-              <TrendingUp className="w-3.5 h-3.5" />
-              مسار التحويل الذكي
-            </span>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              فانل الأكاديمية والرسائل المؤتمتة
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            فانل التحويل وقوالب الإشعارات
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            متابعة مراحل تحويل الطلاب مع أتمتة إشعارات الحصص التلقائية وتتبع سجلات التسليم
-          </p>
-        </div>
-
-        {/* Global Controls: Period selector + Refresh button */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center rounded-lg border border-border/80 bg-muted/40 p-1 text-xs">
-            {(["all", "30d", "7d", "today"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => handlePeriodChange(p)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  period === p
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {PERIOD_LABELS[p]}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => loadAll(false)}
-            disabled={refreshing || loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground text-xs font-medium hover:bg-muted/50 transition-colors disabled:opacity-50 shadow-xs"
-            title="تحديث البيانات"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span>تحديث</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Error Banner */}
-      {fetchError && (
-        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{fetchError}</span>
-          </div>
-          <button
-            onClick={() => loadAll(false)}
-            className="px-2.5 py-1 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors shrink-0"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      )}
-
-      {/* Loading Skeleton */}
-      {loading ? (
-        <div className="space-y-4 animate-pulse">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-20 bg-muted/40 rounded-xl border border-border/60" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
-            <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
-            <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
-          </div>
-          <div className="h-48 bg-muted/40 rounded-xl border border-border/60" />
-        </div>
-      ) : (
-        <>
-          {/* Telemetry Ribbon (Funnel Stages) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">إجمالي العملاء</div>
-                <div className="text-xl font-bold text-foreground font-mono tabular-nums">
-                  {activeFunnel?.funnel?.totalCustomers ?? 0}
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20">
-                <Users className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">الطلاب المسجلين</div>
-                <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
-                  {activeFunnel?.funnel?.totalStudents ?? 0}
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">الباقات والتسجيلات</div>
-                <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
-                  {activeFunnel?.funnel?.totalEnrollments ?? 0}
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
-                <BookOpen className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">حصص مجدولة</div>
-                <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-                  {activeFunnel?.funnel?.scheduledSessions ?? 0}
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
-                <Clock className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs col-span-2 sm:col-span-1">
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">حصص مؤكدة</div>
-                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                  {activeFunnel?.funnel?.confirmedSessions ?? 0}
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
-          </div>
-
-          {/* Conversion Rates & Loyalty & Test Sender */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Conversion Rates */}
-            <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                نسب التحويل بين المراحل
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums">
-                    {asPercent(activeFunnel?.conversion?.customersToStudents)}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">العملاء إلى طلاب</div>
-                </div>
-                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
-                    {asPercent(activeFunnel?.conversion?.studentsToEnrollments)}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">الطلاب لتسجيلات</div>
-                </div>
-                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                    {asPercent(activeFunnel?.conversion?.completionRate)}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">إنجاز الحصص</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Repeat & Retention */}
-            <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <Repeat className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                تكرار الشراء والولاء
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
-                    {asNumber(activeFunnel?.repeat?.studentsWithMultipleEnrollments)}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">طلاب باشتراكات متعددة</div>
-                </div>
-                <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
-                  <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
-                    {asNumber(activeFunnel?.repeat?.totalEnrolledStudents)}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">إجمالي الطلاب المسجلين</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Send Test Notification */}
-            <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                <div className="flex items-center gap-2">
-                  <Send className="w-4 h-4 text-primary" />
-                  اختبار إرسال إشعار فوري
-                </div>
-                <span className="text-[10px] text-muted-foreground">حد أقصى 5 رسائل/دقيقة</span>
-              </div>
-              <div className="space-y-2 pt-1 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    className="bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono tabular-nums text-xs"
-                    value={testPhone}
-                    onChange={(e) => setTestPhone(e.target.value)}
-                    placeholder="010XXXXXXXX / 05XXXXXXXX"
-                    dir="ltr"
-                  />
-                  <select
-                    className="bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-                    value={testEvent}
-                    onChange={(e) => setTestEvent(e.target.value)}
-                  >
-                    <option value="">نوع الإشعار...</option>
-                    {(Object.entries(EVENT_LABELS) as [string, string][]).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={sendTest}
-                    disabled={sending || !testPhone.trim() || !testEvent}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 text-xs transition-colors shadow-xs"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    {sending ? "جاري الإرسال..." : "إرسال تجريبي"}
-                  </button>
-                  {testStatus === "success" && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {testMessage}
-                    </span>
-                  )}
-                  {testStatus === "error" && (
-                    <div className="w-full mt-2 p-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span className="leading-relaxed">{testMessage}</span>
-                      </div>
-                      {(testMessage.includes("واتساب") || testMessage.includes("جلسة") || testMessage.includes("no_session")) && (
-                        <a
-                          href="/whatsapp"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-600 text-white rounded-md font-medium text-[11px] hover:bg-red-700 transition-colors shrink-0"
-                        >
-                          <span>ربط واتساب</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Templates & Notification Engine */}
-          <div className="bg-card border border-border/80 rounded-xl overflow-hidden shadow-xs">
-            <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-primary" />
-                <h2 className="text-sm font-bold text-foreground">قوالب الإشعارات التلقائية</h2>
-              </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <Sparkles className="w-3.5 h-3.5" />
+                مركز قوالب رسائل الواتساب
+              </span>
               <span className="text-xs text-muted-foreground font-mono tabular-nums">
-                {(activeFunnel?.templates || []).length} قوالب مجهزة
+                فانل الأكاديمية والرسائل المؤتمتة
               </span>
             </div>
-
-            <div className="divide-y divide-border/60">
-              {(activeFunnel?.templates || []).length === 0 ? (
-                <div className="py-10 text-center text-xs text-muted-foreground">لا توجد قوالب إشعارات بعد</div>
-              ) : (
-                (activeFunnel?.templates || []).map((tpl: any) => (
-                  <div
-                    key={tpl.event}
-                    className="p-3.5 hover:bg-muted/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-foreground">
-                          {EVENT_LABELS[tpl.event] || tpl.event}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {tpl.event}
-                        </span>
-                      </div>
-                      {tpl.parent && (
-                        <p className="text-xs text-muted-foreground truncate max-w-xl">
-                          {tpl.parent}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 self-start sm:self-center">
-                      {tpl.hasTeacher && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                          <GraduationCap className="w-3 h-3" />
-                          + إشعار للمعلم
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border/60">
-                        <Users className="w-3 h-3" />
-                        ولي الأمر
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              قوالب إشعارات الواتساب ومسار التحويل للتعليم
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              تخصيص قوالب رسائل الواتساب للحالات، الحصص، وأرصدة الباقات مع تتبع مراحل التحويل وسجلات التسليم
+            </p>
           </div>
 
-          {/* Notification Activity Logs with Search & Filters */}
+          {/* Global Controls: Period selector + Refresh button */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeView !== "templates" && (
+              <div className="inline-flex items-center rounded-lg border border-border/80 bg-muted/40 p-1 text-xs">
+                {(["all", "30d", "7d", "today"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => handlePeriodChange(p)}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                      period === p
+                        ? "bg-background text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {PERIOD_LABELS[p]}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => loadAll(false)}
+              disabled={refreshing || loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-foreground text-xs font-medium hover:bg-muted/50 transition-colors disabled:opacity-50 shadow-xs"
+              title="تحديث البيانات"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              <span>تحديث</span>
+            </button>
+          </div>
+        </div>
+
+        {/* View Switcher Tabs Bar */}
+        <div className="flex items-center gap-2 p-1 rounded-xl bg-muted/60 border border-border/80 w-fit flex-wrap">
+          <button
+            type="button"
+            onClick={() => changeView("templates")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeView === "templates"
+                ? "bg-background text-foreground shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>قوالب رسائل الواتساب</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+              11 قوالب
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => changeView("funnel")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeView === "funnel"
+                ? "bg-background text-foreground shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <span>مسار التحويل والفانل</span>
+            {activeFunnel?.funnel?.totalStudents !== undefined && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-mono font-bold">
+                {activeFunnel?.funnel?.totalStudents} طالب
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => changeView("logs")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeView === "logs"
+                ? "bg-background text-foreground shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span>سجل الإشعارات المرسلة</span>
+            {activeLogs.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono font-bold">
+                {activeLogs.length} سجل
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Error Banner */}
+        {fetchError && (
+          <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{fetchError}</span>
+            </div>
+            <button
+              onClick={() => loadAll(false)}
+              className="px-2.5 py-1 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors shrink-0"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
+        {/* VIEW 1: WhatsApp Template Center (Exact copy & adaptation of /orders/status-templates) */}
+        {activeView === "templates" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-foreground">
+                <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>
+                  نفس مركز قوالب الواتساب المعتمد للحالات — يتيح تخصيص رسائل الطلاب وأولياء الأمور والمعلمين، ربط قوالب Meta Cloud المعتمدة، وتجربة الإرسال المباشر.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => changeView("funnel")}
+                  className="text-emerald-700 dark:text-emerald-300 font-medium hover:underline text-xs"
+                >
+                  عرض إحصائيات الفانل ←
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-background rounded-2xl border border-border/60 shadow-xs overflow-hidden">
+              <TemplateCenter config={educationScopeConfig} />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: Funnel & Conversion Analytics */}
+        {activeView === "funnel" && (
+          <div className="space-y-4 sm:space-y-5">
+            {loading ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-20 bg-muted/40 rounded-xl border border-border/60" />
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
+                  <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
+                  <div className="h-32 bg-muted/40 rounded-xl border border-border/60" />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Telemetry Ribbon (Funnel Stages) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">إجمالي العملاء</div>
+                      <div className="text-xl font-bold text-foreground font-mono tabular-nums">
+                        {activeFunnel?.funnel?.totalCustomers ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">الطلاب المسجلين</div>
+                      <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
+                        {activeFunnel?.funnel?.totalStudents ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">الباقات والتسجيلات</div>
+                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+                        {activeFunnel?.funnel?.totalEnrollments ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">حصص مجدولة</div>
+                      <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+                        {activeFunnel?.funnel?.scheduledSessions ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/20">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs col-span-2 sm:col-span-1">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">حصص مؤكدة</div>
+                      <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                        {activeFunnel?.funnel?.confirmedSessions ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversion Rates & Loyalty & Test Sender */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Conversion Rates */}
+                  <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                      نسب التحويل بين المراحل
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums">
+                          {asPercent(activeFunnel?.conversion?.customersToStudents)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">العملاء إلى طلاب</div>
+                      </div>
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+                          {asPercent(activeFunnel?.conversion?.studentsToEnrollments)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">الطلاب لتسجيلات</div>
+                      </div>
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                          {asPercent(activeFunnel?.conversion?.completionRate)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">إنجاز الحصص</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Repeat & Retention */}
+                  <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <Repeat className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      تكرار الشراء والولاء
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+                          {asNumber(activeFunnel?.repeat?.studentsWithMultipleEnrollments)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">طلاب باشتراكات متعددة</div>
+                      </div>
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+                          {asNumber(activeFunnel?.repeat?.totalEnrolledStudents)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">إجمالي الطلاب المسجلين</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Send Test Notification */}
+                  <div className="bg-card border border-border/80 rounded-xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Send className="w-4 h-4 text-primary" />
+                        اختبار إرسال إشعار فوري
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">حد أقصى 5 رسائل/دقيقة</span>
+                    </div>
+                    <div className="space-y-2 pt-1 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          className="bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono tabular-nums text-xs"
+                          value={testPhone}
+                          onChange={(e) => setTestPhone(e.target.value)}
+                          placeholder="010XXXXXXXX / 05XXXXXXXX"
+                          dir="ltr"
+                        />
+                        <select
+                          className="bg-background border border-input rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                          value={testEvent}
+                          onChange={(e) => setTestEvent(e.target.value)}
+                        >
+                          <option value="">نوع الإشعار...</option>
+                          {(Object.entries(EVENT_LABELS) as [string, string][]).map(([k, v]) => (
+                            <option key={k} value={k}>
+                              {v}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={sendTest}
+                          disabled={sending || !testPhone.trim() || !testEvent}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 text-xs transition-colors shadow-xs"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          {sending ? "جاري الإرسال..." : "إرسال تجريبي"}
+                        </button>
+                        {testStatus === "success" && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            {testMessage}
+                          </span>
+                        )}
+                        {testStatus === "error" && (
+                          <div className="w-full mt-2 p-2.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                              <span className="leading-relaxed">{testMessage}</span>
+                            </div>
+                            {(testMessage.includes("واتساب") || testMessage.includes("جلسة") || testMessage.includes("no_session")) && (
+                              <a
+                                href="/whatsapp"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-600 text-white rounded-md font-medium text-[11px] hover:bg-red-700 transition-colors shrink-0"
+                              >
+                                <span>ربط واتساب</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Shortcut to Template Center */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                      <MessageSquare className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        إدارة وتخصيص قوالب رسائل الواتساب
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        قم بتعديل نصوص القوالب وإضافة المتغيرات الذكية، تفعيل أو إيقاف إشعار كل حالة، وربط قوالب Meta Cloud المعتمدة.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => changeView("templates")}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0 shadow-xs"
+                  >
+                    <span>فتح مركز القوالب (11 قالب)</span>
+                    <span>←</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* VIEW 3: Notification Activity Logs */}
+        {activeView === "logs" && (
           <div className="bg-card border border-border/80 rounded-xl overflow-hidden shadow-xs space-y-0">
             <div className="p-3.5 border-b border-border/80 bg-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -698,8 +784,7 @@ export default function EducationFunnelPage() {
               </table>
             </div>
           </div>
-        </>
-      )}
+        )}
       </div>
     </div>
   );

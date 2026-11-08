@@ -97,6 +97,12 @@ const NOTIFICATION_TEMPLATES = {
   },
 };
 
+// Teacher & staff notification templates
+NOTIFICATION_TEMPLATES['education_session_scheduled_teacher'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED].teacher;
+NOTIFICATION_TEMPLATES['education_session_cancelled_teacher'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED].teacher;
+NOTIFICATION_TEMPLATES['education_session_reminder_teacher'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER].teacher;
+NOTIFICATION_TEMPLATES['education_enrollment_created_staff'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED].staff;
+
 const STAFF_SUBSCRIBED_EVENTS = [
   EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED,
   EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
@@ -112,9 +118,19 @@ function replaceVariables(template, vars = {}) {
 
   let text = String(rawText || '');
   for (const [key, val] of Object.entries(vars || {})) {
-    text = text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val ?? ''));
+    const value = String(val ?? '');
+    text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+    text = text.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
   }
   return text;
+}
+
+function resolveBaseTemplate(eventType, explicitTemplate) {
+  if (explicitTemplate) return explicitTemplate;
+  const direct = NOTIFICATION_TEMPLATES[eventType];
+  if (!direct) return '';
+  if (typeof direct === 'string') return direct;
+  return direct.parent || direct.content || (typeof direct === 'object' ? Object.values(direct)[0] : '') || '';
 }
 
 async function sendEducationNotification({
@@ -128,7 +144,32 @@ async function sendEducationNotification({
   deliveryStrategy = 'platform-fallback',
 }) {
   try {
-    const rawTemplate = templates || NOTIFICATION_TEMPLATES[eventType]?.parent || NOTIFICATION_TEMPLATES[eventType];
+    const prisma = getSharedPrismaClient();
+
+    // 1. Check if notification event is disabled in schedule
+    try {
+      if (prisma && prisma.customerNotificationSchedule && typeof prisma.customerNotificationSchedule.findUnique === 'function') {
+        const schedule = await prisma.customerNotificationSchedule.findUnique({
+          where: { companyId_eventType: { companyId, eventType } }
+        });
+        if (schedule && schedule.enabled === false) {
+          return { success: false, reason: 'event_type_disabled', message: 'تم إيقاف هذا الإشعار من جدول الإشعارات' };
+        }
+      }
+    } catch (_) {}
+
+    // 2. Check for customized template from database
+    let customTemplate = null;
+    try {
+      if (prisma && prisma.whatsAppNotificationTemplate && typeof prisma.whatsAppNotificationTemplate.findFirst === 'function') {
+        customTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
+          where: { companyId, eventType, isActive: true },
+          orderBy: { updatedAt: 'desc' }
+        });
+      }
+    } catch (_) {}
+
+    const rawTemplate = customTemplate?.content || resolveBaseTemplate(eventType, templates);
     const content = replaceVariables(rawTemplate, variables);
     if (!content) return { success: false, reason: 'no_template', error: 'لم يتم العثور على نص القالب' };
 
@@ -142,6 +183,7 @@ async function sendEducationNotification({
       eventType,
       rawEventType: eventType,
       contentOverride: content,
+      template: customTemplate || undefined,
       variables: { ...variables, contentOverride: content },
       priority: 4,
       deliveryStrategy,

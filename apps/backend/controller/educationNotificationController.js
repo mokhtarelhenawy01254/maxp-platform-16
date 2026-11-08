@@ -246,4 +246,182 @@ const sendTest = async (req, res) => {
   }
 };
 
-module.exports = { getFunnel, getLogs, sendTest };
+const ALL_EDUCATION_EVENTS = [
+  {
+    eventType: 'education_enrollment_created',
+    label: 'تسجيل جديد في باقة',
+    trigger: 'عند تسجيل الطالب في باقة تعليمية جديدة',
+    category: 'enrollment',
+    color: '#3B82F6',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_scheduled',
+    label: 'جدولة حصة جديدة',
+    trigger: 'عند تحديد موعد حصة دراسية جديدة',
+    category: 'sessions',
+    color: '#F59E0B',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_confirmed',
+    label: 'تأكيد إتمام الحصة',
+    trigger: 'عند انتهاء وتأكيد حضور الحصة الدراسية',
+    category: 'sessions',
+    color: '#10B981',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_cancelled',
+    label: 'إلغاء حصة',
+    trigger: 'عند إلغاء موعد الحصة الدراسية',
+    category: 'sessions',
+    color: '#EF4444',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_reminder',
+    label: 'تذكير بموعد الحصة',
+    trigger: 'تذكير تلقائي قبل موعد الحصة',
+    category: 'reminders',
+    color: '#8B5CF6',
+    defaultDelay: 24,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_enrollment_low_hours',
+    label: 'تنبيه رصيد الساعات المنخفض',
+    trigger: 'عند وصول رصيد الساعات المتبقية لحد منخفض',
+    category: 'reminders',
+    color: '#F97316',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_enrollment_expiring',
+    label: 'تنبيه قرب انتهاء الباقة',
+    trigger: 'قبل انتهاء تاريخ صلاحية الباقة التعليمية',
+    category: 'reminders',
+    color: '#EC4899',
+    defaultDelay: 7,
+    defaultDelayUnit: 'DAYS',
+  },
+  {
+    eventType: 'education_session_scheduled_teacher',
+    label: 'إشعار المعلم - حصة جديدة',
+    trigger: 'إشعار للمعلم عند جدولة حصة جديدة',
+    category: 'teacher',
+    color: '#6366F1',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_cancelled_teacher',
+    label: 'إشعار المعلم - إلغاء حصة',
+    trigger: 'إشعار للمعلم عند إلغاء الحصة',
+    category: 'teacher',
+    color: '#DC2626',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_session_reminder_teacher',
+    label: 'إشعار المعلم - تذكير بالحصة',
+    trigger: 'تذكير تلقائي للمعلم بموعد الحصة',
+    category: 'teacher',
+    color: '#7C3AED',
+    defaultDelay: 24,
+    defaultDelayUnit: 'HOURS',
+  },
+  {
+    eventType: 'education_enrollment_created_staff',
+    label: 'إشعار الإدارة - تسجيل جديد',
+    trigger: 'إشعار لإدارة الأكاديمية عند تسجيل طالب جديد',
+    category: 'teacher',
+    color: '#0D9488',
+    defaultDelay: 0,
+    defaultDelayUnit: 'HOURS',
+  },
+];
+
+const getSchedule = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.customerNotificationSchedule.findMany({
+      where: {
+        companyId,
+        eventType: { startsWith: 'education_' },
+      },
+    });
+
+    const map = new Map((existing || []).map((r) => [r.eventType, r]));
+    const data = ALL_EDUCATION_EVENTS.map((ev) => {
+      const saved = map.get(ev.eventType);
+      return {
+        id: saved?.id || ev.eventType,
+        eventType: ev.eventType,
+        label: ev.label,
+        category: ev.category,
+        trigger: ev.trigger,
+        color: ev.color,
+        enabled: saved ? saved.enabled : true,
+        activeChannel: saved?.activeChannel || 'AUTO',
+        delayValue: saved?.delayValue ?? ev.defaultDelay,
+        delayUnit: saved?.delayUnit || ev.defaultDelayUnit,
+      };
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching education schedule:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب إعدادات الإشعارات' });
+  }
+};
+
+const updateSchedule = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const { eventType, enabled, activeChannel, delayValue, delayUnit } = req.body;
+    if (!eventType) return res.status(400).json({ success: false, error: 'نوع الحدث مطلوب' });
+
+    const prisma = getSharedPrismaClient();
+    const upserted = await prisma.customerNotificationSchedule.upsert({
+      where: {
+        companyId_eventType: {
+          companyId,
+          eventType,
+        },
+      },
+      update: {
+        ...(enabled !== undefined ? { enabled: Boolean(enabled) } : {}),
+        ...(activeChannel ? { activeChannel } : {}),
+        ...(delayValue !== undefined ? { delayValue: Number(delayValue) || 0 } : {}),
+        ...(delayUnit ? { delayUnit } : {}),
+      },
+      create: {
+        companyId,
+        eventType,
+        enabled: enabled !== undefined ? Boolean(enabled) : true,
+        activeChannel: activeChannel || 'AUTO',
+        delayValue: Number(delayValue) || 0,
+        delayUnit: delayUnit || 'HOURS',
+      },
+    });
+
+    res.json({ success: true, data: upserted });
+  } catch (error) {
+    console.error('Error updating education schedule:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ إعدادات الإشعار' });
+  }
+};
+
+module.exports = { getFunnel, getLogs, sendTest, getSchedule, updateSchedule };
