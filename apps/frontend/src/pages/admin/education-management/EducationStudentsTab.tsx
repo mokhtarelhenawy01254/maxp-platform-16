@@ -41,13 +41,13 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-between items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">إدارة الطلاب</h2>
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
             <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
             <input
-              className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-48 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="بحث عن طالب..."
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
@@ -56,7 +56,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
           <button
             type="button"
             onClick={() => setStudentModal({})}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             إضافة طالب
@@ -64,11 +64,11 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
         {filtered.map((s) => (
           <div
             key={s.id}
-            className={`bg-card border border-border/80 rounded-xl p-4.5 shadow-xs space-y-3 transition-all hover:border-primary/40 ${
+            className={`bg-card border border-border/80 rounded-xl p-3.5 sm:p-4 shadow-xs space-y-3 transition-all hover:border-primary/40 ${
               !s.isActive ? "opacity-60 bg-muted/20" : ""
             }`}
           >

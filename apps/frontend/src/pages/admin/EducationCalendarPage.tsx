@@ -127,7 +127,7 @@ const EducationCalendarPage: React.FC = () => {
   }, [sessions]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">
@@ -140,7 +140,7 @@ const EducationCalendarPage: React.FC = () => {
               {stats.total} حصة خلال الشهر
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             جدول الحصص والمواعيد الشهرية
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -232,8 +232,10 @@ const EducationCalendarPage: React.FC = () => {
 
       {/* Calendar Grid Chassis */}
       <div className="bg-card border border-border/80 rounded-2xl overflow-hidden shadow-xs">
-        {/* Days Header */}
-        <div className="grid grid-cols-7 border-b border-border/80 bg-muted/40">
+        <div className="overflow-x-auto">
+          <div className="min-w-[650px]">
+            {/* Days Header */}
+            <div className="grid grid-cols-7 border-b border-border/80 bg-muted/40">
           {DAYS_AR.map((d) => (
             <div
               key={d}
@@ -314,6 +316,9 @@ const EducationCalendarPage: React.FC = () => {
           })}
         </div>
 
+          </div>
+        </div>
+
         {sessions.length === 0 && !loading && (
           <div className="border-t border-border/80 py-6 text-center text-xs text-muted-foreground">
             لا توجد بيانات بعد — لا توجد حصص مجدولة خلال هذا الشهر
@@ -328,7 +333,7 @@ const EducationCalendarPage: React.FC = () => {
           onClick={() => setSelectedSession(null)}
         >
           <div
-            className="bg-card border border-border/80 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 space-y-4"
+            className="bg-card border border-border/80 rounded-2xl shadow-2xl p-4 sm:p-6 max-w-md w-full mx-auto space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-border/80">

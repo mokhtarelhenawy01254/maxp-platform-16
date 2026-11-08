@@ -40,8 +40,8 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
   const isEn = i18n.language === "en";
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 sm:gap-3">
         {[
           {
             label: "المواد الدراسية",
@@ -102,23 +102,25 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
         ].map((c, i) => (
           <div
             key={i}
-            className="bg-card border border-border/80 rounded-xl p-4 flex items-center justify-between shadow-xs"
+            className="bg-card border border-border/80 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-2 shadow-xs min-w-0"
           >
-            <div className="space-y-1">
-              <p className="text-2xl font-bold font-mono tabular-nums text-foreground">
+            <div className="space-y-0.5 min-w-0 flex-1">
+              <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground truncate">
                 {c.value}
               </p>
-              <p className="text-xs text-muted-foreground">{c.label}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground truncate" title={c.label}>
+                {c.label}
+              </p>
             </div>
-            <div className={`p-2.5 rounded-lg border ${c.color}`}>
-              <c.icon className="w-5 h-5" />
+            <div className={`p-2 rounded-lg border shrink-0 ${c.color}`}>
+              <c.icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
+        <div className="bg-card border border-border/80 rounded-xl p-4 sm:p-5 shadow-xs space-y-3">
           <div className="flex items-center justify-between border-b border-border/60 pb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
@@ -134,12 +136,12 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             </button>
           </div>
           <div className="space-y-2">
-            {sessions.slice(0, 4).map((s) => (
+            {sessions.slice(0, 6).map((s) => (
               <div
                 key={s.id}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/60 text-xs"
+                className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/60 text-xs gap-2"
               >
-                <div>
+                <div className="truncate min-w-0">
                   <span className="font-medium text-foreground">
                     {s.student
                       ? `${s.student.firstName} ${s.student.lastName || ""}`
@@ -151,7 +153,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                   </span>
                 </div>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[11px] border ${
+                  className={`px-2 py-0.5 rounded-full text-[11px] border shrink-0 ${
                     SESSION_STATUS[s.status]?.color || ""
                   }`}
                 >
@@ -167,7 +169,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           </div>
         </div>
 
-        <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-3">
+        <div className="bg-card border border-border/80 rounded-xl p-4 sm:p-5 shadow-xs space-y-3">
           <div className="flex items-center justify-between border-b border-border/60 pb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Layers className="w-4 h-4 text-primary" />
@@ -183,12 +185,12 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             </button>
           </div>
           <div className="space-y-2">
-            {enrollments.slice(0, 4).map((e) => (
+            {enrollments.slice(0, 6).map((e) => (
               <div
                 key={e.id}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/60 text-xs"
+                className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/60 text-xs gap-2"
               >
-                <div>
+                <div className="truncate min-w-0">
                   <span className="font-medium text-foreground">
                     {e.student
                       ? `${e.student.firstName} ${e.student.lastName || ""}`
@@ -199,7 +201,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                     {e.package?.name}
                   </span>
                 </div>
-                <span className="font-mono tabular-nums text-xs font-medium text-primary">
+                <span className="font-mono tabular-nums text-xs font-medium text-primary shrink-0">
                   {e.remainingHours}/{e.totalHours} س
                 </span>
               </div>

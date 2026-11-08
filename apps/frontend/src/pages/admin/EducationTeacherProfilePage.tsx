@@ -116,7 +116,7 @@ export default function EducationTeacherProfilePage() {
     <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
       {/* Breadcrumb Header Bar */}
       <div className="border-b border-border/70 bg-card px-4 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Link to="/admin/education" className="hover:text-foreground">التعليم والأكاديمية</Link>
             <ChevronRight className="w-3.5 h-3.5 rotate-180 text-muted-foreground/60" />
@@ -134,7 +134,7 @@ export default function EducationTeacherProfilePage() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+      <div className="flex-1 max-w-[1600px] w-full mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5">
         {/* Profile Card */}
         <div className="bg-card border border-border/70 rounded-xl p-5 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start gap-4">

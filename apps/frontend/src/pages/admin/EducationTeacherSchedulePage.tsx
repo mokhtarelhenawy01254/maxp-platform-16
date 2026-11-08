@@ -150,7 +150,7 @@ export default function EducationTeacherSchedulePage() {
   }, [sessions]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">
@@ -163,7 +163,7 @@ export default function EducationTeacherSchedulePage() {
               {stats.total} حصة في الأسبوع المحدد
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             جدول المهندسين والحصص الأسبوعية
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -212,11 +212,11 @@ export default function EducationTeacherSchedulePage() {
       </div>
 
       {/* Controls Bar */}
-      <div className="bg-card border border-border/80 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
+      <div className="bg-card border border-border/80 rounded-xl p-3 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
           <select
-            className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary min-w-[200px]"
+            className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-auto min-w-0 sm:min-w-[200px]"
             value={selectedTeacher}
             onChange={(e) => setSelectedTeacher(e.target.value)}
           >
@@ -229,31 +229,31 @@ export default function EducationTeacherSchedulePage() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
           <button
             onClick={() => setWeekOffset((w) => w - 1)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs shrink-0"
           >
             <ChevronRight className="w-3.5 h-3.5" />
-            الأسبوع السابق
+            السابق
           </button>
 
-          <span className="text-xs font-semibold px-3 py-1.5 bg-muted/30 rounded-lg border border-border/60 font-mono tabular-nums text-foreground">
+          <span className="text-[11px] sm:text-xs font-semibold px-2 sm:px-3 py-1.5 bg-muted/30 rounded-lg border border-border/60 font-mono tabular-nums text-foreground truncate">
             {weekDays[0]?.toLocaleDateString("ar-EG")} — {weekDays[6]?.toLocaleDateString("ar-EG")}
           </span>
 
           <button
             onClick={() => setWeekOffset((w) => w + 1)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs shrink-0"
           >
-            الأسبوع التالي
+            التالي
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
 
           {weekOffset !== 0 && (
             <button
               onClick={() => setWeekOffset(0)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
             >
               <RotateCcw className="w-3 h-3" />
               هذا الأسبوع

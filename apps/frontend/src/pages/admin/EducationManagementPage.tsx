@@ -79,11 +79,11 @@ export default function EducationManagementPage() {
 
   return (
     <div
-      className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans"
+      className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans"
       dir="rtl"
     >
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/80">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
@@ -94,7 +94,7 @@ export default function EducationManagementPage() {
               {stats.totalStudents} طالب مسجل
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             إدارة المراكز والأكاديميات التعليمية
           </h1>
           <p className="text-xs text-muted-foreground">
@@ -104,7 +104,7 @@ export default function EducationManagementPage() {
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border/60">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 border-b border-border/60 -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -113,13 +113,13 @@ export default function EducationManagementPage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5 shrink-0" />
               {tab.id === "teachers" ? (isEn ? "Instructors" : "المهندسين") : tab.label}
             </button>
           );

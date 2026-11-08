@@ -137,7 +137,7 @@ export const SESSION_STATUS: Record<string, { label: string; color: string }> = 
 };
 
 export const MODAL_CLS =
-  "bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-xl mx-4 space-y-4";
+  "bg-card border border-border rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-xl mx-auto space-y-4 max-h-[90vh] overflow-y-auto";
 export const INPUT_CLS =
   "w-full bg-background border border-input rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
-export const CELL_CLS = "py-3 px-4 text-xs";
+export const CELL_CLS = "py-2.5 px-3 sm:py-3 sm:px-4 text-xs";

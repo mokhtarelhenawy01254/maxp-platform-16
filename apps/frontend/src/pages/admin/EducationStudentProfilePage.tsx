@@ -177,7 +177,7 @@ const EducationStudentProfilePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+      <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
         <div className="bg-card border border-border/80 rounded-2xl p-10 text-center text-xs text-muted-foreground shadow-xs">
           جاري تحميل بيانات الطالب...
         </div>
@@ -187,7 +187,7 @@ const EducationStudentProfilePage: React.FC = () => {
 
   if (!activeStudent) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+      <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
         <div>
           <Link
             to="/admin/education/students"
@@ -215,7 +215,7 @@ const EducationStudentProfilePage: React.FC = () => {
   const genderLabel = g === "MALE" || g === "ذكر" ? "ذكر" : g === "FEMALE" || g === "أنثى" ? "أنثى" : null;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
       {/* Back Link */}
       <div>
         <Link

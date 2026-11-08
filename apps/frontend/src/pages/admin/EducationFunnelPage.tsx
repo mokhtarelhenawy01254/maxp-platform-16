@@ -130,7 +130,7 @@ export default function EducationFunnelPage() {
   const activeLogs = logs;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 rtl font-sans" dir="rtl">
+    <div className="w-full max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 rtl font-sans" dir="rtl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div className="space-y-1">
@@ -143,7 +143,7 @@ export default function EducationFunnelPage() {
               فانل الأكاديمية والرسائل المؤتمتة
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             فانل التحويل وقوالب الإشعارات
           </h1>
           <p className="text-xs text-muted-foreground">

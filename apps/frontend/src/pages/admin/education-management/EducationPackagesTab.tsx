@@ -32,13 +32,13 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap justify-between items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">
           إدارة باقات الحصص
         </h2>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
-            className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:w-48"
             value={packageSubjectFilter}
             onChange={(e) => setPackageSubjectFilter(e.target.value)}
           >
@@ -54,7 +54,7 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
           <button
             type="button"
             onClick={() => setPackageModal({})}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             إضافة باقة
@@ -62,11 +62,11 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
         {filtered.map((p) => (
           <div
             key={p.id}
-            className={`bg-card border border-border/80 rounded-xl p-4.5 shadow-xs space-y-3 transition-all hover:border-primary/40 ${
+            className={`bg-card border border-border/80 rounded-xl p-3.5 sm:p-4 shadow-xs space-y-3 transition-all hover:border-primary/40 ${
               !p.isActive ? "opacity-60 bg-muted/20" : ""
             }`}
           >
