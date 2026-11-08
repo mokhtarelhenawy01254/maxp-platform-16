@@ -48,6 +48,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
   const [error, setError] = useState<string | null>(null);
 
   const [products, setProducts] = useState<ProductOption[]>([]);
+  const [catalogSearch, setCatalogSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [draft, setDraft] = useState<DraftComponent>(EMPTY_DRAFT);
   const [isAddProductDropdownOpen, setIsAddProductDropdownOpen] = useState(false);
@@ -68,6 +69,26 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
         setProducts([]);
       });
   }, []);
+
+  // بحث سيرفر-side: أي منتج خارج أول 500 يظهر لما المستخدم يكتب (بدل ما الكتالوج يتقص)
+  useEffect(() => {
+    const q = catalogSearch.trim();
+    if (q.length < 2) return undefined;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await manufacturingApi.getProducts({ search: q, limit: 50 });
+        if (!Array.isArray(res)) return;
+        setProducts((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          res.forEach((p: ProductOption) => map.set(p.id, p));
+          return Array.from(map.values());
+        });
+      } catch {
+        // الشبكة وقعت — القائمة المحلية كافية
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [catalogSearch]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -263,6 +284,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
                       name: val,
                       productId: matched ? matched.id : '',
                     }));
+                    setCatalogSearch(val);
                     setIsAddProductDropdownOpen(true);
                   }}
                   onFocus={() => setIsAddProductDropdownOpen(true)}
@@ -407,6 +429,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
                               name: val,
                               productId: matched ? matched.id : '',
                             }));
+                            setCatalogSearch(val);
                             setIsEditProductDropdownOpen(true);
                           }}
                           onFocus={() => setIsEditProductDropdownOpen(true)}
