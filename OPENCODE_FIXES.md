@@ -95,3 +95,15 @@
 | ٤ | NIT | `hrController.js:7851` بيرجّع حالة الضيف lowercase وخريطة الواجهة `MyCompaniesOrdersTab.tsx:29-40,465-467,565` مفاتيحها UPPERCASE → الحالة تظهر خام والإلغاء مش بيتعرف عليه | رجّع الحالة UPPERCASE زي صفوف الأوردرات العادية في نفس الـendpoint | **تم الإصلاح** | `hrController.js:7863` + تست 14 |
 
 **شروط:** نفس الـworktree `wt-b4dad8af` بدون git · بعد الإصلاح `node apps/backend/tests/sharedWorkspaceGuestOrders.test.js` + `node --check` على الملفين + تستات BUG-1 وNIT · جدول: البند / اتعمل / الدليل (ملف:سطر) / اتحقق إزاي.
+
+## جولة ٢ → ٣ (مراجعة OpenCode على f43b0ce89: FIX_FIRST — 4 BUG / 1 RISK · معايير 2/6)
+
+| # | النوع | الملاحظة | القرار |
+|---|---|---|---|
+| ٢٣ | BUG | `server.js:1283-1285` — الـ3 aliases بتاعة `/my-companies/orders` بتمر بـ`authenticateToken` بس من غير `checkAppAccess('hr-core')` (الموجود في `hrRoutes.js:122`) | **اتصلح:** اتضاف `checkAppAccess('hr-core')` بعد authenticateToken على الثلاثة aliases |
+| ٢٤ | BUG | `hrController.js:7555-7558` — `canCancel` بيتحسب من `orders.delete` كمان، والسيرفر في `orderController.js:457-466` بيقبل `orders.status.change` أو `orders.edit` بس | **اتصلح:** `canCancel = orders.status.change || orders.edit` — مطابق للسيرفر |
+| ٢٥ | BUG | `orderController.js:492-525` — طلبات حالة workflow-pending بترجع success من غير تغيير الحالة الحقيقية | **خارج النطاق — ممنوع لمس `/orders`** حسب نص التاسك؛ يُسجَّل كعيب منفصل في صفحة الطلبات الأصلية |
+| ٢٦ | BUG | `orderController.js:501-540` — فشل كتابة `activityLog` بيتسجل warn والتغيير بيرجع success | **خارج النطاق — ممنوع لمس `/orders`**؛ يحتاج تاسك منفصل (سجل تدقيق إلزامي) |
+| ٢٧ | RISK | `hrController.js:7688-7720` — جلب كل أرقام ضيوف الشركة + استعلامات توائم متسلسلة (500/دفعة) | **مقبول وموثّق:** الدقة الكاملة (بدون سقف) أهم من الأداء هنا؛ شركة 84k ضيف = ~170 رحلة DB للعدّاد. حل جذري = raw SQL EXISTS (مؤجل) |
+
+**ملاحظة الخلاف:** OpenCode بيقيّم معايير التاسك الأصلية على كل الكود المرتبط بيها، ومنها `orderController` و`server.js` اللي التاسك بيمنع لمسهم. البندين ٢٥/٢٦ عيوب حقيقية في صفحة الطلبات الأصلية لكن إصلاحها يخالف قيد «ممنوع تلمس /orders وسلوكها» — القرار النهائي للمالكة.

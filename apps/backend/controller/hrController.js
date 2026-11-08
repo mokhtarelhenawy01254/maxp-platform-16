@@ -7553,7 +7553,6 @@ async function getMyCompaniesOrders(req, res) {
           const canEdit = perms.includes("orders.edit");
           const canChangeStatus = perms.includes("orders.status.change");
           const canCancel =
-            perms.includes("orders.delete") ||
             perms.includes("orders.status.change") ||
             perms.includes("orders.edit");
 
