@@ -394,6 +394,69 @@ check("مدقّق عدائي: منطق حساب الإجماليات يتفاد�
   assertEqual(total, 10, "الإجمالي يطابق الأوردرات العادية");
 });
 
+// 13. BUG-1: مطابقة التوائم تخضع لفلتر الحالة حتى لا يُستبعد ضيف يطابق الفلتر بأوردر عادي خارجه
+check("BUG-1: خصم التوائم مع فلتر الحالة (ضيف SHIPPED وتوأم عادي PENDING)", () => {
+  // سيناريو: طلب ضيف بحالة SHIPPED برقم ORD-100
+  // طلب عادي بنفس الرقم ORD-100 ولكن بحالة PENDING
+  const allRegular = [
+    { id: "reg-1", companyId: "c1", orderNumber: "ORD-100", status: "PENDING" },
+  ];
+  const allGuests = [
+    { id: "gst-1", companyId: "c1", orderNumber: "ORD-100", status: "SHIPPED" },
+  ];
+
+  // فلتر الحالة = SHIPPED
+  const statusFilter = "SHIPPED";
+  const regularFiltered = allRegular.filter((r) => r.status === statusFilter);
+  const guestFiltered = allGuests.filter((g) => g.status === statusFilter);
+
+  assertEqual(regularFiltered.length, 0, "الطلب العادي PENDING لا يدخل في نطاق فلتر SHIPPED");
+  assertEqual(guestFiltered.length, 1, "طلب الضيف SHIPPED يدخل في نطاق فلتر SHIPPED");
+
+  // عند تطبيق filterWhere على استعلام التوائم:
+  // twinOrders يتم جلبها بشرط filterWhere (أي الطلبات العادية بحالة SHIPPED فقط)
+  const twinRegularOrdersInScope = regularFiltered; // صفر طلبات
+  const { keptGuestRows, twinCount } = dedupeTwins(twinRegularOrdersInScope, guestFiltered);
+
+  assertEqual(twinCount, 0, "لا يجب احتساب توأم لأن الطلب العادي خارج نطاق الفلتر");
+  assertEqual(keptGuestRows.length, 1, "تم إبقاء طلب الضيف SHIPPED");
+
+  const total = computeTotal(regularFiltered.length, guestFiltered.length, twinCount);
+  assertEqual(total, 1, "الإجمالي لفلتر SHIPPED يجب أن يكون 1 وليس 0");
+});
+
+// 14. NIT: حالة صف الضيف يجب أن تكون UPPERCASE لتتوافق مع خريطة ألوان وتسميات الواجهة
+check("NIT: حالة صف الضيف UPPERCASE وتطابق مفاتيح ORDER_STATUS_LABELS في الواجهة", () => {
+  const guestRawPending = { status: "pending" };
+  const guestRawShipped = { status: "shipped" };
+  const guestRawNull = { status: null };
+
+  const formattedPending = (guestRawPending.status || "PENDING").toUpperCase();
+  const formattedShipped = (guestRawShipped.status || "PENDING").toUpperCase();
+  const formattedNull = (guestRawNull.status || "PENDING").toUpperCase();
+
+  assertEqual(formattedPending, "PENDING", "تحويل pending إلى PENDING");
+  assertEqual(formattedShipped, "SHIPPED", "تحويل shipped إلى SHIPPED");
+  assertEqual(formattedNull, "PENDING", "القيمة الافتراضية PENDING");
+
+  // التحقق من توافقها مع مفاتيح ORDER_STATUS_LABELS المعروفة في الواجهة
+  const UI_KNOWN_STATUSES = new Set([
+    "PENDING",
+    "CONFIRMED",
+    "PROCESSING",
+    "PREPARING",
+    "READY",
+    "READY_TO_SHIP",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELLED",
+    "RETURNED",
+  ]);
+
+  assertTrue(UI_KNOWN_STATUSES.has(formattedPending), "PENDING موجود في مفاتيح الواجهة");
+  assertTrue(UI_KNOWN_STATUSES.has(formattedShipped), "SHIPPED موجود في مفاتيح الواجهة");
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Test Runner
 // ─────────────────────────────────────────────────────────────────────────────

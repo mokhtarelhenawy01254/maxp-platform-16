@@ -7686,6 +7686,7 @@ async function getMyCompaniesOrders(req, res) {
 
           let twinCount = 0;
           if (regCount > 0 && guestCount > 0) {
+            // جلب أرقام أوردرات الضيوف بدون أي سقف لضمان دقة العدّاد التامة ومطابقته لـ SELECT count(*) على أي حجم
             const guestOrdersForCompany = await prisma.guestOrder.findMany({
               where: {
                 ...guestWhere,
@@ -7699,13 +7700,23 @@ async function getMyCompaniesOrders(req, res) {
               .filter(Boolean);
 
             if (guestNumbers.length > 0) {
-              const twinOrders = await prisma.order.findMany({
-                where: {
-                  companyId: cId,
-                  orderNumber: { in: guestNumbers, mode: "insensitive" },
-                },
-                select: { orderNumber: true, companyId: true },
-              });
+              const CHUNK_SIZE = 500;
+              const twinOrders = [];
+              for (let i = 0; i < guestNumbers.length; i += CHUNK_SIZE) {
+                const chunk = guestNumbers.slice(i, i + CHUNK_SIZE);
+                // BUG-1: مطابقة التوائم تخضع لنفس filterWhere لكي لا يُستبعد ضيف يطابق الفلتر بسبب أوردر عادي خارج الفلتر
+                const chunkTwins = await prisma.order.findMany({
+                  where: {
+                    ...filterWhere,
+                    companyId: cId,
+                    orderNumber: { in: chunk, mode: "insensitive" },
+                  },
+                  select: { orderNumber: true, companyId: true },
+                });
+                if (chunkTwins && chunkTwins.length > 0) {
+                  twinOrders.push(...chunkTwins);
+                }
+              }
               const dedupeRes = dedupeTwins(twinOrders, guestOrdersForCompany);
               twinCount = dedupeRes.twinCount;
             }
@@ -7848,7 +7859,7 @@ async function getMyCompaniesOrders(req, res) {
           },
           customerName,
           customerPhone,
-          status: (guest.status || "PENDING").toLowerCase(),
+          status: (guest.status || "PENDING").toUpperCase(),
           total: Number(guest.finalTotal ?? guest.total ?? 0),
           currency: companiesMap[guest.companyId]?.currency || "EGP",
           createdAt: guest.createdAt,
@@ -7863,8 +7874,10 @@ async function getMyCompaniesOrders(req, res) {
         .filter(Boolean);
 
       if (guestNumbers.length > 0 && targetViewableCompanyIds.length > 0) {
+        // BUG-1: مطابقة التوائم تخضع لنفس filterWhere لكي لا يُستبعد ضيف يطابق الفلتر بسبب أوردر عادي خارج الفلتر
         const twinRows = await prisma.order.findMany({
           where: {
+            ...filterWhere,
             companyId: { in: targetViewableCompanyIds },
             orderNumber: { in: guestNumbers, mode: "insensitive" },
           },

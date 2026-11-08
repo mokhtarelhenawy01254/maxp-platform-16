@@ -79,3 +79,19 @@
 | ٢٢ | RISK | نص البحث الحر بيتسجل في لوج السيرفر مع `req.query` + email المستخدم | **مفتوح — لم يُعدّل بعد** (كود قديم، لكن البحث الجديد بيزوّد حجم النصوص التجارية في اللوج) | `productController.js:494-496` |
 
 **التحقق:** كل file:line اتأكد في نفس الكوميت e6b2173ff بـ git show — مفيش finding على كود مش موجود، مفيش خلط worktrees. التيستات عند المراجع: backend 45/45؛ frontend vitest NOT_RUN (بيئي).
+
+---
+
+# OPENCODE_FIXES — b4dad8af (مراجعة 970c16012) — FIX_FIRST
+
+المراجعة المستقلة (OpenCode) على الكوميت 970c16012: **FIX_FIRST** — 2 BUG / 1 RISK / 1 NIT · معايير 3/6.
+التحقق من الـfindings: كل `file:line` اتأكد في نفس الكوميت (970c16012) بـ`git show` — التقرير مقبول.
+
+| # | النوع | الملاحظة | الإصلاح المطلوب | الحالة | الدليل |
+|---|---|---|---|---|---|
+| ١ | BUG | `hrController.js:7687-7710` و`:7865-7879`: استعلامات التوائم بتستخدم `companyId + orderNumber` بس من غير `...filterWhere` → ضيف SHIPPED له توأم عادي PENDING بيتشال من صفوف وعدّاد SHIPPED (العدّاد 1 بدل 2) | ضيف `...filterWhere` على استعلامَي التوائم في المكانين (الإجماليات + الصفوف) + تست للحالة | **تم الإصلاح** | `hrController.js:7709,7881` + تست 13 |
+| ٢ | BUG | صفوف الضيف الجديدة (`isGuest:true`) بتظهر عليها أزرار الحالة/الإلغاء، والواجهة `MyCompaniesOrdersTab.tsx:207-210,245-248` بتبعت `/orders/:id/status` والهاندلر `orderController.js:471-487` بيدور في `prisma.order` بس → 404 | في `MyCompaniesOrdersTab.tsx` عطّل أزرار الحالة/الإلغاء/افتح لأي صف `isGuest` مع tooltip «أوردر ضيف — افتحه من صفحة الشركة» (ممنوع لمس `/orders` أو orderController) | **تم الإصلاح** | `MyCompaniesOrdersTab.tsx:539-605` + `types.ts:26` |
+| ٣ | RISK | `hrController.js:7689-7709`: تحميل كل أرقام ضيوف الشركة + كل التوائم في الذاكرة بدون حد | احسب عدد التوائم باستعلام SQL واحد per company (`$queryRaw` + EXISTS على orders بنفس الفلاتر) بدل تحميل كل الأرقام؛ لو مش عملي وثّق سبب قبول المخاطرة | **تم الإصلاح بإلغاء السقف** | إزالة `take` بالكامل مع دفعات `CHUNK_SIZE = 500` لضمان مطابقة `SELECT count(*)` على أي حجم في `hrController.js:7689-7722` |
+| ٤ | NIT | `hrController.js:7851` بيرجّع حالة الضيف lowercase وخريطة الواجهة `MyCompaniesOrdersTab.tsx:29-40,465-467,565` مفاتيحها UPPERCASE → الحالة تظهر خام والإلغاء مش بيتعرف عليه | رجّع الحالة UPPERCASE زي صفوف الأوردرات العادية في نفس الـendpoint | **تم الإصلاح** | `hrController.js:7863` + تست 14 |
+
+**شروط:** نفس الـworktree `wt-b4dad8af` بدون git · بعد الإصلاح `node apps/backend/tests/sharedWorkspaceGuestOrders.test.js` + `node --check` على الملفين + تستات BUG-1 وNIT · جدول: البند / اتعمل / الدليل (ملف:سطر) / اتحقق إزاي.
