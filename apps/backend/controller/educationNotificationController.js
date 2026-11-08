@@ -1,11 +1,48 @@
 const educationNotificationService = require('../services/educationNotificationService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
+// Rate limiting in-memory store for test notifications: max 5 requests per 60 seconds per company/user
+const testRateLimits = new Map();
+
+function checkTestRateLimit(key, limit = 5, windowMs = 60000) {
+  const now = Date.now();
+  const timestamps = (testRateLimits.get(key) || []).filter((t) => now - t < windowMs);
+  if (timestamps.length >= limit) {
+    const oldest = timestamps[0];
+    const retrySec = Math.ceil((oldest + windowMs - now) / 1000);
+    return { allowed: false, retrySec: Math.max(1, retrySec) };
+  }
+  timestamps.push(now);
+  testRateLimits.set(key, timestamps);
+  return { allowed: true };
+}
+
+function sanitizePhone(phone) {
+  return String(phone || '').trim().replace(/[\s\-\(\)]/g, '');
+}
+
+function isValidPhone(phone) {
+  if (!phone || typeof phone !== 'string') return false;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 15;
+}
+
+function maskPhoneNumber(phone) {
+  if (!phone || typeof phone !== 'string') return '';
+  const clean = phone.trim();
+  if (clean.length <= 6) return clean;
+  const start = clean.slice(0, 4);
+  const end = clean.slice(-3);
+  return `${start}****${end}`;
+}
+
 const getFunnel = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
-    const stats = await educationNotificationService.getFunnelStats(companyId);
+
+    const { period = 'all' } = req.query;
+    const stats = await educationNotificationService.getFunnelStats(companyId, { period });
     res.json({ success: true, data: stats });
   } catch (error) {
     console.error('Error fetching education funnel:', error);
@@ -18,7 +55,7 @@ const getLogs = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { eventType, limit = 50 } = req.query;
+    const { eventType, limit = 50, status, search } = req.query;
     const where = { companyId };
 
     if (eventType) {
@@ -38,13 +75,33 @@ const getLogs = async (req, res) => {
       ];
     }
 
+    if (status === 'success') {
+      where.success = true;
+    } else if (status === 'failed') {
+      where.success = false;
+    }
+
+    if (search && typeof search === 'string') {
+      const cleanSearch = search.trim();
+      if (cleanSearch) {
+        where.recipientPhone = { contains: cleanSearch };
+      }
+    }
+
     const prisma = getSharedPrismaClient();
     const data = await prisma.whatsAppNotificationLog.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: Math.min(parseInt(limit) || 50, 200),
     });
-    res.json({ success: true, data: data || [] });
+
+    const maskedData = (data || []).map((log) => ({
+      ...log,
+      recipientPhoneOriginal: log.recipientPhone,
+      recipientPhone: maskPhoneNumber(log.recipientPhone),
+    }));
+
+    res.json({ success: true, data: maskedData });
   } catch (error) {
     console.error('Error fetching education logs:', error);
     res.json({ success: true, data: [] });
@@ -56,9 +113,28 @@ const sendTest = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
+    // Rate Limiting check
+    const rateLimitKey = `${companyId}:${req.user?.id || req.ip}`;
+    const rateCheck = checkTestRateLimit(rateLimitKey, 5, 60000);
+    if (!rateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: `تم تجاوز الحد المسموح للإرسال التجريبي (5 رسائل في الدقيقة). يرجى الانتظار ${rateCheck.retrySec} ثانية.`,
+        retryAfter: rateCheck.retrySec,
+      });
+    }
+
     const { phone, eventType } = req.body;
     if (!phone) return res.status(400).json({ success: false, error: 'رقم الهاتف مطلوب' });
     if (!eventType) return res.status(400).json({ success: false, error: 'نوع الإشعار مطلوب' });
+
+    const cleanPhone = sanitizePhone(phone);
+    if (!isValidPhone(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'صيغة رقم الهاتف غير صالحة. يرجى إدخال رقم صحيح (مثل 01012345678 أو 0512345678)',
+      });
+    }
 
     const template = educationNotificationService.NOTIFICATION_TEMPLATES[eventType];
     if (!template) return res.status(400).json({ success: false, error: 'القالب غير موجود' });
@@ -68,17 +144,24 @@ const sendTest = async (req, res) => {
       eventType,
       templates: template.parent || template,
       variables: {
-        parentName: 'وليّ الأمر', studentName: 'الطالب',
-        packageName: 'الباقة', subjectName: 'المادة',
-        totalHours: '20', amountPaid: '500',
-        currency: 'ج.م', sessionDate: '2026-07-10',
-        sessionTime: '15:00', duration: '60',
-        teacherName: 'المدرس', actualDuration: '60',
+        parentName: 'وليّ الأمر',
+        studentName: 'الطالب',
+        packageName: 'الباقة',
+        subjectName: 'المادة',
+        totalHours: '20',
+        amountPaid: '500',
+        currency: 'ج.م',
+        sessionDate: new Date().toLocaleDateString('ar-EG'),
+        sessionTime: '15:00',
+        duration: '60',
+        teacherName: 'المدرس',
+        actualDuration: '60',
         remainingHours: '15',
       },
-      recipientPhone: phone,
+      recipientPhone: cleanPhone,
       recipientName: 'اختبار',
     });
+
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('Error sending test notification:', error);

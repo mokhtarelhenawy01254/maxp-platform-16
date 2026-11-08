@@ -71,6 +71,8 @@ export const CATEGORY_MAP: Record<string, string> = {
   system: "management",
   company: "management",
   legal: "system",
+  education: "operations",
+  academy: "operations",
 };
 
 export function ChatBubbleIcon({ className }: { className?: string }) {

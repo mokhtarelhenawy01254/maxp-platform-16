@@ -27,6 +27,7 @@ import {
   Cog,
   Shield,
   Loader2,
+  GraduationCap,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { useSidebarSettings } from "../../contexts/SidebarSettingsContext";
@@ -155,12 +156,23 @@ const DEFAULT_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     iconName: "Store",
   },
   {
+    key: "education",
+    defaultLabelAr: "النظام التعليمي",
+    defaultLabelEn: "Education System",
+    labelAr: "النظام التعليمي",
+    labelEn: "Education System",
+    order: 10,
+    visible: true,
+    locked: false,
+    iconName: "GraduationCap",
+  },
+  {
     key: "marketplace",
     defaultLabelAr: "متجر التطبيقات",
     defaultLabelEn: "App Marketplace",
     labelAr: "متجر التطبيقات",
     labelEn: "App Marketplace",
-    order: 10,
+    order: 11,
     visible: true,
     locked: false,
     iconName: "Grid3x3",
@@ -171,7 +183,7 @@ const DEFAULT_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     defaultLabelEn: "Notifications",
     labelAr: "الإشعارات",
     labelEn: "Notifications",
-    order: 11,
+    order: 12,
     visible: true,
     locked: false,
     iconName: "Bell",
@@ -182,7 +194,7 @@ const DEFAULT_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     defaultLabelEn: "Company Management",
     labelAr: "إدارة الشركة",
     labelEn: "Company Management",
-    order: 12,
+    order: 13,
     visible: true,
     locked: false,
     iconName: "Building",
@@ -193,7 +205,7 @@ const DEFAULT_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     defaultLabelEn: "Settings",
     labelAr: "الإعدادات",
     labelEn: "Settings",
-    order: 13,
+    order: 14,
     visible: true,
     locked: true,
     iconName: "Cog",
@@ -222,6 +234,8 @@ const renderItemIcon = (iconName: string) => {
       return <Megaphone className="w-5 h-5" />;
     case "Store":
       return <Store className="w-5 h-5" />;
+    case "GraduationCap":
+      return <GraduationCap className="w-5 h-5" />;
     case "Grid3x3":
       return <Grid3x3 className="w-5 h-5" />;
     case "Bell":
@@ -274,7 +288,8 @@ const SidebarSettings: React.FC = () => {
             labelAr: saved.labelAr !== undefined && saved.labelAr !== null ? saved.labelAr : item.defaultLabelAr,
             labelEn: saved.labelEn !== undefined && saved.labelEn !== null ? saved.labelEn : item.defaultLabelEn,
           };
-        }).sort((a, b) => a.order - b.order);
+        }).sort((a, b) => a.order - b.order)
+          .map((item, idx) => ({ ...item, order: idx }));
 
         setItems(merged);
       } else {

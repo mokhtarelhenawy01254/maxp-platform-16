@@ -175,4 +175,23 @@ describe("SidebarSettings Page (Task 83c205dc)", () => {
       expect(toast.success).toHaveBeenCalledWith("تم حفظ إعدادات القائمة الجانبية بنجاح");
     });
   });
+
+  it("renders educational system option with key 'education' and allows customizing it", async () => {
+    render(<SidebarSettings />);
+
+    await waitFor(() => {
+      expect(screen.getByText("إعدادات القائمة الجانبية")).toBeTruthy();
+    });
+
+    // Check that 'النظام التعليمي' is present in the list
+    const educationItems = screen.getAllByText("النظام التعليمي");
+    expect(educationItems.length).toBeGreaterThan(0);
+
+    // Verify key 'education' is rendered
+    expect(screen.getByText("education")).toBeTruthy();
+
+    // Verify it is also visible in live preview
+    const previewMatches = screen.getAllByText(/النظام التعليمي/);
+    expect(previewMatches.length).toBeGreaterThanOrEqual(2);
+  });
 });

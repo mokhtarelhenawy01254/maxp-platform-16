@@ -302,6 +302,8 @@ const applySidebarOverrides = (
                     }
                     if (savedSec.visible === false && !LOCKED_SIDEBAR_KEYS.has(sectionKey)) {
                         sectionHidden = true;
+                    } else if (savedSec.visible === true) {
+                        sectionHidden = false;
                     }
                 }
 

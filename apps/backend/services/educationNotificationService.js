@@ -261,14 +261,45 @@ async function notifySessionCancelled(companyId, session) {
   }
 }
 
-async function getFunnelStats(companyId) {
+async function getFunnelStats(companyId, options = {}) {
+  const { period = 'all' } = options;
   const prisma = getSharedPrismaClient();
-  const totalCustomers = await prisma.customer.count({ where: { companyId, status: { not: 'BLOCKED' } } });
-  const totalStudents = await prisma.educationStudent.count({ where: { companyId, isActive: true } });
-  const totalEnrollments = await prisma.educationEnrollment.count({ where: { companyId } });
-  const totalSessions = await prisma.educationSession.count({ where: { companyId } });
-  const confirmedSessions = await prisma.educationSession.count({ where: { companyId, status: 'CONFIRMED' } });
-  const scheduledSessions = await prisma.educationSession.count({ where: { companyId, status: 'SCHEDULED' } });
+
+  let dateFilter = undefined;
+  const now = new Date();
+  if (period === 'today') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    dateFilter = { gte: start };
+  } else if (period === '7d') {
+    const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    dateFilter = { gte: start };
+  } else if (period === '30d') {
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    dateFilter = { gte: start };
+  }
+
+  const customerWhere = { companyId, status: { not: 'BLOCKED' } };
+  const studentWhere = { companyId, isActive: true };
+  const enrollmentWhere = { companyId };
+  const sessionWhere = { companyId };
+  const confirmedWhere = { companyId, status: 'CONFIRMED' };
+  const scheduledWhere = { companyId, status: 'SCHEDULED' };
+
+  if (dateFilter) {
+    customerWhere.createdAt = dateFilter;
+    studentWhere.createdAt = dateFilter;
+    enrollmentWhere.createdAt = dateFilter;
+    sessionWhere.scheduledAt = dateFilter;
+    confirmedWhere.scheduledAt = dateFilter;
+    scheduledWhere.scheduledAt = dateFilter;
+  }
+
+  const totalCustomers = await prisma.customer.count({ where: customerWhere });
+  const totalStudents = await prisma.educationStudent.count({ where: studentWhere });
+  const totalEnrollments = await prisma.educationEnrollment.count({ where: enrollmentWhere });
+  const totalSessions = await prisma.educationSession.count({ where: sessionWhere });
+  const confirmedSessions = await prisma.educationSession.count({ where: confirmedWhere });
+  const scheduledSessions = await prisma.educationSession.count({ where: scheduledWhere });
 
   // Students with 2+ enrollments = repeat
   const repeatStudents = await prisma.educationStudent.count({
@@ -282,6 +313,7 @@ async function getFunnelStats(companyId) {
   });
 
   return {
+    period,
     funnel: {
       totalCustomers,
       totalStudents,
