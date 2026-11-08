@@ -256,6 +256,12 @@ const EducationStudentProfilePage: React.FC = () => {
                   {activeStudent.phone}
                 </span>
               )}
+              {activeStudent.phone2 && (
+                <span className="flex items-center gap-1 font-mono tabular-nums text-primary/90" dir="ltr">
+                  <Phone className="w-3.5 h-3.5 text-primary" />
+                  <span>إضافي: {activeStudent.phone2}</span>
+                </span>
+              )}
               {activeStudent.grade && (
                 <span className="flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5 text-primary" />
@@ -281,9 +287,36 @@ const EducationStudentProfilePage: React.FC = () => {
                 {activeStudent.customer.phone}
               </span>
             )}
+            {activeStudent.customer.phone2 && (
+              <span className="font-mono tabular-nums text-primary" dir="ltr">
+                إضافي: {activeStudent.customer.phone2}
+              </span>
+            )}
             {activeStudent.customer.email && (
               <span className="font-mono">{activeStudent.customer.email}</span>
             )}
+          </div>
+        )}
+
+        {activeStudent.subjects && Array.isArray(activeStudent.subjects) && activeStudent.subjects.length > 0 && (
+          <div className="pt-3 border-t border-border/60 flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-semibold text-foreground flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
+              المواد الدراسية:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {activeStudent.subjects.map((sub: any, idx: number) => {
+                const subName = typeof sub === "string" ? sub : sub.name || sub.id;
+                return (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {subName}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
 

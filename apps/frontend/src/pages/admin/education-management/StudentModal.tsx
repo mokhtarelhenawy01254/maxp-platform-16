@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Search, User, Loader2, Mail, Lock } from "lucide-react";
-import type { EducationStudent, Customer } from "./types";
+import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone } from "lucide-react";
+import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
 
 export interface StudentModalProps {
   student?: Partial<EducationStudent> | null;
+  subjects?: EducationSubject[];
   customers: Customer[];
   customerResults: Customer[];
   onCustomerSearch: (q: string) => void;
@@ -14,6 +15,7 @@ export interface StudentModalProps {
 
 export const StudentModal: React.FC<StudentModalProps> = ({
   student,
+  subjects = [],
   customers,
   customerResults,
   onCustomerSearch,
@@ -24,15 +26,27 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     firstName: "",
     lastName: "",
     phone: "",
+    phone2: "",
     grade: "",
     notes: "",
     customerId: "",
     ...student,
+    phone2: (student as any)?.phone2 || "",
     gender: student?.gender
       ? String(student.gender).toUpperCase() === "FEMALE"
         ? "FEMALE"
         : "MALE"
       : "MALE",
+  });
+
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>(() => {
+    if (!student?.subjects) return [];
+    if (Array.isArray(student.subjects)) {
+      return student.subjects
+        .map((s: any) => (typeof s === "string" ? s : s?.id || s?.name))
+        .filter(Boolean);
+    }
+    return [];
   });
 
   const initialCustomer =
@@ -45,6 +59,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     firstName: string;
     lastName?: string;
     phone?: string;
+    phone2?: string;
   } | null>(initialCustomer);
 
   const [customerSearch, setCustomerSearch] = useState("");
@@ -52,7 +67,16 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [isSelfGuardian, setIsSelfGuardian] = useState(false);
   const [isManualGuardian, setIsManualGuardian] = useState(false);
-  const [manualGuardian, setManualGuardian] = useState({ name: "", phone: "" });
+  const [manualGuardian, setManualGuardian] = useState({
+    name: "",
+    phone: "",
+    phone2: "",
+  });
+  const [guardianPhone2, setGuardianPhone2] = useState<string>(
+    (student?.customer && (student.customer as any).phone2) ||
+    (initialCustomer && (initialCustomer as any).phone2) ||
+    ""
+  );
   const [guardianEmail, setGuardianEmail] = useState(
     student?.customer?.email ||
     (initialCustomer && "email" in initialCustomer ? (initialCustomer as any).email : "") ||
@@ -93,6 +117,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     setForm((prev) => ({ ...prev, customerId: c.id }));
     setSelectedCustomer(c);
     if (c.email) setGuardianEmail(c.email);
+    if (c.phone2) setGuardianPhone2(c.phone2);
     setCustomerSearch("");
     setShowResults(false);
   };
@@ -100,6 +125,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const handleClearCustomer = () => {
     setForm((prev) => ({ ...prev, customerId: "" }));
     setSelectedCustomer(null);
+    setGuardianPhone2("");
     setCustomerSearch("");
     setShowResults(false);
   };
@@ -108,6 +134,20 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     !!form.customerId ||
     (isSelfGuardian && !!form.phone.trim()) ||
     (isManualGuardian && !!manualGuardian.name.trim() && !!manualGuardian.phone.trim());
+
+  const toggleSubject = (subId: string, subName?: string) => {
+    const isSelected =
+      selectedSubjectIds.includes(subId) ||
+      (subName ? selectedSubjectIds.includes(subName) : false);
+
+    if (isSelected) {
+      setSelectedSubjectIds(
+        selectedSubjectIds.filter((id) => id !== subId && id !== subName)
+      );
+    } else {
+      setSelectedSubjectIds([...selectedSubjectIds, subId]);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.firstName.trim() || saving) return;
@@ -122,16 +162,21 @@ export const StudentModal: React.FC<StudentModalProps> = ({
         firstName: form.firstName.trim(),
         lastName: form.lastName ? form.lastName.trim() : "",
         phone: form.phone ? form.phone.trim() : "",
+        phone2: form.phone2 ? form.phone2.trim() : "",
         gender: form.gender ? (String(form.gender).toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") : "MALE",
+        subjects: selectedSubjectIds,
         ...(guardianEmail.trim() ? { guardianEmail: guardianEmail.trim() } : {}),
         ...(guardianPassword.trim() ? { guardianPassword: guardianPassword.trim() } : {}),
+        ...(guardianPhone2.trim() ? { guardianPhone2: guardianPhone2.trim() } : {}),
       };
       if (isSelfGuardian) {
         payload.isSelfGuardian = true;
         payload.customerId = "";
+        payload.guardianPhone2 = form.phone2 ? form.phone2.trim() : "";
       } else if (isManualGuardian && manualGuardian.name.trim()) {
         payload.guardianName = manualGuardian.name.trim();
         payload.guardianPhone = manualGuardian.phone.trim();
+        payload.guardianPhone2 = manualGuardian.phone2 ? manualGuardian.phone2.trim() : "";
         payload.customerId = "";
       }
       await onSave(payload);
@@ -162,6 +207,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           </button>
         </div>
         <div className="space-y-3">
+          {/* First & Last Name */}
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
@@ -190,16 +236,39 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
+
+          {/* Student Phones: Primary & Secondary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">الهاتف</label>
+              <label className="text-xs font-medium text-foreground flex items-center justify-between">
+                <span>هاتف الطالب (الأساسي)</span>
+                <span className="text-[10px] text-muted-foreground font-normal">أساسي</span>
+              </label>
               <input
                 className={INPUT_CLS}
                 value={form.phone || ""}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="01xxxxxxxxx"
+                dir="ltr"
               />
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground flex items-center justify-between">
+                <span>رقم هاتف إضافي للطالب</span>
+                <span className="text-[10px] text-primary/80 font-normal">اختياري</span>
+              </label>
+              <input
+                className={INPUT_CLS}
+                value={form.phone2 || ""}
+                onChange={(e) => setForm({ ...form, phone2: e.target.value })}
+                placeholder="رقم بديل / واتساب إضافي"
+                dir="ltr"
+              />
+            </div>
+          </div>
+
+          {/* Gender & Grade */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">الجنس</label>
               <select
@@ -211,18 +280,68 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 <option value="FEMALE">أنثى</option>
               </select>
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">
+                المرحلة / الصف
+              </label>
+              <input
+                className={INPUT_CLS}
+                value={form.grade || ""}
+                onChange={(e) => setForm({ ...form, grade: e.target.value })}
+                placeholder="مثال: الصف الأول الإعدادي"
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">
-              المرحلة / الصف
-            </label>
-            <input
-              className={INPUT_CLS}
-              value={form.grade || ""}
-              onChange={(e) => setForm({ ...form, grade: e.target.value })}
-              placeholder="مثال: الصف الأول الإعدادي"
-            />
+
+          {/* Subjects Section: المواد المتاحة لدينا */}
+          <div className="space-y-2 p-3 rounded-xl border border-border/80 bg-muted/15">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                <span>المواد الدراسية (المواد المتاحة لدينا)</span>
+              </label>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {selectedSubjectIds.length > 0
+                  ? `${selectedSubjectIds.length} مادة مختارة`
+                  : "لم يتم تحديد مواد"}
+              </span>
+            </div>
+
+            {subjects && subjects.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {subjects.map((sub) => {
+                  const isSelected =
+                    selectedSubjectIds.includes(sub.id) ||
+                    selectedSubjectIds.includes(sub.name);
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => toggleSubject(sub.id, sub.name)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-xs ring-1 ring-primary"
+                          : "bg-background border border-border/80 text-foreground hover:bg-muted/60 hover:border-primary/40"
+                      }`}
+                    >
+                      {isSelected ? (
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      ) : (
+                        <Plus className="w-3 h-3 text-muted-foreground" />
+                      )}
+                      <span>{sub.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-[11px] text-muted-foreground py-1">
+                لا توجد مواد مسجلة حالياً في النظام. يمكنك إضافتها من تبويب «المواد».
+              </div>
+            )}
           </div>
+
+          {/* Guardian / Parent Section */}
           <div className="space-y-2" ref={searchContainerRef}>
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-foreground">
@@ -249,34 +368,52 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             {isSelfGuardian ? (
               <div className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${form.phone?.trim() ? "border-primary/30 bg-primary/5 text-primary" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
                 <User className="w-4 h-4 shrink-0" />
-                <span>سيتم تسجيل الطالب كولي أمر نفسه تلقائياً برقم هاتفه.</span>
+                <span>سيتم تسجيل الطالب كولي أمر نفسه تلقائياً بأرقام هواتفه (الأساسي والإضافي).</span>
               </div>
             ) : selectedCustomer ? (
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/40 bg-primary/5 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">
-                      {selectedCustomer.firstName} {selectedCustomer.lastName || ""}
+              <div className="p-2.5 rounded-lg border border-primary/40 bg-primary/5 text-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                      <User className="w-4 h-4" />
                     </div>
-                    {selectedCustomer.phone && (
-                      <div className="text-[11px] text-muted-foreground font-mono">
-                        {selectedCustomer.phone}
+                    <div>
+                      <div className="font-semibold text-foreground">
+                        {selectedCustomer.firstName} {selectedCustomer.lastName || ""}
                       </div>
-                    )}
+                      <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
+                        {selectedCustomer.phone && <span>الهاتف: {selectedCustomer.phone}</span>}
+                        {((selectedCustomer as any).phone2 || guardianPhone2) && (
+                          <span className="text-primary font-medium">| إضافي: {(selectedCustomer as any).phone2 || guardianPhone2}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleClearCustomer}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                    title="تغيير ولي الأمر"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>تغيير</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleClearCustomer}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                  title="تغيير ولي الأمر"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>تغيير</span>
-                </button>
+
+                {/* Option for additional phone for selected guardian */}
+                <div className="pt-2 border-t border-border/40 flex items-center gap-2">
+                  <label className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    رقم هاتف إضافي لولي الأمر:
+                  </label>
+                  <input
+                    type="text"
+                    className={INPUT_CLS + " py-1 text-xs"}
+                    placeholder="رقم بديل / هاتف إضافي لولي الأمر"
+                    value={guardianPhone2}
+                    onChange={(e) => setGuardianPhone2(e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
               </div>
             ) : isManualGuardian ? (
               <div className="p-2.5 rounded-lg border border-border bg-muted/30 space-y-2 text-xs">
@@ -290,7 +427,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     العودة للبحث
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input
                     className={INPUT_CLS}
                     placeholder="اسم ولي الأمر *"
@@ -299,9 +436,17 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   />
                   <input
                     className={INPUT_CLS}
-                    placeholder="هاتف ولي الأمر"
+                    placeholder="هاتف ولي الأمر *"
                     value={manualGuardian.phone}
                     onChange={(e) => setManualGuardian({ ...manualGuardian, phone: e.target.value })}
+                    dir="ltr"
+                  />
+                  <input
+                    className={INPUT_CLS}
+                    placeholder="هاتف إضافي لولي الأمر"
+                    value={manualGuardian.phone2}
+                    onChange={(e) => setManualGuardian({ ...manualGuardian, phone2: e.target.value })}
+                    dir="ltr"
                   />
                 </div>
               </div>
@@ -339,7 +484,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setManualGuardian({ name: customerSearch, phone: "" });
+                      setManualGuardian({ name: customerSearch, phone: "", phone2: "" });
                       setIsManualGuardian(true);
                     }}
                     className="text-primary hover:underline font-medium"
@@ -367,7 +512,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                             </span>
                             {c.phone && (
                               <span className="text-muted-foreground mr-2 font-mono text-[11px]">
-                                ({c.phone})
+                                ({c.phone}{c.phone2 ? ` / ${c.phone2}` : ""})
                               </span>
                             )}
                           </div>
@@ -382,7 +527,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setManualGuardian({ name: customerSearch, phone: "" });
+                            setManualGuardian({ name: customerSearch, phone: "", phone2: "" });
                             setIsManualGuardian(true);
                             setShowResults(false);
                           }}
@@ -397,6 +542,8 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Notes */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
               ملاحظات

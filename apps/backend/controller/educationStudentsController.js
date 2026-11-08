@@ -37,7 +37,7 @@ const getAll = async (req, res) => {
     const data = await getSharedPrismaClient().educationStudent.findMany({
       where,
       include: {
-        customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } }
       },
       orderBy: { firstName: 'asc' }
     });
@@ -57,7 +57,7 @@ const getById = async (req, res) => {
     const data = await getSharedPrismaClient().educationStudent.findFirst({
       where: { id, companyId },
       include: {
-        customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true, password: true } },
+        customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true, password: true } },
         enrollments: {
           include: {
             package: { include: { subject: { select: { id: true, name: true } } } },
@@ -83,12 +83,27 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { customerId, firstName, lastName, phone, gender, grade, notes, guardianName, guardianPhone, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
+    let { customerId, firstName, lastName, phone, phone2, gender, grade, subjects, notes, guardianName, guardianPhone, guardianPhone2, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
 
     const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
     const safeGender = normalizeGender(gender);
     const safePhone = (phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null;
+    const safePhone2 = (phone2 && typeof phone2 === 'string' && phone2.trim()) ? phone2.trim() : null;
+    const safeGuardianPhone2 = (guardianPhone2 && typeof guardianPhone2 === 'string' && guardianPhone2.trim())
+      ? guardianPhone2.trim()
+      : (isSelfGuardian ? safePhone2 : null);
+    let safeSubjects = [];
+    if (Array.isArray(subjects)) {
+      safeSubjects = subjects.filter(Boolean);
+    } else if (typeof subjects === 'string' && subjects.trim()) {
+      try {
+        const parsed = JSON.parse(subjects);
+        safeSubjects = Array.isArray(parsed) ? parsed : [subjects.trim()];
+      } catch {
+        safeSubjects = [subjects.trim()];
+      }
+    }
     const safeGrade = (grade && typeof grade === 'string' && grade.trim()) ? grade.trim() : null;
     const safeNotes = (notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null;
     const safeGuardianEmail = (guardianEmail && typeof guardianEmail === 'string' && guardianEmail.trim())
@@ -154,16 +169,18 @@ const create = async (req, res) => {
             firstName: gFirstName,
             lastName: gLastName,
             phone: gPhone,
+            phone2: safeGuardianPhone2,
             status: 'ACTIVE',
             email: safeGuardianEmail,
             password: safeHashedPassword
           }
         });
       }
-      else if (safeGuardianEmail || safeHashedPassword) {
+      else if (safeGuardianEmail || safeHashedPassword || safeGuardianPhone2) {
         const custUpdate = {};
         if (safeGuardianEmail) custUpdate.email = safeGuardianEmail;
         if (safeHashedPassword) custUpdate.password = safeHashedPassword;
+        if (safeGuardianPhone2) custUpdate.phone2 = safeGuardianPhone2;
         customer = await getSharedPrismaClient().customer.update({
           where: { id: customer.id },
           data: custUpdate
@@ -173,10 +190,11 @@ const create = async (req, res) => {
     } else {
       let customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
       if (!customer) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
-      if (safeGuardianEmail || safeHashedPassword) {
+      if (safeGuardianEmail || safeHashedPassword || safeGuardianPhone2) {
         const custUpdate = {};
         if (safeGuardianEmail) custUpdate.email = safeGuardianEmail;
         if (safeHashedPassword) custUpdate.password = safeHashedPassword;
+        if (safeGuardianPhone2) custUpdate.phone2 = safeGuardianPhone2;
         await getSharedPrismaClient().customer.update({
           where: { id: customer.id },
           data: custUpdate
@@ -191,11 +209,13 @@ const create = async (req, res) => {
         firstName: firstName.trim(),
         lastName: safeLastName,
         phone: safePhone,
+        phone2: safePhone2,
         gender: safeGender,
         grade: safeGrade,
+        subjects: safeSubjects,
         notes: safeNotes
       },
-      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } } }
+      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -210,7 +230,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { customerId, firstName, lastName, phone, gender, grade, notes, isActive, guardianEmail, guardianPassword } = req.body;
+    const { customerId, firstName, lastName, phone, phone2, gender, grade, subjects, notes, isActive, guardianEmail, guardianPassword, guardianPhone2 } = req.body;
 
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
@@ -225,8 +245,11 @@ const update = async (req, res) => {
     }
 
     const targetCustomerId = safeCustomerId || existing.customerId;
-    if (targetCustomerId && (guardianEmail !== undefined || guardianPassword)) {
+    if (targetCustomerId && (guardianEmail !== undefined || guardianPassword || guardianPhone2 !== undefined)) {
       const custUpdate = {};
+      if (guardianPhone2 !== undefined) {
+        custUpdate.phone2 = (guardianPhone2 && typeof guardianPhone2 === 'string' && guardianPhone2.trim()) ? guardianPhone2.trim() : null;
+      }
       if (guardianEmail !== undefined && typeof guardianEmail === 'string' && guardianEmail.trim()) {
         const trimmedEmail = guardianEmail.trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
@@ -251,6 +274,22 @@ const update = async (req, res) => {
     const safeLastName = lastName !== undefined ? ((lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '') : undefined;
     const safeGender = gender !== undefined ? normalizeGender(gender) : undefined;
     const safePhone = phone !== undefined ? ((phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null) : undefined;
+    const safePhone2 = phone2 !== undefined ? ((phone2 && typeof phone2 === 'string' && phone2.trim()) ? phone2.trim() : null) : undefined;
+    let safeSubjects = undefined;
+    if (subjects !== undefined) {
+      if (Array.isArray(subjects)) {
+        safeSubjects = subjects.filter(Boolean);
+      } else if (typeof subjects === 'string' && subjects.trim()) {
+        try {
+          const parsed = JSON.parse(subjects);
+          safeSubjects = Array.isArray(parsed) ? parsed : [subjects.trim()];
+        } catch {
+          safeSubjects = [subjects.trim()];
+        }
+      } else {
+        safeSubjects = [];
+      }
+    }
     const safeGrade = grade !== undefined ? ((grade && typeof grade === 'string' && grade.trim()) ? grade.trim() : null) : undefined;
     const safeNotes = notes !== undefined ? ((notes && typeof notes === 'string' && notes.trim()) ? notes.trim() : null) : undefined;
 
@@ -261,12 +300,14 @@ const update = async (req, res) => {
         firstName: firstName ? firstName.trim() : undefined,
         lastName: safeLastName,
         phone: safePhone,
+        phone2: safePhone2,
         gender: safeGender,
         grade: safeGrade,
+        subjects: safeSubjects,
         notes: safeNotes,
         isActive
       },
-      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } } }
+      include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -308,6 +349,7 @@ const searchGuardians = async (req, res) => {
         companyId,
         OR: [
           { phone: { contains: q } },
+          { phone2: { contains: q } },
           { firstName: { contains: q, mode: 'insensitive' } },
           { lastName: { contains: q, mode: 'insensitive' } },
           { email: { contains: q, mode: 'insensitive' } }
@@ -318,6 +360,7 @@ const searchGuardians = async (req, res) => {
         firstName: true,
         lastName: true,
         phone: true,
+        phone2: true,
         email: true
       },
       take: 15,

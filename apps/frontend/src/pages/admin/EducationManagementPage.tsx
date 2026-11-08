@@ -209,6 +209,7 @@ export default function EducationManagementPage() {
           {activeTab === "students" && (
             <EducationStudentsTab
               students={students}
+              subjects={subjects}
               customers={customers}
               customerResults={customerResults}
               studentSearch={studentSearch}

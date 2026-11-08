@@ -34,11 +34,13 @@ export interface EducationStudent {
   firstName: string;
   lastName?: string;
   phone?: string;
+  phone2?: string;
   gender?: string;
   grade?: string;
+  subjects?: string[] | { id: string; name: string }[];
   notes?: string;
   isActive: boolean;
-  customer?: { id: string; firstName: string; lastName: string; phone: string; email?: string };
+  customer?: { id: string; firstName: string; lastName: string; phone: string; phone2?: string; email?: string };
   enrollments?: EducationEnrollment[];
 }
 
@@ -100,6 +102,7 @@ export interface Customer {
   firstName: string;
   lastName: string;
   phone: string;
+  phone2?: string;
   email?: string;
 }
 

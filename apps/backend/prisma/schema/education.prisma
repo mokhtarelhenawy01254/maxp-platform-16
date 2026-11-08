@@ -48,8 +48,10 @@ model EducationStudent {
   firstName  String
   lastName   String
   phone      String?
+  phone2     String?
   gender     Gender?
   grade      String?    /// Educational level (e.g. "Grade 5", "Beginner")
+  subjects   Json?      @default("[]")
   notes      String?
   isActive   Boolean    @default(true)
   createdAt  DateTime   @default(now())

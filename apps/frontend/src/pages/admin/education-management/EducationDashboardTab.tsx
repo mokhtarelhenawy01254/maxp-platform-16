@@ -1172,7 +1172,9 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
       {/* 7. Inline Modals When Triggered Directly From Dashboard (z-50) */}
       {studentModal !== null && studentModal !== undefined && (
         <StudentModal
+          key={studentModal?.id || "new"}
           student={studentModal}
+          subjects={subjects || []}
           customers={customers}
           customerResults={customerResults}
           onCustomerSearch={searchCustomers}
