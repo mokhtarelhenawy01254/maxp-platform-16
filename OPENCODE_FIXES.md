@@ -37,6 +37,16 @@
 | ١١ | RISK | الأدلة ناقصة سكرين شوت + README بيشاور على اسم ملف غلط + سكربت snapshot مش مضمون يرجّع السعر | ٤ سكرين شوت متكومتين تحت `screens/` · اسم الملف اتصلح · الـrestore بقى في `finally` + كل المسارات من env | `_reports/83791d03-evidence/screens/*.png` + `README.md` |
 | ١٢ | PARTIAL (معيار ٢) | مفيش تست بيغيّر سعر الكتالوج ويتحقق إن سعر المكوّن ثابت | أضفت تست 8: إضافة 2×50 ثم تغيير cost إلى 999 → `unitPrice=50` و`totalCost=100` وإجمالي العينة 100 | Jest — التست 8 ضمن 35/35 |
 
+## جولة ٥ → ٦ (مراجعة OpenCode على c12755924: FIX_FIRST — 0 BLOCKER / 1 BUG / 1 RISK · معايير 3/3)
+
+| # | النوع | الملاحظة | القرار | الدليل |
+|---|---|---|---|---|
+| ١٣ | RISK | سكرين شوت التفاصيل فيه جزء من رابط مشاركة/توكن | **اتصلح:** الصورتان اتستبدلوا بقصّ على صف «التكلفة الإجمالية للعينة» فقط (190 → 200) بدون أي جزء من رابط المشاركة | `_reports/83791d03-evidence/screens/83791d03_info_before.png` · `83791d03_info_after.png` + `screens_manifest.json` |
+| ١٤ | BUG | الـpicker بيقرأ `/products` العام بدل «كتالوج خامات» مخصص | **خلاف نطاق — القرار للمالكة:** مفيش في الكود كتالوج خامات منفصل. الخامات في MaxP هي Products: `manufacturingService.js:333-360` بيتحقق من `rawMaterialId` ضد جدول `products`، وواجهة الـBOM نفسها (`BomComponentsTable.tsx:184-191`) بتختار الخامة من نفس `products`. إضافة فلتر/تصنيف جديد = تغيير منتج أوسع من نطاق 83791d03. معايير القبول الثلاثة في التاسك مالهاش علاقة بالفلتر. | `apps/backend/services/manufacturingService.js:333-360` · `apps/frontend/src/pages/manufacturing/boms/components/BomComponentsTable.tsx:184-191` |
+
+**موقف البوابة ٤:** OpenCode شايف إن ده BUG، إحنا شايفينه خارج نطاق التاسك (الخامات = products في هذا الكود). الفرق مسجّل صريح والقرار النهائي للمالكة.
+
+
 
 
 ## ملاحظات

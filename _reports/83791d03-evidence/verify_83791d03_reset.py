@@ -1,6 +1,6 @@
-import json, os, urllib.request, urllib.error
+import json, urllib.request, urllib.error
 
-BASE = os.environ.get("MAXP_QA_BASE", "http://127.0.0.1:3104")
+BASE = "http://127.0.0.1:3104"
 TOK = None
 TID = None
 
@@ -22,12 +22,12 @@ def api(method, path, body=None):
             return e.code, raw[:300]
 
 
-st, login = api("POST", "/api/v1/auth/login", {"email": os.environ.get("MAXP_QA_EMAIL", "qa@maxp.local"), "password": os.environ.get("MAXP_QA_PASSWORD", "")})
+st, login = api("POST", "/api/v1/auth/login", {"email": "qa@maxp.local", "password": "ecMk3p1ICv2bg-Et"})
 d = login.get("data") or {}
 TOK = d.get("token")
 st, r = api("GET", "/api/v1/manufacturing/sample-orders?limit=100")
 samples = r.get("items") or (r.get("data") or {}).get("items") or (r.get("data") or {}).get("samples") or []
-sample = next((s for s in samples if s.get("sampleNumber") == "SMP-2026-00007"), None)
+sample = next((s for s in samples if s.get("sampleNumber") == os.environ.get("MAXP_QA_SAMPLE", "SMP-2026-00007")), None)
 if not sample:
     print("sample not found")
     raise SystemExit(2)
