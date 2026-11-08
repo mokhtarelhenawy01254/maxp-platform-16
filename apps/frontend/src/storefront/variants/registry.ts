@@ -3,6 +3,17 @@ import type { StorefrontVariantRegistry } from './types';
 export const storefrontVariantRegistry = {
   HeroBanner: [
     {
+      id: 'marketplace-slider',
+      section: 'HeroBanner',
+      purpose: 'Multi-department marketplace hero: wide auto-playing slide carousel beside a framed special-offer card, eight square hot-category tiles and a compact best-pick rail, matching the department-store demo composition',
+      bestPages: ['home'],
+      bestArchetypes: ['marketplace', 'general-store', 'electronics', 'multidepartment'],
+      rtlSuitability: 'high',
+      density: 'high',
+      tone: 'retail-direct',
+      status: 'implemented-now',
+    },
+    {
       id: 'centered',
       section: 'HeroBanner',
       purpose: 'Centered baseline hero for broad storefront use',
@@ -2595,6 +2606,17 @@ export const storefrontVariantRegistry = {
     },
   ],
   FeaturesBar: [
+    {
+      id: 'marketplace-utility-strip',
+      section: 'FeaturesBar',
+      purpose: 'One-line dark utility strip of five icon services with no section header, matching a department-store storefront bar directly under the hero',
+      bestPages: ['home', 'shop'],
+      bestArchetypes: ['marketplace', 'general-store', 'electronics'],
+      rtlSuitability: 'high',
+      density: 'low',
+      tone: 'retail-direct',
+      status: 'implemented-now',
+    },
     {
       id: 'trust-strip',
       section: 'FeaturesBar',

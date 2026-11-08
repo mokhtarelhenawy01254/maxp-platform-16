@@ -594,6 +594,12 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "car-accessories",
     "ستائر وإكسسوارات سيارات",
   ),
+  "marketplace-avenue": createThemeCategoryMeta(
+    "general",
+    "عام",
+    "marketplace-departments",
+    "ماركت بليس أقسام متعددة",
+  ),
 };
 
 export const getStorefrontThemeCategoryMeta = (

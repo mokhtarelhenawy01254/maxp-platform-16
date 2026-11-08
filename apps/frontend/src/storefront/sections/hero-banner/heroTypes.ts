@@ -29,6 +29,32 @@ export interface HeroSlide {
   ctaLink?: string;
   secondaryCtaText?: string;
   secondaryCtaLink?: string;
+  countdownEndAt?: string;
+  badge?: string;
+}
+
+export interface HeroOfferCard {
+  eyebrow?: string;
+  title?: string;
+  price?: string;
+  note?: string;
+  image?: string;
+  link?: string;
+}
+
+export interface HeroMiniCategory {
+  label: string;
+  image?: string;
+  link?: string;
+}
+
+export interface HeroBestPick {
+  title: string;
+  image?: string;
+  price?: string;
+  comparePrice?: string;
+  rating?: string;
+  link?: string;
 }
 
 export interface HeroVariantProps {
@@ -57,6 +83,9 @@ export interface HeroVariantProps {
   secondaryActionClassName?: string;
   slides?: HeroSlide[];
   compact?: boolean;
+  offerCard?: HeroOfferCard;
+  miniCategories?: { title?: string; link?: string; items?: HeroMiniCategory[] };
+  bestPicks?: { title?: string; linkLabel?: string; link?: string; items?: HeroBestPick[] };
 }
 
 export interface HeroBannerProps {

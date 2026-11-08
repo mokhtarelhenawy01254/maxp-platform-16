@@ -71,6 +71,9 @@ export const useHeroBannerController = (
         }))
       : [],
     compact: settings?.compact === true,
+    offerCard: (settings?.offerCard as HeroVariantProps['offerCard']) || undefined,
+    miniCategories: (settings?.miniCategories as HeroVariantProps['miniCategories']) || undefined,
+    bestPicks: (settings?.bestPicks as HeroVariantProps['bestPicks']) || undefined,
     panel: {
       image: settings?.panelImage,
       title: settings?.panelTitle,

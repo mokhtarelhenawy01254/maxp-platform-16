@@ -1,0 +1,889 @@
+{
+  "id": "marketplace-avenue",
+  "name": "ماركت بليس أفنيو",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "23 27% 53%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 97%",
+      "secondaryForeground": "0 0% 20%",
+      "accent": "352 71% 59%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 20%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 47%",
+      "border": "0 0% 91%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 20%",
+      "ring": "23 27% 53%"
+    },
+    "typography": {
+      "headingFont": "\"Urbanist\", \"Tajawal\", sans-serif",
+      "bodyFont": "\"Albert Sans\", \"Tajawal\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0px",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -32px rgba(51, 51, 51, 0.45)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | ماركت بليس أفنيو",
+    "description": "متجر أقسام متعددة للأجهزة المنزلية والإلكترونيات وألعاب الكونسول مع عروض أسبوعية وشحن سريع."
+  },
+  "header": {
+    "variant": "retail-direct",
+    "brandName": "ماركت بليس",
+    "tagline": "أجهزة · إلكترونيات · ألعاب",
+    "announcementText": "خط ساخن 24/7 — 01000 000 000 · شحن مجاني على الطلبات فوق 500 ج",
+    "announcementLinkText": "تواصل معنا",
+    "announcementLinkTo": "/contact",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "الأقسام",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "اتصل بنا",
+        "to": "/contact"
+      }
+    ],
+    "dropdowns": [
+      {
+        "label": "الأقسام",
+        "items": [
+          {
+            "label": "أجهزة منزلية",
+            "to": "/collections"
+          },
+          {
+            "label": "إلكترونيات",
+            "to": "/shop"
+          },
+          {
+            "label": "ألعاب وكونسولات",
+            "to": "/shop"
+          },
+          {
+            "label": "العناية والجمال",
+            "to": "/collections"
+          },
+          {
+            "label": "مستلزمات الأطفال",
+            "to": "/shop"
+          }
+        ]
+      },
+      {
+        "label": "خدمة العملاء",
+        "items": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "تتبع الطلب",
+            "to": "/contact"
+          },
+          {
+            "label": "الأسئلة الشائعة",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "label": "حسابي",
+        "to": "/registration",
+        "style": "outline"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "retail-direct",
+    "description": "ماركت بليس أفنيو — أقسام متعددة للأجهزة المنزلية والإلكترونيات وألعاب الكونسول، بعروض أسبوعية وشحن سريع لكل المحافظات.",
+    "phoneText": "01000 000 000",
+    "emailText": "care@marketplace-avenue.com",
+    "addressText": "القاهرة، مصر",
+    "contactRows": [
+      {
+        "label": "الخط الساخن",
+        "value": "01000 000 000",
+        "href": "tel:01000000000"
+      },
+      {
+        "label": "البريد",
+        "value": "care@marketplace-avenue.com",
+        "href": "mailto:care@marketplace-avenue.com"
+      }
+    ],
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل المنتجات",
+            "to": "/shop"
+          },
+          {
+            "label": "الأقسام",
+            "to": "/collections"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          },
+          {
+            "label": "الأكثر مبيعًا",
+            "to": "/shop?sort=popular"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع والاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصل بنا",
+            "to": "/contact"
+          },
+          {
+            "label": "الأسئلة الشائعة",
+            "to": "/contact"
+          }
+        ]
+      },
+      {
+        "title": "عن المتجر",
+        "links": [
+          {
+            "label": "من نحن",
+            "to": "/contact"
+          },
+          {
+            "label": "شركاؤنا",
+            "to": "/contact"
+          },
+          {
+            "label": "سياسة الخصوصية",
+            "to": "/privacy"
+          },
+          {
+            "label": "الشروط والأحكام",
+            "to": "/terms"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ],
+    "copyrightText": "© 2026 ماركت بليس أفنيو. جميع الحقوق محفوظة."
+  },
+  "pages": {
+    "home": {
+      "title": "الرئيسية",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "marketplace-slider",
+          "settings": {
+            "variant": "marketplace-slider",
+            "eyebrow": "ماركت بليس أفنيو",
+            "title": "كل الأقسام في متجر واحد",
+            "subtitle": "",
+            "ctaText": "تسوّق الآن",
+            "ctaLink": "/shop",
+            "slides": [
+              {
+                "eyebrow": "تصميم جديد في غلاف أنيق",
+                "title": "سامسونج جالاكسي فليب 5",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "ctaText": "تسوّق الآن",
+                "ctaLink": "/shop"
+              },
+              {
+                "eyebrow": "إلهام نوردي للديكور",
+                "title": "مجموعة كراسي إنبورن النوردية",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "ctaText": "تسوّق الآن",
+                "ctaLink": "/collections"
+              },
+              {
+                "eyebrow": "خصومات منتصف الأسبوع!",
+                "title": "ريدمي بودز 3",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "countdownEndAt": "2026-12-31T23:59:59+02:00",
+                "ctaText": "اذهب للتسوق",
+                "ctaLink": "/sale"
+              }
+            ],
+            "offerCard": {
+              "eyebrow": "عرض خاص",
+              "title": "غسالة أوتوماتيك 8 كجم",
+              "price": "7,999 ج",
+              "note": "عرض خاص",
+              "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+              "link": "/sale"
+            },
+            "miniCategories": {
+              "title": "الأقسام الأكثر طلبًا",
+              "link": "/collections",
+              "items": [
+                {
+                  "label": "أجهزة منزلية",
+                  "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "كونسولات",
+                  "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "ثلاجات",
+                  "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "ألعاب",
+                  "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "مكاوي",
+                  "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "لابتوبات",
+                  "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "موبايلات",
+                  "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "شاشات",
+                  "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                }
+              ]
+            },
+            "bestPicks": {
+              "title": "أفضل اختيارات الأسبوع",
+              "linkLabel": "تسوّق المزيد",
+              "link": "/shop?sort=popular",
+              "items": [
+                {
+                  "title": "Oculus Quest 2",
+                  "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                  "price": "4,490 ج",
+                  "comparePrice": "4,990 ج",
+                  "rating": "4.5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "PlayStation 5",
+                  "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                  "price": "8,000 ج",
+                  "rating": "5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "Fossil Gen 6",
+                  "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80",
+                  "price": "4,400 ج",
+                  "rating": "4.5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "Apple MacBook Air M1",
+                  "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
+                  "price": "8,800 ج",
+                  "rating": "5",
+                  "link": "/shop"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "marketplace-utility-strip",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ]
+          }
+        },
+        {
+          "type": "story-parallax",
+          "settings": {
+            "badge": "Urbanears",
+            "title": "جاهز لصوت يبهرك",
+            "content": "سماعات Alby Urbanears: صوت نقي وتصميم خفيف يناسب يومك بالكامل، مع ضمان رسمي وتوصيل سريع لكل المحافظات.",
+            "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+            "overlayOpacity": 0.42,
+            "ctaText": "اكتشف المجموعة",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "badge": "المدونة",
+            "title": "أحدث المقالات",
+            "subtitle": "أدلة شراء ومقارنات تساعدك تختار بسرعة.",
+            "items": [
+              {
+                "title": "أفضل موديلات لابتوب للألعاب",
+                "date": "22 نوفمبر 2024",
+                "meta": "تعليق واحد",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "إزاي تختار نظام صوت HI-FI",
+                "date": "14 نوفمبر 2024",
+                "meta": "0 تعليقات",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "Logitech POP Keys",
+                "date": "11 نوفمبر 2024",
+                "meta": "تعليق واحد",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "أحدث المنتجات",
+            "limit": 3,
+            "ctaText": "كل المنتجات",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "المنتجات المميزة",
+            "limit": 9,
+            "ctaText": "شاهد الكل",
+            "ctaLink": "/shop?sort=popular"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "campaign-stack",
+          "settings": {
+            "badge": "عروض الألعاب",
+            "title": "خصم على ألعاب PS5",
+            "subtitle": "اختيارات ألعاب بخصومات محدودة وباقات جاهزة للتوصيل.",
+            "cards": [
+              {
+                "label": "لفترة محدودة",
+                "title": "خصم على ألعاب PS5",
+                "subtitle": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
+                "ctaText": "اشترِ الآن",
+                "link": "/sale",
+                "tone": "primary",
+                "stat": "حتى 25%",
+                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "ألعاب مختارة",
+            "limit": 4,
+            "hideHeader": false,
+            "saleOnly": true
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "standard",
+          "settings": {
+            "heading": "مكنسة بريميوم VCC",
+            "description": "عرض ساعة واحدة على أجهزة العناية والتنظيف المنزلية.",
+            "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
+            "ctaText": "اشترِ الآن",
+            "ctaLink": "/sale",
+            "endAt": "2026-12-31T23:59:59+02:00"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "أفضل 100 جهاز منزلي",
+            "limit": 8,
+            "ctaText": "تسوّق المزيد",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "title": "تسوّق حسب الأقسام",
+            "subtitle": "",
+            "hideBadge": true,
+            "hideSubtitle": true,
+            "hideCta": true,
+            "limit": 12,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "preferRuntimeCategories": false,
+            "collections": [
+              {
+                "title": "أجهزة منزلية",
+                "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كراسي",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "مكياج",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "جيمنج",
+                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "جاكيتات",
+                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "لابتوبات",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "غسيل",
+                "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كمبيوترات",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "موبايلات",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "تصفيف شعر",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "طاولات",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "ألعاب أطفال",
+                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ]
+          }
+        },
+        {
+          "type": "hover-cards",
+          "settings": {
+            "heading": "عروض واختيارات سريعة",
+            "description": "ثلاث بطاقات تفتح مسارات الشراء الأسرع داخل المتجر.",
+            "cards": [
+              {
+                "title": "مغامرة المستوى التالي",
+                "description": "ساعة آبل بطرق استخدام جديدة بدون لمس الشاشة.",
+                "ctaText": "تسوّق الآن",
+                "link": "/shop",
+                "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80"
+              },
+              {
+                "title": "سلسلة هيرث لوفت",
+                "description": "مساحات جلوس مريحة بخطوط ناعمة لركنة مثالية.",
+                "ctaText": "تسوّق الآن",
+                "link": "/collections",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80"
+              },
+              {
+                "title": "سيشوار بلو بلاش",
+                "description": "تشطيب أزرق هادئ ووسادة ناعمة مع غطاء قابل للفك.",
+                "ctaText": "تسوّق الآن",
+                "link": "/shop",
+                "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "منتجات مقترحة أخرى",
+            "limit": 12,
+            "ctaText": "تسوّق المزيد",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "عن المتجر",
+            "title": "متجر إلكتروني للأجهزة المنزلية والإلكترونيات",
+            "subtitle": "",
+            "body": "كل ما يحتاجه البيت والأسرة في مكان واحد: أجهزة منزلية، إلكترونيات، ألعاب، ومستلزمات العناية. نرتّب الأقسام بحيث تصل لما تحتاجه في خطوات قليلة، ونعرض السعر والتوفر بوضوح قبل الدفع.",
+            "detailsTitle": "ليه تشتري مننا؟",
+            "details": "شحن سريع لكل المحافظات، ضمان رسمي على الأجهزة، واسترجاع خلال 60 يوم، وفريق دعم يجيب على أسئلتك قبل تأكيد الطلب.",
+            "ctaText": "اعرف سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "اشترك ليصلك كل جديد",
+            "subtitle": "أول من يعرف بالعروض والمنتجات الجديدة.",
+            "buttonText": "اشترك",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "title": "المتجر",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "badge": "كل المنتجات",
+            "title": "تسوّق كل الأقسام في مكان واحد",
+            "subtitle": "فلتر بالسعر والقسم والتوفر، واطلب في خطوتين."
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "",
+            "limit": 24
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "title": "المنتج",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "وصف المنتج",
+            "shippingTitle": "الشحن والتوصيل",
+            "shippingText": "تجهيز الطلب يتم خلال 24 ساعة، والتوصيل من يوم إلى 3 أيام عمل حسب المحافظة.",
+            "returnsTitle": "الاسترجاع",
+            "returnsText": "استرجاع مجاني خلال 60 يوم من الاستلام بحالة المنتج الأصلية."
+          }
+        },
+        {
+          "type": "related-products",
+          "settings": {
+            "title": "منتجات مشابهة",
+            "limit": 4
+          }
+        }
+      ]
+    },
+    "cart": {
+      "title": "السلة",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "راجع طلبك قبل الدفع",
+            "subtitle": "خطوة مراجعة سريعة وواضحة للكمية والسعر قبل إتمام الشراء."
+          }
+        }
+      ]
+    },
+    "collections": {
+      "title": "الأقسام",
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "تسوّق حسب الأقسام",
+            "subtitle": "",
+            "hideBadge": true,
+            "hideSubtitle": true,
+            "hideCta": true,
+            "limit": 12,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "preferRuntimeCategories": false,
+            "collections": [
+              {
+                "title": "أجهزة منزلية",
+                "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كراسي",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "مكياج",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "جيمنج",
+                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "جاكيتات",
+                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "لابتوبات",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "غسيل",
+                "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كمبيوترات",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "موبايلات",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "تصفيف شعر",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "طاولات",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "ألعاب أطفال",
+                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "contact": {
+      "title": "اتصل بنا",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "تواصل معنا بسهولة",
+            "subtitle": "الخط الساخن 24/7، واتساب، أو بريد إلكتروني — فريق الدعم يرد على أسئلتك قبل الطلب.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/marketplace-avenue/preview.png",
+    "accent": "#ad7d61",
+    "summary": "متجر أقسام متعددة يقلّد تركيب ماركت بليس: سلايدر + عرض جانبي + أقسام ساخنة + رف أفضل الاختيارات."
+  }
+}

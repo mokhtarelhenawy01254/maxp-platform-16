@@ -98,6 +98,7 @@ type FeaturesBarVariant =
   | 'system-assurance'
   | 'butcher-proof-board'
   | 'vela-store-advantages'
+  | 'marketplace-utility-strip'
   | 'automotive-bento';
 
 const FEATURES_BAR_FAMILY = 'FeaturesBar';
@@ -117,6 +118,7 @@ const normalizeFeaturesBarVariant = (rawVariant: unknown): FeaturesBarVariant =>
       value === 'system-assurance' ||
       value === 'butcher-proof-board' ||
       value === 'vela-store-advantages' ||
+      value === 'marketplace-utility-strip' ||
       value === 'automotive-bento'
     ) &&
     hasRegisteredVariant(FEATURES_BAR_FAMILY, value)
@@ -165,6 +167,36 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
   const items    = configuredItems.length > 0
     ? configuredItems
     : DEFAULT_ITEMS;
+
+  if (variant === 'marketplace-utility-strip') {
+    return (
+      <section className="w-full bg-[#2b2b2b] text-white">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-2 divide-y divide-white/10 sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
+            {items.slice(0, 5).map((item, index) => {
+              const Icon = ICONS[String(item.icon || '')] || ICONS.shield;
+              return (
+                <div
+                  key={`${item.title}-${index}`}
+                  className={`flex items-center gap-3 px-3 py-5 lg:justify-center lg:py-[22px] ${
+                    index > 0 ? 'lg:border-s lg:border-white/10' : ''
+                  }`}
+                >
+                  <Icon className="h-6 w-6 shrink-0 text-[#ad7d61]" />
+                  <div className="min-w-0 text-start">
+                    <p className="truncate text-[13px] font-semibold leading-tight text-white">{item.title}</p>
+                    {item.description ? (
+                      <p className="mt-1 truncate text-[11px] leading-tight text-white/60">{item.description}</p>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (isButcherProofBoard) {
     return (

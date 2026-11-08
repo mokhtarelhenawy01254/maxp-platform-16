@@ -870,6 +870,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "layered-parallax-sky", label: "سماء تفاعلية (أطفال)" },
       { value: "grooming-hero", label: "Hero مدونة Grooming (داكن)" },
       { value: "dental-precision-hero", label: "معمل أسنان رقمي CAD/CAM فاخر" },
+      { value: "marketplace-slider", label: "سلايدر ماركت بليس + عرض جانبي + أقسام ساخنة" },
     ],
     fields: [
       {
@@ -3325,6 +3326,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "store-advantages-pastel", label: "مزايا المتجر الباستيل" },
       { value: "vela-store-advantages", label: "مزايا متجر Vela" },
       { value: "automotive-bento", label: "مواصفات هندسية Bento (2026)" },
+      { value: "marketplace-utility-strip", label: "شريط خدمات داكن بلا عنوان (ماركت بليس)" },
     ],
     fields: [
       {
