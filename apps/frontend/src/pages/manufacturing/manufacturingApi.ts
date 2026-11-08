@@ -1468,7 +1468,7 @@ export const manufacturingApi = {
       return [];
     }
   },
-  getProducts: async (params?: { search?: string; limit?: number }): Promise<ProductOption[]> => {
+  getProducts: async (params?: { search?: string; limit?: number }, options?: { throwOnError?: boolean }): Promise<ProductOption[]> => {
     try {
       const res = await apiClient.get('/products', { params });
       const list = Array.isArray(res.data?.data?.products)
@@ -1485,7 +1485,8 @@ export const manufacturingApi = {
         price: Number(p.price || 0),
         cost: Number(p.cost || 0),
       }));
-    } catch {
+    } catch (err) {
+      if (options?.throwOnError) throw err;
       return [];
     }
   },

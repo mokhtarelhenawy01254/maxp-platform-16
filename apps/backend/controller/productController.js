@@ -547,8 +547,8 @@ const getAllProducts = async (req, res) => {
     if (req.query.search) {
       const searchTerm = req.query.search;
       where.OR = [
-        { name: { contains: searchTerm } },
-        { sku: { contains: searchTerm } },
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { sku: { contains: searchTerm, mode: 'insensitive' } },
       ];
     }
 

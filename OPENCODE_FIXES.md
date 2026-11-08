@@ -54,6 +54,14 @@
 | ١٦ | RISK | سكربت reset مابيفشلش لو الحذف رجع خطأ | **اتصلح:** بيجمع `failed` وبيطلع exit 2 لو أي DELETE مش 2xx | `_reports/83791d03-evidence/verify_83791d03_reset.py` |
 | ١٧ | RISK | الـpicker بيسمح بأي منتج مش «خامات» بس | **خلاف نطاق مستمر — القرار للمالكة** (نفس البند ١٤: مفيش كتالوج خامات منفصل في MaxP؛ الـBOM نفسه بيختار من products) | `manufacturingService.js:333-360` · `BomComponentsTable.tsx:184-191` |
 
+## جولة ٨ → ٩ (مراجعة OpenCode على 0b39356c3: FIX_FIRST — 0 BLOCKER / 1 BUG / 1 RISK · معايير 3/3)
+
+| # | النوع | الملاحظة | القرار | الدليل |
+|---|---|---|---|---|
+| ١٨ | RISK | كتالوج أكبر من 500 منتج بيتقص (مفيش صفحات) | **اتصلح:** ضفت بحث سيرفر-side debounced (350ms) — أي حرفين في خانة البحث بيجيب `/products?search=...&limit=50` ويدمج النتائج، فمفيش سقف للكتالوج القابل للاختيار | `SampleComponentsTab.tsx:72-92` + `manufacturingApi.ts:1471` |
+| ١٩ | BUG | الـpicker بيعرض أي منتج نشط مش خامات فقط | **خلاف نطاق مستمر — القرار للمالكة** (البند ١٤/١٧) | — |
+
+
 
 
 
@@ -61,3 +69,13 @@
 ## ملاحظات
 - بوابة الواجهة (Vitest) لسه مش قابلة للتشغيل عند المراجع — `node_modules/.bin/vitest` مش موجود في بيئة المراجعة (بيئي). البوابة ٢ اتعملت بالـbrowser من عندي على QA محلي.
 - الـRISK البيئي (مفيش DB عند المراجع) اتغطى بتشغيل API فعلي على QA (10/10) + سباق 5 طلبات.
+
+## جولة ٩ → ١٠ (مراجعة OpenCode على e6b2173ff: FIX_FIRST — 0 BLOCKER / 1 BUG / 2 RISK · معايير 3/3)
+
+| # | النوع | الملاحظة | القرار | الدليل |
+|---|---|---|---|---|
+| ٢٠ | BUG | بحث السيرفر-side حساس لحالة الأحرف: `/products` بيستخدم `contains` بدون `mode: 'insensitive'` على Postgres — كتابة حروف صغيرة ممكن متلاقيش اسم/SKU بحروف كبيرة | **مفتوح — الإصلاح جاري uncommitted:** `mode: 'insensitive'` على name/sku | `SampleComponentsTab.tsx:79` · `productController.js:547-552` · `main.prisma:2` |
+| ٢١ | RISK | `getProducts` بياكل خطأ الريكوست ويرجّع `[]` → الشاشة بتقول «لا يوجد منتج مطابق — سيتم الحفظ كخامة حرة» بدل رسالة فشل | **مفتوح — الإصلاح جاري uncommitted:** خيار `throwOnError` | `manufacturingApi.ts:1471-1490` · `SampleComponentsTab.tsx:297-302` |
+| ٢٢ | RISK | نص البحث الحر بيتسجل في لوج السيرفر مع `req.query` + email المستخدم | **مفتوح — لم يُعدّل بعد** (كود قديم، لكن البحث الجديد بيزوّد حجم النصوص التجارية في اللوج) | `productController.js:494-496` |
+
+**التحقق:** كل file:line اتأكد في نفس الكوميت e6b2173ff بـ git show — مفيش finding على كود مش موجود، مفيش خلط worktrees. التيستات عند المراجع: backend 45/45؛ frontend vitest NOT_RUN (بيئي).

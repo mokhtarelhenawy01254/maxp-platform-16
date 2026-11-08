@@ -49,6 +49,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
 
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [draft, setDraft] = useState<DraftComponent>(EMPTY_DRAFT);
   const [isAddProductDropdownOpen, setIsAddProductDropdownOpen] = useState(false);
@@ -76,7 +77,8 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
     if (q.length < 2) return undefined;
     const timer = setTimeout(async () => {
       try {
-        const res = await manufacturingApi.getProducts({ search: q, limit: 50 });
+        const res = await manufacturingApi.getProducts({ search: q, limit: 50 }, { throwOnError: true });
+        setCatalogError(null);
         if (!Array.isArray(res)) return;
         setProducts((prev) => {
           const map = new Map(prev.map((p) => [p.id, p]));
@@ -84,7 +86,8 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
           return Array.from(map.values());
         });
       } catch {
-        // الشبكة وقعت — القائمة المحلية كافية
+        // فشل البحث ≠ مفيش نتائج — نوضّح للمستخدم إن القائمة المحلية بس
+        setCatalogError('تعذّر البحث في كتالوج الخامات — النتائج المعروضة من القائمة المحمّلة فقط');
       }
     }, 350);
     return () => clearTimeout(timer);
@@ -264,6 +267,12 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
       {error && (
         <div className="px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[11px] font-medium">
           {error}
+        </div>
+      )}
+
+      {catalogError && (
+        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-[11px] font-medium">
+          {catalogError}
         </div>
       )}
 
