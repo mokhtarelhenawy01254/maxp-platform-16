@@ -64,7 +64,7 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { enrollmentId, scheduledAt, plannedDuration, topic, notes } = req.body;
+    const { enrollmentId, scheduledAt, plannedDuration, topic, notes, teacherId } = req.body;
     if (!enrollmentId) return res.status(400).json({ success: false, error: 'التسجيل مطلوب' });
     if (!scheduledAt) return res.status(400).json({ success: false, error: 'موعد الحصة مطلوب' });
 
@@ -74,16 +74,35 @@ const create = async (req, res) => {
     });
     if (!enrollment) return res.status(400).json({ success: false, error: 'التسجيل غير موجود' });
     if (enrollment.remainingHours <= 0) return res.status(400).json({ success: false, error: 'رصيد الساعات منتهي' });
-    if (!enrollment.teacherId) return res.status(400).json({ success: false, error: 'يجب تعيين مدرس للتسجيل قبل جدولة الحصص' });
+
+    const resolvedTeacherId = teacherId || enrollment.teacherId;
+    if (!resolvedTeacherId) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار أو تعيين مدرس للحصة' });
+    }
+
+    const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+      where: { id: resolvedTeacherId, companyId }
+    });
+    if (!teacher) {
+      return res.status(400).json({ success: false, error: 'المدرس المحدد غير موجود' });
+    }
+
+    // Auto-link teacher to enrollment if enrollment didn't have one
+    if (!enrollment.teacherId) {
+      await getSharedPrismaClient().educationEnrollment.update({
+        where: { id: enrollment.id },
+        data: { teacherId: resolvedTeacherId }
+      });
+    }
 
     // Conflict detection: check if teacher has another session at the same time
     const sessionStart = new Date(scheduledAt);
-    const sessionEnd = new Date(sessionStart.getTime() + (plannedDuration || 60) * 60000);
+    const sessionEnd = new Date(sessionStart.getTime() + (Number(plannedDuration) || 60) * 60000);
 
     const conflicting = await getSharedPrismaClient().educationSession.findFirst({
       where: {
         companyId,
-        teacherId: enrollment.teacherId,
+        teacherId: resolvedTeacherId,
         status: { not: 'CANCELLED' },
         scheduledAt: {
           gte: new Date(sessionStart.getTime() - 60 * 60000), // 1 hour buffer
@@ -120,13 +139,13 @@ const create = async (req, res) => {
       data: {
         companyId,
         enrollmentId,
-        teacherId: enrollment.teacherId,
+        teacherId: resolvedTeacherId,
         studentId: enrollment.studentId,
         subjectId: enrollment.package.subjectId,
         scheduledAt: new Date(scheduledAt),
-        plannedDuration,
-        topic,
-        notes
+        plannedDuration: Number(plannedDuration) || 60,
+        topic: topic ? String(topic).trim() : null,
+        notes: notes ? String(notes).trim() : null
       },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
@@ -150,15 +169,30 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { scheduledAt, plannedDuration, topic, notes } = req.body;
+    const { scheduledAt, plannedDuration, topic, notes, teacherId } = req.body;
 
     const existing = await getSharedPrismaClient().educationSession.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الحصة غير موجودة' });
     if (existing.status !== 'SCHEDULED') return res.status(400).json({ success: false, error: 'لا يمكن تعديل حصة غير مجدولة' });
 
+    let safeTeacherId = undefined;
+    if (teacherId) {
+      const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+        where: { id: teacherId, companyId }
+      });
+      if (!teacher) return res.status(400).json({ success: false, error: 'المدرس المحدد غير موجود' });
+      safeTeacherId = teacherId;
+    }
+
     const data = await getSharedPrismaClient().educationSession.update({
       where: { id },
-      data: { scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined, plannedDuration, topic, notes },
+      data: {
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+        plannedDuration: plannedDuration ? Number(plannedDuration) : undefined,
+        teacherId: safeTeacherId,
+        topic: topic !== undefined ? (topic ? String(topic).trim() : null) : undefined,
+        notes: notes !== undefined ? (notes ? String(notes).trim() : null) : undefined
+      },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
         teacher: { select: { id: true, name: true } },

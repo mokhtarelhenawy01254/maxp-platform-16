@@ -369,7 +369,10 @@ export function useEducationManagementController() {
 
   // Session handlers
   const handleSaveSession = async (d: Partial<EducationSession>) => {
-    if (!(await saveItem("sessions", d))) return;
+    const ok = await saveItem("sessions", d);
+    if (!ok) {
+      throw new Error("تعذر حفظ الحصة، يرجى مراجعة البيانات والمحاولة مرة أخرى");
+    }
     setSessionModal(undefined);
     fetchSessions();
   };
