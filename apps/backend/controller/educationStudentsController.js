@@ -4,6 +4,16 @@ try {
 } catch {
   bcrypt = null;
 }
+const crypto = require('crypto');
+
+const hashPassword = async (pwd) => {
+  if (!pwd) return null;
+  if (bcrypt && typeof bcrypt.hash === 'function') {
+    return await bcrypt.hash(pwd, 10);
+  }
+  return crypto.createHash('sha256').update(pwd).digest('hex');
+};
+
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const normalizeGender = (g) => {
@@ -84,8 +94,18 @@ const create = async (req, res) => {
     const safeGuardianEmail = (guardianEmail && typeof guardianEmail === 'string' && guardianEmail.trim())
       ? guardianEmail.trim().toLowerCase()
       : null;
+    if (safeGuardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeGuardianEmail)) {
+      return res.status(400).json({ success: false, error: 'صيغة البريد الإلكتروني لولي الأمر غير صحيحة' });
+    }
+
+    if (guardianPassword && typeof guardianPassword === 'string' && guardianPassword.trim()) {
+      if (guardianPassword.trim().length < 6) {
+        return res.status(400).json({ success: false, error: 'كلمة مرور ولي الأمر يجب ألا تقل عن 6 أحرف' });
+      }
+    }
+
     const safeHashedPassword = (guardianPassword && typeof guardianPassword === 'string' && guardianPassword.trim())
-      ? (bcrypt ? await bcrypt.hash(guardianPassword.trim(), 10) : guardianPassword.trim())
+      ? await hashPassword(guardianPassword.trim())
       : null;
 
     if (!customerId) {
@@ -153,6 +173,15 @@ const create = async (req, res) => {
     } else {
       let customer = await getSharedPrismaClient().customer.findFirst({ where: { id: customerId, companyId } });
       if (!customer) return res.status(400).json({ success: false, error: 'ولي الأمر غير موجود' });
+      if (safeGuardianEmail || safeHashedPassword) {
+        const custUpdate = {};
+        if (safeGuardianEmail) custUpdate.email = safeGuardianEmail;
+        if (safeHashedPassword) custUpdate.password = safeHashedPassword;
+        await getSharedPrismaClient().customer.update({
+          where: { id: customer.id },
+          data: custUpdate
+        });
+      }
     }
 
     const data = await getSharedPrismaClient().educationStudent.create({
@@ -199,10 +228,17 @@ const update = async (req, res) => {
     if (targetCustomerId && (guardianEmail !== undefined || guardianPassword)) {
       const custUpdate = {};
       if (guardianEmail !== undefined && typeof guardianEmail === 'string' && guardianEmail.trim()) {
-        custUpdate.email = guardianEmail.trim().toLowerCase();
+        const trimmedEmail = guardianEmail.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+          return res.status(400).json({ success: false, error: 'صيغة البريد الإلكتروني لولي الأمر غير صحيحة' });
+        }
+        custUpdate.email = trimmedEmail;
       }
       if (guardianPassword && typeof guardianPassword === 'string' && guardianPassword.trim()) {
-        custUpdate.password = bcrypt ? await bcrypt.hash(guardianPassword.trim(), 10) : guardianPassword.trim();
+        if (guardianPassword.trim().length < 6) {
+          return res.status(400).json({ success: false, error: 'كلمة مرور ولي الأمر يجب ألا تقل عن 6 أحرف' });
+        }
+        custUpdate.password = await hashPassword(guardianPassword.trim());
       }
       if (Object.keys(custUpdate).length > 0) {
         await getSharedPrismaClient().customer.update({

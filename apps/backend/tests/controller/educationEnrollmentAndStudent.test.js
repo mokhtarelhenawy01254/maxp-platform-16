@@ -386,4 +386,102 @@ describe('Education Enrollment & Student Controllers', () => {
     assert.strictEqual(updatedCustomerData.email, 'new_parent@example.com');
     assert.ok(updatedCustomerData.password);
   });
+
+  it('student create with existing customerId updates guardianEmail and guardianPassword on existing customer', async () => {
+    mockPrisma.customer.findFirst = async () => ({
+      id: 'cust-exist-1',
+      firstName: 'محمود',
+      companyId: 'comp-1',
+    });
+
+    let updatedCustomerData = null;
+    mockPrisma.customer.update = async ({ where, data }) => {
+      updatedCustomerData = data;
+      return { id: where.id, ...data };
+    };
+
+    mockPrisma.educationStudent.create = async ({ data }) => ({ id: 'stu-exist-1', ...data });
+
+    const req = {
+      user: { companyId: 'comp-1' },
+      body: {
+        firstName: 'عمر',
+        customerId: 'cust-exist-1',
+        guardianEmail: 'existing_parent@example.com',
+        guardianPassword: 'ValidPassword123',
+      },
+    };
+
+    let jsonResult = null;
+    const res = {
+      status: () => res,
+      json: (data) => {
+        jsonResult = data;
+      },
+    };
+
+    await studentController.create(req, res);
+
+    assert.strictEqual(jsonResult.success, true);
+    assert.strictEqual(updatedCustomerData.email, 'existing_parent@example.com');
+    assert.ok(updatedCustomerData.password);
+  });
+
+  it('student create rejects invalid guardianEmail format', async () => {
+    const req = {
+      user: { companyId: 'comp-1' },
+      body: {
+        firstName: 'عمر',
+        customerId: 'cust-exist-1',
+        guardianEmail: 'not-an-email',
+      },
+    };
+
+    let statusCode = 200;
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        statusCode = code;
+        return res;
+      },
+      json: (data) => {
+        jsonResult = data;
+      },
+    };
+
+    await studentController.create(req, res);
+
+    assert.strictEqual(statusCode, 400);
+    assert.strictEqual(jsonResult.success, false);
+    assert.match(jsonResult.error, /البريد الإلكتروني/);
+  });
+
+  it('student create rejects guardianPassword shorter than 6 chars', async () => {
+    const req = {
+      user: { companyId: 'comp-1' },
+      body: {
+        firstName: 'عمر',
+        customerId: 'cust-exist-1',
+        guardianPassword: '123',
+      },
+    };
+
+    let statusCode = 200;
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        statusCode = code;
+        return res;
+      },
+      json: (data) => {
+        jsonResult = data;
+      },
+    };
+
+    await studentController.create(req, res);
+
+    assert.strictEqual(statusCode, 400);
+    assert.strictEqual(jsonResult.success, false);
+    assert.match(jsonResult.error, /كلمة مرور/);
+  });
 });

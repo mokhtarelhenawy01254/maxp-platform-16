@@ -106,7 +106,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
 
   const hasGuardian =
     !!form.customerId ||
-    isSelfGuardian ||
+    (isSelfGuardian && !!form.phone.trim()) ||
     (isManualGuardian && !!manualGuardian.name.trim() && !!manualGuardian.phone.trim());
 
   const handleSubmit = async () => {
@@ -247,7 +247,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             </div>
 
             {isSelfGuardian ? (
-              <div className="p-2.5 rounded-lg border border-primary/30 bg-primary/5 text-xs text-primary flex items-center gap-2">
+              <div className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${form.phone?.trim() ? "border-primary/30 bg-primary/5 text-primary" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
                 <User className="w-4 h-4 shrink-0" />
                 <span>سيتم تسجيل الطالب كولي أمر نفسه تلقائياً برقم هاتفه.</span>
               </div>

@@ -5,7 +5,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const testRateLimits = new Map();
 
 // Periodically clean up expired rate limit entries to prevent memory leaks
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [key, timestamps] of testRateLimits.entries()) {
     const valid = timestamps.filter((t) => now - t < 60000);
@@ -13,6 +13,7 @@ setInterval(() => {
     else testRateLimits.set(key, valid);
   }
 }, 300000);
+if (cleanupTimer?.unref) cleanupTimer.unref();
 
 function checkTestRateLimit(key, limit = 5, windowMs = 60000) {
   const now = Date.now();
