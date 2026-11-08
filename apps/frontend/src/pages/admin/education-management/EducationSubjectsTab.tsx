@@ -84,6 +84,14 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                 {s.description}
               </p>
             )}
+            <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
+              <span className="text-muted-foreground">سعر المادة:</span>
+              <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                {typeof s.price === "number" && s.price > 0
+                  ? `${s.price.toLocaleString()} ج.م`
+                  : "0 ج.م"}
+              </span>
+            </div>
             <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-border/60">
               <button
                 type="button"
@@ -129,7 +137,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs">
-                {["الاسم", "الوصف", "الحالة", ""].map((h) => (
+                {["الاسم", "الوصف", "السعر / الرسوم", "الحالة", ""].map((h) => (
                   <th key={h} className="text-right py-3 px-4 font-semibold">
                     {h}
                   </th>
@@ -144,6 +152,15 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                   </td>
                   <td className={CELL_CLS + " text-muted-foreground"}>
                     {s.description || "—"}
+                  </td>
+                  <td className={CELL_CLS + " font-mono tabular-nums text-foreground"}>
+                    {typeof s.price === "number" && s.price > 0 ? (
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {s.price.toLocaleString()} ج.م
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">0 ج.م</span>
+                    )}
                   </td>
                   <td className={CELL_CLS}>
                     <span

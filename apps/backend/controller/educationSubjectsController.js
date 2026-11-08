@@ -21,7 +21,7 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { name, description } = req.body;
+    const { name, description, price } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم المادة مطلوب' });
 
     const subjectName = name.trim();
@@ -33,8 +33,17 @@ const create = async (req, res) => {
       return res.status(409).json({ success: false, error: `مادة بنفس الاسم «${subjectName}» موجودة بالفعل` });
     }
 
+    let parsedPrice = 0;
+    if (price !== undefined && price !== null && price !== "") {
+      const num = Number(price);
+      if (!Number.isFinite(num) || num < 0) {
+        return res.status(400).json({ success: false, error: 'سعر المادة يجب أن يكون رقماً موجباً أو صفراً' });
+      }
+      parsedPrice = num;
+    }
+
     const data = await getSharedPrismaClient().educationSubject.create({
-      data: { companyId, name: subjectName, description }
+      data: { companyId, name: subjectName, description, price: parsedPrice }
     });
     res.json({ success: true, data });
   } catch (error) {
@@ -49,7 +58,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { name, description, isActive } = req.body;
+    const { name, description, price, isActive } = req.body;
 
     const existing = await getSharedPrismaClient().educationSubject.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'المادة غير موجودة' });
@@ -67,9 +76,18 @@ const update = async (req, res) => {
       nextName = subjectName;
     }
 
+    const updatePayload = { name: nextName, description, isActive };
+    if (price !== undefined && price !== null && price !== "") {
+      const num = Number(price);
+      if (!Number.isFinite(num) || num < 0) {
+        return res.status(400).json({ success: false, error: 'سعر المادة يجب أن يكون رقماً موجباً أو صفراً' });
+      }
+      updatePayload.price = num;
+    }
+
     const data = await getSharedPrismaClient().educationSubject.update({
       where: { id },
-      data: { name: nextName, description, isActive }
+      data: updatePayload
     });
     res.json({ success: true, data });
   } catch (error) {

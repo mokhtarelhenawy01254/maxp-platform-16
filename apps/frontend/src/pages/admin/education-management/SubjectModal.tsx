@@ -14,7 +14,12 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [form, setForm] = useState({ name: "", description: "", ...subject });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: 0,
+    ...subject,
+  });
 
   return (
     <div
@@ -43,6 +48,7 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
               className={INPUT_CLS}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="مثال: لغة إنجليزية، رياضيات، برمجة..."
             />
           </div>
           <div className="space-y-1">
@@ -54,7 +60,30 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
+              placeholder="وصف مختصر للمادة التعليمية..."
             />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground">
+              سعر المادة / رسوم السداد (ج.م)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step="any"
+              className={INPUT_CLS}
+              value={form.price !== undefined && form.price !== null ? form.price : ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  price: e.target.value === "" ? 0 : Number(e.target.value),
+                })
+              }
+              placeholder="0.00"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              خيار الدفع الأساسي للمادة (سعر الحصة / الرسوم المقررة)
+            </p>
           </div>
         </div>
         <div className="flex justify-end gap-2.5 pt-3 border-t border-border/80">

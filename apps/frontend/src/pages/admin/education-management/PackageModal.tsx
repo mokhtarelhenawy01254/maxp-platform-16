@@ -62,7 +62,15 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             <select
               className={INPUT_CLS}
               value={form.subjectId}
-              onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
+              onChange={(e) => {
+                const subId = e.target.value;
+                const foundSub = subjects.find((s) => s.id === subId);
+                setForm((prev) => ({
+                  ...prev,
+                  subjectId: subId,
+                  price: prev.price === 0 && foundSub?.price ? foundSub.price : prev.price,
+                }));
+              }}
             >
               <option value="">اختر المادة</option>
               {subjects
