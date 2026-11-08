@@ -46,6 +46,15 @@
 
 **موقف البوابة ٤:** OpenCode شايف إن ده BUG، إحنا شايفينه خارج نطاق التاسك (الخامات = products في هذا الكود). الفرق مسجّل صريح والقرار النهائي للمالكة.
 
+## جولة ٧ → ٨ (مراجعة OpenCode على f6ef9e3c0: FIX_FIRST — 0 BLOCKER / 1 BUG / 2 RISK · معايير 3/3)
+
+| # | النوع | الملاحظة | القرار | الدليل |
+|---|---|---|---|---|
+| ١٥ | BUG | كتالوج الـpicker بيجيب أول ١٠ منتجات بس (limit الافتراضي 10 في `/products`) والباقي مش قابل للاختيار | **اتصلح:** `getProducts({ limit: 500 })` — الـAPI مابيحطش سقف على limit (`productController.js:507`) | `manufacturingApi.ts:1471` + `SampleComponentsTab.tsx:61-63` |
+| ١٦ | RISK | سكربت reset مابيفشلش لو الحذف رجع خطأ | **اتصلح:** بيجمع `failed` وبيطلع exit 2 لو أي DELETE مش 2xx | `_reports/83791d03-evidence/verify_83791d03_reset.py` |
+| ١٧ | RISK | الـpicker بيسمح بأي منتج مش «خامات» بس | **خلاف نطاق مستمر — القرار للمالكة** (نفس البند ١٤: مفيش كتالوج خامات منفصل في MaxP؛ الـBOM نفسه بيختار من products) | `manufacturingService.js:333-360` · `BomComponentsTable.tsx:184-191` |
+
+
 
 
 

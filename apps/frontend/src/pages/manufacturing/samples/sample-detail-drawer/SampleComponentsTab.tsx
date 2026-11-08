@@ -60,7 +60,7 @@ export const SampleComponentsTab: React.FC<SampleComponentsTabProps> = ({ sample
 
   useEffect(() => {
     manufacturingApi
-      .getProducts()
+      .getProducts({ limit: 500 })
       .then((res: any) => {
         setProducts(Array.isArray(res) ? res : []);
       })

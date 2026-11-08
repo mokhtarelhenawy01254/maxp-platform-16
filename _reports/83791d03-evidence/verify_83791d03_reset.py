@@ -35,8 +35,13 @@ TID = sample["id"]
 st, r = api("GET", f"/api/v1/manufacturing/sample-orders/{TID}/components")
 comps = (r.get("data") or {}).get("components") or []
 removed = []
+failed = []
 for c in comps:
     if c.get("name") == "مكوّن واجهة 8379":
         st2, r2 = api("DELETE", f"/api/v1/manufacturing/sample-orders/{TID}/components/{c['id']}")
         removed.append({"id": c["id"], "http": st2, "totals": (r2.get("data") or {}) if isinstance(r2, dict) else None})
-print(json.dumps({"sample": TID, "removed": removed}, ensure_ascii=False, indent=1))
+        if st2 not in (200, 201, 204):
+            failed.append({"id": c["id"], "http": st2, "error": str(r2)[:200]})
+print(json.dumps({"sample": TID, "removed": removed, "failed": failed}, ensure_ascii=False, indent=1))
+if failed:
+    raise SystemExit(2)

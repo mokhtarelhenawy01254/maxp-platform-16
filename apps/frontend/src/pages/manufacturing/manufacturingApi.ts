@@ -1468,7 +1468,7 @@ export const manufacturingApi = {
       return [];
     }
   },
-  getProducts: async (params?: { search?: string }): Promise<ProductOption[]> => {
+  getProducts: async (params?: { search?: string; limit?: number }): Promise<ProductOption[]> => {
     try {
       const res = await apiClient.get('/products', { params });
       const list = Array.isArray(res.data?.data?.products)
