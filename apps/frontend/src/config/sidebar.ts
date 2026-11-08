@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Clapperboard, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -1293,6 +1293,13 @@ export const getSidebarConfig = (
                     icon: Palette,
                     label: isEn ? 'AI Creative Studio' : 'استوديو التصاميم الإعلانية (AI)',
                 },
+                // 1.6 استوديو الفيديو AI (Higgsfield)
+                {
+                    to: '/advertising/video-studio',
+                    icon: Clapperboard,
+                    label: isEn ? 'AI Video Studio' : 'استوديو الفيديو AI',
+                    hidden: !isAppActive('ai-video-studio'),
+                },
                 // 2. إعلانات فيسبوك (Meta Ads Cockpit)
                 {
                     to: '/advertising/facebook-ads',
@@ -1553,7 +1560,7 @@ export const getSidebarConfig = (
                 },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic', 'tiktok-integrations'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic', 'tiktok-integrations', 'ai-video-studio'])
         },
 
         // 5️⃣.5 تحليل المنافسين

@@ -1386,6 +1386,11 @@ app.use("/api/v1/ai-image", aiImageRoutes);
 const videoGenerationRoutes = require("./routes/videoGenerationRoutes");
 app.use("/api/v1/ai-video", videoGenerationRoutes);
 
+// AI Video Studio (Higgsfield — jobs, characters, stories, BYOK)
+const videoStudioRoutes = require("./routes/videoStudioRoutes");
+app.use("/api/v1/video-studio", videoStudioRoutes);
+app.use("/api/v1/video-studio/admin", videoStudioRoutes.superAdminRouter);
+
 // Frontend error tracking
 app.use("/api/v1/errors", errorRoutes);
 
@@ -1516,6 +1521,14 @@ try {
   console.log("✅ [RAG-EVAL] Knowledge evaluation scheduler scheduled");
 } catch (error) {
   console.error("❌ [RAG-EVAL] Failed to start Knowledge Evaluation Scheduler:", error.message);
+}
+
+// Start AI Video Studio Job Worker (DB-claimed jobs; safe across instances)
+try {
+  const { startVideoJobWorker } = require("./workers/videoJobWorker");
+  startVideoJobWorker();
+} catch (error) {
+  console.error("❌ [VIDEO-WORKER] Failed to start:", error.message);
 }
 
 // Start AI Cron Scheduler (Hermes Natural Language Cron Jobs)

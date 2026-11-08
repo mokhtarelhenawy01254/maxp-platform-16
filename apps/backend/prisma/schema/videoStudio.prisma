@@ -1,0 +1,136 @@
+// AI Video Studio — Higgsfield (first provider, GOOGLE_VEO reserved for later).
+// companyId/userId are plain strings (no FK) to keep this domain isolated from core.prisma.
+
+enum VideoJobProvider {
+  HIGGSFIELD
+  GOOGLE_VEO
+
+  @@map("video_job_provider")
+}
+
+enum VideoJobType {
+  TEXT_TO_VIDEO
+  IMAGE_TO_VIDEO
+  MOTION_TRANSFER
+  CHARACTER_SHEET
+  TEXT_TO_IMAGE
+
+  @@map("video_job_type")
+}
+
+enum VideoJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+
+  @@map("video_job_status")
+}
+
+enum VideoBillingMode {
+  BYOK
+  PLATFORM
+
+  @@map("video_billing_mode")
+}
+
+enum VideoStoryStatus {
+  DRAFT
+  RENDERING
+  COMPLETED
+  FAILED
+
+  @@map("video_story_status")
+}
+
+model VideoJob {
+  id                  String           @id @default(cuid())
+  companyId           String
+  userId              String?
+  type                VideoJobType
+  provider            VideoJobProvider @default(HIGGSFIELD)
+  model               String
+  // prompt, durationSeconds, aspectRatio, resolution, cameraMotion,
+  // referenceImages[], startFrameUrl, negativePrompt, sourceProductId, characterIds[]
+  params              Json             @default("{}")
+  status              VideoJobStatus   @default(QUEUED)
+  progress            Int              @default(0)
+  providerRequestId   String?
+  statusUrl           String?
+  costUsd             Float            @default(0)
+  costEgp             Decimal          @default(0) @db.Decimal(12, 2)
+  chargedEgp          Decimal          @default(0) @db.Decimal(12, 2)
+  billingMode         VideoBillingMode @default(PLATFORM)
+  walletTransactionId String?
+  inputAssets         Json?
+  outputUrl           String?
+  outputPosterUrl     String?
+  lastFrameUrl        String?
+  errorMessage        String?
+  providerMeta        Json?
+  storySceneId        String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([storySceneId])
+  @@map("video_jobs")
+}
+
+model VideoCharacter {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  description     String?
+  gender          String?
+  ageRange        String?
+  style           String?
+  sourceType      String   @default("GENERATED") // GENERATED | UPLOADED
+  referenceImages Json     @default("[]") // stable reference image URLs (2-4)
+  thumbnailUrl    String?
+  sheetJobId      String? // VideoJob id that generated the sheet
+  providerMeta    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("video_characters")
+}
+
+model VideoStory {
+  id        String           @id @default(cuid())
+  companyId String
+  title     String
+  status    VideoStoryStatus @default(DRAFT)
+  settings  Json             @default("{}") // { chaining, model, aspectRatio, resolution }
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  scenes VideoStoryScene[]
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("video_stories")
+}
+
+model VideoStoryScene {
+  id              String   @id @default(cuid())
+  storyId         String
+  sceneOrder      Int
+  prompt          String   @db.Text
+  characterIds    Json     @default("[]")
+  durationSeconds Int      @default(5)
+  cameraMotion    String?
+  videoJobId      String?
+  status          String   @default("PENDING") // PENDING | RENDERING | COMPLETED | FAILED
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  story VideoStory @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, sceneOrder])
+  @@index([storyId])
+  @@map("video_story_scenes")
+}

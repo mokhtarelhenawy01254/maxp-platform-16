@@ -696,6 +696,9 @@ const MarketingAiStudioPage = React.lazy(
 const CreativeAiStudioPage = React.lazy(
   () => import("./pages/advertising/creative-studio/CreativeAiStudioPage"),
 );
+const VideoStudioPage = React.lazy(
+  () => import("./pages/advertising/video-studio/VideoStudioPage"),
+);
 const NavigateFacebookAdsDiagnosis: React.FC = () => {
   const location = useLocation();
   return <Navigate to={`/advertising/facebook-ads${location.search}`} replace />;
@@ -2001,6 +2004,7 @@ if (typeof window !== "undefined") {
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
   p["/advertising/marketing-studio"] = () => import("./pages/advertising/marketing-studio/MarketingAiStudioPage");
   p["/advertising/creative-studio"] = () => import("./pages/advertising/creative-studio/CreativeAiStudioPage");
+  p["/advertising/video-studio"] = () => import("./pages/advertising/video-studio/VideoStudioPage");
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");
   p["/settings"] = () => import("./pages/settings/Settings");
@@ -4314,6 +4318,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <CreativeAiStudioPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/video-studio"
+                  element={
+                    <Layout fullWidth>
+                      <VideoStudioPage />
                     </Layout>
                   }
                 />
@@ -6767,6 +6779,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <CreativeAiStudioPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/video-studio"
+                  element={
+                    <Layout fullWidth>
+                      <VideoStudioPage />
                     </Layout>
                   }
                 />
