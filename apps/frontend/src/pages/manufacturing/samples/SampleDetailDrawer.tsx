@@ -193,7 +193,6 @@ export const SampleDetailDrawer: React.FC<SampleDetailDrawerProps> = ({
             <SampleComponentsTab
               sampleId={sample.id}
               readOnly={sample.status === 'CONVERTED'}
-              onChanged={onRefresh}
             />
           )}
         </div>

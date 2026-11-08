@@ -48,21 +48,17 @@ export const NotificationLogDetailsDialog: React.FC<NotificationLogDetailsDialog
 
   const handleCopy = (text?: string | null, fieldKey: string = 'text') => {
     if (!text) return;
-    const markCopied = () => {
-      setCopiedField(fieldKey);
-      setTimeout(() => {
-        setCopiedField((prev) => (prev === fieldKey ? null : prev));
-      }, 2000);
-    };
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        // Only report success when the clipboard write actually resolves; a rejected
-        // promise (permission denied / insecure context) must not show "تم النسخ".
-        navigator.clipboard.writeText(text).then(markCopied).catch(() => {});
+        navigator.clipboard.writeText(text).catch(() => {});
       }
     } catch {
       // Fallback silent catch for environments without clipboard permissions
     }
+    setCopiedField(fieldKey);
+    setTimeout(() => {
+      setCopiedField((prev) => (prev === fieldKey ? null : prev));
+    }, 2000);
   };
 
   const isFailed = log?.status === 'FAILED' || !!log?.failureReason || !!log?.errorCode;
@@ -76,7 +72,6 @@ export const NotificationLogDetailsDialog: React.FC<NotificationLogDetailsDialog
         role="dialog"
         aria-labelledby="notification-log-title"
         className="w-full sm:max-w-3xl max-h-[92vh] overflow-y-auto max-sm:h-[100dvh] max-sm:max-w-none max-sm:rounded-none max-sm:m-0 p-4 sm:p-6 bg-card"
-        overlayClassName="bg-black/50"
         closeLabel="إغلاق"
       >
         <DialogHeader className="border-b border-border/40 pb-3">
@@ -91,32 +86,6 @@ export const NotificationLogDetailsDialog: React.FC<NotificationLogDetailsDialog
               <DialogDescription className="mt-0.5 text-xs font-mono tabular-nums text-muted-foreground">
                 {log ? formatDate(log.createdAt) : ''}
               </DialogDescription>
-              {log && (
-                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-semibold text-foreground">
-                    {log.recipientName || 'مستلم غير معروف'}
-                  </span>
-                  {log.recipientPhone ? (
-                    <>
-                      <span aria-hidden="true" className="text-muted-foreground">
-                        ·
-                      </span>
-                      <span className="font-mono tabular-nums text-muted-foreground" dir="ltr">
-                        {log.recipientPhone}
-                      </span>
-                    </>
-                  ) : null}
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'rounded-md text-[10px] font-mono px-2 py-0.5',
-                      MESSAGE_TYPE_STYLES[log.messageType] || MESSAGE_TYPE_STYLES.TEXT
-                    )}
-                  >
-                    {MESSAGE_TYPE_LABELS[log.messageType] || '—'}
-                  </Badge>
-                </div>
-              )}
             </div>
 
             {log && (

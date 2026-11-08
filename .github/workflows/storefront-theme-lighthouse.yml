@@ -73,17 +73,20 @@ jobs:
         run: |
           set -euo pipefail
           IFS=',' read -ra LIST <<< "${{ inputs.urls }}"
+          i=0
           for u in "${LIST[@]}"; do
             u="$(echo "$u" | xargs)"
             [ -z "$u" ] && continue
-            echo "=== collecting: $u"
+            i=$((i+1))
+            echo "=== collecting [$i]: $u"
             lhci collect \
               --url="$u" \
               --numberOfRuns=${{ inputs.runs }} \
+              --collect.outputDir=".lighthouseci/run-$i" \
               --settings.preset=desktop 2>&1 | tee -a lhci-collect.log
           done
           echo "=== output directory contents ==="
-          ls -la .lighthouseci || true
+          find .lighthouseci -name 'lhr-*.json' | sort
 
       - name: Upload raw Lighthouse JSON results
         if: always()
@@ -101,9 +104,14 @@ jobs:
         run: |
           node - <<'NODE' | tee -a "$GITHUB_STEP_SUMMARY"
           const fs = require('fs');
+          const path = require('path');
           const dir = '.lighthouseci';
           if (!fs.existsSync(dir)) { console.log('لا يوجد تقرير — الفحص لم ينتج ملفات.'); process.exit(0); }
-          const files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.startsWith('lhr-'));
+          const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => {
+            const p = path.join(d, e.name);
+            return e.isDirectory() ? walk(p) : [p];
+          });
+          const files = walk(dir).filter(f => path.basename(f).startsWith('lhr-') && f.endsWith('.json'));
           if (!files.length) { console.log('لا يوجد تقرير.'); process.exit(0); }
           console.log('| الرابط | FCP (ms) | LCP (ms) | CLS | TBT (ms) | JS (KB) |');
           console.log('|---|---|---|---|---|---|');
