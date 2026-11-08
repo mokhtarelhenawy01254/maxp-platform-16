@@ -7,11 +7,15 @@
 |---|---|
 | `83791d03_api.json` | 10 سيناريوهات API: إضافة مكوّن (100/130) · تكرار اسم (409) · إضافة تانية (120/150) · تعديل لاسم مكرر (409) · تعديل كمية (170/200) · حذف (150/180) · list parity · مكوّن مرتبط بمنتج · تكرار productId (409) |
 | `83791d03_concurrency.json` | سباق إضافة: 5 POST متزامنة → 1×201 + 4×409 + صف واحد · سباق تعديل: quantity=2 + unitPrice=100 معًا → total=200 في الرد وفي DB |
-| `83791d03_snapshot.json` | تغيير catalog cost 1225→999 والـ`unitPrice` للمكوّن فضل 10 (سعر وقت الإضافة محفوظ) |
-| `83791d03_migration_clean_db.json` | تشغيل الـmigration على قاعدة نضيفة `maxp_8379_clean2`: enums + `sample_orders` + `sample_order_components` + FK=1، وبعدها القاعدة اتشالت |
+| `83791d03_price_snapshot.json` | تغيير catalog cost 1225→999 والـ`unitPrice` للمكوّن فضل 10 (سعر وقت الإضافة محفوظ) |
+| `83791d03_migration_clean_db.json` | تشغيل الـmigration على قاعدة نضيفة: enums + `sample_orders` + `sample_order_components` + FK=1 + أعمدة الـmodel، وبعدها القاعدة اتشالت |
 | `83791d03_g2_ui_flow.json` | البوابة ٢: من الشاشة، مكونات 160.00→170.00 وإجمالي العينة 190→200 في نفس الجلسة + رسالة التكرار |
+| `screens/*.png` | ٤ سكرين شوت: قبل الإضافة · بعد إضافة المكوّن (170) · إجمالي العينة بعدها (200) · رسالة التكرار |
 
 ## إعادة التشغيل
+> السكربتات مابتشيلش أي كلمات مرور. لازم تضبط `MAXP_QA_EMAIL` و`MAXP_QA_PASSWORD` من بيئتك.
+> ملفات JSON للأدلة تم تنقيتها من روابط المشاركة/التوكنات (`[REDACTED]`).
+
 ```bash
 # 1) قاعدة QA + backend من الكوميت (مثال)
 #    backend على 3104 وPSQL متاح في C:/Users/ali wazery/maxp-qa/pg/pgsql/bin

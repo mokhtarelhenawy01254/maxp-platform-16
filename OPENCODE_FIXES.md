@@ -28,6 +28,16 @@
 
 ملاحظة على الـRISK المتبقي: القفل والـmigration اتأكدوا بتشغيل فعلي على Postgres (مش mock) — الأدلة الخام متكومتة الآن في الريبو. اختبار الـmock نفسه مش بيقدر يحاكي التزامن، وده مقصود: السباق بيتحقق منه بسكربت `verify_83791d03_concurrency2.py` على قاعدة حقيقية.
 
+## جولة ٤ → ٥ (مراجعة OpenCode على e124305ee: FIX_FIRST — 0 BLOCKER / 1 BUG / 2 RISK · معايير 2/3)
+
+| # | النوع | الملاحظة | الإصلاح | الدليل |
+|---|---|---|---|---|
+| ٩ | BUG | الـmigration بتنشئ indexes على `partnerFactoryId`/`expectedDeliveryAt`/`sampleReceived` **قبل** `ALTER TABLE ADD COLUMN` → تفشل على جدول إنتاج ناقص عمود | ترتيب الـmigration اتصلح: الأعمدة (`ADD COLUMN IF NOT EXISTS`) الأول وبعدها الـindexes | قاعدة نضيفة جديدة: `ON_ERROR_STOP=1` نجح + 4 أعمدة + FK=1 |
+| ١٠ | RISK | سكربتات الأدلة المتكومتة فيها باسورد QA، وJSON فيه رابط مشاركة بتوكن | الباسورد بقى من `MAXP_QA_EMAIL/PASSWORD` (مفيش أي credential في الريبو) وكل `customerPortalUrl`/توكن اتستبدل بـ`[REDACTED]` | `grep ecMk` = صفر · `grep /share/` في الأدلة = صفر |
+| ١١ | RISK | الأدلة ناقصة سكرين شوت + README بيشاور على اسم ملف غلط + سكربت snapshot مش مضمون يرجّع السعر | ٤ سكرين شوت متكومتين تحت `screens/` · اسم الملف اتصلح · الـrestore بقى في `finally` + كل المسارات من env | `_reports/83791d03-evidence/screens/*.png` + `README.md` |
+| ١٢ | PARTIAL (معيار ٢) | مفيش تست بيغيّر سعر الكتالوج ويتحقق إن سعر المكوّن ثابت | أضفت تست 8: إضافة 2×50 ثم تغيير cost إلى 999 → `unitPrice=50` و`totalCost=100` وإجمالي العينة 100 | Jest — التست 8 ضمن 35/35 |
+
+
 
 ## ملاحظات
 - بوابة الواجهة (Vitest) لسه مش قابلة للتشغيل عند المراجع — `node_modules/.bin/vitest` مش موجود في بيئة المراجعة (بيئي). البوابة ٢ اتعملت بالـbrowser من عندي على QA محلي.

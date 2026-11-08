@@ -1764,6 +1764,31 @@ describe('Wave 5: Standalone Sample Orders & Conversion', () => {
       expect(listed.sampleTotalCost).toBe(130);
     });
 
+    test('8. تغيير سعر الكتالوج بعد الإضافة → سعر المكوّن وإجماليه ثابتين (snapshot)', async () => {
+      const sample = await ManufacturingSampleService.createSampleOrder(companyId, testUser, {
+        productName: 'عينة snapshot السعر',
+        fee: 0,
+      });
+
+      const added = await ManufacturingSampleService.addSampleComponent(companyId, testUser, sample.id, {
+        productId: 'prod-fabric-1',
+        quantity: 2,
+        unitPrice: 50,
+      });
+      expect(added.component.unitPrice).toBe(50);
+      expect(added.component.totalCost).toBe(100);
+
+      // الكتالوج بيتغيّر بعد الإضافة — المكوّن لازم يفضل على السعر وقت الإضافة
+      currentPrisma._store.products.get('prod-fabric-1').cost = 999;
+
+      const listed = await ManufacturingSampleService.listSampleComponents(companyId, sample.id);
+      expect(listed.count).toBe(1);
+      expect(listed.components[0].unitPrice).toBe(50);
+      expect(listed.components[0].totalCost).toBe(100);
+      expect(listed.componentsTotal).toBe(100);
+      expect(listed.sampleTotalCost).toBe(100);
+    });
+
     test('6. إنشاء عينة بقائمة فيها نفس المنتج مرتين → 409 قبل أي كتابة', async () => {
       let caught = null;
       try {

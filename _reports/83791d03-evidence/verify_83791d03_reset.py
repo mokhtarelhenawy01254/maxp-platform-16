@@ -22,7 +22,7 @@ def api(method, path, body=None):
             return e.code, raw[:300]
 
 
-st, login = api("POST", "/api/v1/auth/login", {"email": "qa@maxp.local", "password": "ecMk3p1ICv2bg-Et"})
+st, login = api("POST", "/api/v1/auth/login", {"email": os.environ.get("MAXP_QA_EMAIL", "qa@maxp.local"), "password": os.environ.get("MAXP_QA_PASSWORD", "")})
 d = login.get("data") or {}
 TOK = d.get("token")
 st, r = api("GET", "/api/v1/manufacturing/sample-orders?limit=100")

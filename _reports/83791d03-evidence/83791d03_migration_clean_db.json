@@ -1,7 +1,7 @@
 {
  "migration": "apps/backend/prisma/migrations/20261108000000_sample_order_components/migration.sql",
- "clean_db": "maxp_8379_clean3 (created + dropped)",
- "psql_on_error_stop": "exit 0 — enums + sample_orders (بكل أعمدة الـmodel) + indexes + sample_order_components + FK all succeeded",
+ "clean_db": "maxp_8379_clean4 (created + dropped)",
+ "psql_on_error_stop": "exit 0 — enums + sample_orders (بكل أعمدة الـmodel، الأعمدة قبل الـindexes) + indexes + sample_order_components + FK all succeeded",
  "tables_created": ["sample_orders", "sample_order_components"],
  "sample_order_columns_checked": {"partnerFactoryId": true, "totalAmount": true, "depositAmount": true, "paidAmount": true},
  "fk_constraints_added": 1,

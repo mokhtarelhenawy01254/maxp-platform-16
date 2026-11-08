@@ -29,7 +29,7 @@ def sql(q):
     return p.stdout.decode("utf-8", "replace").strip()
 
 
-st, login = api("POST", "/api/v1/auth/login", {"email": "qa@maxp.local", "password": "ecMk3p1ICv2bg-Et"})
+st, login = api("POST", "/api/v1/auth/login", {"email": os.environ.get("MAXP_QA_EMAIL", "qa@maxp.local"), "password": os.environ.get("MAXP_QA_PASSWORD", "")})
 tok = (login.get("data") or {}).get("token")
 st, r = api("POST", "/api/v1/manufacturing/sample-orders", {"productName": "عينة سباق 83791d03", "fee": 0}, token=tok)
 sid = (r.get("data") or {}).get("id")

@@ -43,7 +43,7 @@ def step(name, got, want_status, check=None, extra=None):
     return got[1] if isinstance(got[1], dict) else {}
 
 
-st, login = api("POST", "/api/v1/auth/login", {"email": "qa@maxp.local", "password": "ecMk3p1ICv2bg-Et"})
+st, login = api("POST", "/api/v1/auth/login", {"email": os.environ.get("MAXP_QA_EMAIL", "qa@maxp.local"), "password": os.environ.get("MAXP_QA_PASSWORD", "")})
 d = login.get("data") or login
 token = d.get("token") or login.get("token")
 user = d.get("user") or d.get("userData") or {}
