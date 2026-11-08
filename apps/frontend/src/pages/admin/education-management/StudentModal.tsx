@@ -92,6 +92,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const handleSelectCustomer = (c: Customer) => {
     setForm((prev) => ({ ...prev, customerId: c.id }));
     setSelectedCustomer(c);
+    if (c.email) setGuardianEmail(c.email);
     setCustomerSearch("");
     setShowResults(false);
   };
@@ -122,6 +123,8 @@ export const StudentModal: React.FC<StudentModalProps> = ({
         lastName: form.lastName ? form.lastName.trim() : "",
         phone: form.phone ? form.phone.trim() : "",
         gender: form.gender ? (String(form.gender).toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") : "MALE",
+        ...(guardianEmail.trim() ? { guardianEmail: guardianEmail.trim() } : {}),
+        ...(guardianPassword.trim() ? { guardianPassword: guardianPassword.trim() } : {}),
       };
       if (isSelfGuardian) {
         payload.isSelfGuardian = true;
