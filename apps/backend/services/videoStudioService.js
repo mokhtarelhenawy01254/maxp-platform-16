@@ -430,6 +430,51 @@ class VideoStudioService {
     return { deleted: true };
   }
 
+  // ---------- Key test + usage ----------
+
+  /**
+   * Test a Higgsfield key without generating anything.
+   * - With {keyId, secret}: probes the provided key WITHOUT saving it.
+   * - Without: probes the company's effective key (BYOK, else central).
+   */
+  async testKey(companyId, { keyId, secret } = {}) {
+    const settings = await this.getSettings();
+    if (keyId && secret) {
+      const ping = await higgsfieldAdapter.ping({ apiKey: `${String(keyId).trim()}:${String(secret).trim()}`, settings });
+      return { ...ping, source: 'provided' };
+    }
+    const keyInfo = await this.resolveKeys(companyId);
+    const ping = await higgsfieldAdapter.ping({ apiKey: keyInfo.apiKey, settings });
+    return { ...ping, source: keyInfo.billingMode === 'BYOK' ? 'byok' : 'central', billingMode: keyInfo.billingMode };
+  }
+
+  /**
+   * Usage snapshot. Super admin: platform-wide. Merchant: own companyId scope.
+   */
+  async getUsage({ companyId = null } = {}) {
+    const prisma = getSharedPrismaClient();
+    const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const base = companyId ? { companyId } : {};
+    const [totalJobs, jobs30, completedRows] = await Promise.all([
+      prisma.videoJob.count({ where: base }),
+      prisma.videoJob.count({ where: { ...base, createdAt: { gte: since30 } } }),
+      prisma.videoJob.findMany({
+        where: { ...base, createdAt: { gte: since30 }, status: 'COMPLETED' },
+        select: { chargedEgp: true, billingMode: true },
+      }),
+    ]);
+    const revenueEgp = round2(completedRows.reduce((s, j) => s + (Number(j.chargedEgp) || 0), 0));
+    const byok30 = completedRows.filter((j) => j.billingMode === 'BYOK').length;
+    return {
+      totalJobs,
+      jobs30,
+      completed30: completedRows.length,
+      platform30: completedRows.length - byok30,
+      byok30,
+      revenueEgp,
+    };
+  }
+
   // ---------- Config endpoint payload ----------
 
   async getConfig(companyId) {

@@ -1168,6 +1168,9 @@ const SuperAdminAIPlayground = React.lazy(
 const SuperAdminAIKeyManager = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIKeyManager"),
 );
+const SuperAdminVideoStudioSettings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminVideoStudioSettings"),
+);
 const SuperAdminAIKeyLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIKeyLogs"),
 );
@@ -2836,6 +2839,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminPayments />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/video-studio"
+              element={
+                <Layout>
+                  <SuperAdminVideoStudioSettings />
                 </Layout>
               }
             />

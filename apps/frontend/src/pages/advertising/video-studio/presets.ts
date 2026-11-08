@@ -93,3 +93,30 @@ export function typeLabel(type: string): string {
     default: return type;
   }
 }
+
+// ---------- Merchant prefs (localStorage, screen-namespaced per isolation rule) ----------
+const PREFS_KEY = "video-studio:prefs";
+export const STUDIO_PREFS_EVENT = "video-studio:prefs-changed";
+
+export interface StudioPrefs {
+  model?: string;
+  aspectRatio?: string;
+}
+
+export function getStudioPrefs(): StudioPrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    return raw ? (JSON.parse(raw) as StudioPrefs) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveStudioPrefs(patch: StudioPrefs): void {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...getStudioPrefs(), ...patch }));
+    window.dispatchEvent(new CustomEvent(STUDIO_PREFS_EVENT));
+  } catch {
+    /* storage unavailable — prefs stay session-only */
+  }
+}

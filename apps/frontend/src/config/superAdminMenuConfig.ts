@@ -41,6 +41,7 @@ import {
   ShoppingBag,
   ShieldAlert,
   Smartphone,
+  Clapperboard,
 } from "lucide-react";
 
 export interface SuperAdminMenuItem {
@@ -247,6 +248,11 @@ export const getSuperAdminMenuGroups = (
         text: t("superAdmin.sidebar.aiKeyManager") || "إدارة مفاتيح API",
         icon: ic(Key, "h-4 w-4"),
         path: "/super-admin/ai-key-manager", // path="/super-admin/ai-key-manager"
+      },
+      {
+        text: "إعدادات استوديو الفيديو",
+        icon: ic(Clapperboard, "h-4 w-4"),
+        path: "/super-admin/video-studio", // path="/super-admin/video-studio"
       },
       {
         text: t("superAdmin.sidebar.aiKeyLogs") || "سجلات استخدام المفاتيح",

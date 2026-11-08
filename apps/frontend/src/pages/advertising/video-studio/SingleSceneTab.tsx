@@ -1,5 +1,5 @@
 // Single scene composer: workflow → model → prompt → refs → estimate → generate
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, Video } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -11,7 +11,7 @@ import { ReferenceImagesInput } from "./components/ReferenceImagesInput";
 import { ModelPicker } from "./components/ModelPicker";
 import { CharacterPicker } from "./components/CharacterPicker";
 import { VideoJobCard } from "./components/VideoJobCard";
-import { CAMERA_MOTIONS, DEFAULT_VIDEO_MODEL, WORKFLOWS, computeEstimateEgp, formatEgp } from "./presets";
+import { CAMERA_MOTIONS, DEFAULT_VIDEO_MODEL, WORKFLOWS, STUDIO_PREFS_EVENT, computeEstimateEgp, formatEgp, getStudioPrefs } from "./presets";
 import { useCancelJobMutation, useCreateJobMutation, useStudioConfig, useVideoCharacters, useVideoJobs } from "./useVideoStudioQueries";
 import type { VideoJobType } from "./types";
 import { cn } from "@/lib/utils";
@@ -24,10 +24,10 @@ export const SingleSceneTab: React.FC = () => {
   const cancelJob = useCancelJobMutation();
 
   const [workflow, setWorkflow] = useState<VideoJobType>("TEXT_TO_VIDEO");
-  const [model, setModel] = useState(DEFAULT_VIDEO_MODEL);
+  const [model, setModel] = useState(() => getStudioPrefs().model || DEFAULT_VIDEO_MODEL);
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(5);
-  const [aspectRatio, setAspectRatio] = useState("9:16");
+  const [aspectRatio, setAspectRatio] = useState(() => getStudioPrefs().aspectRatio || "9:16");
   const [cameraMotion, setCameraMotion] = useState("");
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [characterIds, setCharacterIds] = useState<string[]>([]);
@@ -36,6 +36,17 @@ export const SingleSceneTab: React.FC = () => {
   const videoModels = useMemo(() => (config?.models ?? []).filter((m) => m.kind === "video"), [config]);
   const selectedModel = videoModels.find((m) => m.id === model);
   const activeWorkflow = WORKFLOWS.find((w) => w.id === workflow);
+
+  // Prefs saved from the settings drawer apply to the live composer immediately
+  useEffect(() => {
+    const handler = () => {
+      const p = getStudioPrefs();
+      if (p.model) setModel(p.model);
+      if (p.aspectRatio) setAspectRatio(p.aspectRatio);
+    };
+    window.addEventListener(STUDIO_PREFS_EVENT, handler);
+    return () => window.removeEventListener(STUDIO_PREFS_EVENT, handler);
+  }, []);
 
   // Inject character references automatically when characters are selected
   const effectiveRefs = useMemo(() => {

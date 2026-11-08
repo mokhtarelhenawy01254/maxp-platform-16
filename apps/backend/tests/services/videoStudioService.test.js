@@ -166,3 +166,57 @@ describe('videoStudioService.validateJobInput', () => {
     ).toThrow(/فيديو مصدر/);
   });
 });
+
+describe('videoStudioService.getUsage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('aggregates platform-wide usage and revenue for super admin', async () => {
+    mockPrisma.videoJob.count.mockImplementation(({ where }) => {
+      if (where && where.createdAt) return Promise.resolve(7); // jobs30
+      return Promise.resolve(42); // totalJobs
+    });
+    mockPrisma.videoJob.findMany.mockResolvedValue([
+      { chargedEgp: 35.75, billingMode: 'PLATFORM' },
+      { chargedEgp: 64.35, billingMode: 'PLATFORM' },
+      { chargedEgp: 0, billingMode: 'BYOK' },
+    ]);
+    const usage = await videoStudioService.getUsage({});
+    expect(usage).toEqual({ totalJobs: 42, jobs30: 7, completed30: 3, platform30: 2, byok30: 1, revenueEgp: 100.1 });
+  });
+
+  it('scopes merchant usage by companyId', async () => {
+    mockPrisma.videoJob.count.mockResolvedValue(3);
+    mockPrisma.videoJob.findMany.mockResolvedValue([{ chargedEgp: 12, billingMode: 'PLATFORM' }]);
+    const usage = await videoStudioService.getUsage({ companyId: 'c1' });
+    expect(mockPrisma.videoJob.count).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: 'c1' } }));
+    expect(usage.revenueEgp).toBe(12);
+  });
+});
+
+describe('higgsfieldAdapter.ping', () => {
+  const adapter = require('../../services/videoProviders/higgsfieldAdapter');
+  const axios = require('axios');
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('classifies 404 as accepted (authenticated, resource missing)', async () => {
+    jest.spyOn(axios, 'get').mockResolvedValue({ status: 404 });
+    const res = await adapter.ping({ apiKey: 'id:secret' });
+    expect(res.state).toBe('accepted');
+  });
+
+  it('classifies 401/403 as rejected', async () => {
+    jest.spyOn(axios, 'get').mockResolvedValue({ status: 401 });
+    const res = await adapter.ping({ apiKey: 'id:secret' });
+    expect(res.state).toBe('rejected');
+  });
+
+  it('flags missing or malformed keys without a network call', async () => {
+    const spy = jest.spyOn(axios, 'get');
+    expect((await adapter.ping({ apiKey: null })).state).toBe('no_key');
+    expect((await adapter.ping({ apiKey: 'no-colon-here' })).state).toBe('invalid_format');
+    expect(spy).not.toHaveBeenCalled();
+  });
+});

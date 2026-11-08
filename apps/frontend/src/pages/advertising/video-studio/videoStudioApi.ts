@@ -83,6 +83,47 @@ export const videoStudioApi = {
     unwrap<StudioConfig["byok"]>(apiClient.put("/video-studio/byok", body)),
 
   deleteByok: () => unwrap<{ configured: boolean }>(apiClient.delete("/video-studio/byok")),
+
+  // Key test + usage
+  testKey: (body?: { keyId: string; secret: string }) =>
+    unwrap<KeyTestResult>(apiClient.post("/video-studio/test-key", body ?? {})),
+
+  usage: () => unwrap<UsageSnapshot>(apiClient.get("/video-studio/usage")),
+
+  // Super-admin
+  adminGetSettings: () =>
+    unwrap<AdminSettings>(apiClient.get("/video-studio/admin/settings")),
+  adminSaveSettings: (patch: Partial<AdminSettings>) =>
+    unwrap<AdminSettings>(apiClient.put("/video-studio/admin/settings", patch)),
+  adminConnectionTest: () =>
+    unwrap<KeyTestResult>(apiClient.get("/video-studio/admin/connection-test")),
+  adminUsage: () => unwrap<UsageSnapshot>(apiClient.get("/video-studio/admin/usage")),
+}
+
+export interface KeyTestResult {
+  state: "accepted" | "rejected" | "unreachable" | "no_key" | "invalid_format" | "reachable";
+  status?: number;
+  message?: string;
+  source?: "provided" | "byok" | "central";
+  billingMode?: string;
+}
+
+export interface UsageSnapshot {
+  totalJobs: number;
+  jobs30: number;
+  completed30: number;
+  platform30: number;
+  byok30: number;
+  revenueEgp: number;
+}
+
+export interface AdminSettings {
+  usdToEgp: number;
+  markupPercent: number;
+  minChargeEgp: number;
+  maxJobsPerDayPerCompany: number;
+  simulationMode: "auto" | "always" | "never";
+  baseUrl: string | null;
 };
 
 export function getApiErrorMessage(error: unknown, fallback: string): string {

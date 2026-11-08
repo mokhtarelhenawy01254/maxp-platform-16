@@ -95,7 +95,7 @@ const VideoStudioPage: React.FC = () => {
         </div>
       </Tabs>
 
-      <StudioSettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <StudioSettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} models={config?.models ?? []} />
     </div>
   );
 };

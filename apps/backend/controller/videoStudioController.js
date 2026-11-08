@@ -231,6 +231,29 @@ class VideoStudioController {
     }
   }
 
+  // ---------- Key test + usage ----------
+
+  // POST /test-key  (body optional { keyId, secret })
+  async testKey(req, res) {
+    try {
+      const data = await videoStudioService.testKey(getCompanyId(req), req.body || {});
+      return res.json({ success: true, data });
+    } catch (err) {
+      console.error('❌ [VIDEO-STUDIO-CTRL] testKey:', err.message);
+      return res.status(500).json({ success: false, error: 'تعذر اختبار المفتاح' });
+    }
+  }
+
+  // GET /usage
+  async getUsage(req, res) {
+    try {
+      const data = await videoStudioService.getUsage({ companyId: getCompanyId(req) });
+      return res.json({ success: true, data });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   // ---------- BYOK ----------
 
   async getByok(req, res) {

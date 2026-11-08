@@ -165,6 +165,32 @@ class HiggsfieldAdapter {
     }
   }
 
+  /**
+   * Key connectivity probe (no generation cost): GET a non-existent request status.
+   * 404 ⇒ the key authenticated (resource simply missing); 401/403 ⇒ rejected;
+   * anything else ⇒ network/base-url trouble. Honest states only.
+   */
+  async ping({ apiKey, settings }) {
+    const baseUrl = settings?.baseUrl || DEFAULT_BASE_URL;
+    if (!apiKey) return { state: 'no_key' };
+    if (!String(apiKey).includes(':')) return { state: 'invalid_format' };
+    try {
+      const res = await axios.get(`${baseUrl}/requests/__maxp_ping__/status`, {
+        headers: authHeader(apiKey),
+        timeout: 15000,
+        validateStatus: () => true,
+      });
+      if (res.status === 404) return { state: 'accepted', status: 404 };
+      if (res.status === 401 || res.status === 403) return { state: 'rejected', status: res.status };
+      return { state: 'reachable', status: res.status };
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 404) return { state: 'accepted', status };
+      if (status === 401 || status === 403) return { state: 'rejected', status };
+      return { state: 'unreachable', status: status || null, message: err.message };
+    }
+  }
+
   async downloadOutput({ url, apiKey, destPath }) {
     const writer = fs.createWriteStream(destPath);
     const response = await axios.get(url, {

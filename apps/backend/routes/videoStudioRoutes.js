@@ -46,6 +46,10 @@ router.get('/byok', ...auth, (req, res) => videoStudioController.getByok(req, re
 router.put('/byok', ...auth, (req, res) => videoStudioController.saveByok(req, res));
 router.delete('/byok', ...auth, (req, res) => videoStudioController.deleteByok(req, res));
 
+// Key test + merchant usage
+router.post('/test-key', ...auth, (req, res) => videoStudioController.testKey(req, res));
+router.get('/usage', ...auth, (req, res) => videoStudioController.getUsage(req, res));
+
 // ---------- Super-admin: pricing & limits ----------
 const superAdminRouter = express.Router();
 superAdminRouter.use(authenticateToken);
@@ -71,6 +75,24 @@ superAdminRouter.put('/settings', async (req, res) => {
     return res.json({ success: true, data });
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+superAdminRouter.get('/connection-test', async (req, res) => {
+  try {
+    const data = await videoStudioService.testKey(null, {});
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+superAdminRouter.get('/usage', async (req, res) => {
+  try {
+    const data = await videoStudioService.getUsage({});
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
