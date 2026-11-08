@@ -27,6 +27,18 @@ function checkTestRateLimit(key, limit = 5, windowMs = 60000) {
   return { allowed: true };
 }
 
+function resolveCompanyId(req) {
+  return (
+    req.user?.companyId ||
+    req.user?.effectiveCompanyId ||
+    req.headers['x-company-id'] ||
+    req.headers['X-Company-Id'] ||
+    req.query?.companyId ||
+    req.body?.companyId ||
+    null
+  );
+}
+
 function sanitizePhone(phone) {
   return String(phone || '').trim().replace(/[\s\-\(\)]/g, '');
 }
@@ -46,10 +58,30 @@ function maskPhoneNumber(phone) {
   return `${start}****${end}`;
 }
 
+const ERROR_TRANSLATIONS = {
+  no_session: 'لا توجد جلسة واتساب متصلة حالياً للشركة — يرجى ربط حساب واتساب (Meta Cloud أو مسح رمز QR) من إعدادات الشركة أولاً.',
+  notifications_disabled: 'إشعارات الواتساب معطلة في إعدادات المنصة للشركة.',
+  module_disabled: 'إشعارات وحدة التعليم معطلة في إعدادات المنصة.',
+  event_type_disabled: 'نوع الإشعار المحدد معطل في إعدادات إشعارات الواتساب.',
+  invalid_phone: 'رقم الهاتف غير صالح للإرسال عبر واتساب (تأكد من كتابة الرقم بشكل صحيح).',
+  no_template: 'لم يتم العثور على نص القالب للإشعار.',
+  template_not_found: 'قالب واتساب المطلوب غير مسجل أو غير معتمد لدى مزود الخدمة.',
+  rate_limit_exceeded: 'تم تجاوز الحد المسموح للإرسال التجريبي (5 رسائل في الدقيقة).',
+  template_param_mismatch: 'متغيرات القالب لا تطابق متطلبات الواتساب.',
+};
+
+function getReadableError(result) {
+  if (result?.error && typeof result.error === 'string' && result.error.length > 5 && !ERROR_TRANSLATIONS[result.error]) {
+    return result.error;
+  }
+  const code = result?.reason || result?.errorCode || result?.error;
+  return ERROR_TRANSLATIONS[code] || result?.error || result?.reason || 'فشل إرسال الإشعار عبر مزود الخدمة';
+}
+
 const getFunnel = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     const { period = 'all' } = req.query;
     const stats = await educationNotificationService.getFunnelStats(companyId, { period });
@@ -62,8 +94,8 @@ const getFunnel = async (req, res) => {
 
 const getLogs = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     const { eventType, limit = 50, status, search } = req.query;
     const where = { companyId };
@@ -122,8 +154,8 @@ const getLogs = async (req, res) => {
 
 const sendTest = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
 
     // Rate Limiting check
     const rateLimitKey = `${companyId}:${req.user?.id || req.ip}`;
@@ -158,8 +190,8 @@ const sendTest = async (req, res) => {
       variables: {
         parentName: 'وليّ الأمر',
         studentName: 'الطالب',
-        packageName: 'الباقة',
-        subjectName: 'المادة',
+        packageName: 'الباقة التجريبية',
+        subjectName: 'المادة التعليمية',
         totalHours: '20',
         amountPaid: '500',
         currency: 'ج.م',
@@ -176,9 +208,11 @@ const sendTest = async (req, res) => {
     });
 
     if (!result || result.success === false) {
+      const errorMsg = getReadableError(result);
       return res.status(400).json({
         success: false,
-        error: result?.reason || result?.error || 'فشل إرسال الإشعار عبر مزود الخدمة',
+        error: errorMsg,
+        details: result,
       });
     }
 

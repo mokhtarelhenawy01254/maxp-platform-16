@@ -117,11 +117,20 @@ function replaceVariables(template, vars = {}) {
   return text;
 }
 
-async function sendEducationNotification({ companyId, eventType, templates, variables = {}, recipientPhone, recipientName, recipientType = 'CUSTOMER' }) {
+async function sendEducationNotification({
+  companyId,
+  eventType,
+  templates,
+  variables = {},
+  recipientPhone,
+  recipientName,
+  recipientType = 'CUSTOMER',
+  deliveryStrategy = 'platform-fallback',
+}) {
   try {
     const rawTemplate = templates || NOTIFICATION_TEMPLATES[eventType]?.parent || NOTIFICATION_TEMPLATES[eventType];
     const content = replaceVariables(rawTemplate, variables);
-    if (!content) return { success: false, reason: 'no_template' };
+    if (!content) return { success: false, reason: 'no_template', error: 'لم يتم العثور على نص القالب' };
 
     const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
     return await sendNotification({
@@ -131,9 +140,11 @@ async function sendEducationNotification({ companyId, eventType, templates, vari
       recipientType,
       category: 'education',
       eventType,
+      rawEventType: eventType,
       contentOverride: content,
       variables: { ...variables, contentOverride: content },
       priority: 4,
+      deliveryStrategy,
     });
   } catch (error) {
     console.error(`[EducationNotification] Error sending ${eventType}:`, error.message);
