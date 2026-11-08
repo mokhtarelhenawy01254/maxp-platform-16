@@ -100,7 +100,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
               })
             }
           >
-            <option value="">كل المدرسين</option>
+            <option value="">كل المهندسين</option>
             {teachers
               .filter((t) => t.isActive)
               .map((t) => (
@@ -140,7 +140,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
             <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs">
               {[
                 "الطالب",
-                "المدرس",
+                "المهندس",
                 "المادة",
                 "التاريخ والوقت",
                 "المدة",

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, AlertCircle, Loader2, CheckCircle2, UserCheck, Calendar } from "lucide-react";
 import type {
   EducationSession,
@@ -28,6 +29,8 @@ export const SessionModal: React.FC<SessionModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const isEdit = !!session?.id;
 
   // Helper: sensible default for scheduledAt (local YYYY-MM-DDTHH:mm)
@@ -106,7 +109,9 @@ export const SessionModal: React.FC<SessionModalProps> = ({
       selectedEnrollment?.teacher?.id;
 
     if (!resolvedTeacherId) {
-      errors.teacherId = "يرجى اختيار المدرس المعين للحصة";
+      errors.teacherId = isEn
+        ? "Please select the assigned instructor"
+        : "يرجى اختيار المهندس المعين للحصة";
     }
 
     if (Object.keys(errors).length > 0) {
@@ -210,12 +215,12 @@ export const SessionModal: React.FC<SessionModalProps> = ({
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-foreground">
-                المدرس المعين للحصة *
+                {isEn ? "Assigned Instructor *" : "المهندس المعين للحصة *"}
               </label>
               {selectedEnrollment?.teacher && (
                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
                   <CheckCircle2 className="w-3 h-3" />
-                  مدرس التسجيل: {selectedEnrollment.teacher.name}
+                  {isEn ? "Enrollment Instructor:" : "مهندس التسجيل:"} {selectedEnrollment.teacher.name}
                 </span>
               )}
             </div>
@@ -228,7 +233,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
               }}
               disabled={isEdit && session?.status !== "SCHEDULED"}
             >
-              <option value="">-- اختر المدرس للحصة --</option>
+              <option value="">{isEn ? "-- Select Instructor --" : "-- اختر المهندس للحصة --"}</option>
               {activeTeachers.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name} {t.phone ? `(${t.phone})` : ""}
@@ -241,7 +246,9 @@ export const SessionModal: React.FC<SessionModalProps> = ({
             {selectedEnrollment && !selectedEnrollment.teacher && (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1">
                 <UserCheck className="w-3.5 h-3.5 shrink-0" />
-                هذا التسجيل لم يتم تعيين مدرس له مسبقاً — المدرس الذي تختاره هنا سيتم تعيينه تلقائياً لهذا التسجيل وهذه الحصة.
+                {isEn
+                  ? "This enrollment has no assigned instructor yet — the instructor chosen here will be assigned automatically."
+                  : "هذا التسجيل لم يتم تعيين مهندس له مسبقاً — المهندس الذي تختاره هنا سيتم تعيينه تلقائياً لهذا التسجيل وهذه الحصة."}
               </p>
             )}
           </div>

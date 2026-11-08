@@ -116,7 +116,7 @@ export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ class
   { id: "subjects", label: "المواد", icon: BookOpen },
   { id: "packages", label: "الباقات", icon: Gift },
   { id: "students", label: "الطلاب", icon: Users },
-  { id: "teachers", label: "المدرسين", icon: GraduationCap },
+  { id: "teachers", label: "المهندسين", icon: GraduationCap },
   { id: "enrollments", label: "التسجيلات", icon: Layers },
   { id: "sessions", label: "الحصص", icon: Clock },
 ];

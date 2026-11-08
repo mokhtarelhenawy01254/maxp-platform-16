@@ -52,7 +52,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
 
 const EMPTY_TEACHER = {
   id: "",
-  name: "المدرس",
+  name: "المهندس",
   email: "",
   phone: "",
   isActive: true,
@@ -129,7 +129,7 @@ export default function EducationTeacherProfilePage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/80 bg-background text-xs font-medium text-foreground hover:bg-muted/50 transition-colors shadow-xs"
           >
             <ArrowRight className="w-3.5 h-3.5" />
-            العودة لجدول المدرسين
+            العودة لجدول المهندسين
           </Link>
         </div>
       </div>

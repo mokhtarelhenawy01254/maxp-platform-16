@@ -234,7 +234,7 @@ export default function EducationTeacherPaymentsPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            مرتبات ومستحقات المدرسين
+            مرتبات ومستحقات المهندسين
           </h1>
           <p className="text-xs text-muted-foreground">
             احتساب مستحقات الحصص المنفذة وصرف المرتبات والخصومات الأكاديمية
@@ -305,7 +305,7 @@ export default function EducationTeacherPaymentsPage() {
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
             >
-              <option value="">كل المدرسين ({teachers.length})</option>
+              <option value="">كل المهندسين ({teachers.length})</option>
               {teachers.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -341,7 +341,7 @@ export default function EducationTeacherPaymentsPage() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground">
-              <th className="text-right py-3 px-4 font-semibold">المدرس</th>
+              <th className="text-right py-3 px-4 font-semibold">المهندس</th>
               <th className="text-right py-3 px-4 font-semibold">الفترة المحتسبة</th>
               <th className="text-right py-3 px-4 font-semibold">الحصص</th>
               <th className="text-right py-3 px-4 font-semibold">الساعات</th>
@@ -425,7 +425,7 @@ export default function EducationTeacherPaymentsPage() {
                 <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                   <Calculator className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-foreground">حساب مستحقات المدرس</h3>
+                <h3 className="text-base font-bold text-foreground">حساب مستحقات المهندس</h3>
               </div>
               <button
                 onClick={() => setShowCalc(false)}
@@ -438,7 +438,7 @@ export default function EducationTeacherPaymentsPage() {
             {!calcResult ? (
               <div className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-medium text-foreground">المدرس</label>
+                  <label className="font-medium text-foreground">المهندس</label>
                   <select
                     className="w-full bg-background border border-input rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     value={calcTeacher}
@@ -448,7 +448,7 @@ export default function EducationTeacherPaymentsPage() {
                       if (t?.subjectRates?.length) setCalcRate(t.subjectRates[0].hourlyRate);
                     }}
                   >
-                    <option value="">اختر المدرس</option>
+                    <option value="">اختر المهندس</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}

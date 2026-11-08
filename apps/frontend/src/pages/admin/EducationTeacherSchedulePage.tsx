@@ -164,10 +164,10 @@ export default function EducationTeacherSchedulePage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            جدول المدرسين والحصص الأسبوعية
+            جدول المهندسين والحصص الأسبوعية
           </h1>
           <p className="text-xs text-muted-foreground">
-            استعراض المواعيد والحصص المجدولة والمؤكدة على مدار الأسبوع مع التصفية بحسب المدرس
+            استعراض المواعيد والحصص المجدولة والمؤكدة على مدار الأسبوع مع التصفية بحسب المهندس
           </p>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function EducationTeacherSchedulePage() {
             value={selectedTeacher}
             onChange={(e) => setSelectedTeacher(e.target.value)}
           >
-            <option value="">كل المدرسين ({teachers.length})</option>
+            <option value="">كل المهندسين ({teachers.length})</option>
             {teachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}

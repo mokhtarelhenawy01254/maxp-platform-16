@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   Gift,
@@ -35,6 +36,9 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
   enrollments,
   setActiveTab,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -61,7 +65,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
               "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
           },
           {
-            label: "المدرسين المتاحين",
+            label: isEn ? "Available Instructors" : "المهندسين المتاحين",
             value: stats.totalTeachers,
             icon: GraduationCap,
             color:

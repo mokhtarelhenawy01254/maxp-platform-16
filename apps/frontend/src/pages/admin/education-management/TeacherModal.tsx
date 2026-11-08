@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import type { EducationTeacher, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
@@ -16,6 +17,9 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const [name, setName] = useState(teacher?.name || "");
   const [phone, setPhone] = useState(teacher?.phone || "");
   const [email, setEmail] = useState(teacher?.email || "");
@@ -63,7 +67,9 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
       >
         <div className="flex items-center justify-between pb-3 border-b border-border/80">
           <h3 className="text-sm font-bold text-foreground">
-            {teacher?.id ? "تعديل بيانات المدرس" : "إضافة مدرس جديد"}
+            {teacher?.id
+              ? (isEn ? "Edit Instructor Details" : "تعديل بيانات المهندس")
+              : (isEn ? "Add New Instructor" : "إضافة مهندس جديد")}
           </h3>
           <button
             type="button"
@@ -76,7 +82,7 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
-              اسم المدرس *
+              {isEn ? "Instructor Name *" : "اسم المهندس *"}
             </label>
             <input
               className={INPUT_CLS}
@@ -129,8 +135,8 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
               {teacher?.id
-                ? "كلمة المرور الجديدة (اتركها فارغة للتخطي)"
-                : "كلمة المرور (لبوابة المدرس)"}
+                ? (isEn ? "New Password (leave blank to keep current)" : "كلمة المرور الجديدة (اتركها فارغة للتخطي)")
+                : (isEn ? "Password (for Instructor Portal)" : "كلمة المرور (لبوابة المهندس)")}
             </label>
             <input
               type="password"

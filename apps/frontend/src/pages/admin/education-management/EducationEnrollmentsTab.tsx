@@ -61,7 +61,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                 "الطالب",
                 "الباقة",
                 "المادة",
-                "المدرس",
+                "المهندس",
                 "الساعات المتبقية",
                 "المدفوع",
                 "الحالة",
@@ -171,7 +171,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       {!e.teacher?.id && (
-                        <span title="مطلوب تعيين مدرس">
+                        <span title="مطلوب تعيين مهندس">
                           <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         </span>
                       )}

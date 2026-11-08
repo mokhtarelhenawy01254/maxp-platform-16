@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { School, AlertTriangle } from "lucide-react";
 import {
   TABS,
@@ -13,6 +14,9 @@ import {
 } from "./education-management";
 
 export default function EducationManagementPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const {
     activeTab,
     setActiveTab,
@@ -94,7 +98,7 @@ export default function EducationManagementPage() {
             إدارة المراكز والأكاديميات التعليمية
           </h1>
           <p className="text-xs text-muted-foreground">
-            نظام متكامل لإدارة المواد، باقات الحصص، المدرسين، والطلاب وجداول الحصص الدورية
+            نظام متكامل لإدارة المواد، باقات الحصص، المهندسين، والطلاب وجداول الحصص الدورية
           </p>
         </div>
       </div>
@@ -116,7 +120,7 @@ export default function EducationManagementPage() {
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
-              {tab.label}
+              {tab.id === "teachers" ? (isEn ? "Instructors" : "المهندسين") : tab.label}
             </button>
           );
         })}

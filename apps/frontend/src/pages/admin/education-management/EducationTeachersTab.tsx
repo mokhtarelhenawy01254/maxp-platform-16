@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import type { EducationTeacher, EducationSubject } from "./types";
 import { TeacherModal } from "./TeacherModal";
@@ -27,6 +28,9 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
   handleToggleTeacher,
   handleDeleteTeacher,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const filtered = teachers.filter(
     (t) =>
       !teacherSearch ||
@@ -38,14 +42,14 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h2 className="text-base font-bold text-foreground">
-          إدارة المدرسين والكوادر التعليمية
+          {isEn ? "Manage Instructors & Educational Staff" : "إدارة المهندسين والكوادر التعليمية"}
         </h2>
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
             <input
               className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-48 focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="بحث عن مدرس..."
+              placeholder={isEn ? "Search for instructor..." : "بحث عن مهندس..."}
               value={teacherSearch}
               onChange={(e) => setTeacherSearch(e.target.value)}
             />
@@ -56,7 +60,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            إضافة مدرس
+            {isEn ? "Add Instructor" : "إضافة مهندس"}
           </button>
         </div>
       </div>
@@ -145,7 +149,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full text-center py-12 text-xs text-muted-foreground">
-            لا يوجد مدرسين مسجلين
+            {isEn ? "No registered instructors" : "لا يوجد مهندسين مسجلين"}
           </p>
         )}
       </div>
