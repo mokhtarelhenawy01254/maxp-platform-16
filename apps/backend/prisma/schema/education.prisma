@@ -50,6 +50,7 @@ model EducationStudent {
   lastName   String
   phone      String?
   phone2     String?
+  address    String?    /// Residential / home address
   gender     Gender?
   grade      String?    /// Educational level (e.g. "Grade 5", "Beginner")
   subjects   Json?      @default("[]")

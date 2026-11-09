@@ -83,13 +83,14 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { customerId, firstName, lastName, phone, phone2, gender, grade, subjects, notes, guardianName, guardianPhone, guardianPhone2, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
+    let { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, guardianName, guardianPhone, guardianPhone2, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
 
     const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
     const safeGender = normalizeGender(gender);
     const safePhone = (phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null;
     const safePhone2 = (phone2 && typeof phone2 === 'string' && phone2.trim()) ? phone2.trim() : null;
+    const safeAddress = (address && typeof address === 'string' && address.trim()) ? address.trim() : null;
     const safeGuardianPhone2 = (guardianPhone2 && typeof guardianPhone2 === 'string' && guardianPhone2.trim())
       ? guardianPhone2.trim()
       : (isSelfGuardian ? safePhone2 : null);
@@ -210,6 +211,7 @@ const create = async (req, res) => {
         lastName: safeLastName,
         phone: safePhone,
         phone2: safePhone2,
+        address: safeAddress,
         gender: safeGender,
         grade: safeGrade,
         subjects: safeSubjects,
@@ -230,7 +232,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { customerId, firstName, lastName, phone, phone2, gender, grade, subjects, notes, isActive, guardianEmail, guardianPassword, guardianPhone2 } = req.body;
+    const { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, isActive, guardianEmail, guardianPassword, guardianPhone2 } = req.body;
 
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
@@ -275,6 +277,7 @@ const update = async (req, res) => {
     const safeGender = gender !== undefined ? normalizeGender(gender) : undefined;
     const safePhone = phone !== undefined ? ((phone && typeof phone === 'string' && phone.trim()) ? phone.trim() : null) : undefined;
     const safePhone2 = phone2 !== undefined ? ((phone2 && typeof phone2 === 'string' && phone2.trim()) ? phone2.trim() : null) : undefined;
+    const safeAddress = address !== undefined ? ((address && typeof address === 'string' && address.trim()) ? address.trim() : null) : undefined;
     let safeSubjects = undefined;
     if (subjects !== undefined) {
       if (Array.isArray(subjects)) {
@@ -301,6 +304,7 @@ const update = async (req, res) => {
         lastName: safeLastName,
         phone: safePhone,
         phone2: safePhone2,
+        address: safeAddress,
         gender: safeGender,
         grade: safeGrade,
         subjects: safeSubjects,

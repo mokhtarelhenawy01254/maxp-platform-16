@@ -36,6 +36,7 @@ export interface EducationStudent {
   lastName?: string;
   phone?: string;
   phone2?: string;
+  address?: string;
   gender?: string;
   grade?: string;
   subjects?: string[] | { id: string; name: string }[];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone } from "lucide-react";
+import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone, MapPin } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
 
@@ -27,11 +27,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     lastName: "",
     phone: "",
     phone2: "",
+    address: "",
     grade: "",
     notes: "",
     customerId: "",
     ...student,
     phone2: (student as any)?.phone2 || "",
+    address: (student as any)?.address || "",
     gender: student?.gender
       ? String(student.gender).toUpperCase() === "FEMALE"
         ? "FEMALE"
@@ -163,6 +165,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
         lastName: form.lastName ? form.lastName.trim() : "",
         phone: form.phone ? form.phone.trim() : "",
         phone2: form.phone2 ? form.phone2.trim() : "",
+        address: form.address ? form.address.trim() : "",
         gender: form.gender ? (String(form.gender).toUpperCase() === "FEMALE" ? "FEMALE" : "MALE") : "MALE",
         subjects: selectedSubjectIds,
         ...(guardianEmail.trim() ? { guardianEmail: guardianEmail.trim() } : {}),
@@ -291,6 +294,23 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 placeholder="مثال: الصف الأول الإعدادي"
               />
             </div>
+          </div>
+
+          {/* Address */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                <span>العنوان / السكن</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground font-normal">اختياري</span>
+            </label>
+            <input
+              className={INPUT_CLS}
+              value={form.address || ""}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              placeholder="مثال: القاهرة - المعادي - شارع 9 أو عنوان السكن الحالي..."
+            />
           </div>
 
           {/* Subjects Section: المواد المتاحة لدينا */}

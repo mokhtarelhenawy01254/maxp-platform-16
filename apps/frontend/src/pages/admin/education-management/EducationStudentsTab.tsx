@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Phone, Eye, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Search, Plus, Phone, Eye, Pencil, Trash2, BookOpen, MapPin } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { StudentModal } from "./StudentModal";
 
@@ -39,9 +39,10 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
       s.firstName.includes(studentSearch) ||
       s.lastName?.includes(studentSearch) ||
       s.phone?.includes(studentSearch) ||
-      (s as any).phone2?.includes(studentSearch) ||
+      s.phone2?.includes(studentSearch) ||
+      s.address?.includes(studentSearch) ||
       s.customer?.phone?.includes(studentSearch) ||
-      (s.customer as any)?.phone2?.includes(studentSearch)
+      s.customer?.phone2?.includes(studentSearch)
   );
 
   return (
@@ -101,12 +102,20 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 font-mono">
               <Phone className="w-3 h-3 text-primary shrink-0" />
               <span>{s.phone || "—"}</span>
-              {(s as any).phone2 && (
+              {s.phone2 && (
                 <span className="text-[10px] text-primary/90 font-sans bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-                  إضافي: {(s as any).phone2}
+                  إضافي: {s.phone2}
                 </span>
               )}
             </div>
+
+            {/* Student Address */}
+            {s.address && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 truncate" title={s.address}>
+                <MapPin className="w-3 h-3 text-primary shrink-0" />
+                <span className="truncate">{s.address}</span>
+              </div>
+            )}
 
             {/* Guardian & Guardian Phones */}
             <div className="text-xs text-muted-foreground space-y-0.5">

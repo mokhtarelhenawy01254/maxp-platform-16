@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Sparkles,
   Lock,
+  MapPin,
 } from "lucide-react";
 
 const SESSION_STATUS: Record<string, { label: string; color: string }> = {
@@ -266,6 +267,12 @@ const EducationStudentProfilePage: React.FC = () => {
                 <span className="flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5 text-primary" />
                   الصف: {activeStudent.grade}
+                </span>
+              )}
+              {activeStudent.address && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  العنوان: {activeStudent.address}
                 </span>
               )}
               {genderLabel && (
