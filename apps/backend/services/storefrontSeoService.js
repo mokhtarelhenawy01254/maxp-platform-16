@@ -790,7 +790,13 @@ const buildStorefrontSeoMetadata = ({
     entityName = cleanTitle;
     const h1 = cleanTitle;
 
-    const rawBrand = product.brand?.name || product.brand || product.brandName;
+    const productMetadata = parseJsonObject(product.metadata);
+    const rawBrand =
+      product.brand?.name ||
+      product.brand ||
+      product.brandName ||
+      productMetadata.brand ||
+      productMetadata.brandName;
     const productBrand = trimToNull(rawBrand);
     const brandName = productBrand || storeName;
     const ogTitle =

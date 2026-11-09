@@ -8449,6 +8449,10 @@ const buildCommerceFlowOverrides = (theme: StorefrontTheme): ThemePageOverrides 
   const flowFamily = resolveCommerceFlowFamily(theme.id);
   const thankYouFamily = resolveThankYouFamily(theme.id);
   const pdpFamily = resolvePdpFamily(theme.id);
+  // district-market ships honest COD-first guarantee copy. Without this the
+  // generic product-info defaults advertise Tabby/Tamara and card payments
+  // even for stores that only accept cash on delivery.
+  const isDistrictMarket = theme.id === 'district-market';
   const overrides: ThemePageOverrides = {};
 
   if (flowFamily === 'market') {
@@ -8642,6 +8646,12 @@ const buildCommerceFlowOverrides = (theme: StorefrontTheme): ThemePageOverrides 
           guaranteesSubtitle:
             'الصور، السعر، والمتابعة بعد الطلب تظهر في نفس المسار بدون تشتيت أو خطوات زائدة.',
           guaranteeStyle: 'minimal',
+          ...(isDistrictMarket
+            ? {
+                guaranteeItems:
+                  'أصلية 100%|منتج أصلي ومضمون.\nدفع عند الاستلام|ادفع بعد معاينة المنتج مع المندوب.\nاستبدال خلال 14 يوم|سياسة استبدال واضحة وسريعة.',
+              }
+            : {}),
         },
         'standard',
       ),

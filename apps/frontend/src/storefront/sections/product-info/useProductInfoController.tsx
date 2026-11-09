@@ -359,13 +359,28 @@ export const useProductInfoController = ({
         ? product.price
         : 0;
 
-  const activeComparePrice =
-    typeof selectedVariant?.compareAtPrice === 'number' &&
-    Number.isFinite(selectedVariant.compareAtPrice)
-      ? selectedVariant.compareAtPrice
-      : typeof product?.compareAtPrice === 'number'
-        ? product.compareAtPrice
-        : null;
+  const activeComparePrice = (() => {
+    const candidates = [
+      selectedVariant?.compareAtPrice,
+      selectedVariant?.comparePrice,
+      product?.compareAtPrice,
+      product?.comparePrice,
+    ];
+
+    for (const candidate of candidates) {
+      const numeric =
+        typeof candidate === 'string' ? Number(candidate) : candidate;
+      if (
+        typeof numeric === 'number' &&
+        Number.isFinite(numeric) &&
+        numeric > 0
+      ) {
+        return numeric;
+      }
+    }
+
+    return null;
+  })();
 
   const displayPrice = formatStorefrontCurrency(activePrice, currency);
   const originalPrice =

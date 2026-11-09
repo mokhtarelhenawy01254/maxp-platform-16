@@ -406,8 +406,20 @@ export const StorefrontHead: React.FC<StorefrontHeadProps> = ({
       );
     }
 
-    // Meta Description: prefer pageSeo.description if available
-    const finalDescription = pageSeo?.description?.trim() || defaultDescription;
+    // Meta Description: prefer pageSeo.description if available.
+    // Dynamic detail routes (product/article) receive a server-rendered
+    // description specific to the entity; preserve it instead of replacing it
+    // with the generic store description on hydration.
+    const preservedDescription = (originalDescSnapshot?.content || '').trim();
+    const shouldPreserveExistingDescription =
+      isDynamicDetailRoute &&
+      Boolean(preservedDescription) &&
+      preservedDescription !== defaultDescription.trim();
+    const finalDescription =
+      pageSeo?.description?.trim() ||
+      (shouldPreserveExistingDescription
+        ? preservedDescription
+        : defaultDescription);
     setMetaTag('meta[name="description"]', 'name', 'description', finalDescription);
 
     // Favicon — use store logo as favicon if no dedicated favicon
