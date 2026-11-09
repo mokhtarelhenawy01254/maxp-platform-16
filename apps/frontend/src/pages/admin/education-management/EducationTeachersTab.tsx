@@ -31,11 +31,12 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
   const { i18n } = useTranslation();
   const isEn = i18n.language === "en";
 
+  const q = teacherSearch.toLowerCase().trim();
   const filtered = teachers.filter(
     (t) =>
-      !teacherSearch ||
-      t.name.includes(teacherSearch) ||
-      t.phone?.includes(teacherSearch)
+      !q ||
+      (t.name || "").toLowerCase().includes(q) ||
+      (t.phone || "").toLowerCase().includes(q)
   );
 
   return (

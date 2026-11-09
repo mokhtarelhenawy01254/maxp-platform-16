@@ -62,10 +62,10 @@ const ParentLoginPage: React.FC = () => {
       {error ? <AuthNotice variant="error" title="تعذر تسجيل الدخول">{error}</AuthNotice> : null}
       <form onSubmit={handleSubmit} className="elite-form-content">
         <div className="elite-input-group">
-          <label htmlFor="email" className="elite-label">البريد الإلكتروني</label>
+          <label htmlFor="email" className="elite-label">البريد الإلكتروني أو رقم الهاتف</label>
           <div className="elite-input-wrapper">
-            <input id="email" name="email" type="email" value={formData.email} onChange={handleChange}
-              className="elite-input" placeholder="parent@email.com" disabled={isLoading} required />
+            <input id="email" name="email" type="text" value={formData.email} onChange={handleChange}
+              className="elite-input" placeholder="parent@email.com أو 01xxxxxxxxx" disabled={isLoading} required />
             <Mail className="elite-input-icon" />
           </div>
         </div>

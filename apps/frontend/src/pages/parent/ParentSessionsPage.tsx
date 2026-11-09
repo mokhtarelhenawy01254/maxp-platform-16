@@ -44,17 +44,24 @@ const ParentSessionsPage: React.FC = () => {
       const d = await res.json();
       if (d.success && Array.isArray(d.data) && d.data.length > 0) {
         setChildren(d.data);
+        const results = await Promise.all(
+          d.data.map(async (child: Child) => {
+            try {
+              const sRes = await fetch(
+                `/api/v1/education/parent-portal/children/${child.id}/sessions`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              const sJson = await sRes.json();
+              return { childId: child.id, sessions: (sJson.success && Array.isArray(sJson.data)) ? sJson.data : [] };
+            } catch {
+              return { childId: child.id, sessions: [] };
+            }
+          })
+        );
         const map: Record<string, Session[]> = {};
-        for (const child of d.data) {
-          const sRes = await fetch(
-            `/api/v1/education/parent-portal/children/${child.id}/sessions`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const sJson = await sRes.json();
-          if (sJson.success && Array.isArray(sJson.data)) {
-            map[child.id] = sJson.data;
-          }
-        }
+        results.forEach(({ childId, sessions }) => {
+          map[childId] = sessions;
+        });
         setSessionsMap(map);
       } else {
         setChildren([]);

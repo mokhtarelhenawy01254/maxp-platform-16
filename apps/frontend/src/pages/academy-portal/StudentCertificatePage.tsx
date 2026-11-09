@@ -37,7 +37,15 @@ const StudentCertificatePage: React.FC = () => {
 
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
           <button
-            onClick={() => window.print()}
+            onClick={() => {
+              const iframe = document.querySelector('iframe[title="شهادة إتمام الكورس"]') as HTMLIFrameElement;
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+              } else {
+                window.print();
+              }
+            }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold transition-all active:scale-[0.98] shadow-xs"
           >
             <Printer className="w-4 h-4" />

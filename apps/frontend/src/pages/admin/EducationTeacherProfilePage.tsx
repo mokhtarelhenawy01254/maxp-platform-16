@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { buildApiUrl } from "../../utils/urlHelper";
+import tokenManager from "../../utils/tokenManager";
 import {
   User,
   Mail,
@@ -72,12 +74,19 @@ export default function EducationTeacherProfilePage() {
     let active = true;
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
+        const token = tokenManager.getAccessToken() || localStorage.getItem("accessToken");
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        };
+        try {
+          const u = JSON.parse(localStorage.getItem("user") || "{}");
+          if (u?.companyId) (headers as any)["X-Company-Id"] = u.companyId;
+        } catch {}
         const [tRes, sRes, pRes] = await Promise.all([
-          fetch(`/api/v1/education/teachers/${id}`, { headers }).catch(() => null),
-          fetch(`/api/v1/education/sessions?teacherId=${id}`, { headers }).catch(() => null),
-          fetch(`/api/v1/education/payments?teacherId=${id}`, { headers }).catch(() => null),
+          fetch(buildApiUrl(`education/teachers/${id}`), { headers }).catch(() => null),
+          fetch(buildApiUrl(`education/sessions?teacherId=${id}`), { headers }).catch(() => null),
+          fetch(buildApiUrl(`education/payments?teacherId=${id}`), { headers }).catch(() => null),
         ]);
         if (tRes?.ok) {
           const tJson = await tRes.json();

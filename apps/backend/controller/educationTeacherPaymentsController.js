@@ -2,7 +2,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const getAll = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { teacherId, status } = req.query;
@@ -24,7 +24,7 @@ const getAll = async (req, res) => {
 
 const calculate = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { teacherId, from, to, hourlyRate } = req.body;
@@ -82,7 +82,7 @@ const calculate = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { teacherId, periodFrom, periodTo, totalSessions, totalHours, hourlyRate, grossAmount, deductions, notes } = req.body;
@@ -91,6 +91,26 @@ const create = async (req, res) => {
     }
 
     const netAmount = (grossAmount || 0) - (deductions || 0);
+
+    const existingPayment = await getSharedPrismaClient().educationTeacherPayment.findFirst({
+      where: { companyId, teacherId, periodFrom: new Date(periodFrom), periodTo: new Date(periodTo), status: 'PENDING' }
+    });
+    if (existingPayment) {
+      const data = await getSharedPrismaClient().educationTeacherPayment.update({
+        where: { id: existingPayment.id },
+        data: {
+          totalSessions: totalSessions || existingPayment.totalSessions,
+          totalHours: totalHours || existingPayment.totalHours,
+          hourlyRate: hourlyRate || existingPayment.hourlyRate,
+          grossAmount: grossAmount || existingPayment.grossAmount,
+          deductions: deductions !== undefined ? deductions : existingPayment.deductions,
+          netAmount,
+          notes: notes || existingPayment.notes
+        },
+        include: { teacher: { select: { id: true, name: true } } }
+      });
+      return res.json({ success: true, data });
+    }
 
     const data = await getSharedPrismaClient().educationTeacherPayment.create({
       data: {
@@ -117,10 +137,15 @@ const create = async (req, res) => {
 
 const markPaid = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
+    const existing = await getSharedPrismaClient().educationTeacherPayment.findFirst({
+      where: { id, companyId }
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'مسير الرواتب غير موجود' });
+
     const data = await getSharedPrismaClient().educationTeacherPayment.update({
       where: { id },
       data: { status: 'PAID', paidAt: new Date() },

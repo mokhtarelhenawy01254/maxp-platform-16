@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { buildApiUrl } from "../../utils/urlHelper";
+import tokenManager from "../../utils/tokenManager";
 import {
   User,
   Phone,
@@ -50,12 +52,19 @@ const EducationStudentProfilePage: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
+        const token = tokenManager.getAccessToken() || localStorage.getItem("accessToken");
+        const headers: HeadersInit = {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        };
+        try {
+          const u = JSON.parse(localStorage.getItem("user") || "{}");
+          if (u?.companyId) (headers as any)["X-Company-Id"] = u.companyId;
+        } catch {}
         const [stRes, eRes, sRes] = await Promise.all([
-          fetch(`/api/v1/education/students/${id}`, { headers }),
-          fetch(`/api/v1/education/enrollments?studentId=${id}`, { headers }),
-          fetch(`/api/v1/education/sessions?studentId=${id}`, { headers }),
+          fetch(buildApiUrl(`education/students/${id}`), { headers }),
+          fetch(buildApiUrl(`education/enrollments?studentId=${id}`), { headers }),
+          fetch(buildApiUrl(`education/sessions?studentId=${id}`), { headers }),
         ]);
         const [stJson, eJson, sJson] = await Promise.all([stRes.json(), eRes.json(), sRes.json()]);
         if (stJson.success && stJson.data) {

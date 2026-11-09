@@ -66,9 +66,9 @@ export default function TeacherSchedulePage() {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         !q ||
-        s.student.firstName.toLowerCase().includes(q) ||
-        s.student.lastName.toLowerCase().includes(q) ||
-        s.subject.name.toLowerCase().includes(q);
+        (s.student?.firstName || "").toLowerCase().includes(q) ||
+        (s.student?.lastName || "").toLowerCase().includes(q) ||
+        (s.subject?.name || "").toLowerCase().includes(q);
 
       if (!matchesSearch) return false;
 
@@ -244,13 +244,13 @@ export default function TeacherSchedulePage() {
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <h3 className="text-xs font-semibold text-foreground">
-                          {session.student.firstName} {session.student.lastName}
+                          {session.student?.firstName || ""} {session.student?.lastName || ""}
                         </h3>
                         {renderStatusBadge(session.status)}
                       </div>
 
                       <p className="text-[11px] text-muted-foreground font-mono">
-                        {session.subject.name}
+                        {session.subject?.name || "—"}
                       </p>
 
                       <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground pt-0.5 font-mono">

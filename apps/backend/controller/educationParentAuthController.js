@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
@@ -5,24 +6,39 @@ const { getJwtSecret } = require('../utils/jwtSecret');
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'البريد الإلكتروني وكلمة المرور مطلوبان' });
+    const rawIdentifier = req.body.email || req.body.phone || req.body.identifier;
+    const { password } = req.body;
+    if (!rawIdentifier || !password) {
+      return res.status(400).json({ success: false, message: 'البريد الإلكتروني أو رقم الهاتف وكلمة المرور مطلوبان' });
     }
+    const identifier = String(rawIdentifier).trim();
 
     const prisma = getSharedPrismaClient();
     const parent = await prisma.customer.findFirst({
-      where: { email: { equals: email, mode: 'insensitive' } },
+      where: {
+        OR: [
+          { email: { equals: identifier, mode: 'insensitive' } },
+          { phone: identifier },
+          { phone2: identifier }
+        ]
+      },
       select: { id: true, firstName: true, lastName: true, email: true, phone: true, password: true, companyId: true, status: true, avatar: true }
     });
 
     if (!parent || !parent.password) {
-      return res.status(401).json({ success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      return res.status(401).json({ success: false, message: 'بيانات الدخول غير صحيحة أو لا يوجد حساب مسجل' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, parent.password);
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await bcrypt.compare(password, parent.password);
+    } catch {}
     if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+      isPasswordValid = (sha256Hash === parent.password);
+    }
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
     }
 
     const token = jwt.sign(

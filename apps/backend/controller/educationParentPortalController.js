@@ -26,7 +26,9 @@ const topupWallet = async (req, res) => {
   try {
     const parentId = req.parent.id;
     const { amount } = req.body;
-    if (!amount || amount <= 0) return res.status(400).json({ success: false, message: 'المبلغ غير صحيح' });
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0) return res.status(400).json({ success: false, message: 'المبلغ غير صحيح' });
+    if (numAmount > 50000) return res.status(400).json({ success: false, message: 'الحد الأقصى لطلب الشحن لمرة واحدة هو 50,000 ج.م' });
 
     const prisma = getSharedPrismaClient();
     let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
@@ -36,25 +38,28 @@ const topupWallet = async (req, res) => {
       });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const updated = await tx.customerWallet.update({
-        where: { id: wallet.id },
-        data: { balance: { increment: amount }, totalEarned: { increment: amount } }
-      });
-      await tx.walletTransaction.create({
-        data: {
-          walletId: wallet.id, type: 'CREDIT', amount,
-          balanceBefore: wallet.balance, balanceAfter: updated.balance,
-          description: `شحن المحفظة بمبلغ ${amount} ج.م`
-        }
-      });
-      return updated;
+    // حماية مالية وأمنية: تسجيل طلب الشحن كمعاملة معلقة للمراجعة والتحصيل (PENDING_RELEASE)
+    // منع الزيادة الآلية الحرة للرصيد بدون دفع إلكتروني أو اعتماد إداري
+    await prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'CREDIT',
+        amount: numAmount,
+        balanceBefore: wallet.balance,
+        balanceAfter: wallet.balance,
+        status: 'PENDING_RELEASE',
+        description: `طلب شحن محفظة بقيمة ${numAmount} ج.م (بانتظار التأكيد والتحصيل)`
+      }
     });
 
-    res.json({ success: true, data: result, message: `تم شحن المحفظة بمبلغ ${amount} ج.م` });
+    res.json({
+      success: true,
+      pending: true,
+      message: `تم تسجيل طلب شحن بقيمة ${numAmount} ج.م بنجاح. سيتم تفعيل الرصيد في محفظتك فور مراجعة وتأكيد التحويل من إدارة المركز.`
+    });
   } catch (error) {
     console.error('[ParentPortal] Topup error:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ في شحن المحفظة' });
+    res.status(500).json({ success: false, message: 'حدث خطأ في طلب شحن المحفظة' });
   }
 };
 

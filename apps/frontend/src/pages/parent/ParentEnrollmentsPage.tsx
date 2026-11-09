@@ -44,17 +44,24 @@ const ParentEnrollmentsPage: React.FC = () => {
       const d = await res.json();
       if (d.success && Array.isArray(d.data) && d.data.length > 0) {
         setChildren(d.data);
+        const results = await Promise.all(
+          d.data.map(async (child: Child) => {
+            try {
+              const eRes = await fetch(
+                `/api/v1/education/parent-portal/children/${child.id}/enrollments`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              const eJson = await eRes.json();
+              return { childId: child.id, enrollments: (eJson.success && Array.isArray(eJson.data)) ? eJson.data : [] };
+            } catch {
+              return { childId: child.id, enrollments: [] };
+            }
+          })
+        );
         const map: Record<string, Enrollment[]> = {};
-        for (const child of d.data) {
-          const eRes = await fetch(
-            `/api/v1/education/parent-portal/children/${child.id}/enrollments`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const eJson = await eRes.json();
-          if (eJson.success && Array.isArray(eJson.data)) {
-            map[child.id] = eJson.data;
-          }
-        }
+        results.forEach(({ childId, enrollments }) => {
+          map[childId] = enrollments;
+        });
         setEnrollmentsMap(map);
       } else {
         setChildren([]);

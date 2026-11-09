@@ -80,15 +80,26 @@ router.get('/children/:studentId/enrollments', authenticateParentToken, async (r
     });
     if (!student) return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
 
-    const data = await getSharedPrismaClient().educationEnrollment.findMany({
+    const enrollments = await getSharedPrismaClient().educationEnrollment.findMany({
       where: { studentId },
       include: {
-        package: { select: { id: true, name: true, hoursCount: true, price: true } },
-        teacher: { select: { id: true, name: true } },
-        subject: { select: { id: true, name: true } }
+        package: {
+          select: {
+            id: true,
+            name: true,
+            hoursCount: true,
+            price: true,
+            subject: { select: { id: true, name: true } }
+          }
+        },
+        teacher: { select: { id: true, name: true } }
       },
       orderBy: { enrollmentDate: 'desc' }
     });
+    const data = enrollments.map(item => ({
+      ...item,
+      subject: item.package?.subject || null
+    }));
     res.json({ success: true, data });
   } catch (error) {
     console.error('[ParentPortal] Child enrollments error:', error);

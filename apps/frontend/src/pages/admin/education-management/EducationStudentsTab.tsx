@@ -33,16 +33,19 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
   handleToggleStudent,
   handleDeleteStudent,
 }) => {
+  const q = studentSearch.toLowerCase().trim();
   const filtered = students.filter(
     (s) =>
-      !studentSearch ||
-      s.firstName.includes(studentSearch) ||
-      s.lastName?.includes(studentSearch) ||
-      s.phone?.includes(studentSearch) ||
-      s.phone2?.includes(studentSearch) ||
-      s.address?.includes(studentSearch) ||
-      s.customer?.phone?.includes(studentSearch) ||
-      s.customer?.phone2?.includes(studentSearch)
+      !q ||
+      (s.firstName || "").toLowerCase().includes(q) ||
+      (s.lastName || "").toLowerCase().includes(q) ||
+      (s.phone || "").toLowerCase().includes(q) ||
+      (s.phone2 || "").toLowerCase().includes(q) ||
+      (s.address || "").toLowerCase().includes(q) ||
+      (s.customer?.firstName || "").toLowerCase().includes(q) ||
+      (s.customer?.lastName || "").toLowerCase().includes(q) ||
+      (s.customer?.phone || "").toLowerCase().includes(q) ||
+      (s.customer?.phone2 || "").toLowerCase().includes(q)
   );
 
   return (

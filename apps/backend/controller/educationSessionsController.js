@@ -3,7 +3,7 @@ const educationNotificationService = require('../services/educationNotificationS
 
 const getAll = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { studentId, teacherId, subjectId, enrollmentId, status, from, to } = req.query;
@@ -38,7 +38,7 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -61,7 +61,7 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { enrollmentId, scheduledAt, plannedDuration, topic, notes, teacherId } = req.body;
@@ -165,7 +165,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -208,7 +208,7 @@ const update = async (req, res) => {
 
 const confirm = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -306,7 +306,7 @@ const confirm = async (req, res) => {
 
 const cancel = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -336,15 +336,27 @@ const cancel = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
     const existing = await getSharedPrismaClient().educationSession.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الحصة غير موجودة' });
 
-    await getSharedPrismaClient().educationSession.delete({ where: { id } });
-    res.json({ success: true, message: 'تم حذف الحصة' });
+    const prisma = getSharedPrismaClient();
+    await prisma.$transaction(async (tx) => {
+      // حماية رصيد الطالب: إذا كانت الحصة مؤكدة ومخصومة، يتم استرجاع الساعات للباقة تلقائياً
+      if (existing.status === 'CONFIRMED' && existing.enrollmentId) {
+        const hours = (existing.actualDuration || existing.plannedDuration || 60) / 60;
+        await tx.educationEnrollment.update({
+          where: { id: existing.enrollmentId },
+          data: { remainingHours: { increment: hours } }
+        });
+      }
+      await tx.educationSession.delete({ where: { id } });
+    });
+
+    res.json({ success: true, message: 'تم حذف الحصة وتسوية رصيد الساعات بنجاح' });
   } catch (error) {
     console.error('Error deleting session:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في حذف الحصة' });

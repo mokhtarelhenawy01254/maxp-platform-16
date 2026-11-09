@@ -25,8 +25,9 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
   handleToggleSubject,
   handleDeleteSubject,
 }) => {
+  const q = subjectSearch.toLowerCase().trim();
   const filtered = subjects.filter(
-    (s) => !subjectSearch || s.name.includes(subjectSearch)
+    (s) => !q || (s.name || "").toLowerCase().includes(q)
   );
 
   return (

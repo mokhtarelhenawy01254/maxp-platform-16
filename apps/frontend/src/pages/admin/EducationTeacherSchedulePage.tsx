@@ -43,6 +43,14 @@ const api = (path: string) => {
   return url.toString();
 };
 
+// Helper to convert any Date or ISO string to local YYYY-MM-DD
+const toLocalDateStr = (d: Date | string): string => {
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
 const SESSION_STATUS: Record<string, { label: string; color: string }> = {
@@ -88,8 +96,8 @@ export default function EducationTeacherSchedulePage() {
     });
   }, [weekOffset]);
 
-  const weekStart = weekDays[0]?.toISOString().split("T")[0];
-  const weekEnd = weekDays[6]?.toISOString().split("T")[0];
+  const weekStart = weekDays[0] ? `${toLocalDateStr(weekDays[0])}T00:00:00` : "";
+  const weekEnd = weekDays[6] ? `${toLocalDateStr(weekDays[6])}T23:59:59` : "";
 
   useEffect(() => {
     fetchTeachers();
@@ -133,8 +141,8 @@ export default function EducationTeacherSchedulePage() {
   };
 
   const getSessionsForDay = (day: Date) => {
-    const dayStr = day.toISOString().split("T")[0];
-    return sessions.filter((s) => s.scheduledAt?.startsWith(dayStr));
+    const dayStr = toLocalDateStr(day);
+    return sessions.filter((s) => s.scheduledAt && toLocalDateStr(s.scheduledAt) === dayStr);
   };
 
   const formatTime = (dateStr: string) => {

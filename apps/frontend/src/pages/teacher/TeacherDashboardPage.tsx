@@ -88,7 +88,7 @@ export default function TeacherDashboardPage() {
           const when = new Date(s.scheduledAt ?? s.date);
           return {
             id: String(s.id),
-            studentName: s?.student?.name ?? s?.studentName ?? "طالب",
+            studentName: [s?.student?.firstName, s?.student?.lastName].filter(Boolean).join(" ") || s?.studentName || "طالب",
             subject: s?.subject?.name ?? s?.subjectName ?? "—",
             time: when.toLocaleTimeString("ar-EG", {
               hour: "2-digit",
