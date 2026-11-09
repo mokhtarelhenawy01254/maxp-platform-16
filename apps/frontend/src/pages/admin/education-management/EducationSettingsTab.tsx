@@ -348,18 +348,18 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
               <Settings className="w-3.5 h-3.5" />
-              تخصيص الواجهة والتابات
+              تخصيص الواجهة والسكاشن
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {visibleCount} من {tabs.length} تابات ظاهرة
+              {visibleCount} من {tabs.length} سكاشن ظاهرة
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            إعدادات مسميات وتابات النظام التعليمي
+            إعدادات مسميات وسكاشن النظام التعليمي
           </h2>
           <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-            تحكم بحرية كاملة في الاسم الرئيسي للنظام (النظام التعليمي / الأكاديمية)، وتخصيص أسماء التابات والقوائم الجانبية (مثل تغيير "المهندسين" إلى "المعلمين" أو "المدربين") وترتيبها وإظهارها أو إخفائها.
+            تحكم بحرية كاملة في الاسم الرئيسي للنظام وتخصيص أسماء السكاشن والقوائم الجانبية (مثل تغيير سكشن "المهندسين" إلى "المعلمين" أو "المدربين" أو "المحاضرين") وترتيبها وإظهارها أو إخفائها.
           </p>
         </div>
 
@@ -476,17 +476,17 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             </div>
           </div>
 
-          {/* Tabs Management List */}
+          {/* Sections Management List */}
           <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xs">
             <div className="flex items-center justify-between border-b border-border/50 pb-3">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-primary" />
                 <h3 className="text-xs font-bold text-foreground">
-                  تخصيص وترتيب وإظهار تابات النظام والقائمة
+                  تخصيص وترتيب وإظهار سكاشن النظام والقائمة الجانبية
                 </h3>
               </div>
               <span className="text-[11px] text-muted-foreground">
-                استخدم الأسهم ⬆ ⬇ لإعادة الترتيب أو عينك لإخفاء التاب
+                استخدم الأسهم ⬆ ⬇ لإعادة الترتيب أو أيقونة العين لإخفاء السكشن
               </span>
             </div>
 

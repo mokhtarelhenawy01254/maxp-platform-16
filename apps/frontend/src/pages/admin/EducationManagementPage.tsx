@@ -134,7 +134,7 @@ export default function EducationManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
-            title="إعدادات وتخصيص النظام التعليمي"
+            title="إعدادات وتخصيص سكاشن النظام التعليمي"
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               activeTab === "settings"
                 ? "bg-primary text-primary-foreground border-primary"
@@ -142,12 +142,20 @@ export default function EducationManagementPage() {
             }`}
           >
             <Settings className="w-3.5 h-3.5" />
-            إعدادات النظام
+            إعدادات وتخصيص السكاشن
           </button>
         </div>
       </div>
 
-      {error ? (
+      {activeTab === "settings" ? (
+        <EducationSettingsTab
+          onSaved={(updated) => {
+            setEducationSettings(updated);
+          }}
+        />
+      ) : activeTab === "logs" ? (
+        <EducationLogsTab />
+      ) : error ? (
         <div className="bg-card border border-border/80 rounded-2xl p-12 text-center space-y-3">
           <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
             <AlertTriangle className="w-6 h-6" />
@@ -285,16 +293,6 @@ export default function EducationManagementPage() {
               handleConfirmSession={handleConfirmSession}
               handleCancelSession={handleCancelSession}
             />
-          )}
-          {activeTab === "settings" && (
-            <EducationSettingsTab
-              onSaved={(updated) => {
-                setEducationSettings(updated);
-              }}
-            />
-          )}
-          {activeTab === "logs" && (
-            <EducationLogsTab />
           )}
         </>
       )}
