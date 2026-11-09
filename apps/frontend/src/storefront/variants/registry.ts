@@ -2352,6 +2352,17 @@ export const storefrontVariantRegistry = {
   ],
   FeaturedCollections: [
     {
+      id: 'marketplace-tiles',
+      section: 'FeaturedCollections',
+      purpose: 'Single horizontal rail of tall photo category tiles (108px photo + 15px label), matching the department-store category strip',
+      bestPages: ['home', 'collections'],
+      bestArchetypes: ['marketplace', 'general-store'],
+      rtlSuitability: 'high',
+      density: 'medium',
+      tone: 'retail-direct',
+      status: 'implemented-now',
+    },
+    {
       id: 'standard-showcase',
       section: 'FeaturedCollections',
       purpose: 'Balanced category discovery with visual cards',

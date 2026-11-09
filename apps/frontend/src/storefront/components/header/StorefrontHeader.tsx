@@ -10,6 +10,7 @@ import { PcHubHeader } from "./subheaders/PcHubHeader";
 import { DigitalCommandHeader } from "./subheaders/DigitalCommandHeader";
 import { VelaFashionHeader } from "./subheaders/VelaFashionHeader";
 import { StandardStorefrontHeader } from "./subheaders/StandardStorefrontHeader";
+import { MarketplaceHeader } from "./subheaders/MarketplaceHeader";
 import {
   StorefrontHomeLink,
   resolveStorefrontDocumentLanguage,
@@ -25,7 +26,12 @@ import type { StorefrontHeaderProps } from "./storefrontHeaderTypes";
  */
 export const StorefrontHeader: React.FC<StorefrontHeaderProps> = (props) => {
   const controller = useStorefrontHeaderController(props);
-  const { isMinimal, isGracefulTheme, isMensGroomingPro, isRedlineAutoHeader, isKhemetLuxe, isKhemetUnifiedHeaderPath, isButcherAtelierHeader, isLegacyDefaultOldHeader, isPcHub, isDigitalCommandHeader, isVelaFashionHeader } = controller;
+  const { isMinimal, isGracefulTheme, isMensGroomingPro, isRedlineAutoHeader, isKhemetLuxe, isKhemetUnifiedHeaderPath, isButcherAtelierHeader, isLegacyDefaultOldHeader, isPcHub, isDigitalCommandHeader, isVelaFashionHeader, isMarketplaceBazaarHeader } = controller;
+
+  // 0. Department-store marketplace header (navy utility + search + red category bar)
+  if (isMarketplaceBazaarHeader && !isMinimal) {
+    return <MarketplaceHeader controller={controller} />;
+  }
 
   // 1. Soft Graceful theme header
   if (isGracefulTheme && !isMinimal) {

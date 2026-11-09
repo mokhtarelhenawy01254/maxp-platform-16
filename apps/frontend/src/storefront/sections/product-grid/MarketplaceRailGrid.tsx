@@ -35,12 +35,12 @@ export const MarketplaceRailGrid: React.FC<{ controller: ProductGridController }
         ) : null}
 
         {filteredProducts.length > 0 ? (
-          <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 ${gridFrameClassName}`}>
+          <div className={`grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 ${gridFrameClassName}`}>
             {filteredProducts.map((product, index) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                variant="marketplace-row"
+                variant="marketplace-tile"
                 styleOverrides={shopProductCardStyleOverrides}
                 quickViewLabel={settings?.['quickViewLabel'] as string}
                 addToWishlistLabel={settings?.['addToWishlistLabel'] as string}

@@ -33,12 +33,12 @@ export const MarketplaceRowCard: React.FC<{ ctrl: ProductCardController }> = ({ 
 
   return (
     <CardShell className="group flex items-center gap-3 bg-white p-2 transition-colors hover:bg-[#fafafa]">
-      <div className="relative h-[74px] w-[74px] shrink-0 overflow-hidden bg-[#f5f5f5]">
+      <div className="relative h-[74px] w-[74px] shrink-0 overflow-hidden bg-white">
         <StorefrontProductImage
           candidates={imageCandidates}
           alt={name}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-contain p-[3px] transition-transform duration-500 group-hover:scale-105"
           fallback={renderImageFallback()}
         />
         {discountPercentage ? (

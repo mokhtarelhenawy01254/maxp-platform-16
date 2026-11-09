@@ -69,7 +69,7 @@ const DEFAULT_CARDS: HoverCardItem[] = [
 
 const isExternalHref = (href: string) => /^(https?:\/\/|mailto:|tel:)/i.test(href);
 
-const HoverCards: React.FC<HoverCardsProps> = ({ section: _section, settings }) => {
+const HoverCards: React.FC<HoverCardsProps> = ({ section, settings }) => {
   const location = useLocation();
   const heading = settings?.heading || 'Style Made for Every You';
   const description =
@@ -79,6 +79,44 @@ const HoverCards: React.FC<HoverCardsProps> = ({ section: _section, settings }) 
   const ctaLink = settings?.ctaLink || '/collections';
   const cards = parseCards(settings?.cards);
   const resolvedCards = cards.length > 0 ? cards : DEFAULT_CARDS;
+
+  const rawVariant = String(settings?.variant || section?.variant || '').trim().toLowerCase();
+  if (rawVariant === 'marketplace-trio') {
+    return (
+      <section className="w-full bg-white py-4">
+        <div className="container px-4 md:px-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            {resolvedCards.slice(0, 3).map((card, index) => (
+              <Link
+                key={`${card.title}-${index}`}
+                to={isExternalHref(card.link) ? card.link : buildStorefrontPath(location.pathname, card.link.startsWith('/') ? card.link : `/${card.link}`, location.search)}
+                className="group relative block h-[420px] overflow-hidden bg-[#f4f1ee] lg:h-[600px]"
+              >
+                {card.image ? (
+                  <img
+                    src={card.image}
+                    alt={card.title}
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : null}
+                <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_45%,rgba(0,0,0,0.55)_100%)]" />
+                <span className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-2 p-6 text-start">
+                  <span className="font-heading text-[26px] font-bold leading-tight text-white lg:text-[30px]">
+                    {card.title}
+                  </span>
+                  <span className="text-[12px] leading-6 text-white/80">{card.description}</span>
+                  <span className="mt-1 inline-flex h-[42px] items-center justify-center rounded-[35px] bg-white px-5 text-[13px] font-semibold text-[#333333]">
+                    {card.ctaText || 'تسوّق الآن'}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const gradientFrom = settings?.gradientFrom || '#194C21';
   const gradientTo = settings?.gradientTo || '#071009';

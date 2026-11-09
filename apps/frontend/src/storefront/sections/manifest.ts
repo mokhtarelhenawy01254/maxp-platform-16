@@ -963,6 +963,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "legacy-circle-categories", label: "تصنيفات دائرية كلاسيكية" },
       { value: "menu-categories", label: "تصنيفات منيو" },
       { value: "playful-bubbles", label: "فقاعات مرحة (أطفال)" },
+      { value: "marketplace-tiles", label: "بلاطات أقسام ماركت بليس (شريط صور)" },
       { value: "floating-bubbles", label: "فقاعات عائمة (أطفال)" },
     ],
     fields: [
@@ -3755,6 +3756,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "standard", label: "قياسي" },
       { value: "editorial", label: "تحريري" },
       { value: "dark", label: "داكن" },
+      { value: "marketplace-trio", label: "٣ بانرات ماركت بليس (صور كاملة)" },
     ],
     fields: [
       { key: "heading", label: "العنوان", type: "text", placeholder: "Style Made for Every You" },

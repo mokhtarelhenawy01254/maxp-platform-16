@@ -78,6 +78,7 @@ export const useStorefrontHeaderController = (
   const isEditorialSoftHeader = headerVariant === "editorial-soft";
   const isUtilityFrameHeader = headerVariant === "utility-frame";
   const isRetailDirectHeader = headerVariant === "retail-direct";
+  const isMarketplaceBazaarHeader = headerVariant === "marketplace-bazaar";
   const isDigitalCommandHeader = headerVariant === "digital-command";
   const isFashionRetailHeader = headerVariant === "fashion-retail";
   const isButcherAtelierHeader = headerVariant === "butcher-atelier";
@@ -469,6 +470,7 @@ export const useStorefrontHeaderController = (
     isEditorialSoftHeader,
     isUtilityFrameHeader,
     isRetailDirectHeader,
+    isMarketplaceBazaarHeader,
     isFashionRetailHeader,
     isFloatingDarkHeader,
     isKhemetFloatingDarkHeader,

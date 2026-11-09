@@ -98,10 +98,10 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
   const slideHref = currentSlide.ctaLink || props.primaryHref;
 
   return (
-    <section className="w-full bg-white pb-2 pt-4 md:pt-6">
+    <section className="w-full bg-[#f6f5f8] pb-2 pt-4 md:pt-6">
       <div className="container px-4 md:px-6">
         <div className="grid items-stretch gap-4 lg:grid-cols-[1fr_1.51fr]">
-          <div className="relative h-[380px] overflow-hidden bg-[#f6f4f1] sm:h-[460px] lg:h-[575px]">
+          <div className="relative h-[380px] overflow-hidden rounded-[20px] bg-[#f6f4f1] sm:h-[460px] lg:h-[575px]">
             {resolvedSlides.map((slide, index) => (
               <div
                 key={`${slide.title || 'slide'}-${index}`}
@@ -184,7 +184,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
               {offer ? (
                 <Link
                   to={offer.link || props.primaryHref || '/shop'}
-                  className="group relative block h-[260px] overflow-hidden bg-[#efefef] sm:h-[280px] lg:h-[392px]"
+                  className="group relative block h-[260px] overflow-hidden rounded-[20px] bg-[#efefef] sm:h-[280px] lg:h-[392px]"
                 >
                   {offer.image ? (
                     <img
@@ -220,7 +220,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                 </Link>
               ) : null}
 
-              <div className="bg-white px-3 py-4 sm:px-4">
+              <div className="bg-[#f6f5f8] px-3 py-4 sm:px-4">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h2 className="font-heading text-[18px] font-semibold text-[#333333] lg:text-[24px]">
                     {minis?.title || 'الأقسام الأكثر طلبًا'}
@@ -254,7 +254,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
               </div>
             </div>
 
-            <div className="bg-[#f7f7f7] px-4 py-3">
+            <div className="rounded-[20px] bg-white px-5 py-5">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <h2 className="font-heading text-[16px] font-semibold text-[#333333] lg:text-[18px]">
                   {best?.title || 'أفضل اختيارات الأسبوع'}

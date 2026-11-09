@@ -7277,3 +7277,24 @@ select {
   font-family: var(--font-mono, "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace) !important;
   letter-spacing: normal !important;
 }
+/* Theme typography tokens must win over the compiled font utilities.
+   Tailwind inlines the @theme stack into .font-heading/.font-sans, so a theme that sets
+   --font-heading / --font-sans never reached the browser and every storefront rendered in Cairo.
+   Scoped to the storefront container so the admin app keeps its own typography. */
+.storefront-container h1,
+.storefront-container h2,
+.storefront-container h3,
+.storefront-container h4,
+.storefront-container h5,
+.storefront-container h6,
+.storefront-container .font-heading {
+  font-family: var(--font-heading) !important;
+}
+
+.storefront-container {
+  font-family: var(--store-font-family, var(--font-sans)) !important;
+}
+
+.storefront-container .font-sans {
+  font-family: var(--store-font-family, var(--font-sans)) !important;
+}

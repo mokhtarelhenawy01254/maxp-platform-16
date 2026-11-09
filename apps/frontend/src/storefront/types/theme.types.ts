@@ -129,6 +129,7 @@ export interface StorefrontHeaderConfig {
     | 'digital-command'
     | 'butcher-atelier'
     | 'legacy-default-old'
+    | 'marketplace-bazaar'
     | 'vela-fashion';
   transparentOnHome?: boolean;
   logoUrl?: string;

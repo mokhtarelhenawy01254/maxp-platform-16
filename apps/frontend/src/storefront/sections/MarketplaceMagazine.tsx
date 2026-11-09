@@ -155,7 +155,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   <ProductCard
                     key={`mini-${product.id}`}
                     product={product}
-                    variant="marketplace-row"
+                    variant="marketplace-tile"
                     {...cartProps}
                     imageLoading={controller.resolveGridCardImageLoading(index)}
                     imageFetchPriority={controller.resolveGridCardImageFetchPriority(index)}
@@ -187,12 +187,12 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-5">
                 {products.slice(0, 10).map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
-                    variant="marketplace-row"
+                    variant="marketplace-tile"
                     {...cartProps}
                     imageLoading={controller.resolveGridCardImageLoading(index)}
                     imageFetchPriority={controller.resolveGridCardImageFetchPriority(index)}
@@ -241,7 +241,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   <ProductCard
                     key={`app-${product.id}`}
                     product={product}
-                    variant="marketplace-row"
+                    variant="marketplace-tile"
                     {...cartProps}
                     imageLoading={controller.resolveGridCardImageLoading(index)}
                     imageFetchPriority={controller.resolveGridCardImageFetchPriority(index)}

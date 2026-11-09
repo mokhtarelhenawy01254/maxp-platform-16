@@ -86,6 +86,7 @@ export type FeaturedCollectionsVariant =
   | 'tech-decision-lanes'
   | 'catalog-pills'
   | 'retail-category-tiles'
+  | 'marketplace-tiles'
   | 'pastel-category-lane'
   | 'fragrance-ledger'
   | 'butcher-cut-map'
@@ -125,6 +126,7 @@ export const normalizeFeaturedCollectionsVariant = (
       value === 'tech-decision-lanes' ||
       value === 'catalog-pills' ||
       value === 'retail-category-tiles' ||
+      value === 'marketplace-tiles' ||
       value === 'pastel-category-lane' ||
       value === 'fragrance-ledger' ||
       value === 'butcher-cut-map' ||

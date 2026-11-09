@@ -20,6 +20,7 @@ import { SpecialtyFrameProductCard } from './product-card/variants/SpecialtyFram
 import { MinimalProductCard } from './product-card/variants/MinimalProductCard';
 import { StandardProductCard } from './product-card/variants/StandardProductCard';
 import { MarketplaceRowCard } from './product-card/variants/MarketplaceRowCard';
+import { MarketplaceTileCard } from './product-card/variants/MarketplaceTileCard';
 
 export type { ProductCardProps, ProductCardVariant, ProductCardController };
 
@@ -59,6 +60,8 @@ const renderVariant = (ctrl: ProductCardController): React.ReactNode => {
       return <MinimalProductCard ctrl={ctrl} />;
     case 'marketplace-row':
       return <MarketplaceRowCard ctrl={ctrl} />;
+    case 'marketplace-tile':
+      return <MarketplaceTileCard ctrl={ctrl} />;
     case 'overlay':
     case 'standard':
     default:

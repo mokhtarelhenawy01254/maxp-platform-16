@@ -6,11 +6,11 @@
     "colors": {
       "primary": "23 27% 53%",
       "primaryForeground": "0 0% 100%",
-      "secondary": "0 0% 97%",
+      "secondary": "0 0% 100%",
       "secondaryForeground": "0 0% 20%",
       "accent": "352 71% 59%",
       "accentForeground": "0 0% 100%",
-      "background": "0 0% 100%",
+      "background": "260 14% 96%",
       "foreground": "0 0% 20%",
       "muted": "0 0% 96%",
       "mutedForeground": "0 0% 47%",
@@ -30,7 +30,7 @@
       "buttonRadius": "999px"
     },
     "productCard": {
-      "borderRadius": "0px",
+      "borderRadius": "1.25rem",
       "boxShadow": "none",
       "hoverShadow": "0 18px 40px -32px rgba(51, 51, 51, 0.45)",
       "badgeRadius": "999px",
@@ -43,11 +43,11 @@
     "description": "متجر أقسام متعددة للأجهزة المنزلية والإلكترونيات وألعاب الكونسول مع عروض أسبوعية وشحن سريع."
   },
   "header": {
-    "variant": "retail-direct",
+    "variant": "marketplace-bazaar",
     "brandName": "ماركت بليس",
     "tagline": "أجهزة · إلكترونيات · ألعاب",
-    "announcementText": "خط ساخن 24/7 — 01000 000 000 · شحن مجاني على الطلبات فوق 500 ج",
-    "announcementLinkText": "تواصل معنا",
+    "announcementText": "",
+    "announcementLinkText": "",
     "announcementLinkTo": "/contact",
     "showSearch": true,
     "showCart": true,
@@ -467,9 +467,9 @@
         },
         {
           "type": "featured-collections",
-          "variant": "catalog-pills",
+          "variant": "marketplace-tiles",
           "settings": {
-            "title": "تسوّق حسب الأقسام",
+            "title": "",
             "subtitle": "",
             "hideBadge": true,
             "hideSubtitle": true,
@@ -544,7 +544,9 @@
         },
         {
           "type": "hover-cards",
+          "variant": "marketplace-trio",
           "settings": {
+            "variant": "marketplace-trio",
             "heading": "عروض واختيارات سريعة",
             "description": "ثلاث بطاقات تفتح مسارات الشراء الأسرع داخل المتجر.",
             "cards": [
@@ -593,15 +595,6 @@
             "details": "شحن سريع لكل المحافظات، ضمان رسمي على الأجهزة، واسترجاع خلال 60 يوم، وفريق دعم يجيب على أسئلتك قبل تأكيد الطلب.",
             "ctaText": "اعرف سياسة الشحن",
             "ctaLink": "/shipping"
-          }
-        },
-        {
-          "type": "newsletter",
-          "settings": {
-            "title": "اشترك ليصلك كل جديد",
-            "subtitle": "أول من يعرف بالعروض والمنتجات الجديدة.",
-            "buttonText": "اشترك",
-            "placeholder": "اكتب بريدك الإلكتروني"
           }
         }
       ]
@@ -709,7 +702,7 @@
           "type": "featured-collections",
           "variant": "retail-category-tiles",
           "settings": {
-            "title": "تسوّق حسب الأقسام",
+            "title": "",
             "subtitle": "",
             "hideBadge": true,
             "hideSubtitle": true,
