@@ -24,7 +24,6 @@ import {
 } from '../../utils/marketplaceApps';
 import { usePdpSelectionStore } from '../../store/usePdpSelectionStore';
 import { getActiveQuantityOffers } from '@/utils/quantityOffers';
-import { getProductVolumeDiscounts } from '../../utils/volumeDiscounts';
 import PdpQuickOrderPanel from '../PdpQuickOrderPanel';
 import QuantityOffersSection from '../QuantityOffersSection';
 import { Ruler } from 'lucide-react';
