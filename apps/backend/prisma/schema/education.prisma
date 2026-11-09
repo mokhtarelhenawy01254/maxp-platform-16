@@ -28,6 +28,9 @@ model EducationPackage {
   hoursCount      Float
   sessionDuration Int?     /// Suggested minutes per session
   price           Float
+  levelNumber     Int?     /// ترتيب المستوى داخل المسار (1..15) — يسمح بمعرفة الليفل التالي
+  ageFrom         Int?     /// أقل سن مناسب للمستوى
+  ageTo           Int?     /// أكبر سن مناسب للمستوى
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -54,6 +57,7 @@ model EducationStudent {
   gender     Gender?
   grade      String?    /// Educational level (e.g. "Grade 5", "Beginner")
   subjects   Json?      @default("[]")
+  currentLevel Int?     /// المستوى الحالي في المسار (1..15) — يتحدث عند إتمام المستوى
   notes      String?
   isActive   Boolean    @default(true)
   createdAt  DateTime   @default(now())

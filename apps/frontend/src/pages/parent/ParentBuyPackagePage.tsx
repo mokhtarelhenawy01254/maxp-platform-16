@@ -98,12 +98,17 @@ const ParentBuyPackagePage: React.FC = () => {
   const selectedPkg = currentSubject?.packages?.find((p) => p.id === selectedPackage);
   const userBalance = wallet?.balance ?? 0;
   const hasCatalog = subjects.length > 0;
+  // 🎓 خصم الأخوات 10%: بيظهر للولي الأمر لو عنده أكتر من طالب مسجل
+  const siblingDiscountRate = children.length > 1 ? 0.1 : 0;
+  const priceAfterDiscount = (p: number) =>
+    Math.round(p * (1 - siblingDiscountRate) * 100) / 100;
+  const payable = selectedPkg ? priceAfterDiscount(selectedPkg.price) : 0;
   const canPurchase = Boolean(
     hasCatalog &&
       selectedStudent &&
       selectedPackage &&
       selectedPkg &&
-      userBalance >= selectedPkg.price
+      userBalance >= payable
   );
 
   const handlePurchase = async () => {
@@ -328,11 +333,21 @@ const ParentBuyPackagePage: React.FC = () => {
 
                     <div className="pt-2 border-t border-border/40 space-y-1">
                       <div className="text-base font-bold font-mono tabular-nums text-foreground">
-                        {pkg.price.toLocaleString("ar-EG")} ج.م
+                        {priceAfterDiscount(pkg.price).toLocaleString("ar-EG")} ج.م
+                        {siblingDiscountRate > 0 && (
+                          <span className="mr-1.5 text-[11px] font-normal text-muted-foreground line-through">
+                            {pkg.price.toLocaleString("ar-EG")}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] font-mono text-muted-foreground">
                         {pkg.hoursCount} ساعة{pkg.hoursCount > 0 ? ` • ${perHour} ج.م / س` : ""}
                       </div>
+                      {siblingDiscountRate > 0 && (
+                        <div className="text-[10px] font-mono text-emerald-600">
+                          خصم الأخوات 10% مطبَّق
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -370,18 +385,26 @@ const ParentBuyPackagePage: React.FC = () => {
                   {selectedPkg ? `${selectedPkg.hoursCount} ساعة` : "—"}
                 </span>
               </div>
+              {siblingDiscountRate > 0 && selectedPkg && (
+                <div className="flex justify-between py-1.5 border-b border-border/40 text-emerald-600">
+                  <span>خصم الأخوات 10%:</span>
+                  <span className="font-mono tabular-nums font-semibold">
+                    − {(selectedPkg.price - payable).toLocaleString("ar-EG")} ج.م
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between py-2 text-sm font-bold">
                 <span className="text-foreground">المبلغ الإجمالي:</span>
                 <span className="font-mono tabular-nums text-primary">
-                  {selectedPkg ? `${selectedPkg.price.toLocaleString("ar-EG")} ج.م` : "—"}
+                  {selectedPkg ? `${payable.toLocaleString("ar-EG")} ج.م` : "—"}
                 </span>
               </div>
             </div>
 
-            {selectedPkg && userBalance < selectedPkg.price && (
+            {selectedPkg && userBalance < payable && (
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 space-y-1">
                 <p className="font-semibold">رصيد المحفظة غير كافٍ</p>
-                <p className="text-[11px]">المتبقي المطلوب: {selectedPkg.price - userBalance} ج.م</p>
+                <p className="text-[11px]">المتبقي المطلوب: {payable - userBalance} ج.م</p>
                 <Link to="/parent/wallet" className="text-primary hover:underline font-bold inline-block pt-1">
                   شحن المحفظة الآن ←
                 </Link>

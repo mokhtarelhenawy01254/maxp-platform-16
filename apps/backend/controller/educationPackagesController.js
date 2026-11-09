@@ -27,13 +27,16 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { subjectId, name, description, hoursCount, sessionDuration, price } = req.body;
+    const { subjectId, name, description, hoursCount, sessionDuration, price, levelNumber, ageFrom, ageTo } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الباقة مطلوب' });
     if (!subjectId) return res.status(400).json({ success: false, error: 'المادة مطلوبة' });
     if (!hoursCount || hoursCount <= 0) return res.status(400).json({ success: false, error: 'عدد الساعات يجب أن يكون أكبر من صفر' });
 
     const data = await getSharedPrismaClient().educationPackage.create({
-      data: { companyId, subjectId, name: name.trim(), description, hoursCount, sessionDuration, price },
+      data: { companyId, subjectId, name: name.trim(), description, hoursCount, sessionDuration, price,
+        levelNumber: levelNumber ? Number(levelNumber) : null,
+        ageFrom: ageFrom ? Number(ageFrom) : null,
+        ageTo: ageTo ? Number(ageTo) : null },
       include: { subject: { select: { id: true, name: true } } }
     });
 
@@ -61,14 +64,19 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { subjectId, name, description, hoursCount, sessionDuration, price, isActive } = req.body;
+    const { subjectId, name, description, hoursCount, sessionDuration, price, isActive, levelNumber, ageFrom, ageTo } = req.body;
 
     const existing = await getSharedPrismaClient().educationPackage.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الباقة غير موجودة' });
 
     const data = await getSharedPrismaClient().educationPackage.update({
       where: { id },
-      data: { subjectId, name, description, hoursCount, sessionDuration, price, isActive },
+      data: {
+        subjectId, name, description, hoursCount, sessionDuration, price, isActive,
+        ...(levelNumber !== undefined ? { levelNumber: levelNumber === null ? null : Number(levelNumber) } : {}),
+        ...(ageFrom !== undefined ? { ageFrom: ageFrom === null ? null : Number(ageFrom) } : {}),
+        ...(ageTo !== undefined ? { ageTo: ageTo === null ? null : Number(ageTo) } : {}),
+      },
       include: { subject: { select: { id: true, name: true } } }
     });
 

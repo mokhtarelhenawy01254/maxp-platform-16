@@ -84,7 +84,7 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId || req.user?.effectiveCompanyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    let { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, guardianName, guardianPhone, guardianPhone2, guardianEmail, guardianPassword, isSelfGuardian } = req.body;
+    let { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, guardianName, guardianPhone, guardianPhone2, guardianEmail, guardianPassword, isSelfGuardian, currentLevel } = req.body;
     if (!firstName || !firstName.trim()) return res.status(400).json({ success: false, error: 'اسم الطالب مطلوب' });
 
     const safeLastName = (lastName && typeof lastName === 'string' && lastName.trim()) ? lastName.trim() : '';
@@ -216,6 +216,7 @@ const create = async (req, res) => {
         gender: safeGender,
         grade: safeGrade,
         subjects: safeSubjects,
+        currentLevel: currentLevel ? Number(currentLevel) : null,
         notes: safeNotes
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
@@ -251,7 +252,7 @@ const update = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, isActive, guardianEmail, guardianPassword, guardianPhone2 } = req.body;
+    const { customerId, firstName, lastName, phone, phone2, address, gender, grade, subjects, notes, isActive, guardianEmail, guardianPassword, guardianPhone2, currentLevel } = req.body;
 
     const existing = await getSharedPrismaClient().educationStudent.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
@@ -328,7 +329,10 @@ const update = async (req, res) => {
         grade: safeGrade,
         subjects: safeSubjects,
         notes: safeNotes,
-        isActive
+        isActive,
+        ...(currentLevel !== undefined
+          ? { currentLevel: currentLevel === null || currentLevel === '' ? null : Number(currentLevel) }
+          : {})
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
     });

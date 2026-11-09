@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { computePackagePrice } = require('../utils/educationPricing');
 
 const getWallet = async (req, res) => {
   try {
@@ -102,10 +103,17 @@ const purchasePackage = async (req, res) => {
     });
     if (!pkg) return res.status(404).json({ success: false, message: 'الباقة غير موجودة' });
 
+    // 🎓 خصم الأخوات 10%: نفس ولي الأمر وعنده أكتر من طالب مسجل
+    const siblingCount = await prisma.educationStudent.count({
+      where: { companyId, customerId: parentId, isActive: true }
+    });
+    const pricing = computePackagePrice({ basePrice: pkg.price, siblingCount });
+    const payable = pricing.finalPrice;
+
     let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
     if (!wallet) return res.status(400).json({ success: false, message: 'لا توجد محفظة. قم بشحن المحفظة أولاً' });
-    if (wallet.balance < pkg.price) {
-      return res.status(400).json({ success: false, message: `الرصيد غير كافٍ. السعر: ${pkg.price} ج.م، الرصيد: ${wallet.balance} ج.م` });
+    if (wallet.balance < payable) {
+      return res.status(400).json({ success: false, message: `الرصيد غير كافٍ. السعر: ${payable} ج.م، الرصيد: ${wallet.balance} ج.م` });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -113,27 +121,35 @@ const purchasePackage = async (req, res) => {
         data: {
           companyId, studentId, packageId,
           remainingHours: pkg.hoursCount, totalHours: pkg.hoursCount,
-          amountPaid: pkg.price, paymentStatus: 'COMPLETED',
+          amountPaid: payable, paymentStatus: 'COMPLETED',
           enrollmentDate: new Date()
         },
         include: {
-          package: { select: { id: true, name: true, hoursCount: true, price: true } },
-          student: { select: { id: true, firstName: true, lastName: true } }
+          package: { select: { id: true, name: true, hoursCount: true, price: true, levelNumber: true } },
+          student: { select: { id: true, firstName: true, lastName: true, currentLevel: true } }
         }
       });
 
       const updatedWallet = await tx.customerWallet.update({
         where: { id: wallet.id },
-        data: { balance: { decrement: pkg.price }, totalSpent: { increment: pkg.price } }
+        data: { balance: { decrement: payable }, totalSpent: { increment: payable } }
       });
 
       await tx.walletTransaction.create({
         data: {
-          walletId: wallet.id, type: 'DEBIT', amount: pkg.price,
+          walletId: wallet.id, type: 'DEBIT', amount: payable,
           balanceBefore: wallet.balance, balanceAfter: updatedWallet.balance,
-          description: `شراء باقة "${pkg.name}" للطالب ${student.firstName} ${student.lastName}`
+          description: `شراء باقة "${pkg.name}" للطالب ${student.firstName} ${student.lastName}${pricing.reason ? ` (${pricing.reason} — وفر ${pricing.discountAmount} ج.م)` : ''}`
         }
       });
+
+      // ترقية مستوى الطالب ليطابق المستوى المشترى
+      if (pkg.levelNumber && (!student.currentLevel || pkg.levelNumber > student.currentLevel)) {
+        await tx.educationStudent.update({
+          where: { id: student.id },
+          data: { currentLevel: pkg.levelNumber }
+        });
+      }
 
       return enrollment;
     });
@@ -152,7 +168,10 @@ const purchasePackage = async (req, res) => {
       details: {
         studentId,
         packageId,
-        price: pkg.price,
+        price: payable,
+        basePrice: pricing.basePrice,
+        discountAmount: pricing.discountAmount,
+        discountReason: pricing.reason,
         hours: pkg.hoursCount,
       },
       severity: 'MEDIUM',
