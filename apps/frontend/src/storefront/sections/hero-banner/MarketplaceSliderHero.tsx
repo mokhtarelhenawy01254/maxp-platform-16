@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { HeroSlide, HeroVariantProps } from './heroTypes';
 import { renderHeroAction } from './heroActions';
+import { buildStorefrontPath } from '../../utils/paths';
 
 const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
 
@@ -28,17 +29,17 @@ const useCountdown = (target?: string) => {
   };
 };
 
-const CountdownRow: React.FC<{ target?: string }> = ({ target }) => {
+const CountdownRow: React.FC<{ target?: string; isRtl?: boolean }> = ({ target, isRtl }) => {
   const { days, hours, minutes, seconds } = useCountdown(target);
   const cells = [
-    { value: pad(days), label: 'يوم' },
-    { value: pad(hours), label: 'ساعة' },
-    { value: pad(minutes), label: 'دقيقة' },
-    { value: pad(seconds), label: 'ثانية' },
+    { value: pad(days), label: isRtl ? 'يوم' : 'Days' },
+    { value: pad(hours), label: isRtl ? 'ساعة' : 'Hours' },
+    { value: pad(minutes), label: isRtl ? 'دقيقة' : 'Mins' },
+    { value: pad(seconds), label: isRtl ? 'ثانية' : 'Secs' },
   ];
 
   return (
-    <div className="flex items-center gap-2" dir="rtl">
+    <div className="flex items-center gap-2" dir={isRtl ? 'rtl' : 'ltr'}>
       {cells.map((cell) => (
         <span
           key={cell.label}
@@ -68,6 +69,15 @@ const ratingStars = (rating?: string) => {
 };
 
 export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
+  const location = useLocation();
+  const scoped = (path?: string) =>
+    path ? buildStorefrontPath(location.pathname, path.startsWith('/') ? path : `/${path}`, location.search) : '#';
+
+  const isRtl =
+    typeof document !== 'undefined'
+      ? document.documentElement.dir === 'rtl'
+      : false;
+
   const slides: HeroSlide[] = (props.slides || []).filter(
     (slide) => slide && (slide.image || slide.title),
   );
@@ -95,7 +105,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
 
   const currentSlide = resolvedSlides[active] || {};
   const slideCta = currentSlide.ctaText || props.ctaText;
-  const slideHref = currentSlide.ctaLink || props.primaryHref;
+  const slideHref = scoped(currentSlide.ctaLink || props.primaryHref);
 
   return (
     <section className="w-full bg-[#f6f5f8] pb-2 pt-4 md:pt-6">
@@ -132,7 +142,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                   {slide.subtitle ? (
                     <p className="max-w-[24rem] text-[13px] leading-6 text-[#4a4a4a]">{slide.subtitle}</p>
                   ) : null}
-                  {slide.countdownEndAt ? <CountdownRow target={slide.countdownEndAt} /> : null}
+                  {slide.countdownEndAt ? <CountdownRow target={slide.countdownEndAt} isRtl={isRtl} /> : null}
                   {slideCta && index === active
                     ? renderHeroAction(
                         slideHref,
@@ -146,18 +156,20 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
 
             {total > 1 ? (
               <>
+                {/* end button: advances forward (next in LTR) */}
                 <button
                   type="button"
-                  aria-label="الشريحة السابقة"
-                  onClick={() => goTo(active - 1)}
+                  aria-label={isRtl ? 'الشريحة السابقة' : 'Next slide'}
+                  onClick={() => goTo(isRtl ? active - 1 : active + 1)}
                   className="absolute end-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-[15px] text-[#333333] transition-colors hover:bg-white lg:flex"
                 >
                   ›
                 </button>
+                {/* start button: moves backward (prev in LTR) */}
                 <button
                   type="button"
-                  aria-label="الشريحة التالية"
-                  onClick={() => goTo(active + 1)}
+                  aria-label={isRtl ? 'الشريحة التالية' : 'Previous slide'}
+                  onClick={() => goTo(isRtl ? active + 1 : active - 1)}
                   className="absolute start-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-[15px] text-[#333333] transition-colors hover:bg-white lg:flex"
                 >
                   ‹
@@ -167,7 +179,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                     <button
                       key={`dot-${index}`}
                       type="button"
-                      aria-label={slide.title || `شريحة ${index + 1}`}
+                      aria-label={slide.title || (isRtl ? `شريحة ${index + 1}` : `Slide ${index + 1}`)}
                       onClick={() => goTo(index)}
                       className={`h-2 rounded-full transition-all ${
                         index === active ? 'w-6 bg-[#ad7d61]' : 'w-2 bg-[#333333]/30 hover:bg-[#333333]/60'
@@ -183,7 +195,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
             <div className="grid gap-4 sm:grid-cols-[1fr_1.52fr]">
               {offer ? (
                 <Link
-                  to={offer.link || props.primaryHref || '/shop'}
+                  to={scoped(offer.link || props.primaryHref || '/shop')}
                   className="group relative block h-[260px] overflow-hidden rounded-[20px] bg-[#efefef] sm:h-[280px] lg:h-[392px]"
                 >
                   {offer.image ? (
@@ -223,18 +235,18 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
               <div className="bg-[#f6f5f8] px-3 py-4 sm:px-4">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h2 className="font-heading text-[18px] font-semibold text-[#333333] lg:text-[24px]">
-                    {minis?.title || 'الأقسام الأكثر طلبًا'}
+                    {minis?.title || (isRtl ? 'الأقسام الأكثر طلبًا' : 'Top Categories')}
                   </h2>
                   {minis?.link ? (
-                    <Link to={minis.link} className="text-[12px] font-semibold text-[#ad7d61] hover:underline">
-                      كل الأقسام
+                    <Link to={scoped(minis.link)} className="text-[12px] font-semibold text-[#ad7d61] hover:underline">
+                      {minis.linkLabel || (isRtl ? 'كل الأقسام' : 'All Categories')}
                     </Link>
                   ) : null}
                 </div>
 
                 <div className="grid grid-cols-4 gap-x-2 gap-y-4">
                   {miniItems.map((item) => (
-                    <Link key={item.label} to={item.link || '/collections'} className="group flex flex-col items-center gap-2 text-center">
+                    <Link key={item.label} to={scoped(item.link || '/collections')} className="group flex flex-col items-center gap-2 text-center">
                       <span className="block h-[68px] w-[68px] overflow-hidden bg-[#f5f5f5] lg:h-[94px] lg:w-[94px]">
                         {item.image ? (
                           <img
@@ -257,21 +269,21 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
             <div className="rounded-[20px] bg-white px-5 py-5">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <h2 className="font-heading text-[16px] font-semibold text-[#333333] lg:text-[18px]">
-                  {best?.title || 'أفضل اختيارات الأسبوع'}
+                  {best?.title || (isRtl ? 'أفضل اختيارات الأسبوع' : 'Weekly Best Picks')}
                 </h2>
                 {best?.link ? (
                   <Link
-                    to={best.link}
+                    to={scoped(best.link)}
                     className="text-[12px] font-semibold text-[#ad7d61] underline-offset-4 hover:underline"
                   >
-                    {best.linkLabel || 'تسوّق المزيد'}
+                    {best.linkLabel || (isRtl ? 'تسوّق المزيد' : 'Shop More')}
                   </Link>
                 ) : null}
               </div>
 
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {bestItems.map((item) => (
-                  <Link key={item.title} to={item.link || '/shop'} className="group flex items-center gap-3 bg-white p-2">
+                  <Link key={item.title} to={scoped(item.link || '/shop')} className="group flex items-center gap-3 bg-white p-2">
                     <span className="block h-[66px] w-[60px] shrink-0 overflow-hidden bg-[#f4f4f4]">
                       {item.image ? (
                         <img

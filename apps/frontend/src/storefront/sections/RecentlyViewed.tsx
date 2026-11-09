@@ -1,7 +1,9 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { buildStorefrontPath } from '../utils/paths';
 import { useRecentlyViewed } from '../hooks/useRecentlyViewedProducts';
+import { formatStorefrontCurrency } from '../utils/currency';
+import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 
 interface RecentlyViewedProps {
   section?: { variant?: string };
@@ -20,9 +22,15 @@ interface RecentlyViewedProps {
 export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ settings }) => {
   const location = useLocation();
   const { items } = useRecentlyViewed();
+  const { data: storefrontSettings } = useStorefrontSettings();
+  const currency =
+    storefrontSettings?.storefront?.settings?.currency ||
+    storefrontSettings?.company?.currency;
+  const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+
   const limit = Number(settings?.limit) || 6;
   const products = items.slice(0, limit);
-  const title = (settings?.['title'] as string) || 'شوهدت مؤخرًا';
+  const title = (settings?.['title'] as string) || (isRtl ? 'شوهدت مؤخرًا' : 'Recently Viewed');
 
   if (!products.length) return null;
 
@@ -40,9 +48,9 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ settings }) => {
             const hasCompare =
               typeof product.comparePrice === 'number' && product.comparePrice > product.price;
             return (
-              <a
+              <Link
                 key={product.id}
-                href={href}
+                to={href}
                 className="group flex items-center gap-3 bg-white p-2 transition-colors hover:bg-[#fafafa]"
               >
                 <span className="block h-[74px] w-[74px] shrink-0 overflow-hidden bg-[#f5f5f5]">
@@ -62,15 +70,15 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ settings }) => {
                   <span className="mt-1 flex flex-wrap items-center gap-2">
                     {hasCompare ? (
                       <span className="text-[12px] font-medium text-[#a3a3a3] line-through">
-                        {product.comparePrice?.toLocaleString('ar-EG')} ج.م
+                        {formatStorefrontCurrency(product.comparePrice as number, currency)}
                       </span>
                     ) : null}
                     <span className="text-[13px] font-semibold text-[#e14a5c] md:text-[15px]">
-                      {product.price.toLocaleString('ar-EG')} ج.م
+                      {formatStorefrontCurrency(product.price, currency)}
                     </span>
                   </span>
                 </span>
-              </a>
+              </Link>
             );
           })}
         </div>

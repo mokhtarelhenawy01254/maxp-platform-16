@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import ProductCard from '../../components/ProductCard';
+import { buildStorefrontPath } from '../../utils/paths';
 import type { ProductGridController } from './useProductGridController';
 
 /**
@@ -10,13 +12,6 @@ import type { ProductGridController } from './useProductGridController';
  * already loaded (all / discounted / cheapest / priciest) instead of a decorative dead tab bar.
  */
 type MarketplaceTabKey = 'featured' | 'discount' | 'lowest' | 'highest';
-
-const TABS: Array<{ key: MarketplaceTabKey; label: string }> = [
-  { key: 'featured', label: 'مميز' },
-  { key: 'discount', label: 'عليه خصم' },
-  { key: 'lowest', label: 'الأقل سعرًا' },
-  { key: 'highest', label: 'الأعلى سعرًا' },
-];
 
 const compareValue = (product: unknown): number => {
   const record = product as Record<string, unknown>;
@@ -31,6 +26,10 @@ const priceValue = (product: unknown): number => {
 };
 
 export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }> = ({ controller }) => {
+  const location = useLocation();
+  const scoped = (path?: string) =>
+    path ? buildStorefrontPath(location.pathname, path.startsWith('/') ? path : `/${path}`, location.search) : '#';
+
   const [activeTab, setActiveTab] = useState<MarketplaceTabKey>('featured');
   const {
     filteredProducts,
@@ -40,6 +39,15 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
     resolveGridCardImageFetchPriority,
     gridFrameClassName,
   } = controller;
+
+  const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false;
+
+  const tabs: Array<{ key: MarketplaceTabKey; label: string }> = [
+    { key: 'featured', label: (settings?.['tabFeaturedLabel'] as string) || (isRtl ? 'مميز' : 'Featured') },
+    { key: 'discount', label: (settings?.['tabDiscountLabel'] as string) || (isRtl ? 'عليه خصم' : 'On Sale') },
+    { key: 'lowest', label: (settings?.['tabLowestLabel'] as string) || (isRtl ? 'الأقل سعرًا' : 'Lowest Price') },
+    { key: 'highest', label: (settings?.['tabHighestLabel'] as string) || (isRtl ? 'الأعلى سعرًا' : 'Highest Price') },
+  ];
 
   const products = useMemo(() => {
     const list = [...filteredProducts];
@@ -55,7 +63,7 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
     return list;
   }, [filteredProducts, activeTab]);
 
-  const title = (settings?.['title'] as string) || 'المنتجات المميزة';
+  const title = (settings?.['title'] as string) || (isRtl ? 'المنتجات المميزة' : 'Featured Products');
   const ctaText = settings?.['ctaText'] as string | undefined;
   const ctaLink = settings?.['ctaLink'] as string | undefined;
 
@@ -66,7 +74,7 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
           <div className="flex flex-wrap items-center gap-6">
             <h2 className="font-heading text-[20px] font-semibold text-[#333333] md:text-[24px]">{title}</h2>
             <div className="flex flex-wrap items-center gap-1">
-              {TABS.map((tab) => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
@@ -83,12 +91,12 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
             </div>
           </div>
           {ctaText && ctaLink ? (
-            <a
-              href={ctaLink}
+            <Link
+              to={scoped(ctaLink)}
               className="text-[12px] font-semibold text-[#ad7d61] underline-offset-4 hover:underline"
             >
               {ctaText}
-            </a>
+            </Link>
           ) : null}
         </div>
 
@@ -108,9 +116,13 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
             ))}
           </div>
         ) : (
-          <p className="py-10 text-center text-sm text-[#8a8a8a]">لا توجد منتجات في هذا التصنيف الآن.</p>
+          <p className="py-10 text-center text-sm text-[#8a8a8a]">
+            {isRtl ? 'لا توجد منتجات في هذا التصنيف الآن.' : 'No products found in this category.'}
+          </p>
         )}
       </div>
     </section>
   );
 };
+
+export default MarketplaceTabsGrid;

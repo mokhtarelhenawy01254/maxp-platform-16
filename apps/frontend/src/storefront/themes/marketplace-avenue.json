@@ -526,7 +526,7 @@
             "limit": 12,
             "ctaText": "كل الأقسام",
             "ctaLink": "/collections",
-            "preferRuntimeCategories": false,
+            "preferRuntimeCategories": true,
             "collections": [
               {
                 "title": "Appliances",
@@ -679,28 +679,28 @@
             "items": [
               {
                 "icon": "grid",
-                "title": "شحن سريع مجاني",
-                "description": "على الطلبات فوق 500 ج"
+                "title": "Fast Free Shipping",
+                "description": "On orders over $50"
               },
               {
                 "icon": "clipboard",
-                "title": "توصيل اليوم التالي",
-                "description": "مجانًا فوق 990 ج"
+                "title": "Next Day Delivery",
+                "description": "Free over $99"
               },
               {
                 "icon": "target",
-                "title": "استرجاع خلال 60 يوم",
-                "description": "لكل طرق الشحن"
+                "title": "60 Days Returns",
+                "description": "On all eligible items"
               },
               {
                 "icon": "search",
-                "title": "خدمة عملاء خبراء",
-                "description": "شات أو مكالمة"
+                "title": "Expert Support",
+                "description": "Live chat or hotline 24/7"
               },
               {
                 "icon": "shield",
-                "title": "ماركات حصرية",
-                "description": "منتجات أكثر تميّزًا"
+                "title": "Exclusive Brands",
+                "description": "Verified quality selection"
               }
             ]
           }
@@ -763,7 +763,7 @@
             "limit": 12,
             "ctaText": "كل الأقسام",
             "ctaLink": "/collections",
-            "preferRuntimeCategories": false,
+            "preferRuntimeCategories": true,
             "collections": [
               {
                 "title": "أجهزة منزلية",
@@ -852,28 +852,28 @@
             "items": [
               {
                 "icon": "grid",
-                "title": "شحن سريع مجاني",
-                "description": "على الطلبات فوق 500 ج"
+                "title": "Fast Free Shipping",
+                "description": "On orders over $50"
               },
               {
                 "icon": "clipboard",
-                "title": "توصيل اليوم التالي",
-                "description": "مجانًا فوق 990 ج"
+                "title": "Next Day Delivery",
+                "description": "Free over $99"
               },
               {
                 "icon": "target",
-                "title": "استرجاع خلال 60 يوم",
-                "description": "لكل طرق الشحن"
+                "title": "60 Days Returns",
+                "description": "On all eligible items"
               },
               {
                 "icon": "search",
-                "title": "خدمة عملاء خبراء",
-                "description": "شات أو مكالمة"
+                "title": "Expert Support",
+                "description": "Live chat or hotline 24/7"
               },
               {
                 "icon": "shield",
-                "title": "ماركات حصرية",
-                "description": "منتجات أكثر تميّزًا"
+                "title": "Exclusive Brands",
+                "description": "Verified quality selection"
               }
             ]
           }
