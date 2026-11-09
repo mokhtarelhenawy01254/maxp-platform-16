@@ -153,7 +153,7 @@ const {
 
 const parsePagination = (query) => {
   const pageNum = Math.max(1, parseInt(query.page, 10) || 1);
-  const limitNum = Math.min(200, Math.max(1, parseInt(query.limit, 10) || 50));
+  const limitNum = Math.min(200, Math.max(1, parseInt(query.limit || query.pageSize, 10) || 50));
   return { pageNum, limitNum, skip: (pageNum - 1) * limitNum };
 };
 
@@ -1506,14 +1506,17 @@ const listCases = async (req, res) => {
     const isTrash = trash === 'true' || isDeleted === 'true' || status === 'TRASH';
     where.isDeleted = isTrash ? true : false;
 
-    if (status && status !== 'TRASH') {
+    if (status && status !== 'TRASH' && status !== 'OVERDUE') {
       const s = String(status).toUpperCase();
       if (!CASE_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الشغل غير صحيحة' });
       where.status = s;
     }
-    if (overdueOnly === 'true') {
+    const isOverdue = overdueOnly === 'true' || req.query.overdue === 'true' || status === 'OVERDUE';
+    if (isOverdue) {
       where.dueDate = { lt: new Date() };
-      where.status = { notIn: ['DELIVERED', 'CLOSED'] };
+      if (!where.status) {
+        where.status = { notIn: ['DELIVERED', 'CLOSED'] };
+      }
     }
     if (doctorId) where.doctorId = doctorId;
     if (workTypeId) where.workTypeId = String(workTypeId);
@@ -1528,9 +1531,6 @@ const listCases = async (req, res) => {
       if (['UNPAID', 'PARTIAL', 'PAID'].includes(ps)) {
         where.paymentStatus = ps;
       }
-    }
-    if (req.query.patientPhone) {
-      where.patientPhone = { contains: String(req.query.patientPhone).trim(), mode: 'insensitive' };
     }
 
     if (dueDateFrom || dueDateTo) {
@@ -1570,28 +1570,57 @@ const listCases = async (req, res) => {
     }
 
     // فلتر الأجندة بتاريخ محدد (يوم معين بالكامل 00:00 إلى 23:59:59)
-    if (req.query.date) {
-      const d = parseDate(req.query.date);
+    const specificDate = req.query.date || (req.query.dueDate && !dueDateFrom && !dueDateTo ? req.query.dueDate : null);
+    if (specificDate) {
+      const d = parseDate(specificDate);
       if (d) {
         const start = new Date(d);
         start.setHours(0, 0, 0, 0);
         const end = new Date(d);
         end.setHours(23, 59, 59, 999);
-        const targetField = req.query.dateFilterField === 'dueDate' ? 'dueDate' : 'receivedDate';
+        const targetField = (req.query.dateFilterField === 'dueDate' || req.query.dueDate) ? 'dueDate' : 'receivedDate';
         where[targetField] = { gte: start, lte: end };
       }
     }
 
-    const searchOr = search ? [
-      { caseNumber: { contains: search, mode: 'insensitive' } },
-      { patientName: { contains: search, mode: 'insensitive' } },
-      { doctorName: { contains: search, mode: 'insensitive' } },
+    // فلتر المدى الزمني السريع (dateRange presets)
+    const dateRange = req.query.dateRange || (req.query.filter === 'received_today' ? 'received_today' : null);
+    if (dateRange && dateRange !== 'ALL' && dateRange !== 'CUSTOM') {
+      const now = new Date();
+      const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+      const endOfDay = (d) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
+
+      if (dateRange === 'received_today') {
+        where.receivedDate = { gte: startOfDay(now), lte: endOfDay(now) };
+      } else if (dateRange === 'today' || dateRange === 'due_today') {
+        where.dueDate = { gte: startOfDay(now), lte: endOfDay(now) };
+      } else if (dateRange === 'yesterday' || dateRange === 'received_yesterday') {
+        const y = new Date(now.getTime() - 86400000);
+        where.receivedDate = { gte: startOfDay(y), lte: endOfDay(y) };
+      } else if (dateRange === 'due_yesterday') {
+        const y = new Date(now.getTime() - 86400000);
+        where.dueDate = { gte: startOfDay(y), lte: endOfDay(y) };
+      } else if (dateRange === 'this_week') {
+        const firstDay = new Date(now);
+        firstDay.setDate(now.getDate() - now.getDay());
+        where.receivedDate = { gte: startOfDay(firstDay) };
+      } else if (dateRange === 'this_month') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        where.receivedDate = { gte: startOfDay(firstDay) };
+      }
+    }
+
+    const searchTrimmed = typeof search === 'string' ? search.trim() : '';
+    const searchOr = searchTrimmed ? [
+      { caseNumber: { contains: searchTrimmed, mode: 'insensitive' } },
+      { patientName: { contains: searchTrimmed, mode: 'insensitive' } },
+      { doctorName: { contains: searchTrimmed, mode: 'insensitive' } },
     ] : null;
 
     if (req.query.patientPhone) {
-      where.patientPhone = { contains: String(req.query.patientPhone).trim() };
-    } else if (search && /^[0-9+]+$/.test(search.trim()) && searchOr) {
-      searchOr.push({ patientPhone: { contains: search.trim() } });
+      where.patientPhone = { contains: String(req.query.patientPhone).trim(), mode: 'insensitive' };
+    } else if (searchTrimmed && /^[0-9+]+$/.test(searchTrimmed) && searchOr) {
+      searchOr.push({ patientPhone: { contains: searchTrimmed } });
     }
 
     let techOr = null;

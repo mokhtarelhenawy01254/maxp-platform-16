@@ -128,6 +128,7 @@ export const DentalCasesFilterBar: React.FC<DentalCasesFilterBarProps> = ({
         workTypeId={workTypeId}
         paymentStatus={paymentStatus}
         applyFilter={applyFilter}
+        clearAllFilters={clearAllFilters}
         setPage={setPage}
       />
 

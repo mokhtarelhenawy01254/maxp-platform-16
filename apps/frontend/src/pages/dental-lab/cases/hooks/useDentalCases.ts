@@ -101,8 +101,131 @@ export function useDentalCases() {
         }
         return next;
       });
+      setPage(1);
     },
     [setSearchParams]
+  );
+
+  const setViewModeAndSync = useCallback(
+    (mode: "ACTIVE" | "OVERDUE" | "TRASH") => {
+      setViewMode(mode);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (mode === "OVERDUE") {
+          next.set("tab", "OVERDUE");
+          next.delete("trash");
+        } else if (mode === "TRASH") {
+          next.set("tab", "TRASH");
+          next.delete("overdue");
+        } else {
+          next.delete("tab");
+          next.delete("overdue");
+          next.delete("trash");
+        }
+        return next;
+      });
+      setPage(1);
+    },
+    [setSearchParams]
+  );
+
+  const setStatusAndSync = useCallback(
+    (val: string) => {
+      setStatus(val);
+      applyFilter("status", val);
+    },
+    [applyFilter]
+  );
+
+  const setDoctorIdAndSync = useCallback(
+    (val: string) => {
+      setDoctorId(val);
+      applyFilter("doctorId", val);
+    },
+    [applyFilter]
+  );
+
+  const setWorkTypeIdAndSync = useCallback(
+    (val: string) => {
+      setWorkTypeId(val);
+      applyFilter("workTypeId", val);
+    },
+    [applyFilter]
+  );
+
+  const setPriorityAndSync = useCallback(
+    (val: string) => {
+      setPriority(val);
+      applyFilter("priority", val);
+    },
+    [applyFilter]
+  );
+
+  const setPaymentStatusAndSync = useCallback(
+    (val: string) => {
+      setPaymentStatus(val);
+      applyFilter("paymentStatus", val);
+    },
+    [applyFilter]
+  );
+
+  const setTechnicianIdAndSync = useCallback(
+    (val: string) => {
+      setTechnicianId(val);
+      applyFilter("technicianId", val);
+    },
+    [applyFilter]
+  );
+
+  const setDateRangePresetAndSync = useCallback(
+    (val: string) => {
+      setDateRangePreset(val);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (val && val !== "ALL") {
+          next.set("dateRange", val);
+        } else {
+          next.delete("dateRange");
+        }
+        if (val !== "CUSTOM") {
+          next.delete("date");
+        }
+        return next;
+      });
+      if (val !== "CUSTOM") {
+        setAgendaDate("");
+      }
+      setPage(1);
+    },
+    [setSearchParams]
+  );
+
+  const setAgendaDateAndSync = useCallback(
+    (val: string) => {
+      setAgendaDate(val);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (val) {
+          next.set("date", val);
+          next.set("dateRange", "CUSTOM");
+        } else {
+          next.delete("date");
+          next.delete("dateRange");
+        }
+        return next;
+      });
+      setDateRangePreset(val ? "CUSTOM" : "ALL");
+      setPage(1);
+    },
+    [setSearchParams]
+  );
+
+  const setAgendaFieldAndSync = useCallback(
+    (field: "receivedDate" | "dueDate") => {
+      setAgendaField(field);
+      applyFilter("dateField", field);
+    },
+    [applyFilter]
   );
 
   const clearAllFilters = useCallback(() => {
@@ -112,6 +235,7 @@ export function useDentalCases() {
       if (currentLayout) next.set("layout", currentLayout);
       return next;
     });
+    setViewMode("ACTIVE");
     setStatus("");
     setDoctorId("");
     setWorkTypeId("");
@@ -161,7 +285,7 @@ export function useDentalCases() {
     );
     const q = searchParams.get("search") || "";
     setSearch(q);
-    setSearchInput(q);
+    setSearchInput((prev) => (prev.trim() === q ? prev : q));
   }, [searchParams]);
 
   const loadRefs = useCallback(async () => {
@@ -201,11 +325,13 @@ export function useDentalCases() {
         const params: Record<string, unknown> = {
           page,
           pageSize,
+          limit: pageSize,
         };
         if (viewMode === "TRASH") {
           params.trash = "true";
         } else if (viewMode === "OVERDUE") {
           params.overdue = "true";
+          params.overdueOnly = "true";
         }
         if (status) params.status = status;
         if (doctorId) params.doctorId = doctorId;
@@ -215,6 +341,8 @@ export function useDentalCases() {
         if (technicianId) params.technicianId = technicianId;
         if (search) params.search = search;
         if (agendaDate) {
+          params.date = agendaDate;
+          params.dateFilterField = agendaField;
           params[agendaField === "dueDate" ? "dueDate" : "date"] = agendaDate;
         } else if (dateRangePreset && dateRangePreset !== "ALL") {
           params.dateRange = dateRangePreset;
@@ -251,9 +379,23 @@ export function useDentalCases() {
   );
 
   useEffect(() => {
-    const t2 = setTimeout(() => setSearch(searchInput.trim()), 400);
+    const t2 = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      setSearch(trimmed);
+      setSearchParams((prev) => {
+        const current = prev.get("search") || "";
+        if (current === trimmed) return prev;
+        const next = new URLSearchParams(prev);
+        if (trimmed) {
+          next.set("search", trimmed);
+        } else {
+          next.delete("search");
+        }
+        return next;
+      });
+    }, 400);
     return () => clearTimeout(t2);
-  }, [searchInput]);
+  }, [searchInput, setSearchParams]);
 
   useEffect(() => {
     setLoading(true);
@@ -279,8 +421,9 @@ export function useDentalCases() {
     Boolean(priority),
     Boolean(paymentStatus),
     Boolean(technicianId),
-    Boolean(agendaDate) || dateRangePreset !== "ALL",
+    Boolean(agendaDate) || (Boolean(dateRangePreset) && dateRangePreset !== "ALL"),
     Boolean(searchInput.trim()),
+    viewMode !== "ACTIVE",
   ].filter(Boolean).length;
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -291,23 +434,23 @@ export function useDentalCases() {
     trashCount,
     loading,
     status,
-    setStatus,
+    setStatus: setStatusAndSync,
     doctorId,
-    setDoctorId,
+    setDoctorId: setDoctorIdAndSync,
     workTypeId,
-    setWorkTypeId,
+    setWorkTypeId: setWorkTypeIdAndSync,
     priority,
-    setPriority,
+    setPriority: setPriorityAndSync,
     paymentStatus,
-    setPaymentStatus,
+    setPaymentStatus: setPaymentStatusAndSync,
     technicianId,
-    setTechnicianId,
+    setTechnicianId: setTechnicianIdAndSync,
     dateRangePreset,
-    setDateRangePreset,
+    setDateRangePreset: setDateRangePresetAndSync,
     agendaDate,
-    setAgendaDate,
+    setAgendaDate: setAgendaDateAndSync,
     agendaField,
-    setAgendaField,
+    setAgendaField: setAgendaFieldAndSync,
     search,
     setSearch,
     searchInput,
@@ -315,7 +458,7 @@ export function useDentalCases() {
     page,
     setPage,
     viewMode,
-    setViewMode,
+    setViewMode: setViewModeAndSync,
     layoutMode,
     setLayoutMode,
     pageSize,

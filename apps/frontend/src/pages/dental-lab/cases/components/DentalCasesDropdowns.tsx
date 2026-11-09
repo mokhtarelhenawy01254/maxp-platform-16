@@ -64,13 +64,21 @@ export function DentalCasesDropdowns({
       ? (technicians as any).items
       : [];
 
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = yesterdayDate.toLocaleDateString("en-CA");
+
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 dark:border-gray-700/60 pt-2 text-xs">
       {viewMode !== "TRASH" && (
         <select
           className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
           value={status}
-          onChange={(e) => applyFilter("status", e.target.value)}
+          onChange={(e) => {
+            applyFilter("status", e.target.value);
+            setPage(1);
+          }}
           title="فلترة بحالة المرحلة"
         >
           <option value="">كل الحالات</option>
@@ -85,7 +93,10 @@ export function DentalCasesDropdowns({
       <select
         className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[150px]"
         value={doctorId}
-        onChange={(e) => applyFilter("doctorId", e.target.value)}
+        onChange={(e) => {
+          applyFilter("doctorId", e.target.value);
+          setPage(1);
+        }}
         title="فلترة بالطبيب أو العيادة"
       >
         <option value="">كل الدكاترة</option>
@@ -101,7 +112,10 @@ export function DentalCasesDropdowns({
       <select
         className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[140px]"
         value={workTypeId}
-        onChange={(e) => applyFilter("workTypeId", e.target.value)}
+        onChange={(e) => {
+          applyFilter("workTypeId", e.target.value);
+          setPage(1);
+        }}
         title="فلترة بنوع الشغل"
       >
         <option value="">كل أنواع الشغل</option>
@@ -115,7 +129,10 @@ export function DentalCasesDropdowns({
       <select
         className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
         value={priority}
-        onChange={(e) => applyFilter("priority", e.target.value)}
+        onChange={(e) => {
+          applyFilter("priority", e.target.value);
+          setPage(1);
+        }}
         title="فلترة بدرجة الأولوية"
       >
         <option value="">كل الأولويات</option>
@@ -127,7 +144,10 @@ export function DentalCasesDropdowns({
       <select
         className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white max-w-[130px]"
         value={technicianId}
-        onChange={(e) => applyFilter("technicianId", e.target.value)}
+        onChange={(e) => {
+          applyFilter("technicianId", e.target.value);
+          setPage(1);
+        }}
         title="فلترة بالفني المسند"
       >
         <option value="">كل الفنيين</option>
@@ -143,7 +163,10 @@ export function DentalCasesDropdowns({
       <select
         className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 hover:bg-white"
         value={paymentStatus}
-        onChange={(e) => applyFilter("paymentStatus", e.target.value)}
+        onChange={(e) => {
+          applyFilter("paymentStatus", e.target.value);
+          setPage(1);
+        }}
         title="فلترة بحالة السداد"
       >
         <option value="">كل حالات السداد</option>
@@ -172,7 +195,6 @@ export function DentalCasesDropdowns({
           onChange={(e) => {
             const val = e.target.value;
             setAgendaDate(val);
-            setDateRangePreset(val ? "CUSTOM" : "ALL");
             setPage(1);
           }}
         />
@@ -197,15 +219,11 @@ export function DentalCasesDropdowns({
         <button
           type="button"
           onClick={() => {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yStr = yesterday.toISOString().split("T")[0];
-            setAgendaDate(yStr);
-            setDateRangePreset("CUSTOM");
+            setAgendaDate(yesterdayStr);
             setPage(1);
           }}
           className={`px-2 py-0.5 rounded transition-colors ${
-            agendaDate === new Date(Date.now() - 86400000).toISOString().split("T")[0]
+            agendaDate === yesterdayStr
               ? "bg-white dark:bg-gray-700 font-bold shadow-2xs text-blue-600"
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
           }`}
@@ -215,20 +233,18 @@ export function DentalCasesDropdowns({
         <button
           type="button"
           onClick={() => {
-            const tStr = new Date().toISOString().split("T")[0];
-            setAgendaDate(tStr);
-            setDateRangePreset("CUSTOM");
+            setAgendaDate(todayStr);
             setPage(1);
           }}
           className={`px-2 py-0.5 rounded transition-colors ${
-            agendaDate === new Date(Date.now() - 86400000).toISOString().split("T")[0]
+            agendaDate === todayStr
               ? "bg-white dark:bg-gray-700 font-bold shadow-2xs text-blue-600"
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
           }`}
         >
           اليوم
         </button>
-        {(agendaDate || dateRangePreset !== "ALL") && (
+        {(agendaDate || (dateRangePreset && dateRangePreset !== "ALL")) && (
           <button
             type="button"
             onClick={() => {

@@ -25,6 +25,7 @@ export interface DentalCasesQuickPillsProps {
   workTypeId: string;
   paymentStatus: string;
   applyFilter: (key: string, value: string, resetOthers?: boolean) => void;
+  clearAllFilters?: () => void;
   setPage: (p: number | ((prev: number) => number)) => void;
 }
 
@@ -45,6 +46,7 @@ export function DentalCasesQuickPills({
   workTypeId,
   paymentStatus,
   applyFilter,
+  clearAllFilters,
   setPage,
 }: DentalCasesQuickPillsProps) {
   return (
@@ -55,21 +57,25 @@ export function DentalCasesQuickPills({
       <button
         type="button"
         onClick={() => {
-          onViewModeChange("ACTIVE");
-          setPriority("");
-          setDateRangePreset("ALL");
-          setTechnicianId("");
-          setStatus("");
-          setAgendaDate("");
-          applyFilter("doctorId", "");
-          applyFilter("workTypeId", "");
-          applyFilter("paymentStatus", "");
-          setPage(1);
+          if (clearAllFilters) {
+            clearAllFilters();
+          } else {
+            onViewModeChange("ACTIVE");
+            setPriority("");
+            setDateRangePreset("ALL");
+            setTechnicianId("");
+            setStatus("");
+            setAgendaDate("");
+            applyFilter("doctorId", "");
+            applyFilter("workTypeId", "");
+            applyFilter("paymentStatus", "");
+            setPage(1);
+          }
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 text-xs ${
           viewMode === "ACTIVE" &&
           !priority &&
-          dateRangePreset === "ALL" &&
+          (!dateRangePreset || dateRangePreset === "ALL") &&
           !technicianId &&
           !status &&
           !agendaDate &&
@@ -86,11 +92,7 @@ export function DentalCasesQuickPills({
         type="button"
         onClick={() => {
           onViewModeChange("ACTIVE");
-          setPriority("");
-          setDateRangePreset("received_today");
-          setTechnicianId("");
-          setStatus("");
-          setPage(1);
+          setDateRangePreset(dateRangePreset === "received_today" ? "ALL" : "received_today");
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           dateRangePreset === "received_today"
@@ -104,8 +106,12 @@ export function DentalCasesQuickPills({
       <button
         type="button"
         onClick={() => {
-          onViewModeChange("OVERDUE");
-          setPage(1);
+          if (viewMode !== "OVERDUE") {
+            setDateRangePreset("ALL");
+            onViewModeChange("OVERDUE");
+          } else {
+            onViewModeChange("ACTIVE");
+          }
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           viewMode === "OVERDUE"
@@ -120,8 +126,7 @@ export function DentalCasesQuickPills({
         type="button"
         onClick={() => {
           onViewModeChange("ACTIVE");
-          setDateRangePreset("today");
-          setPage(1);
+          setDateRangePreset(dateRangePreset === "today" ? "ALL" : "today");
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           dateRangePreset === "today"
@@ -135,9 +140,7 @@ export function DentalCasesQuickPills({
       <button
         type="button"
         onClick={() => {
-          onViewModeChange("ACTIVE");
           setPriority(priority === "URGENT" ? "" : "URGENT");
-          setPage(1);
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           priority === "URGENT"
@@ -151,9 +154,7 @@ export function DentalCasesQuickPills({
       <button
         type="button"
         onClick={() => {
-          onViewModeChange("ACTIVE");
           setPriority(priority === "STAT" ? "" : "STAT");
-          setPage(1);
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           priority === "STAT"
@@ -167,9 +168,7 @@ export function DentalCasesQuickPills({
       <button
         type="button"
         onClick={() => {
-          onViewModeChange("ACTIVE");
           setStatus(status === "OUTSOURCED" ? "" : "OUTSOURCED");
-          setPage(1);
         }}
         className={`px-2.5 py-0.5 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 text-xs ${
           status === "OUTSOURCED"
