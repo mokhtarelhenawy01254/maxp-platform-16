@@ -234,11 +234,16 @@ export const buildCheckoutOrderPayload = (
         discounts: item.volumeDiscounts,
       });
 
+      const effectiveUnitPrice = Math.min(
+        pricing.effectiveUnitPrice,
+        typeof item.price === "number" && item.price > 0 ? item.price : pricing.effectiveUnitPrice,
+      );
+
       return {
         productId: item.productId,
         ...(item.variantId ? { variantId: item.variantId } : {}),
         name: item.name,
-        price: pricing.effectiveUnitPrice,
+        price: effectiveUnitPrice,
         basePrice: item.basePrice ?? item.price,
         quantity: item.quantity,
         attributes: item.attributes || {},

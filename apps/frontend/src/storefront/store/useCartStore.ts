@@ -246,7 +246,11 @@ export const useCartStore = create<CartState>()(
             quantity: effectiveQuantity,
             discounts: item.volumeDiscounts,
           });
-          return total + (pricing.effectiveUnitPrice * item.quantity);
+          const effectiveUnitPrice = Math.min(
+            pricing.effectiveUnitPrice,
+            typeof item.price === "number" && item.price > 0 ? item.price : pricing.effectiveUnitPrice,
+          );
+          return total + (effectiveUnitPrice * item.quantity);
         }, 0);
         return Number(subtotal.toFixed(2));
       },

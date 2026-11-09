@@ -64,12 +64,19 @@ export const getCartItemPricing = (item: CartItem, allItems: CartItem[] = []): C
     discounts: item.volumeDiscounts,
   });
 
-  const lineSubtotal = Number((basePricing.effectiveUnitPrice * item.quantity).toFixed(2));
-  const baseSubtotal = Number((basePricing.baseUnitPrice * item.quantity).toFixed(2));
+  const baseUnitPrice = basePricing.baseUnitPrice;
+  const effectiveUnitPrice = Math.min(
+    basePricing.effectiveUnitPrice,
+    typeof item.price === "number" && item.price > 0 ? item.price : basePricing.effectiveUnitPrice,
+  );
+
+  const lineSubtotal = Number((effectiveUnitPrice * item.quantity).toFixed(2));
+  const baseSubtotal = Number((baseUnitPrice * item.quantity).toFixed(2));
   const totalDiscount = Number(Math.max(0, baseSubtotal - lineSubtotal).toFixed(2));
 
   return {
     ...basePricing,
+    effectiveUnitPrice,
     lineSubtotal,
     baseSubtotal,
     totalDiscount,

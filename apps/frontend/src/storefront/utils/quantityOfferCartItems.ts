@@ -58,7 +58,7 @@ const createBundleDiscount = (
     {
       id: `${offerId}-slot-${slotIndex + 1}`,
       minQuantity: 1,
-      maxQuantity: 1,
+      maxQuantity: null,
       discountType: "fixed" as const,
       discountValue,
       isActive: true,
@@ -121,7 +121,7 @@ export const buildQuantityOfferCartItems = ({
             {
               id: `${quantityOfferSelection.offerId}-bundle`,
               minQuantity: quantityOfferSelection.offerQuantity,
-              maxQuantity: quantityOfferSelection.offerQuantity,
+              maxQuantity: null,
               discountType: "fixed",
               discountValue: Number(
                 Math.max(0, basePrice - quantityOfferSelection.unitPrice).toFixed(2),
