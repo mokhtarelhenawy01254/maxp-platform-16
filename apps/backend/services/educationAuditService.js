@@ -109,7 +109,12 @@ async function logEducationEvent({
 
     if (req?.user) {
       resolvedUserId = resolvedUserId || req.user.id;
-      resolvedUserName = resolvedUserName || req.user.name || req.user.email || 'مستخدم النظام';
+      resolvedUserName =
+        resolvedUserName ||
+        req.user.name ||
+        [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') ||
+        req.user.email ||
+        'مستخدم النظام';
       resolvedUserRole = resolvedUserRole || req.user.role || 'USER';
     }
 
@@ -259,10 +264,11 @@ async function getEducationLogs({
         user: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             role: true,
-            avatarUrl: true,
+            avatar: true,
           },
         },
       },
@@ -290,11 +296,12 @@ async function getEducationLogs({
       tags: parsedTags,
       actorName:
         parsedMetadata?.actor?.name ||
-        log.user?.name ||
+        (log.user ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim() : null) ||
         log.user?.email ||
         'مستخدم غير معروف',
       actorRole: parsedMetadata?.actor?.role || log.user?.role || 'SYSTEM',
       actorType: parsedMetadata?.actor?.type || 'USER',
+      actorAvatar: log.user?.avatar || null,
     };
   });
 
@@ -351,7 +358,7 @@ async function getEducationLogsStats(companyId) {
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
       },
     }),
   ]);
@@ -378,7 +385,11 @@ async function getEducationLogsStats(companyId) {
       targetType: r.targetType,
       targetName: r.targetName,
       createdAt: r.createdAt,
-      actorName: parsedMetadata?.actor?.name || r.user?.name || 'مستخدم',
+      actorName:
+        parsedMetadata?.actor?.name ||
+        (r.user ? `${r.user.firstName || ''} ${r.user.lastName || ''}`.trim() : null) ||
+        r.user?.email ||
+        'مستخدم',
       isSuccess: r.isSuccess,
     };
   });
