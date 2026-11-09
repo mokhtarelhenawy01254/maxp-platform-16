@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { buildStorefrontPath } from '../utils/paths';
@@ -187,6 +187,47 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
   const contentColumnClassName = isSmartBazaar
     ? 'rounded-[2rem] border border-primary/10 bg-white/90 p-6 shadow-[0_28px_90px_-58px_hsl(var(--primary)/0.28)] backdrop-blur md:p-8'
     : 'rounded-[1.75rem] border border-border bg-card p-6 md:p-8';
+
+  const isMarketplaceSimple = String(settings?.variant || '').trim().toLowerCase() === 'marketplace-simple';
+  const [expanded, setExpanded] = useState(false);
+
+  if (isMarketplaceSimple) {
+    return (
+      <section className="w-full bg-[#f6f5f8] py-12">
+        <div className="container px-4 md:px-6">
+          <div className="mx-auto max-w-[1235px] text-start">
+            <h2 className="font-heading text-[24px] font-semibold leading-tight text-[#333333] md:text-[26px]">
+              {title}
+            </h2>
+            <div className="mt-4 space-y-4 text-[15px] leading-6 text-[#777777]">
+              {paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+              {expanded
+                ? details.map((detail, index) => <p key={`detail-${index}`}>{detail.value}</p>)
+                : null}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              {details.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((value) => !value)}
+                  className="inline-flex h-[42px] items-center justify-center rounded-[35px] bg-[#333333] px-6 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#ad7d61]"
+                >
+                  {expanded ? 'إخفاء التفاصيل' : 'اقرأ المزيد'}
+                </button>
+              ) : null}
+              {ctaText && resolvedCtaLink ? (
+                <Link to={resolvedCtaLink} className="text-[13px] font-semibold text-[#ad7d61] underline-offset-4 hover:underline">
+                  {ctaText}
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full bg-background py-10 md:py-14">

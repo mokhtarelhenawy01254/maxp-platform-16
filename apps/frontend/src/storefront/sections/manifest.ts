@@ -3513,6 +3513,10 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "info-content": {
     label: "محتوى نصي",
     component: "info-content",
+    variants: [
+      { value: "standard", label: "قياسي" },
+      { value: "marketplace-simple", label: "نص بعمود واحد + اقرأ المزيد" },
+    ],
     fields: [
       {
         key: "badge",

@@ -114,31 +114,32 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
               <h2 className="mb-3 font-heading text-[16px] font-semibold text-[#333333]">
                 {settings?.articlesTitle || 'أحدث المقالات'}
               </h2>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col">
                 {articles.map((article, index) => (
                   <a
                     key={`${article.title}-${index}`}
                     href={scoped(article.link || '/shop')}
-                    className="group flex items-center gap-3"
+                    className={`group flex items-start gap-3 py-4 ${index > 0 ? 'border-t border-[#ececec]' : 'pt-0'}`}
                   >
-                    <span className="block h-12 w-12 shrink-0 overflow-hidden rounded-full bg-[#f4f4f4]">
+                    <span className="block h-[65px] w-[75px] shrink-0 overflow-hidden bg-[#f4f4f4]">
                       {article.image ? (
                         <img
                           src={article.image}
                           alt={article.title || ''}
                           loading="lazy"
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : null}
                     </span>
                     <span className="min-w-0">
-                      <span className="line-clamp-2 block text-[13px] font-semibold leading-[1.5] text-[#333333] group-hover:text-[#ad7d61]">
+                      <span className="line-clamp-2 block text-[15px] font-semibold leading-[1.45] text-[#333333] group-hover:text-[#ad7d61]">
                         {article.title}
                       </span>
                       {article.date ? (
-                        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#9a9a9a]">
-                          {article.date}
-                        </span>
+                        <span className="mt-1 block text-[11px] font-medium text-[#9a9a9a]">{article.date}</span>
+                      ) : null}
+                      {article.meta ? (
+                        <span className="block text-[11px] font-medium text-[#b5b5b5]">{article.meta}</span>
                       ) : null}
                     </span>
                   </a>
