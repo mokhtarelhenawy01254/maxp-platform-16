@@ -72,7 +72,9 @@ const quantityOfferToVolumeDiscount = (offer, basePrice) => {
   const quantity = Math.max(1, Math.floor(toFiniteNumber(offer.quantity, 0)));
   if (quantity <= 0) return null;
   const unitPrice = toFiniteNumber(offer.unitPrice, 0);
-  const discountValue = basePrice ? Math.max(0, basePrice - unitPrice) : 0;
+  const discountValue = basePrice
+    ? Math.max(0, basePrice - unitPrice)
+    : Math.max(0, toFiniteNumber(offer.discountValue, 0));
   return {
     id: typeof offer.id === 'string' && offer.id.trim() ? offer.id.trim() : `volume-discount-${quantity}`,
     minQuantity: quantity,
@@ -88,15 +90,16 @@ const getVolumeDiscountsFromMetadata = (rawMetadata, options = {}) => {
   const metadata = parseMetadataObject(rawMetadata);
   let rawDiscounts;
 
-  if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
-    rawDiscounts = metadata.volumeDiscounts;
-  } else if (Array.isArray(metadata.bulkSavings)) {
-    rawDiscounts = metadata.bulkSavings;
-  } else if (Array.isArray(metadata.quantityOffers)) {
+  // Single Source of Truth: if quantityOffers exists and has items, it is the sole source!
+  if (Array.isArray(metadata.quantityOffers) && metadata.quantityOffers.length > 0) {
     rawDiscounts = metadata.quantityOffers
       .filter((offer) => isRecord(offer) && toFiniteNumber(offer.quantity, 0) > 1)
       .map((offer) => quantityOfferToVolumeDiscount(offer, basePrice))
       .filter(Boolean);
+  } else if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
+    rawDiscounts = metadata.volumeDiscounts;
+  } else if (Array.isArray(metadata.bulkSavings)) {
+    rawDiscounts = metadata.bulkSavings;
   } else {
     rawDiscounts = [];
   }
@@ -111,8 +114,10 @@ const getVolumeDiscountsFromMetadata = (rawMetadata, options = {}) => {
 
 const buildMetadataWithVolumeDiscounts = (rawMetadata, discounts) => {
   const metadata = parseMetadataObject(rawMetadata);
+  const nextMetadata = { ...metadata };
+  delete nextMetadata.quantityOffers; // Enforce single source of truth
   return JSON.stringify({
-    ...metadata,
+    ...nextMetadata,
     volumeDiscounts: sortVolumeDiscounts(
       (discounts || [])
         .map((discount, index) => normalizeVolumeDiscount(discount, index))

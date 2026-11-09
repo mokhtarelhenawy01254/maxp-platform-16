@@ -8,6 +8,7 @@ import { useStorefrontDynamicContext } from '../../studio/utils/dynamicValues';
 import { storefrontApi } from '../../../utils/storefrontApi';
 import { useCartStore } from '../../store/useCartStore';
 import { usePdpSelectionStore } from '../../store/usePdpSelectionStore';
+import { getProductVolumeDiscounts } from '../../utils/volumeDiscounts';
 import {
   extractProductOptions,
   resolveProductFromContext,
@@ -217,7 +218,9 @@ const AddToCartElement: React.FC<AddToCartElementProps> = ({
             variantId: activeVariantId ? String(activeVariantId) : undefined,
             name: product.title || product.name || '',
             price: Number(product.price) || 0,
+            basePrice: Number(product.price) || 0,
             quantity: Math.max(1, propQuantity),
+            volumeDiscounts: getProductVolumeDiscounts(product, Number(product.price) || 0),
             imageUrl:
               product.image ||
               product.featuredImage ||

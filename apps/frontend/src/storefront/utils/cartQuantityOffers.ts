@@ -40,12 +40,41 @@ export type CartDisplayEntry =
       group: QuantityOfferCartGroup;
     };
 
-export const getCartItemPricing = (item: CartItem): CartItemPricingSummary =>
-  calculateVolumeDiscountPricing({
+export const getCartItemPricing = (item: CartItem, allItems: CartItem[] = []): CartItemPricingSummary => {
+  let effectiveQuantity = item.quantity;
+  if (item.quantityOffer?.groupId && allItems.length > 0) {
+    const groupUnits = allItems
+      .filter((other) => other.quantityOffer?.groupId === item.quantityOffer?.groupId)
+      .reduce((sum, other) => sum + other.quantity, 0);
+    effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
+  } else if (item.quantityOffer?.offerQuantity) {
+    effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
+  } else if (allItems.length > 0) {
+    const totalProductUnits = allItems
+      .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
+      .reduce((sum, other) => sum + other.quantity, 0);
+    if (totalProductUnits > item.quantity) {
+      effectiveQuantity = totalProductUnits;
+    }
+  }
+
+  const basePricing = calculateVolumeDiscountPricing({
     unitPrice: item.basePrice ?? item.price,
-    quantity: item.quantity,
+    quantity: effectiveQuantity,
     discounts: item.volumeDiscounts,
   });
+
+  const lineSubtotal = Number((basePricing.effectiveUnitPrice * item.quantity).toFixed(2));
+  const baseSubtotal = Number((basePricing.baseUnitPrice * item.quantity).toFixed(2));
+  const totalDiscount = Number(Math.max(0, baseSubtotal - lineSubtotal).toFixed(2));
+
+  return {
+    ...basePricing,
+    lineSubtotal,
+    baseSubtotal,
+    totalDiscount,
+  };
+};
 
 const createEmptyGroup = (item: CartItem): QuantityOfferCartGroup => ({
   groupId: item.quantityOffer?.groupId || item.id,
@@ -68,7 +97,7 @@ export const getCartDisplayEntries = (items: CartItem[]): CartDisplayEntry[] => 
   const groupedEntries = new Map<string, QuantityOfferCartGroup>();
 
   items.forEach((item) => {
-    const pricing = getCartItemPricing(item);
+    const pricing = getCartItemPricing(item, items);
     const quantityOffer = item.quantityOffer;
 
     if (!quantityOffer?.groupId) {
@@ -90,7 +119,7 @@ export const getCartDisplayEntries = (items: CartItem[]): CartDisplayEntry[] => 
       (group.originalTotal + pricing.baseUnitPrice * item.quantity).toFixed(2),
     );
     group.totalDiscount = Number(
-      (group.totalDiscount + pricing.totalDiscount).toFixed(2),
+      Math.max(0, group.originalTotal - group.subtotal).toFixed(2),
     );
     group.selectedPieces += item.quantity;
     group.freeShipping = group.freeShipping || Boolean(quantityOffer.freeShipping);

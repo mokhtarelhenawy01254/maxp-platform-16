@@ -33,9 +33,30 @@ export function getQueuedPunches(): QueuedPunch[] {
 export function saveQueuedPunches(items: QueuedPunch[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("attendance_queue_changed", { detail: items }));
+    }
   } catch (err) {
     console.warn("Failed to persist offline attendance queue:", err);
   }
+}
+
+export function subscribeToQueue(callback: (queue: QueuedPunch[]) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const handler = () => {
+    callback(getQueuedPunches());
+  };
+
+  window.addEventListener("attendance_queue_changed", handler);
+  window.addEventListener("storage", handler);
+  // Initial fire
+  callback(getQueuedPunches());
+
+  return () => {
+    window.removeEventListener("attendance_queue_changed", handler);
+    window.removeEventListener("storage", handler);
+  };
 }
 
 export function enqueuePunch(punch: Omit<QueuedPunch, "id" | "createdAt" | "retryCount">): QueuedPunch {
@@ -81,6 +102,8 @@ export async function processAttendanceQueue(onSynced?: (punch: QueuedPunch, res
 
   isProcessing = true;
 
+  const remainingQueue: QueuedPunch[] = [];
+
   for (const item of queue) {
     try {
       const endpoint = item.action === "CHECK_IN" ? "/hr/attendance/check-in" : "/hr/attendance/check-out";
@@ -93,34 +116,44 @@ export async function processAttendanceQueue(onSynced?: (punch: QueuedPunch, res
 
       const res = await api.post(endpoint, payload);
 
-      removeQueuedPunch(item.id);
-      const timeStr = formatTimeArabic(item.originalTimestamp);
-      toast.success(`تمت مزامنة البصمة بنجاح ✅ ${timeStr}`, {
-        description: "تم استرداد الاتصال وتوثيق وقت البصمة الأصلي بالسيرفر.",
-      });
+      if (res?.data?.success && (res.status === 200 || res.status === 201)) {
+        const timeStr = formatTimeArabic(item.originalTimestamp);
+        toast.success(`تمت مزامنة البصمة بنجاح ✅ ${timeStr}`, {
+          description: "تم استرداد الاتصال وتوثيق وقت البصمة الأصلي بالسيرفر.",
+        });
 
-      if (onSynced) {
-        onSynced(item, res.data);
+        if (onSynced) {
+          onSynced(item, res.data);
+        }
+      } else {
+        throw new Error(res?.data?.error || "تعذر اعتماد البصمة بالسيرفر");
       }
     } catch (err: any) {
       console.warn("Error syncing queued punch:", err);
-      // If error is duplicate attendance, it was already recorded! Safe to remove
       const errMsg = err?.response?.data?.error || err?.message || "";
       const isNotEmp = errMsg.includes("غير مسجل كموظف") || err?.response?.data?.code === "NOT_AN_EMPLOYEE";
+      const isAlreadyRecorded = errMsg.includes("مسبقاً") || errMsg.includes("duplicate") || errMsg.includes("مسجل بالفعل");
+
       if (isNotEmp) {
-        removeQueuedPunch(item.id);
         toast.error("أنت غير مسجل كموظف في الشركة. يرجى تقديم طلب ربط الحساب للإدارة.");
-      } else if (errMsg.includes("مسبقاً") || errMsg.includes("duplicate") || err?.response?.status === 400) {
-        removeQueuedPunch(item.id);
+      } else if (isAlreadyRecorded) {
+        // Discard silently as it's already recorded in DB
       } else {
-        item.retryCount = (item.retryCount || 0) + 1;
-        item.lastError = errMsg;
+        remainingQueue.push({
+          ...item,
+          retryCount: (item.retryCount || 0) + 1,
+          lastError: errMsg,
+        });
       }
     }
   }
 
-  saveQueuedPunches(getQueuedPunches());
+  saveQueuedPunches(remainingQueue);
   isProcessing = false;
+}
+
+export async function retryAllQueuedPunches(onSynced?: (punch: QueuedPunch, response: any) => void): Promise<void> {
+  return processAttendanceQueue(onSynced);
 }
 
 // Auto-register network events & poller

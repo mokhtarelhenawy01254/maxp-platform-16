@@ -199,6 +199,21 @@ const getSelectionRailOfferTitle = (offer: QuantityOffer) => {
   return `${offer.quantity} قطع`;
 };
 
+const resolveOfferBuyText = (
+  offer: QuantityOffer,
+  totals: { offerTotal: number; originalTotal: number },
+  currency: string,
+): string => {
+  // Requirement 5: «بدل» must be computed from current price * quantity (totals.originalTotal)
+  if (!offer.buyText || !offer.buyText.trim() || offer.buyText.includes("بدل")) {
+    return `اشتري ${offer.quantity} بـ${formatStorefrontCurrency(
+      totals.offerTotal,
+      currency,
+    )} بدل ${formatStorefrontCurrency(totals.originalTotal, currency)}`;
+  }
+  return offer.buyText;
+};
+
 const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
   product,
   currency,
@@ -458,7 +473,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       variantId: primarySlotVariant?.id || null,
       imageUrl: primaryImage || undefined,
       unitPrice: Number(activeTotals.offerTotal || product.price || 0),
-      basePrice: Number(product.comparePrice || product.price || 0),
+      basePrice: Number(product.price || product.comparePrice || 0),
       attributes: primarySlotSelection,
       volumeDiscounts: EMPTY_VOLUME_DISCOUNTS,
       requiresVariantSelection: hasVariants,
@@ -551,12 +566,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       return;
     }
     const offerTotals = getOfferTotals(activeOffer);
-    const offerLabel =
-      activeOffer.buyText ||
-      `اشتري ${activeOffer.quantity} قطعة بـ${formatStorefrontCurrency(
-        offerTotals.offerTotal,
-        currency,
-      )} بدل ${formatStorefrontCurrency(offerTotals.originalTotal, currency)}`;
+    const offerLabel = resolveOfferBuyText(activeOffer, offerTotals, currency);
 
     const builtOfferItems = buildQuantityOfferCartItems({
       product,
@@ -680,18 +690,9 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
               referenceUnitPrices.map((priceValue) => priceValue.toFixed(2)),
             ).size > 1;
           const totals = getOfferTotals(offer);
-          const defaultBuyText =
-            offer.buyText ||
-            `اشتري ${offer.quantity} قطعة بـ${formatStorefrontCurrency(
-              totals.offerTotal,
-              currency,
-            )} بدل ${formatStorefrontCurrency(
-              totals.originalTotal,
-              currency,
-            )}`;
           const buyText = isSelectionRail
             ? (offer.buyText || getSelectionRailOfferTitle(offer))
-            : defaultBuyText;
+            : resolveOfferBuyText(offer, totals, currency);
           const isBestValue = totals.savings > 0 && totals.savings === bestSavings;
           const isMostPopular =
             offer.quantity === 2 || Boolean(offer.helperText?.includes("الأكثر طلباً"));
@@ -739,7 +740,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                     metadata: getOfferTrackingMetadata({
                       product,
                       offer,
-                      offerLabel: defaultBuyText,
+                      offerLabel: buyText,
                       offerTotal: totals.offerTotal,
                       savings: totals.savings,
                       hasVariants,
@@ -892,7 +893,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                                 metadata: getOfferTrackingMetadata({
                                   product,
                                   offer,
-                                  offerLabel: defaultBuyText,
+                                  offerLabel: buyText,
                                   offerTotal: totals.offerTotal,
                                   savings: totals.savings,
                                   hasVariants,

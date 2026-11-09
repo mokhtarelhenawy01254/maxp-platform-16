@@ -7,6 +7,7 @@ const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
 } = require('../utils/volumeDiscountUtils');
+const { buildProductSearchFilter } = require('../utils/arabicSearchUtils');
 const {
   extractSubdomainMiddleware,
   requireCompany,
@@ -1842,11 +1843,12 @@ router.get('/', async (req, res) => {
     }
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-      ];
+      const searchFilter = buildProductSearchFilter(search);
+      if (searchFilter?.OR) {
+        where.OR = searchFilter.OR;
+      } else if (searchFilter?.AND) {
+        where.AND = searchFilter.AND;
+      }
     }
 
     if (minPrice || maxPrice) {

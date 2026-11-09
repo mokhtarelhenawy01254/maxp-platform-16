@@ -85,41 +85,51 @@ const normalizeDiscount = (
 
 const quantityOfferToVolumeDiscount = (
   offer: unknown,
+  basePrice = 0,
 ): VolumeDiscountTier | null => {
   if (!isRecord(offer)) return null;
   const quantity = Math.max(1, Math.floor(toFiniteNumber(offer.quantity, 0)));
   if (quantity <= 0) return null;
+  const unitPrice = toFiniteNumber((offer as any).unitPrice, 0);
+  const discountValue =
+    basePrice > 0
+      ? Math.max(0, basePrice - unitPrice)
+      : Math.max(0, toFiniteNumber((offer as any).discountValue, 0));
   return {
     id:
-      typeof offer.id === "string" && offer.id.trim()
-        ? offer.id.trim()
+      typeof (offer as any).id === "string" && (offer as any).id.trim()
+        ? (offer as any).id.trim()
         : `volume-discount-${quantity}`,
     minQuantity: quantity,
     maxQuantity: null,
     discountType: "fixed",
-    discountValue: 0,
-    isActive: offer.isActive !== false,
+    discountValue,
+    isActive: (offer as any).isActive !== false,
   };
 };
 
-export const normalizeVolumeDiscounts = (value: unknown): VolumeDiscountTier[] => {
+export const normalizeVolumeDiscounts = (
+  value: unknown,
+  basePrice = 0,
+): VolumeDiscountTier[] => {
   const rawDiscounts = Array.isArray(value)
     ? value
     : (() => {
         const metadata = parseMetadataObject(value);
+        // Single Source of Truth: if quantityOffers exists and has items, use it!
+        if (Array.isArray(metadata.quantityOffers) && metadata.quantityOffers.length > 0) {
+          return metadata.quantityOffers
+            .filter((offer: unknown) => isRecord(offer) && toFiniteNumber((offer as any).quantity, 0) > 1)
+            .map((offer: unknown) => quantityOfferToVolumeDiscount(offer, basePrice))
+            .filter(Boolean);
+        }
+
         if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
           return metadata.volumeDiscounts;
         }
 
         if (Array.isArray(metadata.bulkSavings)) {
           return metadata.bulkSavings;
-        }
-
-        if (Array.isArray(metadata.quantityOffers)) {
-          return metadata.quantityOffers
-            .filter((offer: unknown) => isRecord(offer) && toFiniteNumber((offer as any).quantity, 0) > 1)
-            .map((offer: unknown) => quantityOfferToVolumeDiscount(offer))
-            .filter(Boolean);
         }
 
         return [];
@@ -132,8 +142,20 @@ export const normalizeVolumeDiscounts = (value: unknown): VolumeDiscountTier[] =
     .sort((left, right) => left.minQuantity - right.minQuantity);
 };
 
-export const getProductVolumeDiscounts = (product: Record<string, any> | null | undefined) =>
-  normalizeVolumeDiscounts(product?.volumeDiscounts || product?.metadata);
+export const getProductVolumeDiscounts = (
+  product: Record<string, any> | null | undefined,
+  basePrice?: number,
+) => {
+  const effectiveBasePrice =
+    basePrice !== undefined && basePrice > 0
+      ? basePrice
+      : Number(product?.price || 0);
+
+  return normalizeVolumeDiscounts(
+    product?.metadata || product?.volumeDiscounts,
+    effectiveBasePrice,
+  );
+};
 
 export const getApplicableVolumeDiscount = (
   discounts: VolumeDiscountTier[],

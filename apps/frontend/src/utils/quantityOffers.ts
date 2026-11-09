@@ -158,8 +158,10 @@ export const buildMetadataWithQuantityOffers = (
   offers: QuantityOffer[],
 ) => {
   const metadata = parseMetadataObject(rawMetadata);
+  const nextMetadata = { ...metadata };
+  delete nextMetadata.volumeDiscounts; // Enforce single source of truth
   return JSON.stringify({
-    ...metadata,
+    ...nextMetadata,
     quantityOffers: normalizeQuantityOffers(offers),
   });
 };
@@ -180,11 +182,12 @@ export const resolveQuantityOfferReferenceUnitPrice = (
   primarySource?: QuantityOfferPriceSource | null,
   fallbackSource?: QuantityOfferPriceSource | null,
 ) => {
+  // Requirement 5: «بدل» is calculated from current price * quantity, NOT comparePrice!
   const candidates = [
-    primarySource?.comparePrice,
-    fallbackSource?.comparePrice,
     primarySource?.price,
     fallbackSource?.price,
+    primarySource?.comparePrice,
+    fallbackSource?.comparePrice,
   ];
 
   for (const candidate of candidates) {
@@ -234,7 +237,7 @@ export const getDefaultQuantityOfferBuyText = (
   currency = "ج.م",
 ) => {
   const { originalTotal, offerTotal } = getQuantityOfferTotals(offer, baseUnitPrice);
-  return `اشتري ${offer.quantity} قطعة بـ${offerTotal} بدل ${originalTotal} ${currency}`.trim();
+  return `اشتري ${offer.quantity} بـ${offerTotal} بدل ${originalTotal}`.trim();
 };
 
 export const getActiveQuantityOffers = (value: unknown) =>

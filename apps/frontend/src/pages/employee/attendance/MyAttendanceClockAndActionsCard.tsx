@@ -1,13 +1,16 @@
 import React from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   Clock,
+  FileCheck,
   Home,
   Laptop,
   LogIn,
   LogOut,
   MapPin,
+  RefreshCw,
   Target,
 } from "lucide-react";
 import type { TFunction } from "i18next";
@@ -22,6 +25,7 @@ import {
   formatTimeWithTZ,
   statusConfig,
 } from "./helpers";
+import { QueuedPunch, formatTimeArabic } from "../../../services/attendanceQueueService";
 
 interface MyAttendanceClockAndActionsCardProps {
   t: TFunction;
@@ -44,6 +48,10 @@ interface MyAttendanceClockAndActionsCardProps {
   onCheckIn: () => void;
   onCheckOut: () => void;
   todayGoals: TodayGoal[];
+  queuedPunches?: QueuedPunch[];
+  retryingQueue?: boolean;
+  onRetryQueue?: () => void;
+  onOpenRegularize?: (timeStr?: string) => void;
 }
 
 export const MyAttendanceClockAndActionsCard: React.FC<
@@ -69,6 +77,10 @@ export const MyAttendanceClockAndActionsCard: React.FC<
   onCheckIn,
   onCheckOut,
   todayGoals,
+  queuedPunches = [],
+  retryingQueue = false,
+  onRetryQueue,
+  onOpenRegularize,
 }) => {
   return (
     <>
@@ -226,6 +238,59 @@ export const MyAttendanceClockAndActionsCard: React.FC<
               </div>
             )}
 
+            {/* بنر طابور البصمات المعلقة (Queue & Retry) */}
+            {queuedPunches.length > 0 && (
+              <div className="mt-4 p-4 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-right space-y-2">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-amber-200 text-amber-900 font-bold">بصمات معلقة ({queuedPunches.length})</Badge>
+                  <div className="flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span>تم حفظ البصمة محلياً على جهازك لضمان عدم ضياعها وسيتم إرسالها تلقائياً</span>
+                  </div>
+                </div>
+                {queuedPunches.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-white/80 dark:bg-gray-800/80 border border-amber-200 text-xs"
+                  >
+                    <div>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {item.action === "CHECK_IN" ? "بصمة حضور" : "بصمة انصراف"}
+                      </span>
+                      <span className="mx-2 text-gray-600 dark:text-gray-300 font-mono">
+                        الوقت الأصلي: {formatTimeArabic(item.originalTimestamp)}
+                      </span>
+                      {item.lastError && (
+                        <p className="text-red-600 dark:text-red-400 mt-0.5 font-medium">السبب: {item.lastError}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={retryingQueue}
+                        onClick={onRetryQueue}
+                        className="text-xs h-8 gap-1 bg-white hover:bg-amber-50"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${retryingQueue ? "animate-spin" : ""}`} />
+                        إعادة المحاولة الآن
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onOpenRegularize?.(item.originalTimestamp)}
+                        className="text-xs h-8 text-blue-600 hover:text-blue-700"
+                      >
+                        طلب اعتماد
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {(canCheckIn || canCheckOut) && (
               <div className="flex justify-center mb-6">
                 <div className="inline-flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner">
@@ -320,6 +385,19 @@ export const MyAttendanceClockAndActionsCard: React.FC<
                   </p>
                 </div>
               )}
+            </div>
+
+            <div className="pt-2 flex items-center justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenRegularize?.()}
+                className="gap-2 text-xs font-semibold border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+              >
+                <FileCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                طلب بصمة معتمدة (اعتماد يدوي للمالك)
+              </Button>
             </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">

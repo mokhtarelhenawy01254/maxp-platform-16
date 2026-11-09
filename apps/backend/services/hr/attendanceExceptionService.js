@@ -26,6 +26,33 @@ async function getCompanyTimezone(companyId, prisma) {
   }
 }
 
+/**
+ * تحويل وقت محلي (HH:mm) وتاريخ إلى كائن Date بـ UTC مع مراعاة التوقيت الصيفي للمنطقة الزمنية بدقة
+ */
+function parseLocalTimeToUtc(dateVal, timeStr, timezone = "Africa/Cairo") {
+  if (!timeStr || !/^(\d{1,2}):(\d{2})/.test(timeStr.trim())) {
+    return new Date();
+  }
+  const [h, m] = timeStr.trim().split(":").map(Number);
+  const baseDateObj = new Date(dateVal);
+  const y = baseDateObj.getUTCFullYear();
+  const mon = String(baseDateObj.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(baseDateObj.getUTCDate()).padStart(2, "0");
+  const isoLocal = `${y}-${mon}-${day}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+
+  try {
+    const testDate = new Date(isoLocal + "Z");
+    const localDate = new Date(testDate.toLocaleString("en-US", { timeZone: timezone }));
+    const utcDate = new Date(testDate.toLocaleString("en-US", { timeZone: "UTC" }));
+    const offsetMs = localDate.getTime() - utcDate.getTime();
+    return new Date(testDate.getTime() - offsetMs);
+  } catch (err) {
+    const d = new Date(dateVal);
+    d.setUTCHours(h - 2, m, 0, 0);
+    return d;
+  }
+}
+
 class AttendanceExceptionService {
   get prisma() {
     return getSharedPrismaClient();
@@ -40,44 +67,94 @@ class AttendanceExceptionService {
    * @param {string} params.reason
    * @returns {Promise<object>}
    */
-  async createExceptionRequest(companyId, userId, { attemptId, reason }) {
-    if (!attemptId) {
-      const error = new Error("رقم المحاولة (attemptId) مطلوب");
-      error.statusCode = 400;
-      throw error;
-    }
+  /**
+   * إنشاء طلب استثناء أو اعتماد بصمة (مسار طلب بصمة معتمدة للعضو)
+   * @param {string} companyId
+   * @param {string} userId
+   * @param {object} params
+   * @param {string} [params.attemptId]
+   * @param {string} params.reason
+   * @param {string|Date} [params.attendanceDate]
+   * @param {string} [params.requestedTime]
+   * @param {"CHECK_IN"|"CHECK_OUT"} [params.action]
+   * @param {object} [params.context]
+   * @returns {Promise<object>}
+   */
+  async createExceptionRequest(companyId, userId, { attemptId, reason, attendanceDate, requestedTime, action, context } = {}) {
     if (!reason || !reason.trim()) {
-      const error = new Error("سبب طلب الاستثناء مطلوب");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const attempt = await this.prisma.hrAttendanceAttempt.findUnique({
-      where: { id: attemptId },
-    });
-
-    if (!attempt || attempt.companyId !== companyId || attempt.userId !== userId) {
-      const error = new Error("محاولة البصمة غير موجودة أو غير مصرح بها");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const allowedResults = ["GEOFENCE_FAILED", "WEAK_ACCURACY", "LOCATION_MISSING"];
-    if (!allowedResults.includes(attempt.result)) {
-      const error = new Error("لا يمكن تقديم طلب استثناء لمحاولة بصمة ناجحة");
+      const error = new Error("سبب طلب الاستثناء/الاعتماد مطلوب");
       error.statusCode = 400;
       throw error;
     }
 
     const timezone = await getCompanyTimezone(companyId, this.prisma);
     const todayForDb = normalizeDateForDb(new Date(), timezone);
-    const todayStr = todayForDb.toISOString().split("T")[0];
-    const attemptDateStr = attempt.attendanceDate instanceof Date
-      ? attempt.attendanceDate.toISOString().split("T")[0]
-      : String(attempt.attendanceDate).split("T")[0];
 
-    if (attemptDateStr !== todayStr) {
-      const error = new Error("لا يمكن تقديم طلب استثناء إلا لبصمات اليوم فقط");
+    let attempt = null;
+
+    if (attemptId) {
+      attempt = await this.prisma.hrAttendanceAttempt.findUnique({
+        where: { id: attemptId },
+      });
+
+      if (!attempt || attempt.companyId !== companyId || attempt.userId !== userId) {
+        const error = new Error("محاولة البصمة غير موجودة أو غير مصرح بها");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const allowedResults = ["GEOFENCE_FAILED", "WEAK_ACCURACY", "LOCATION_MISSING", "ERROR", "EXCEPTION_PENDING"];
+      if (!allowedResults.includes(attempt.result)) {
+        const error = new Error("لا يمكن تقديم طلب استثناء لمحاولة بصمة ناجحة");
+        error.statusCode = 400;
+        throw error;
+      }
+    } else {
+      // 🚀 مسار «طلب بصمة معتمدة» بدون محاولة سابقة (الموظف يرفع الوقت والسبب للاعتماد بضغطة زر)
+      const targetDate = attendanceDate ? new Date(attendanceDate) : new Date();
+      const targetDateForDb = normalizeDateForDb(targetDate, timezone);
+
+      let requestedPunchTime = new Date();
+      if (requestedTime && /^(\d{1,2}):(\d{2})/.test(requestedTime.trim())) {
+        requestedPunchTime = parseLocalTimeToUtc(targetDateForDb, requestedTime, timezone);
+      }
+
+      const actionType = action === "CHECK_OUT" ? "CHECK_OUT" : "CHECK_IN";
+      const reasonWithTime = `${reason.trim()}${requestedTime ? ` (وقت البصمة المطلوب: ${requestedTime})` : ""}`;
+
+      const synthAttempt = await this.prisma.hrAttendanceAttempt.create({
+        data: {
+          companyId,
+          userId,
+          action: actionType,
+          attendanceDate: targetDateForDb,
+          attemptedAt: requestedPunchTime,
+          result: "ERROR",
+          reason: `طلب بصمة معتمدة: ${reasonWithTime}`,
+          clientIp: context?.ip || null,
+          userAgent: context?.userAgent || null,
+          deviceType: context?.deviceType || null,
+          method: "regularization_request",
+          workMode: "OFFICE",
+        },
+      });
+
+      attempt = synthAttempt;
+      attemptId = synthAttempt.id;
+    }
+
+    const todayMs = todayForDb.getTime();
+    const attemptMs = attempt.attendanceDate.getTime();
+    const diffDays = Math.round((todayMs - attemptMs) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      const error = new Error("لا يمكن تقديم طلب استثناء لتاريخ مستقبلي");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (diffDays > 45) {
+      const error = new Error("لا يمكن تقديم طلب استثناء لتاريخ يتجاوز 45 يوماً سابقة");
       error.statusCode = 400;
       throw error;
     }
@@ -87,12 +164,12 @@ class AttendanceExceptionService {
       where: { attemptId },
     });
     if (existingForAttempt) {
-      const error = new Error("عندك طلب مقدم بالفعل لهذا اليوم");
+      const error = new Error("عندك طلب مقدم بالفعل لهذا اليوم/المحاولة");
       error.statusCode = 409;
       throw error;
     }
 
-    // Check duplicate for user on attendanceDate
+    // Check duplicate for user on attendanceDate (PENDING or APPROVED)
     const existingForDate = await this.prisma.hrAttendanceExceptionRequest.findFirst({
       where: {
         companyId,
@@ -102,10 +179,12 @@ class AttendanceExceptionService {
       },
     });
     if (existingForDate) {
-      const error = new Error("عندك طلب مقدم بالفعل لهذا اليوم");
+      const error = new Error("عندك طلب معتمد أو قيد المراجعة بالفعل لهذا اليوم");
       error.statusCode = 409;
       throw error;
     }
+
+    const fullReason = `${reason.trim()}${requestedTime && !reason.includes(requestedTime) ? ` (وقت البصمة المطلوب: ${requestedTime})` : ""}`;
 
     const request = await this.prisma.hrAttendanceExceptionRequest.create({
       data: {
@@ -114,7 +193,7 @@ class AttendanceExceptionService {
         attemptId,
         attendanceDate: attempt.attendanceDate,
         status: "PENDING",
-        reason: reason.trim(),
+        reason: fullReason,
         distanceMeters: attempt.effectiveDistanceMeters ?? attempt.distanceMeters ?? null,
         accuracyMeters: attempt.accuracyMeters ?? null,
         clientIp: attempt.clientIp ?? null,
@@ -302,7 +381,12 @@ class AttendanceExceptionService {
       },
     });
 
-    const checkInTime = attempt?.attemptedAt || request.requestedAt || new Date();
+    let punchTime = attempt?.attemptedAt || request.requestedAt || new Date();
+    const timeMatch = request.reason?.match(/وقت البصمة المطلوب:\s*(\d{1,2}:\d{2})/);
+    if (timeMatch) {
+      punchTime = parseLocalTimeToUtc(attendanceDate, timeMatch[1], timezone);
+    }
+
     const noteParts = [
       request.reason ? `سبب الاستثناء: ${request.reason}` : null,
       request.distanceMeters != null ? `المسافة: ${request.distanceMeters}م` : null,
@@ -312,31 +396,56 @@ class AttendanceExceptionService {
     ].filter(Boolean);
     const noteDetails = noteParts.join(" | ");
 
+    const isCheckOutAction = attempt?.action === "CHECK_OUT";
+
     let attendance;
     if (existing) {
+      const updateData = isCheckOutAction
+        ? {
+            checkOut: existing.checkOut || punchTime,
+            checkOutMethod: "exception_approved",
+            notes: existing.notes ? `${existing.notes}\n${noteDetails}` : noteDetails,
+          }
+        : {
+            checkIn: existing.checkIn || punchTime,
+            checkInMethod: "exception_approved",
+            isApproved: true,
+            approvedBy: decidedById || null,
+            status: "PRESENT",
+            notes: existing.notes ? `${existing.notes}\n${noteDetails}` : noteDetails,
+          };
+
       attendance = await this.prisma.attendance.update({
         where: { id: existing.id },
-        data: {
-          checkIn: existing.checkIn || checkInTime,
-          checkInMethod: "exception_approved",
-          isApproved: true,
-          approvedBy: decidedById || null,
-          notes: existing.notes ? `${existing.notes}\n${noteDetails}` : noteDetails,
-        },
+        data: updateData,
       });
     } else {
+      const createData = isCheckOutAction
+        ? {
+            companyId,
+            userId: request.userId,
+            date: attendanceDate,
+            checkOut: punchTime,
+            checkOutMethod: "exception_approved",
+            isApproved: true,
+            approvedBy: decidedById || null,
+            notes: noteDetails,
+            status: "PRESENT",
+          }
+        : {
+            companyId,
+            userId: request.userId,
+            date: attendanceDate,
+            checkIn: punchTime,
+            checkInMethod: "exception_approved",
+            isApproved: true,
+            approvedBy: decidedById || null,
+            notes: noteDetails,
+            status: "PRESENT",
+          };
+
       attendance = await this.prisma.attendance.create({
-        data: {
-          companyId,
-          userId: request.userId,
-          date: attendanceDate,
-          checkIn: checkInTime,
-          checkInMethod: "exception_approved",
-          isApproved: true,
-          approvedBy: decidedById || null,
-          notes: noteDetails,
-          status: "PRESENT",
-        },
+        data: createData,
       });
     }
 
@@ -354,7 +463,7 @@ class AttendanceExceptionService {
     if (attempt) {
       await this.prisma.hrAttendanceAttempt.update({
         where: { id: attempt.id },
-        data: { attendanceId: attendance.id },
+        data: { attendanceId: attendance.id, result: "SUCCESS" },
       }).catch((err) => console.warn("⚠️ Failed to link attendanceId on attempt:", err?.message || err));
     }
 

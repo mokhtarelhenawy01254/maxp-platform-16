@@ -3,7 +3,14 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import api from "../../../services/api";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { enqueuePunch, processAttendanceQueue } from "../../../services/attendanceQueueService";
+import {
+  enqueuePunch,
+  processAttendanceQueue,
+  getQueuedPunches,
+  subscribeToQueue,
+  retryAllQueuedPunches,
+  QueuedPunch,
+} from "../../../services/attendanceQueueService";
 import {
   AttendanceStats,
   GeofenceModalData,
@@ -51,6 +58,33 @@ export const useMyAttendanceController = () => {
   const [showGoalsReviewDialog, setShowGoalsReviewDialog] = useState(false);
   const [geofenceModalData, setGeofenceModalData] = useState<GeofenceModalData | null>(null);
   const [showGeofenceModal, setShowGeofenceModal] = useState(false);
+  const [queuedPunches, setQueuedPunches] = useState<QueuedPunch[]>(() => getQueuedPunches());
+  const [retryingQueue, setRetryingQueue] = useState(false);
+  const [showRegularizationModal, setShowRegularizationModal] = useState(false);
+  const [regularizeInitialTime, setRegularizeInitialTime] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    return subscribeToQueue((queue) => {
+      setQueuedPunches(queue);
+    });
+  }, []);
+
+  const handleOpenRegularize = (timeStr?: string) => {
+    setRegularizeInitialTime(timeStr);
+    setShowRegularizationModal(true);
+  };
+
+  const handleRetryQueue = async () => {
+    try {
+      setRetryingQueue(true);
+      await retryAllQueuedPunches();
+      await fetchTodayAttendance();
+      await fetchStats();
+      await fetchRecentAttendance();
+    } finally {
+      setRetryingQueue(false);
+    }
+  };
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -256,12 +290,16 @@ export const useMyAttendanceController = () => {
       setCheckingOut(true);
       const location = await getLocationPayload();
 
-      await api.post("/hr/attendance/check-out", {
+      const res = await api.post("/hr/attendance/check-out", {
         method: "self_service",
         workMode,
         location: location ? JSON.stringify(location) : null,
         originalTimestamp: punchTime.toISOString(),
       });
+
+      if (!res?.data?.success || !res?.data?.attendance) {
+        throw new Error(res?.data?.error || "لم يؤكد السيرفر تسجيل الانصراف.");
+      }
 
       const formattedTime = formatTimeWithTZ(punchTime, timezone);
       toast.success(`تم تسجيل الانصراف بنجاح ✅ ${formattedTime}`);
@@ -289,16 +327,19 @@ export const useMyAttendanceController = () => {
       }
 
       const isNetworkErr = !navigator.onLine || !apiErr.response || apiErr.code === "ERR_NETWORK" || apiErr.code === "ECONNABORTED";
+      const isServerErr = Boolean(apiErr.response?.status && apiErr.response.status >= 500);
 
-      if (isNetworkErr) {
+      if (isNetworkErr || isServerErr) {
+        const location = await getLocationPayload().catch(() => null);
         enqueuePunch({
           action: "CHECK_OUT",
           originalTimestamp: punchTime.toISOString(),
           workMode,
           method: "self_service",
-          lastError: "انقطاع الاتصال بالإنترنت",
+          location,
+          lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,
         });
-        toast.error("لم تُسجّل — السبب: انقطاع الاتصال بالإنترنت", {
+        toast.error(`لم تُسجّل — السبب: ${isNetworkErr ? "انقطاع الاتصال بالإنترنت" : "خطأ مؤقت بالسيرفر"}`, {
           description: "تم حفظ بصمة الانصراف محلياً وسيتم إرسالها تلقائياً فور عودة الاتصال.",
           duration: 8000,
         });
@@ -362,12 +403,16 @@ export const useMyAttendanceController = () => {
       setCheckingIn(true);
       const location = await getLocationPayload();
 
-      await api.post("/hr/attendance/check-in", {
+      const res = await api.post("/hr/attendance/check-in", {
         method: "self_service",
         workMode,
         location: location ? JSON.stringify(location) : null,
         originalTimestamp: punchTime.toISOString(),
       });
+
+      if (!res?.data?.success || !res?.data?.attendance) {
+        throw new Error(res?.data?.error || "لم يؤكد السيرفر تسجيل البصمة.");
+      }
 
       const formattedTime = formatTimeWithTZ(punchTime, timezone);
       toast.success(`تم تسجيل البصمة بنجاح ✅ ${formattedTime}`, {
@@ -400,16 +445,19 @@ export const useMyAttendanceController = () => {
       }
 
       const isNetworkErr = !navigator.onLine || !apiErr.response || apiErr.code === "ERR_NETWORK" || apiErr.code === "ECONNABORTED";
+      const isServerErr = Boolean(apiErr.response?.status && apiErr.response.status >= 500);
 
-      if (isNetworkErr) {
+      if (isNetworkErr || isServerErr) {
+        const location = await getLocationPayload().catch(() => null);
         enqueuePunch({
           action: "CHECK_IN",
           originalTimestamp: punchTime.toISOString(),
           workMode,
           method: "self_service",
-          lastError: "انقطاع الاتصال بالإنترنت",
+          location,
+          lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,
         });
-        toast.error("لم تُسجّل — السبب: انقطاع الاتصال بالإنترنت", {
+        toast.error(`لم تُسجّل — السبب: ${isNetworkErr ? "انقطاع الاتصال بالإنترنت" : "خطأ مؤقت بالسيرفر"}`, {
           description: "تم حفظ البصمة محلياً وسيتم إرسالها تلقائياً بالوقت الأصلي فور عودة الاتصال.",
           duration: 8000,
         });
@@ -552,5 +600,15 @@ export const useMyAttendanceController = () => {
     geofenceModalData,
     showGeofenceModal,
     setShowGeofenceModal,
+    queuedPunches,
+    retryingQueue,
+    handleRetryQueue,
+    showRegularizationModal,
+    setShowRegularizationModal,
+    regularizeInitialTime,
+    handleOpenRegularize,
+    fetchTodayAttendance,
+    fetchStats,
+    fetchRecentAttendance,
   };
 };

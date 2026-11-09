@@ -55,6 +55,16 @@ const MyAttendance: React.FC = () => {
     geofenceModalData,
     showGeofenceModal,
     setShowGeofenceModal,
+    queuedPunches,
+    retryingQueue,
+    handleRetryQueue,
+    showRegularizationModal,
+    setShowRegularizationModal,
+    regularizeInitialTime,
+    handleOpenRegularize,
+    fetchTodayAttendance,
+    fetchRecentAttendance,
+    fetchStats,
   } = useMyAttendanceController();
 
   if (loading) {
@@ -152,6 +162,10 @@ const MyAttendance: React.FC = () => {
         onCheckIn={handleCheckIn}
         onCheckOut={handleCheckOut}
         todayGoals={todayGoals}
+        queuedPunches={queuedPunches}
+        retryingQueue={retryingQueue}
+        onRetryQueue={handleRetryQueue}
+        onOpenRegularize={handleOpenRegularize}
       />
 
       <MyAttendanceStatsAndLogTable
@@ -187,6 +201,14 @@ const MyAttendance: React.FC = () => {
         showGeofenceModal={showGeofenceModal}
         onGeofenceModalChange={setShowGeofenceModal}
         geofenceModalData={geofenceModalData}
+        showRegularizationModal={showRegularizationModal}
+        onRegularizationModalChange={setShowRegularizationModal}
+        regularizeInitialTime={regularizeInitialTime}
+        onRegularizationSuccess={() => {
+          fetchTodayAttendance();
+          fetchStats();
+          fetchRecentAttendance();
+        }}
       />
     </div>
   );

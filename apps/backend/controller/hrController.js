@@ -2162,12 +2162,19 @@ function buildAttendanceContext(req) {
 async function createAttendanceExceptionRequest(req, res) {
   try {
     const { companyId, id: userId } = req.user;
-    const { attemptId, reason } = req.body || {};
+    const { attemptId, reason, attendanceDate, requestedTime, action } = req.body || {};
 
     const request = await attendanceExceptionService.createExceptionRequest(
       companyId,
       userId,
-      { attemptId, reason },
+      {
+        attemptId,
+        reason,
+        attendanceDate,
+        requestedTime,
+        action,
+        context: buildAttendanceContext(req),
+      },
     );
 
     res.status(201).json({ success: true, request });

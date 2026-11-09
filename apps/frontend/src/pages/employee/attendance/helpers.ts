@@ -144,20 +144,31 @@ export const handleAttendanceActionError = (
   }
 
   if (!navigator.onLine) {
-    toast.error(t("employee.attendance.noInternet"), {
-      description: t("employee.attendance.noInternetDesc"),
+    toast.error(t("employee.attendance.noInternet", "انقطاع الاتصال بالإنترنت"), {
+      description: t("employee.attendance.noInternetDesc", "تعذر الاتصال بالسيرفر بسبب انقطاع الإنترنت. تم حفظ البصمة في الطابور المحلي وسيتم إرسالها تلقائياً."),
+      duration: 8000,
     });
     return;
   }
 
+  const explicitError =
+    apiError.response?.data?.error ||
+    (typeof apiError.message === "string" && !apiError.message.includes("[object") ? apiError.message : null) ||
+    (apiError.response?.status === 500
+      ? "خطأ في السيرفر أثناء معالجة البصمة (500). تم حفظ البصمة محلياً لضمان عدم ضياعها."
+      : apiError.response?.status === 403
+      ? "البصمة غير مصرح بها. يرجى مراجعة شبكة الفرع أو تقديم طلب اعتماد بصمة للمالك."
+      : apiError.response?.status === 404
+      ? "الخدمة غير متوفرة بالسيرفر (404)."
+      : "تعذر تسجيل البصمة بالسيرفر. تم توثيق المحاولة محلياً.");
+
   toast.error(
     mode === "checkout"
-      ? t("employee.attendance.checkoutFailed")
-      : t("employee.attendance.checkinFailed"),
+      ? "فشل تسجيل الانصراف — السبب:"
+      : "فشل تسجيل الحضور — السبب:",
     {
-      description:
-        apiError.response?.data?.error ||
-        t("employee.attendance.unexpectedError"),
+      description: explicitError,
+      duration: 8000,
     },
   );
 };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { buildCartItemId, CartItem, useCartStore } from '../store/useCartStore';
+import { calculateVolumeDiscountPricing } from '../utils/volumeDiscounts';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { storefrontApi, getCompanyId, getCartId } from '../../utils/storefrontApi';
 import { useMinimumOrderSettings } from './useMinimumOrderSettings';
@@ -210,12 +211,35 @@ export const buildCheckoutOrderPayload = (
         }
       }
 
+      let effectiveQuantity = item.quantity;
+      if (item.quantityOffer?.groupId) {
+        const groupUnits = items
+          .filter((other) => other.quantityOffer?.groupId === item.quantityOffer?.groupId)
+          .reduce((sum, other) => sum + other.quantity, 0);
+        effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
+      } else if (item.quantityOffer?.offerQuantity) {
+        effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
+      } else {
+        const totalProductUnits = items
+          .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
+          .reduce((sum, other) => sum + other.quantity, 0);
+        if (totalProductUnits > item.quantity) {
+          effectiveQuantity = totalProductUnits;
+        }
+      }
+
+      const pricing = calculateVolumeDiscountPricing({
+        unitPrice: item.basePrice ?? item.price,
+        quantity: effectiveQuantity,
+        discounts: item.volumeDiscounts,
+      });
+
       return {
         productId: item.productId,
         ...(item.variantId ? { variantId: item.variantId } : {}),
         name: item.name,
-        price: item.price,
-        ...(item.basePrice !== undefined ? { basePrice: item.basePrice } : {}),
+        price: pricing.effectiveUnitPrice,
+        basePrice: item.basePrice ?? item.price,
         quantity: item.quantity,
         attributes: item.attributes || {},
         ...(resolvedColor ? { productColor: resolvedColor, color: resolvedColor } : {}),

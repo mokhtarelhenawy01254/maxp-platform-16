@@ -24,6 +24,7 @@ import {
 } from '../../utils/marketplaceApps';
 import { usePdpSelectionStore } from '../../store/usePdpSelectionStore';
 import { getActiveQuantityOffers } from '@/utils/quantityOffers';
+import { getProductVolumeDiscounts } from '../../utils/volumeDiscounts';
 import PdpQuickOrderPanel from '../PdpQuickOrderPanel';
 import QuantityOffersSection from '../QuantityOffersSection';
 import { Ruler } from 'lucide-react';
@@ -537,9 +538,11 @@ export const useProductInfoController = ({
       variantId: selectedVariant?.id,
       name: product.name,
       price: activePrice,
+      basePrice: activePrice,
       quantity,
       image: product.images?.[0] || '',
       attributes: selectedAttributes,
+      volumeDiscounts: getProductVolumeDiscounts(product, activePrice),
     });
 
     trackAddToCartEvent({

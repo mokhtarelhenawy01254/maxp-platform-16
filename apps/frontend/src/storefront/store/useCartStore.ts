@@ -222,13 +222,31 @@ export const useCartStore = create<CartState>()(
       },
 
       getSubtotal: () => {
-        const subtotal = get().items.reduce((total, item) => {
+        const items = get().items;
+        const subtotal = items.reduce((total, item) => {
+          let effectiveQuantity = item.quantity;
+          if (item.quantityOffer?.groupId) {
+            const groupUnits = items
+              .filter((other) => other.quantityOffer?.groupId === item.quantityOffer?.groupId)
+              .reduce((sum, other) => sum + other.quantity, 0);
+            effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
+          } else if (item.quantityOffer?.offerQuantity) {
+            effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
+          } else {
+            const totalProductUnits = items
+              .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
+              .reduce((sum, other) => sum + other.quantity, 0);
+            if (totalProductUnits > item.quantity) {
+              effectiveQuantity = totalProductUnits;
+            }
+          }
+
           const pricing = calculateVolumeDiscountPricing({
             unitPrice: item.basePrice ?? item.price,
-            quantity: item.quantity,
+            quantity: effectiveQuantity,
             discounts: item.volumeDiscounts,
           });
-          return total + pricing.lineSubtotal;
+          return total + (pricing.effectiveUnitPrice * item.quantity);
         }, 0);
         return Number(subtotal.toFixed(2));
       },

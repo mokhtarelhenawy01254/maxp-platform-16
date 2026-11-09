@@ -786,14 +786,20 @@ function registerIpcHandlers(): void {
 
       updateTrayMenu();
       sendStateToRenderer();
-      showNotification('MaxP Workspace', 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.');
+
+      const punchSuccess = Boolean(checkoutRes?.success && (checkoutRes?.attendance || checkoutRes?.handover));
+      const endMessage = punchSuccess
+        ? 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.'
+        : 'تم إنهاء الوردية محلياً، وبصمة الانصراف قيد الحفظ/المزامنة بالسيرفر.';
+
+      showNotification('MaxP Workspace', endMessage);
 
       return {
         success: true,
         attendance: checkoutRes?.attendance,
         handover: checkoutRes?.handover,
         shiftEndedAt,
-        message: 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.',
+        message: endMessage,
       };
     } catch (err: any) {
       console.error('[Main] Failed to end shift:', err);

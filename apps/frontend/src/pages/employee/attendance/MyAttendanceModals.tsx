@@ -14,6 +14,7 @@ import {
 import { envConfig } from "../../../config/environment";
 import { SelectedMapLocation, TodayGoal, GeofenceModalData } from "./types";
 import { AttendanceGeofenceDialog } from "./AttendanceGeofenceDialog";
+import { AttendanceRegularizationDialog } from "./AttendanceRegularizationDialog";
 
 interface MyAttendanceModalsProps {
   t: TFunction;
@@ -30,6 +31,10 @@ interface MyAttendanceModalsProps {
   showGeofenceModal: boolean;
   onGeofenceModalChange: (open: boolean) => void;
   geofenceModalData: GeofenceModalData | null;
+  showRegularizationModal?: boolean;
+  onRegularizationModalChange?: (open: boolean) => void;
+  regularizeInitialTime?: string;
+  onRegularizationSuccess?: () => void;
 }
 
 export const MyAttendanceModals: React.FC<MyAttendanceModalsProps> = ({
@@ -47,6 +52,10 @@ export const MyAttendanceModals: React.FC<MyAttendanceModalsProps> = ({
   showGeofenceModal,
   onGeofenceModalChange,
   geofenceModalData,
+  showRegularizationModal = false,
+  onRegularizationModalChange,
+  regularizeInitialTime,
+  onRegularizationSuccess,
 }) => {
   return (
     <>
@@ -56,6 +65,14 @@ export const MyAttendanceModals: React.FC<MyAttendanceModalsProps> = ({
         data={geofenceModalData}
         t={t}
       />
+      {onRegularizationModalChange && (
+        <AttendanceRegularizationDialog
+          open={showRegularizationModal}
+          onOpenChange={onRegularizationModalChange}
+          initialTime={regularizeInitialTime}
+          onSuccess={onRegularizationSuccess}
+        />
+      )}
       <Dialog
         open={showGoalsReviewDialog}
         onOpenChange={(open) => {

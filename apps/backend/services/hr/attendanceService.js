@@ -640,6 +640,11 @@ class AttendanceService {
       }
     })();
 
+    const effectiveSettings = hrSettings || await this.prisma.hRSettings.findFirst({
+      where: { companyId },
+    });
+
+    const clientIp = context?.ip || context?.clientIp || data?.clientIp || null;
     const accuracyRaw = Number(parsedLocation?.accuracy);
     const baseAttempt = {
       companyId,
@@ -649,7 +654,7 @@ class AttendanceService {
       latitude: Number.isFinite(Number(parsedLocation?.latitude)) ? Number(parsedLocation.latitude) : null,
       longitude: Number.isFinite(Number(parsedLocation?.longitude)) ? Number(parsedLocation.longitude) : null,
       accuracyMeters: Number.isFinite(accuracyRaw) ? Math.round(accuracyRaw) : null,
-      clientIp: context?.ip || null,
+      clientIp,
       userAgent: context?.userAgent || null,
       deviceType: context?.deviceType || null,
       method: data?.method || null,
@@ -669,11 +674,10 @@ class AttendanceService {
     };
 
     const punchLabel = action === "CHECK_OUT" ? "الانصراف" : "الحضور";
-    const clientIp = context?.ip || null;
     const defaultMethod = data.method || "self_service";
 
     // 1) النطاق الجغرافي مقفول → بصمة عادية
-    if (!hrSettings || !hrSettings.geofenceEnabled) {
+    if (!effectiveSettings || !effectiveSettings.geofenceEnabled) {
       const attemptId = await logAttempt("SUCCESS", { reason: "geofence_disabled" });
       return { method: defaultMethod, attemptId };
     }
@@ -687,37 +691,56 @@ class AttendanceService {
     }
 
     // 3) العمل من المنزل لا يُعفى إلا لو الشركة مفعّلة السماح بذلك
-    if (data.workMode === "HOME" && hrSettings.allowRemoteCheckIn === true) {
+    if (data.workMode === "HOME" && effectiveSettings.allowRemoteCheckIn === true) {
       const attemptId = await logAttempt("SUCCESS", { reason: "remote_work_allowed" });
       return { method: "home", attemptId };
     }
 
-    // 4) الجهاز على شبكة الفرع (IP) → يعدّي حتى لو مفيش GPS
-    const branchIpMatch = Boolean(
-      hrSettings.branchNetworkEnabled &&
-      clientIp &&
-      ipMatchesAllowlist(clientIp, hrSettings.branchIpAllowlist),
+    // 4) التحقق من شبكة الفرع (IP عام للفرع أو SSID واي فاي) كبديل للنطاق الجغرافي
+    // الكمبيوترات المكتبية لا تمتلك شريحة GPS، وتعتمد على شبكة الفرع كبديل موثوق
+    const clientSsid = String(data.wifiSsid || data.networkSsid || context.wifiSsid || "").trim();
+    const branchSsidMatch = Boolean(
+      clientSsid &&
+      (
+        (effectiveSettings.branchWifiSsid && clientSsid.toLowerCase() === String(effectiveSettings.branchWifiSsid).toLowerCase().trim()) ||
+        (effectiveSettings.branchNetworkLabel && clientSsid.toLowerCase() === String(effectiveSettings.branchNetworkLabel).toLowerCase().trim())
+      )
     );
-    if (branchIpMatch) {
-      const attemptId = await logAttempt("SUCCESS", { branchIpMatch: true, reason: "branch_network" });
+
+    const branchIpMatch = Boolean(
+      effectiveSettings.branchNetworkEnabled &&
+      clientIp &&
+      ipMatchesAllowlist(clientIp, effectiveSettings.branchIpAllowlist),
+    );
+
+    if (branchIpMatch || branchSsidMatch) {
+      const attemptId = await logAttempt("SUCCESS", {
+        branchIpMatch: Boolean(branchIpMatch),
+        reason: branchSsidMatch ? "branch_network_ssid" : "branch_network",
+      });
       return { method: "network", attemptId };
     }
 
-    // 🏢 4.5) جهاز الشركة المكتبي المصرح به (OFFICE device)
+    // 🏢 4.5) جهاز الشركة المكتبي المصرح به (OFFICE device أو جهاز مكتبي معتمد)
     // أجهزة سطح المكتب المعتمدة والموجودة في مقر الشركة لا تمتلك شريحة GPS
     // التحقق من بصمة الجهاز المعتمدة يعفي من GPS ويوثق التواجد داخل مقر العمل
-    const deviceFingerprint = context?.deviceFingerprint || data?.fingerprint || null;
-    if (deviceFingerprint) {
+    const deviceFingerprint = context?.deviceFingerprint || data?.fingerprint || context?.fingerprint || null;
+    const deviceId = context?.deviceId || data?.deviceId || null;
+    if (deviceFingerprint || deviceId) {
       try {
         const registeredDevice = await this.prisma.userDevice.findFirst({
           where: {
             companyId,
-            fingerprint: String(deviceFingerprint).trim(),
+            ...(deviceId ? { id: deviceId } : { fingerprint: String(deviceFingerprint).trim() }),
           },
         });
 
         if (registeredDevice) {
-          if (registeredDevice.deviceType === "OFFICE" && registeredDevice.isApproved !== false) {
+          const isOfficeOrApprovedDesktop =
+            registeredDevice.deviceType === "OFFICE" ||
+            (registeredDevice.clientType === "DESKTOP" && registeredDevice.isApproved !== false);
+
+          if (isOfficeOrApprovedDesktop && registeredDevice.isApproved !== false) {
             const attemptId = await logAttempt("SUCCESS", {
               reason: "office_device_verified",
               branchIpMatch,
@@ -826,10 +849,17 @@ class AttendanceService {
       { ...distanceExtra, reason: failure.toLowerCase() },
     );
 
-    const message =
-      failure === "WEAK_ACCURACY"
-        ? formatWeakAccuracyMessage(accuracy)
-        : formatGeofenceError(geofenceCheck.effectiveDistance, geofenceCheck.allowedRadius, accuracy);
+    const isDesktopDevice = String(context?.deviceType).toUpperCase() === "DESKTOP" ||
+      /windows nt|macintosh|linux/i.test(context?.userAgent || "");
+
+    let message;
+    if (failure === "WEAK_ACCURACY") {
+      message = isDesktopDevice
+        ? `دقة تحديد الموقع ضعيفة (${accuracy}م) لأن أجهزة الكمبيوتر المكتبية لا تحتوي على شريحة GPS وتعتمد على موقع تقريبي للشبكة.\nيرجى الاتصال بشبكة واي فاي الفرع أو استخدام مسار «طلب بصمة معتمدة» لاعتماد الحضور بضغطة زر.`
+        : formatWeakAccuracyMessage(accuracy);
+    } else {
+      message = formatGeofenceError(geofenceCheck.effectiveDistance, geofenceCheck.allowedRadius, accuracy);
+    }
 
     const error = new AttendanceError(message);
     error.statusCode = 403;
@@ -842,6 +872,7 @@ class AttendanceService {
       attemptId,
       canRequestException: true,
       branchNetworkEnabled: Boolean(hrSettings.branchNetworkEnabled),
+      isDesktopDevice,
       requiresLocation: false,
     };
     throw error;

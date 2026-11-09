@@ -959,6 +959,21 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Pre-calculate total units per quantityOffer groupId and per productId for accurate volume discounts
+    const groupTotalUnitsMap = new Map();
+    const productTotalUnitsMap = new Map();
+    for (const ci of cartItems) {
+      const q = Math.max(1, Number(ci.quantity) || 1);
+      const pid = String(ci.productId || '');
+      if (pid) {
+        productTotalUnitsMap.set(pid, (productTotalUnitsMap.get(pid) || 0) + q);
+      }
+      const qo = getQuantityOfferMetadata(ci);
+      if (qo?.groupId) {
+        groupTotalUnitsMap.set(qo.groupId, (groupTotalUnitsMap.get(qo.groupId) || 0) + q);
+      }
+    }
+
     const checkoutAffiliateCode = req.cookies?.affiliateCode || req.query.ref || req.query.affiliate;
     const checkoutAffiliate = checkoutAffiliateCode
       ? await prisma.affiliate.findFirst({
@@ -1352,9 +1367,17 @@ router.post('/', async (req, res) => {
       });
       const volumeDiscounts =
         variantVolumeDiscounts.length > 0 ? variantVolumeDiscounts : productVolumeDiscounts;
+      const itemQuantityOffer = getQuantityOfferMetadata(item);
+      let applicableQuantity = item.quantity;
+      if (itemQuantityOffer?.groupId && groupTotalUnitsMap.has(itemQuantityOffer.groupId)) {
+        applicableQuantity = Math.max(applicableQuantity, groupTotalUnitsMap.get(itemQuantityOffer.groupId));
+      } else if (item.productId && productTotalUnitsMap.has(String(item.productId))) {
+        applicableQuantity = Math.max(applicableQuantity, productTotalUnitsMap.get(String(item.productId)));
+      }
+
       const volumePricing = applyVolumeDiscount({
         unitPrice: trustedUnitPrice,
-        quantity: item.quantity,
+        quantity: applicableQuantity,
         discounts: volumeDiscounts,
       });
 
@@ -1376,7 +1399,9 @@ router.post('/', async (req, res) => {
               baseUnitPrice: volumePricing.baseUnitPrice,
             }
           : null;
-      cartTotal += volumePricing.lineSubtotal;
+      item._dbProduct = product;
+      const itemLineTotal = Number((volumePricing.effectiveUnitPrice * item.quantity).toFixed(2));
+      cartTotal += itemLineTotal;
     }
 
     cartTotal = Number(cartTotal.toFixed(2));
@@ -1442,12 +1467,22 @@ router.post('/', async (req, res) => {
         }
 
         if (!groups.has(quantityOffer.groupId)) {
+          const productMeta = parseMetadataObject(item._dbProduct?.metadata);
+          const dbOffers = Array.isArray(productMeta?.quantityOffers) ? productMeta.quantityOffers : [];
+          const matchedDbOffer = dbOffers.find(
+            (o) => String(o.id) === String(quantityOffer.offerId) || Number(o.quantity) === Number(quantityOffer.offerQuantity),
+          );
+          const isFreeShippingTrusted = Boolean(matchedDbOffer?.enableFreeShipping);
+          if (item.quantityOffer) {
+            item.quantityOffer.freeShipping = isFreeShippingTrusted;
+          }
+
           groups.set(quantityOffer.groupId, {
             groupId: quantityOffer.groupId,
             offerId: quantityOffer.offerId || null,
             offerLabel: quantityOffer.offerLabel || item.attributes?.['عرض الكمية'] || null,
             offerQuantity: Number(quantityOffer.offerQuantity || item.quantity || 0),
-            freeShipping: Boolean(quantityOffer.freeShipping),
+            freeShipping: isFreeShippingTrusted,
             productId: item?.productId || null,
             productName: item?.name || item?.productName || item?.product?.name || null,
             itemsCount: 0,
