@@ -99,7 +99,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
 
   return (
     <section className="w-full bg-[#f6f5f8] pb-2 pt-4 md:pt-6">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         <div className="grid items-stretch gap-4 lg:grid-cols-[1fr_1.51fr]">
           <div className="relative h-[380px] overflow-hidden rounded-[20px] bg-[#f6f4f1] sm:h-[460px] lg:h-[575px]">
             {resolvedSlides.map((slide, index) => (

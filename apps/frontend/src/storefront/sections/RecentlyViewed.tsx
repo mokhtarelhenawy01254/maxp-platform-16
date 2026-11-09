@@ -28,9 +28,9 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ settings }) => {
 
   return (
     <section className="w-full bg-white py-6 md:py-8">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         <h2 className="mb-4 font-heading text-[18px] font-semibold text-[#333333] md:text-[22px]">{title}</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-6">
           {products.map((product) => {
             const href = buildStorefrontPath(
               location.pathname,

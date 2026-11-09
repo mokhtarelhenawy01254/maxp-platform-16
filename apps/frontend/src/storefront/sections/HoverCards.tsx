@@ -84,7 +84,7 @@ const HoverCards: React.FC<HoverCardsProps> = ({ section, settings }) => {
   if (rawVariant === 'marketplace-trio') {
     return (
       <section className="w-full bg-white py-4">
-        <div className="container px-4 md:px-6">
+        <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
           <div className="grid gap-4 md:grid-cols-3">
             {resolvedCards.slice(0, 3).map((card, index) => (
               <Link

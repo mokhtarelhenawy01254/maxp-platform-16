@@ -22,7 +22,7 @@ export const MarketplaceRailGrid: React.FC<{ controller: ProductGridController }
 
   return (
     <section className="w-full bg-white py-6 md:py-8">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         {title ? (
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="font-heading text-[18px] font-semibold text-[#333333] md:text-[22px]">{title}</h2>
@@ -35,7 +35,7 @@ export const MarketplaceRailGrid: React.FC<{ controller: ProductGridController }
         ) : null}
 
         {filteredProducts.length > 0 ? (
-          <div className={`grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 ${gridFrameClassName}`}>
+          <div className={`grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4 lg:grid-cols-6 ${gridFrameClassName}`}>
             {filteredProducts.map((product, index) => (
               <ProductCard
                 key={product.id}

@@ -61,7 +61,7 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
 
   return (
     <section className="w-full bg-white py-8 md:py-10">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#e7e7e7] pb-4">
           <div className="flex flex-wrap items-center gap-6">
             <h2 className="font-heading text-[20px] font-semibold text-[#333333] md:text-[24px]">{title}</h2>
@@ -93,7 +93,7 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
         </div>
 
         {products.length > 0 ? (
-          <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gridFrameClassName}`}>
+          <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 ${gridFrameClassName}`}>
             {products.map((product, index) => (
               <ProductCard
                 key={product.id}

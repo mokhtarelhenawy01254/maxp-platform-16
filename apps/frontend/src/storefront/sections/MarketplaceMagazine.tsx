@@ -80,7 +80,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
 
   return (
     <section className="w-full bg-white py-6 md:py-8">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         <div className="grid gap-4 lg:grid-cols-[229fr_960fr]">
           {/* narrow rail */}
           <div className="flex flex-col gap-4">
@@ -156,7 +156,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   <ProductCard
                     key={`mini-${product.id}`}
                     product={product}
-                    variant="marketplace-tile"
+                    variant="marketplace-row"
                     {...cartProps}
                     imageLoading={controller.resolveGridCardImageLoading(index)}
                     imageFetchPriority={controller.resolveGridCardImageFetchPriority(index)}
@@ -188,7 +188,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-5">
                 {products.slice(0, 10).map((product, index) => (
                   <ProductCard
                     key={product.id}

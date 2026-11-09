@@ -18,7 +18,7 @@ export const MarketplaceCategoryTiles: React.FC<{ ctrl: ReturnType<typeof useFea
 
   return (
     <section className="w-full bg-white py-4">
-      <div className="container px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         {ctrl.title && settings?.['hideTitle'] !== true ? (
           <h2 className="mb-4 font-heading text-[22px] font-semibold text-[#333333] md:text-[24px]">{ctrl.title}</h2>
         ) : null}

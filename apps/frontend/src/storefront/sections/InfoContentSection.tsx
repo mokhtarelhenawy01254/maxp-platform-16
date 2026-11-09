@@ -195,7 +195,7 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
     return (
       <section className="w-full bg-[#f6f5f8] py-12">
         <div className="container px-4 md:px-6">
-          <div className="mx-auto max-w-[1235px] text-start">
+          <div className="mx-auto w-full max-w-[1235px] text-start">
             <h2 className="font-heading text-[24px] font-semibold leading-tight text-[#333333] md:text-[26px]">
               {title}
             </h2>
