@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { School, AlertTriangle, Settings } from "lucide-react";
+import { School, AlertTriangle, Settings, History } from "lucide-react";
 import {
   useEducationManagementController,
   EducationDashboardTab,
@@ -118,6 +118,19 @@ export default function EducationManagementPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("logs")}
+            title="سجلات وتدقيق النظام التعليمي"
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              activeTab === "logs"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            سجلات النظام التعليمي
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
