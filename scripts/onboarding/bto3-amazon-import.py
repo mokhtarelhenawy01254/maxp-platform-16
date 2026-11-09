@@ -25,12 +25,14 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 
 if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 API_BASE = os.environ.get("MAXP_API_BASE", "https://maxp.online/api/v1")
+PUBLIC_BASE = os.environ.get("MAXP_PUBLIC_BASE", "https://maxp.online")
 EMAIL = os.environ.get("MAXP_EMAIL", "hermes.agent@maxp.online")
 PASSWORD = os.environ.get("MAXP_PASSWORD", "")
 MARKUP = 1.5
@@ -42,25 +44,47 @@ UA = (
 CATEGORY_MAP = {
     "beauty & personal care": "العناية الشخصية",
     "beauty": "العناية الشخصية",
+    "الجمال والعناية الشخصية": "العناية الشخصية",
+    "العناية الشخصية": "العناية الشخصية",
     "health & household": "الصحة والمنزل",
+    "الصحة والمنزل": "الصحة والمنزل",
     "home & kitchen": "المنزل والمطبخ",
+    "المنزل والمطبخ": "المنزل والمطبخ",
+    "المنزل": "المنزل والمطبخ",
     "kitchen & dining": "المطبخ والسفرة",
+    "المطبخ والسفرة": "المطبخ والسفرة",
     "appliances": "أجهزة منزلية",
+    "أجهزة منزلية": "أجهزة منزلية",
     "electronics": "إلكترونيات",
+    "الإلكترونيات": "إلكترونيات",
     "computers": "كمبيوترات",
+    "الكمبيوتر": "كمبيوترات",
     "cell phones & accessories": "موبايلات وإكسسوارات",
+    "الموبايلات والإكسسوارات": "موبايلات وإكسسوارات",
     "fashion": "أزياء",
+    "الأزياء": "أزياء",
     "sports & outdoors": "رياضة وخارج المنزل",
+    "الرياضة والهواء الطلق": "رياضة وخارج المنزل",
     "toys & games": "ألعاب",
+    "الألعاب": "ألعاب",
     "tools & home improvement": "أدوات وتحسين المنزل",
+    "أدوات وتحسين المنزل": "أدوات وتحسين المنزل",
     "furniture": "أثاث",
+    "الأثاث": "أثاث",
     "baby": "مستلزمات أطفال",
+    "الرضع": "مستلزمات أطفال",
     "pet supplies": "مستلزمات حيوانات",
+    "مستلزمات الحيوانات الأليفة": "مستلزمات حيوانات",
     "office products": "مستلزمات مكتبية",
+    "مستلزمات المكتب": "مستلزمات مكتبية",
     "automotive": "سيارات",
+    "السيارات": "سيارات",
     "industrial & scientific": "صناعي وعلمي",
+    "الصناعة والعلوم": "صناعي وعلمي",
     "musical instruments": "آلات موسيقية",
+    "الآلات الموسيقية": "آلات موسيقية",
     "grocery": "بقالة",
+    "البقالة": "بقالة",
 }
 
 
@@ -99,24 +123,36 @@ def clean(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value or "")).strip()
 
 
-def http_json(path, method="GET", token=None, body=None, timeout=90):
+def http_json(path, method="GET", token=None, body=None, timeout=90, retries=3):
     data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(API_BASE + path, data=data, method=method)
-    req.add_header("Accept", "application/json")
-    req.add_header("User-Agent", UA)
-    if data is not None:
-        req.add_header("Content-Type", "application/json; charset=utf-8")
-    if token:
-        req.add_header("Authorization", "Bearer " + token)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, json.loads(resp.read().decode("utf-8", "replace"))
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", "replace")
+    last_error = None
+    for attempt in range(retries):
+        req = urllib.request.Request(API_BASE + path, data=data, method=method)
+        req.add_header("Accept", "application/json")
+        req.add_header("User-Agent", UA)
+        if data is not None:
+            req.add_header("Content-Type", "application/json; charset=utf-8")
+        if token:
+            req.add_header("Authorization", "Bearer " + token)
         try:
-            return exc.code, json.loads(raw)
-        except Exception:
-            return exc.code, {"raw": raw[:500]}
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.status, json.loads(resp.read().decode("utf-8", "replace"))
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", "replace")
+            if exc.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
+                time.sleep(4 * (attempt + 1))
+                continue
+            try:
+                return exc.code, json.loads(raw)
+            except Exception:
+                return exc.code, {"raw": raw[:500]}
+        except Exception as exc:
+            last_error = exc
+            if attempt < retries - 1:
+                time.sleep(4 * (attempt + 1))
+                continue
+            raise last_error
+    raise last_error
 
 
 def amazon_fetch(asin, attempt=1):
@@ -181,28 +217,73 @@ def parse_bullets(html):
     return [x for x in items if x and "See more" not in x]
 
 
+def is_product_image(url):
+    low = (url or "").lower()
+    if any(bad in low for bad in (".css", ".js", "_rc", "auiclients", "sprite", "/g/", "logo", "nav-")):
+        return False
+    if re.search(r"\.(jpg|jpeg|png|webp)(\?|$)", low):
+        return True
+    if "m.media-amazon.com/images/i/" in low and re.search(r"_(ac|sl|sx|ss|ql|ul|sr|fmwebp)_", low):
+        return True
+    return False
+
+
 def parse_images(html):
     images = []
-    match = re.search(r'"colorImages":\s*(\{.*?\})\s*,\s*"', html, re.S)
-    if match:
-        try:
-            data = json.loads(match.group(1))
-            for group in data.values():
-                for item in group:
-                    hi = item.get("hiRes") or item.get("large")
-                    if hi and hi not in images:
-                        images.append(hi)
-        except Exception:
-            pass
+
+    # 1) colorImages JSON block (brace matching instead of a fragile regex)
+    marker = html.find('"colorImages"')
+    if marker != -1:
+        start = html.find("{", marker)
+        if start != -1:
+            depth = 0
+            for index in range(start, min(len(html), start + 300000)):
+                char = html[index]
+                if char == "{":
+                    depth += 1
+                elif char == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            data = json.loads(html[start : index + 1])
+                            for group in data.values():
+                                if not isinstance(group, list):
+                                    continue
+                                for item in group:
+                                    hi = item.get("hiRes") or item.get("large")
+                                    if hi and is_product_image(hi) and hi not in images:
+                                        images.append(hi)
+                        except Exception:
+                            pass
+                        break
+
+    # 2) landing image / dynamic image data
     if not images:
-        images = list(dict.fromkeys(re.findall(r'"hiRes":"(https://[^"]+)"', html)))
+        for pattern in (
+            r'id="landingImage"[^>]*src="([^"]+)"',
+            r'data-old-hires="([^"]+)"',
+            r'id="landingImage"[^>]*data-src="([^"]+)"',
+        ):
+            match = re.search(pattern, html, re.S)
+            if match and is_product_image(match.group(1)) and match.group(1) not in images:
+                images.append(match.group(1))
+
+    if not images:
+        match = re.search(r'data-a-dynamic-image="([^"]+)"', html, re.S)
+        if match:
+            import html as html_lib
+            payload = html_lib.unescape(match.group(1))
+            for url in re.findall(r'https://[^"\\]+', payload):
+                if is_product_image(url) and url not in images:
+                    images.append(url)
+
+    # 3) last resort: any valid product image URL in the page
     if not images:
         candidates = re.findall(r'https://m\.media-amazon\.com/images/I/[^"\'\\\s]+', html)
         for url in candidates:
-            if any(token in url for token in ("sprite", "/G/", "logo", "nav-")):
-                continue
-            if url not in images:
+            if is_product_image(url) and url not in images:
                 images.append(url)
+
     return images[:8]
 
 
@@ -340,7 +421,51 @@ def build_description(product):
     return "".join(rows)
 
 
-def get_or_create_category(token, categories, name, parent_id=None):
+def upload_category_image(token, category_id, image_url):
+    if not category_id or not image_url:
+        return False
+    try:
+        url = image_url if not image_url.startswith("/") else PUBLIC_BASE + image_url
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+        ext = "jpg"
+        if "png" in content_type or image_url.lower().endswith(".png"):
+            ext, content_type = "png", "image/png"
+        elif "webp" in content_type or image_url.lower().endswith(".webp"):
+            ext, content_type = "webp", "image/webp"
+        elif "jpeg" in content_type or "jpg" in content_type or image_url.lower().endswith((".jpg", ".jpeg")):
+            ext, content_type = "jpg", "image/jpeg"
+
+        boundary = "----MaxP" + uuid.uuid4().hex
+        parts = [
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="image"; filename="category.{ext}"\r\n'.encode(),
+            f"Content-Type: {content_type}\r\n\r\n".encode(),
+            data,
+            b"\r\n",
+            f"--{boundary}--\r\n".encode(),
+        ]
+        body = b"".join(parts)
+        req = urllib.request.Request(
+            f"{API_BASE}/categories/{category_id}",
+            data=body,
+            method="PUT",
+        )
+        req.add_header("Accept", "application/json")
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+        req.add_header("Authorization", "Bearer " + token)
+        req.add_header("User-Agent", UA)
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            payload = json.loads(resp.read().decode("utf-8", "replace"))
+            return bool((payload.get("data") or {}).get("image"))
+    except Exception as exc:
+        print("CATEGORY_IMAGE_FAILED", category_id, str(exc)[:160])
+        return False
+
+
+def get_or_create_category(token, categories, name, parent_id=None, image_url=None):
     key = f"{name}|{parent_id or ''}"
     if key in categories:
         return categories[key]
@@ -357,6 +482,8 @@ def get_or_create_category(token, categories, name, parent_id=None):
         categories[key] = category_id
         if parent_id is None:
             categories[name] = category_id
+        if image_url:
+            upload_category_image(token, category_id, image_url)
     return category_id
 
 
@@ -368,6 +495,7 @@ def main():
     parser.add_argument("--stock", type=int, default=10)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--progress", default="bto3-import-progress.json")
+    parser.add_argument("--delay", type=float, default=1.5)
     args = parser.parse_args()
 
     with open(args.asins, "r", encoding="utf-8") as fh:
@@ -456,6 +584,11 @@ def main():
             else:
                 product["retailComparePrice"] = None
 
+            if not product["images"]:
+                progress["failed"][asin] = "no images"
+                print(f"SKIP {asin}: no images")
+                continue
+
             print(json.dumps({
                 "asin": asin,
                 "title": title[:70],
@@ -472,12 +605,17 @@ def main():
                 continue
 
             breadcrumb = [x for x in product["breadcrumb"] if x]
-            top_name = breadcrumb[0] if breadcrumb else ""
-            parent_name = CATEGORY_MAP.get(top_name.lower().strip()) or "منتجات أخرى"
-            parent_id = get_or_create_category(token, categories, parent_name, None)
+            top_name = breadcrumb[0].strip() if breadcrumb else ""
+            parent_name = CATEGORY_MAP.get(top_name.lower().strip()) or top_name or "منتجات أخرى"
+            category_image = product["images"][0] if product["images"] else None
+            parent_id = get_or_create_category(
+                token, categories, parent_name, None, category_image
+            )
             leaf_name = breadcrumb[-1].strip() if len(breadcrumb) > 1 else parent_name
             if leaf_name and leaf_name != parent_name:
-                category_id = get_or_create_category(token, categories, leaf_name, parent_id)
+                category_id = get_or_create_category(
+                    token, categories, leaf_name, parent_id, category_image
+                )
             else:
                 category_id = parent_id
 
@@ -492,13 +630,16 @@ def main():
                 f"اشترِ {title} بسعر {product['retailPrice']:g} ج.م مع "
                 f"الدفع عند الاستلام والتوصيل لكل المحافظات."
             )
+            if len(meta_description) > 160:
+                meta_description = meta_description[:157].rstrip() + "…"
             meta_title = title if len(title) <= 70 else title[:67].rstrip() + "…"
 
             payload = {
-                "name": title,
+                "name": title[:250],
                 "description": build_description(product),
                 "price": product["retailPrice"],
                 "comparePrice": product["retailComparePrice"],
+                "cost": price,
                 "stock": args.stock,
                 "sku": f"AMZ-{asin}",
                 "trackInventory": True,
@@ -511,6 +652,7 @@ def main():
                     "amazonUrl": f"https://www.amazon.eg/dp/{asin}",
                     "amazonPriceWholesale": price,
                     "markupPercent": 50,
+                    "fullTitle": title,
                     "amazonRating": product.get("rating"),
                     "amazonReviewCount": product.get("reviews"),
                     "metaDescription": meta_description,
@@ -541,7 +683,7 @@ def main():
             exported += 1
             with open(args.progress, "w", encoding="utf-8") as fh:
                 json.dump(progress, fh, ensure_ascii=False, indent=2)
-            time.sleep(1.2)
+            time.sleep(args.delay)
         except Exception as exc:
             progress["failed"][asin] = str(exc)
             print("ERROR", asin, exc)
