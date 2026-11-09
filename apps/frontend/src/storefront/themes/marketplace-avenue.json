@@ -440,7 +440,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "minimal-card",
+          "variant": "carousel",
           "settings": {
             "title": "أحدث المنتجات",
             "limit": 3,
@@ -450,8 +450,9 @@
         },
         {
           "type": "product-grid",
-          "variant": "minimal-card",
+          "variant": "marketplace-tabs",
           "settings": {
+            "variant": "marketplace-tabs",
             "title": "المنتجات المميزة",
             "limit": 9,
             "ctaText": "شاهد الكل",
@@ -503,7 +504,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "minimal-card",
+          "variant": "carousel",
           "settings": {
             "title": "أفضل 100 جهاز منزلي",
             "limit": 8,
@@ -620,7 +621,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "minimal-card",
+          "variant": "carousel",
           "settings": {
             "title": "منتجات مقترحة أخرى",
             "limit": 12,

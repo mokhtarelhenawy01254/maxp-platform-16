@@ -78,6 +78,7 @@ export const STOREFRONT_PRODUCT_GRID_VARIANTS = [
   { value: "list-card", label: "عرض قائمة" },
   { value: "legacy-compact-listing", label: "قائمة كلاسيكية كثيفة" },
   { value: "carousel", label: "سلايدر أفقي" },
+  { value: "marketplace-tabs", label: "شبكة بتبويبات ماركت بليس" },
   { value: "grid", label: "شبكة افتراضية" },
   { value: "playful-toybox", label: "صندوق ألعاب مرح (أطفال)" },
 ] as const satisfies readonly StorefrontSectionVariantDefinition[];

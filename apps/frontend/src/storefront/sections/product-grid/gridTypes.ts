@@ -62,6 +62,7 @@ export type ProductGridVariant =
   | 'list-card'
   | 'legacy-compact-listing'
   | 'carousel'
+  | 'marketplace-tabs'
   | 'playful-toybox';
 
 export type CardImagePriorityMode = 'default' | 'mobile-first';
