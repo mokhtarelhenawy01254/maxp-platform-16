@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 const educationNotificationService = require('../services/educationNotificationService');
 
 const ALLOWED_PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'REFUNDED'];
@@ -78,14 +79,16 @@ const create = async (req, res) => {
 
     // Multi-tenant validation: ensure package belongs to company
     const pkg = await getSharedPrismaClient().educationPackage.findFirst({
-      where: { id: packageId, companyId }
+      where: { id: packageId, companyId },
+      include: { subject: true }
     });
     if (!pkg) return res.status(400).json({ success: false, error: 'الباقة غير موجودة' });
 
     // Multi-tenant validation: ensure teacher belongs to company if assigned
     const safeTeacherId = teacherId || null;
+    let teacher = null;
     if (safeTeacherId) {
-      const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+      teacher = await getSharedPrismaClient().educationTeacher.findFirst({
         where: { id: safeTeacherId, companyId }
       });
       if (!teacher) return res.status(400).json({ success: false, error: 'المدرس المعين غير موجود' });
@@ -115,6 +118,25 @@ const create = async (req, res) => {
       }
     });
 
+    const studentName = `${student.firstName} ${student.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'CREATE_ENROLLMENT',
+      entityType: 'ENROLLMENT',
+      entityId: data.id,
+      entityName: `${studentName} - ${pkg.name}`,
+      description: `تم تسجيل الطالب ${studentName} في باقة ${pkg.name} (${pkg.hoursCount} ساعة - المدفوع: ${amountPaid || 0} ج.م${teacher ? ` - المهندس: ${teacher.name}` : ''})`,
+      details: {
+        studentId,
+        packageId,
+        teacherId: safeTeacherId,
+        hours: pkg.hoursCount,
+        amountPaid,
+        paymentStatus: safePaymentStatus,
+      },
+      req,
+    }).catch(e => console.error('[EnrollmentAudit]', e.message));
+
     educationNotificationService.notifyEnrollmentCreated(companyId, data).catch(e =>
       console.error('[EnrollmentNotify]', e.message)
     );
@@ -133,7 +155,14 @@ const update = async (req, res) => {
     const { id } = req.params;
     const { teacherId, amountPaid, paymentStatus, remainingHours, expiresAt, isActive } = req.body;
 
-    const existing = await getSharedPrismaClient().educationEnrollment.findFirst({ where: { id, companyId } });
+    const existing = await getSharedPrismaClient().educationEnrollment.findFirst({
+      where: { id, companyId },
+      include: {
+        student: { select: { firstName: true, lastName: true } },
+        package: { select: { name: true } },
+        teacher: { select: { name: true } }
+      }
+    });
     if (!existing) return res.status(404).json({ success: false, error: 'التسجيل غير موجود' });
 
     // Validate teacher tenant isolation if teacherId is being updated
@@ -164,7 +193,6 @@ const update = async (req, res) => {
         paymentStatus: safePaymentStatus,
         remainingHours: remainingHours !== undefined ? Number(remainingHours) || 0 : undefined,
         expiresAt: parsedExpiresAt,
-        // تفعيل/تعطيل التسجيل — كان بيتجاهله تمامًا فيرجّع 200 من غير أي أثر
         isActive: isActive !== undefined ? !!isActive : undefined,
       },
       include: {
@@ -173,6 +201,22 @@ const update = async (req, res) => {
         teacher: { select: { id: true, name: true } }
       }
     });
+
+    const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_ENROLLMENT',
+      entityType: 'ENROLLMENT',
+      entityId: data.id,
+      entityName: `${studentName} - ${data.package?.name || ''}`,
+      description: `تم تحديث اشتراك الطالب ${studentName} (الساعات المتبقية: ${data.remainingHours})`,
+      details: {
+        before: { remainingHours: existing.remainingHours, amountPaid: existing.amountPaid, teacher: existing.teacher?.name },
+        after: { remainingHours: data.remainingHours, amountPaid: data.amountPaid, teacher: data.teacher?.name }
+      },
+      req,
+    }).catch(e => console.error('[EnrollmentAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating enrollment:', error);
@@ -186,10 +230,30 @@ const remove = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
-    const existing = await getSharedPrismaClient().educationEnrollment.findFirst({ where: { id, companyId } });
+    const existing = await getSharedPrismaClient().educationEnrollment.findFirst({
+      where: { id, companyId },
+      include: {
+        student: { select: { firstName: true, lastName: true } },
+        package: { select: { name: true } }
+      }
+    });
     if (!existing) return res.status(404).json({ success: false, error: 'التسجيل غير موجود' });
 
     await getSharedPrismaClient().educationEnrollment.delete({ where: { id } });
+
+    const studentName = `${existing.student?.firstName || ''} ${existing.student?.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'DELETE_ENROLLMENT',
+      entityType: 'ENROLLMENT',
+      entityId: id,
+      entityName: `${studentName} - ${existing.package?.name || ''}`,
+      description: `تم حذف اشتراك الطالب ${studentName} في باقة ${existing.package?.name || ''}`,
+      details: { deletedEnrollment: existing },
+      severity: 'HIGH',
+      req,
+    }).catch(e => console.error('[EnrollmentAudit]', e.message));
+
     res.json({ success: true, message: 'تم حذف التسجيل' });
   } catch (error) {
     console.error('Error deleting enrollment:', error);

@@ -3,7 +3,9 @@ const net = require('net');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
+} catch (_) {}
 
 const LOG_PREFIX = '[ensureLocalPostgres]';
 

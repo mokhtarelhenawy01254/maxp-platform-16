@@ -738,8 +738,13 @@ router.put('/sidebar', verifyToken.authenticateToken, async (req, res) => {
       currentSettings = {};
     }
 
-    // Merge sidebar settings inside company settings JSON without wiping unrelated keys
-    currentSettings.sidebarSettings = validatedItems;
+    // Merge sidebar settings inside company settings JSON without wiping unrelated keys or section sub-items
+    const existingSidebar = Array.isArray(currentSettings.sidebarSettings)
+      ? currentSettings.sidebarSettings
+      : [];
+    const incomingKeys = new Set(validatedItems.map((it) => it.key.toLowerCase()));
+    const preservedItems = existingSidebar.filter((it) => it && it.key && !incomingKeys.has(String(it.key).toLowerCase()));
+    currentSettings.sidebarSettings = [...validatedItems, ...preservedItems];
 
     await prisma.company.update({
       where: { id: companyId },

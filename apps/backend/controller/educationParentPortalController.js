@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const getWallet = async (req, res) => {
   try {
@@ -136,6 +137,27 @@ const purchasePackage = async (req, res) => {
 
       return enrollment;
     });
+
+    const studentFullName = `${student.firstName || ''} ${student.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'PARENT_ENROLL',
+      entityType: 'ENROLLMENT',
+      entityId: result.id,
+      entityName: `${studentFullName} - ${pkg.name}`,
+      description: `قام ولي الأمر بشراء باقة "${pkg.name}" للطالب ${studentFullName} بمبلغ ${pkg.price} ج.م من رصيد المحفظة`,
+      actorType: 'PARENT',
+      userName: `ولي أمر الطالب ${studentFullName}`,
+      userRole: 'PARENT',
+      details: {
+        studentId,
+        packageId,
+        price: pkg.price,
+        hours: pkg.hoursCount,
+      },
+      severity: 'MEDIUM',
+      req,
+    }).catch(e => console.error('[ParentPurchaseAudit]', e.message));
 
     res.json({ success: true, data: result, message: `تم شراء الباقة "${pkg.name}" بنجاح` });
   } catch (error) {

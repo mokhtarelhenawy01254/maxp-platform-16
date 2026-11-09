@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const getAll = async (req, res) => {
   try {
@@ -128,6 +129,26 @@ const create = async (req, res) => {
       },
       include: { teacher: { select: { id: true, name: true } } }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'CREATE_PAYMENT',
+      entityType: 'PAYMENT',
+      entityId: data.id,
+      entityName: `مستحقات ${data.teacher?.name || 'مهندس'}`,
+      description: `تم إنشاء/تحديث مسير مستحقات المهندس ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م (${data.totalHours} ساعة - ${data.totalSessions} حصة)`,
+      details: {
+        teacherId: data.teacherId,
+        teacherName: data.teacher?.name,
+        periodFrom: data.periodFrom,
+        periodTo: data.periodTo,
+        totalSessions: data.totalSessions,
+        totalHours: data.totalHours,
+        netAmount: data.netAmount,
+      },
+      severity: 'MEDIUM',
+      req,
+    }).catch(e => console.error('[PaymentAudit]', e.message));
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error creating payment:', error);
@@ -151,6 +172,23 @@ const markPaid = async (req, res) => {
       data: { status: 'PAID', paidAt: new Date() },
       include: { teacher: { select: { id: true, name: true } } }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'PAY_TEACHER',
+      entityType: 'PAYMENT',
+      entityId: data.id,
+      entityName: `صرف مرتب ${data.teacher?.name || 'مهندس'}`,
+      description: `تم صرف وتأكيد دفع مرتب/استحقاق المهندس ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م`,
+      details: {
+        teacherId: data.teacherId,
+        teacherName: data.teacher?.name,
+        netAmount: data.netAmount,
+        paidAt: data.paidAt,
+      },
+      severity: 'HIGH',
+      req,
+    }).catch(e => console.error('[PaymentAudit]', e.message));
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error marking payment:', error);

@@ -17940,6 +17940,7 @@ declare module 'react-i18next' {
         educationPackages: string;
         educationStudents: string;
         educationTeachers: string;
+        educationEnrollments: string;
         educationTeacherSchedule: string;
         educationTeacherPayments: string;
         educationSessions: string;

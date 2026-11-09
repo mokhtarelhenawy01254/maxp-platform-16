@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const login = async (req, res) => {
   try {
@@ -48,6 +49,21 @@ const login = async (req, res) => {
     );
 
     const { password: _, ...parentData } = parent;
+
+    const parentFullName = `${parent.firstName || ''} ${parent.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId: parent.companyId,
+      action: 'PARENT_LOGIN',
+      entityType: 'PORTAL',
+      entityId: parent.id,
+      entityName: parentFullName,
+      description: `تسجيل دخول ولي الأمر ${parentFullName} إلى بوابة أولياء الأمور`,
+      actorType: 'PARENT',
+      userName: parentFullName,
+      userRole: 'PARENT',
+      req,
+    }).catch(e => console.error('[ParentLoginAudit]', e.message));
+
     res.json({
       success: true,
       message: 'تم تسجيل الدخول بنجاح',

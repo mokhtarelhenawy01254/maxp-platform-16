@@ -15,3 +15,4 @@ export * from "./EducationTeachersTab";
 export * from "./EducationEnrollmentsTab";
 export * from "./EducationSessionsTab";
 export * from "./EducationDetailDrawer";
+export * from "./EducationSettingsTab";

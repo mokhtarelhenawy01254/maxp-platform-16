@@ -9453,6 +9453,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/admin/education/settings"
+                  element={
+                    <Layout fullWidth>
+                      <EducationManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/admin/education/*"
                   element={
                     <Layout fullWidth>

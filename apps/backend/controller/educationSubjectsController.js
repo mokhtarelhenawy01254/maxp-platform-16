@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const getAll = async (req, res) => {
   try {
@@ -45,6 +46,18 @@ const create = async (req, res) => {
     const data = await getSharedPrismaClient().educationSubject.create({
       data: { companyId, name: subjectName, description, price: parsedPrice }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'CREATE_SUBJECT',
+      entityType: 'SUBJECT',
+      entityId: data.id,
+      entityName: data.name,
+      description: `تم إضافة مادة دراسية جديدة: ${data.name} (السعر: ${parsedPrice} ج.م)`,
+      details: { price: parsedPrice, description },
+      req,
+    }).catch(e => console.error('[SubjectAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error creating subject:', error);
@@ -89,6 +102,21 @@ const update = async (req, res) => {
       where: { id },
       data: updatePayload
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_SUBJECT',
+      entityType: 'SUBJECT',
+      entityId: data.id,
+      entityName: data.name,
+      description: `تم تعديل بيانات المادة: ${data.name}`,
+      details: {
+        before: { name: existing.name, price: existing.price, isActive: existing.isActive },
+        after: { name: data.name, price: data.price, isActive: data.isActive }
+      },
+      req,
+    }).catch(e => console.error('[SubjectAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating subject:', error);
@@ -106,6 +134,19 @@ const remove = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'المادة غير موجودة' });
 
     await getSharedPrismaClient().educationSubject.delete({ where: { id } });
+
+    logEducationEvent({
+      companyId,
+      action: 'DELETE_SUBJECT',
+      entityType: 'SUBJECT',
+      entityId: id,
+      entityName: existing.name,
+      description: `تم حذف المادة الدراسية: ${existing.name}`,
+      details: { deletedSubject: existing },
+      severity: 'MEDIUM',
+      req,
+    }).catch(e => console.error('[SubjectAudit]', e.message));
+
     res.json({ success: true, message: 'تم حذف المادة' });
   } catch (error) {
     console.error('Error deleting subject:', error);

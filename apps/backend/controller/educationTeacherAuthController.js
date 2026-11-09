@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const login = async (req, res) => {
   try {
@@ -42,6 +43,20 @@ const login = async (req, res) => {
     );
 
     const { password: _, ...teacherData } = teacher;
+
+    logEducationEvent({
+      companyId: teacher.companyId,
+      action: 'TEACHER_LOGIN',
+      entityType: 'PORTAL',
+      entityId: teacher.id,
+      entityName: teacher.name,
+      description: `تسجيل دخول المهندس ${teacher.name} إلى بوابة التدريس`,
+      actorType: 'TEACHER',
+      userName: teacher.name,
+      userRole: 'TEACHER',
+      req,
+    }).catch(e => console.error('[TeacherLoginAudit]', e.message));
+
     res.json({
       success: true,
       message: 'تم تسجيل الدخول بنجاح',

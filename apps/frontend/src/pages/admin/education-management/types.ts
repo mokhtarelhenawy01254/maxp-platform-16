@@ -7,6 +7,7 @@ import {
   Clock,
   BarChart3,
   Layers,
+  Settings,
 } from "lucide-react";
 
 export interface EducationSubject {
@@ -115,7 +116,8 @@ export type TabId =
   | "students"
   | "teachers"
   | "enrollments"
-  | "sessions";
+  | "sessions"
+  | "settings";
 
 export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "لوحة التحكم", icon: BarChart3 },
@@ -125,6 +127,7 @@ export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ class
   { id: "teachers", label: "المهندسين", icon: GraduationCap },
   { id: "enrollments", label: "التسجيلات", icon: Layers },
   { id: "sessions", label: "الحصص", icon: Clock },
+  { id: "settings", label: "الإعدادات", icon: Settings },
 ];
 
 export const SESSION_STATUS: Record<string, { label: string; color: string }> = {

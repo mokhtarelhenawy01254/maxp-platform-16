@@ -15,6 +15,7 @@ const hashPassword = async (pwd) => {
 };
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const normalizeGender = (g) => {
   if (!g) return null;
@@ -219,6 +220,24 @@ const create = async (req, res) => {
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
     });
+    const studentFullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'CREATE_STUDENT',
+      entityType: 'STUDENT',
+      entityId: data.id,
+      entityName: studentFullName,
+      description: `تم تسجيل طالب جديد: ${studentFullName} (${data.grade || 'بدون مرحلة'} - هاتف: ${data.phone || 'غير مسجل'})`,
+      details: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        grade: data.grade,
+        customerId: data.customerId,
+      },
+      req,
+    }).catch(e => console.error('[StudentAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error creating student:', error);
@@ -313,6 +332,22 @@ const update = async (req, res) => {
       },
       include: { customer: { select: { id: true, firstName: true, lastName: true, phone: true, phone2: true, email: true } } }
     });
+
+    const studentFullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_STUDENT',
+      entityType: 'STUDENT',
+      entityId: data.id,
+      entityName: studentFullName,
+      description: `تم تحديث بيانات الطالب: ${studentFullName}`,
+      details: {
+        before: { firstName: existing.firstName, lastName: existing.lastName, phone: existing.phone, grade: existing.grade, isActive: existing.isActive },
+        after: { firstName: data.firstName, lastName: data.lastName, phone: data.phone, grade: data.grade, isActive: data.isActive }
+      },
+      req,
+    }).catch(e => console.error('[StudentAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating student:', error);
@@ -330,6 +365,20 @@ const remove = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الطالب غير موجود' });
 
     await getSharedPrismaClient().educationStudent.delete({ where: { id } });
+
+    const studentFullName = `${existing.firstName || ''} ${existing.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'DELETE_STUDENT',
+      entityType: 'STUDENT',
+      entityId: id,
+      entityName: studentFullName,
+      description: `تم حذف الطالب: ${studentFullName}`,
+      details: { deletedStudent: existing },
+      severity: 'HIGH',
+      req,
+    }).catch(e => console.error('[StudentAudit]', e.message));
+
     res.json({ success: true, message: 'تم حذف الطالب' });
   } catch (error) {
     console.error('Error deleting student:', error);

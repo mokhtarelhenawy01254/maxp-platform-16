@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { School, AlertTriangle } from "lucide-react";
+import { School, AlertTriangle, Settings } from "lucide-react";
 import {
   TABS,
+  TabId,
   useEducationManagementController,
   EducationDashboardTab,
   EducationSubjectsTab,
@@ -11,7 +12,10 @@ import {
   EducationTeachersTab,
   EducationEnrollmentsTab,
   EducationSessionsTab,
+  EducationSettingsTab,
+  EducationSettingsData,
 } from "./education-management";
+import { api, fetchJson } from "./education-management/api";
 
 export default function EducationManagementPage() {
   const { t, i18n } = useTranslation();
@@ -77,6 +81,59 @@ export default function EducationManagementPage() {
     handleCancelSession,
   } = useEducationManagementController();
 
+  const [educationSettings, setEducationSettings] = useState<EducationSettingsData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchJson(api("settings"))
+      .then((data) => {
+        if (isMounted && data) {
+          setEducationSettings(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const tabsList = useMemo(() => {
+    if (!educationSettings?.tabs || educationSettings.tabs.length === 0) {
+      return TABS.map((tab) => ({
+        ...tab,
+        label: tab.id === "teachers" ? (isEn ? "Instructors" : "المهندسين") : tab.label,
+      }));
+    }
+
+    const result: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [];
+
+    // Order according to educationSettings.tabs
+    educationSettings.tabs.forEach((st) => {
+      if (st.visible === false && st.id !== "settings") return;
+      const baseTab = TABS.find((t) => t.id.toLowerCase() === st.id.toLowerCase());
+      if (baseTab) {
+        const customLabel = isEn
+          ? (st.labelEn || st.labelAr || baseTab.label)
+          : (st.labelAr || baseTab.label);
+        result.push({
+          id: baseTab.id,
+          label: customLabel,
+          icon: baseTab.icon,
+        });
+      }
+    });
+
+    // Make sure activeTab is visible if navigated directly
+    if (!result.some((r) => r.id === activeTab)) {
+      const activeBaseTab = TABS.find((t) => t.id === activeTab);
+      if (activeBaseTab) {
+        result.push(activeBaseTab);
+      }
+    }
+
+    return result;
+  }, [educationSettings, isEn, activeTab]);
+
   return (
     <div
       className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 rtl font-sans"
@@ -88,24 +145,40 @@ export default function EducationManagementPage() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
               <School className="w-3.5 h-3.5" />
-              القطاع التعليمي
+              {educationSettings?.systemTitle || "القطاع التعليمي"}
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
               {stats.totalStudents} طالب مسجل
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            إدارة المراكز والأكاديميات التعليمية
+            {educationSettings?.systemTitle ? educationSettings.systemTitle : "إدارة المراكز والأكاديميات التعليمية"}
           </h1>
           <p className="text-xs text-muted-foreground">
-            نظام متكامل لإدارة المواد، باقات الحصص، المهندسين، والطلاب وجداول الحصص الدورية
+            نظام متكامل لإدارة المواد، باقات الحصص، الكوادر التعليمية، والطلاب وجداول الحصص الدورية
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            title="إعدادات وتخصيص النظام التعليمي"
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              activeTab === "settings"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            إعدادات النظام
+          </button>
         </div>
       </div>
 
       {/* Tabs Bar */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 border-b border-border/60 -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
-        {TABS.map((tab) => {
+        {tabsList.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -120,7 +193,7 @@ export default function EducationManagementPage() {
               }`}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" />
-              {tab.id === "teachers" ? (isEn ? "Instructors" : "المهندسين") : tab.label}
+              {tab.label}
             </button>
           );
         })}
@@ -263,6 +336,13 @@ export default function EducationManagementPage() {
               handleSaveSession={handleSaveSession}
               handleConfirmSession={handleConfirmSession}
               handleCancelSession={handleCancelSession}
+            />
+          )}
+          {activeTab === "settings" && (
+            <EducationSettingsTab
+              onSaved={(updated) => {
+                setEducationSettings(updated);
+              }}
             />
           )}
         </>

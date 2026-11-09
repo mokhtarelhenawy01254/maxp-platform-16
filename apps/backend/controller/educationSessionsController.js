@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const educationNotificationService = require('../services/educationNotificationService');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const getAll = async (req, res) => {
   try {
@@ -153,6 +154,28 @@ const create = async (req, res) => {
         subject: { select: { id: true, name: true } }
       }
     });
+    const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
+    const teacherName = data.teacher?.name || 'مدرس غير محدد';
+    const subjectName = data.subject?.name || '';
+    const dateFormatted = new Date(data.scheduledAt).toLocaleString('ar-EG');
+    logEducationEvent({
+      companyId,
+      action: 'SCHEDULE_SESSION',
+      entityType: 'SESSION',
+      entityId: data.id,
+      entityName: `${subjectName} - ${studentName}`,
+      description: `تم جدولة حصة ${subjectName} للطالب ${studentName} مع المهندس ${teacherName} في ${dateFormatted}`,
+      details: {
+        scheduledAt: data.scheduledAt,
+        plannedDuration: data.plannedDuration,
+        studentName,
+        teacherName,
+        subjectName,
+        topic: data.topic,
+      },
+      req,
+    }).catch(e => console.error('[SessionAudit]', e.message));
+
     educationNotificationService.notifySessionScheduled(companyId, data).catch(e =>
       console.error('[SessionNotify]', e.message)
     );
@@ -199,6 +222,22 @@ const update = async (req, res) => {
         subject: { select: { id: true, name: true } }
       }
     });
+
+    const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_SESSION',
+      entityType: 'SESSION',
+      entityId: data.id,
+      entityName: `${data.subject?.name || 'حصة'} - ${studentName}`,
+      description: `تم تعديل بيانات الحصة للطالب ${studentName} (${data.subject?.name || ''})`,
+      details: {
+        before: { scheduledAt: existing.scheduledAt, plannedDuration: existing.plannedDuration },
+        after: { scheduledAt: data.scheduledAt, plannedDuration: data.plannedDuration, teacher: data.teacher?.name }
+      },
+      req,
+    }).catch(e => console.error('[SessionAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating session:', error);
@@ -294,6 +333,29 @@ const confirm = async (req, res) => {
       return [updatedSession];
     });
 
+    const studentName = `${session.student?.firstName || ''} ${session.student?.lastName || ''}`.trim();
+    const teacherName = session.teacher?.name || '';
+    const subjectName = session.subject?.name || '';
+    logEducationEvent({
+      companyId,
+      action: 'CONFIRM_SESSION',
+      entityType: 'SESSION',
+      entityId: session.id,
+      entityName: `${subjectName} - ${studentName}`,
+      description: `تم تأكيد إتمام الحصة (${subjectName}) للطالب ${studentName} مع المهندس ${teacherName}، خصم ${hours} ساعة واحتساب ${sessionAmount} ج.م استحقاق`,
+      details: {
+        actualDuration: duration,
+        hoursDeducted: hours,
+        sessionAmount,
+        teacherId: existing.teacherId,
+        studentName,
+        teacherName,
+        notes: notes || null,
+      },
+      severity: 'MEDIUM',
+      req,
+    }).catch(e => console.error('[SessionAudit]', e.message));
+
     educationNotificationService.notifySessionConfirmed(companyId, id).catch(e =>
       console.error('[SessionConfirmNotify]', e.message)
     );
@@ -324,6 +386,25 @@ const cancel = async (req, res) => {
         subject: { select: { id: true, name: true } }
       }
     });
+
+    const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
+    logEducationEvent({
+      companyId,
+      action: 'CANCEL_SESSION',
+      entityType: 'SESSION',
+      entityId: data.id,
+      entityName: `${data.subject?.name || 'حصة'} - ${studentName}`,
+      description: `تم إلغاء الحصة الدراسية للطالب ${studentName} (${data.subject?.name || ''}) مع المهندس ${data.teacher?.name || ''}`,
+      details: {
+        scheduledAt: data.scheduledAt,
+        studentName,
+        teacherName: data.teacher?.name,
+        subjectName: data.subject?.name,
+      },
+      severity: 'MEDIUM',
+      req,
+    }).catch(e => console.error('[SessionAudit]', e.message));
+
     educationNotificationService.notifySessionCancelled(companyId, data).catch(e =>
       console.error('[SessionCancelNotify]', e.message)
     );
@@ -355,6 +436,18 @@ const remove = async (req, res) => {
       }
       await tx.educationSession.delete({ where: { id } });
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'DELETE_SESSION',
+      entityType: 'SESSION',
+      entityId: id,
+      entityName: `حصة #${id}`,
+      description: `تم حذف الحصة الدراسية #${id}${existing.status === 'CONFIRMED' ? ' واسترجاع الساعات لرصيد الطالب' : ''}`,
+      details: { deletedSession: existing },
+      severity: 'HIGH',
+      req,
+    }).catch(e => console.error('[SessionAudit]', e.message));
 
     res.json({ success: true, message: 'تم حذف الحصة وتسوية رصيد الساعات بنجاح' });
   } catch (error) {

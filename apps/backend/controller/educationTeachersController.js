@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 const bcrypt = require('bcryptjs');
 
 const getAll = async (req, res) => {
@@ -73,6 +74,18 @@ const create = async (req, res) => {
       },
       include: { subjectRates: { include: { subject: { select: { id: true, name: true } } } } }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'CREATE_TEACHER',
+      entityType: 'TEACHER',
+      entityId: data.id,
+      entityName: data.name,
+      description: `تم إضافة مهندس/معلم جديد: ${data.name} (هاتف: ${data.phone || 'غير مسجل'})`,
+      details: { phone: data.phone, email: data.email, subjectRatesCount: subjectRates?.length || 0 },
+      req,
+    }).catch(e => console.error('[TeacherAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error creating teacher:', error);
@@ -104,6 +117,21 @@ const update = async (req, res) => {
       },
       include: { subjectRates: { include: { subject: { select: { id: true, name: true } } } } }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_TEACHER',
+      entityType: 'TEACHER',
+      entityId: data.id,
+      entityName: data.name,
+      description: `تم تحديث بيانات المهندس/المعلم: ${data.name}`,
+      details: {
+        before: { name: existing.name, phone: existing.phone, isActive: existing.isActive },
+        after: { name: data.name, phone: data.phone, isActive: data.isActive }
+      },
+      req,
+    }).catch(e => console.error('[TeacherAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating teacher:', error);
@@ -121,6 +149,19 @@ const remove = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'المدرس غير موجود' });
 
     await getSharedPrismaClient().educationTeacher.delete({ where: { id } });
+
+    logEducationEvent({
+      companyId,
+      action: 'DELETE_TEACHER',
+      entityType: 'TEACHER',
+      entityId: id,
+      entityName: existing.name,
+      description: `تم حذف المهندس/المعلم: ${existing.name}`,
+      details: { deletedTeacher: existing },
+      severity: 'HIGH',
+      req,
+    }).catch(e => console.error('[TeacherAudit]', e.message));
+
     res.json({ success: true, message: 'تم حذف المدرس' });
   } catch (error) {
     console.error('Error deleting teacher:', error);

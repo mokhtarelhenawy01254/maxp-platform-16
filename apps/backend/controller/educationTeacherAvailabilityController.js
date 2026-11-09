@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
 
 const getAll = async (req, res) => {
   try {
@@ -37,6 +38,11 @@ const save = async (req, res) => {
       }
     }
 
+    const teacher = await getSharedPrismaClient().educationTeacher.findFirst({
+      where: { id: teacherId, companyId },
+      select: { id: true, name: true }
+    });
+
     // Replace all slots for this teacher
     await getSharedPrismaClient().educationTeacherAvailability.deleteMany({
       where: { teacherId, companyId }
@@ -59,6 +65,18 @@ const save = async (req, res) => {
       where: { teacherId, companyId },
       orderBy: { dayOfWeek: 'asc' }
     });
+
+    logEducationEvent({
+      companyId,
+      action: 'UPDATE_TEACHER_AVAILABILITY',
+      entityType: 'TEACHER',
+      entityId: teacherId,
+      entityName: teacher?.name || 'مهندس',
+      description: `تم تحديث جدول أوقات توفر المهندس ${teacher?.name || ''} (${slots.length} فترات زمنية)`,
+      details: { teacherId, slotsCount: slots.length },
+      req,
+    }).catch(e => console.error('[AvailabilityAudit]', e.message));
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error saving availability:', error);
