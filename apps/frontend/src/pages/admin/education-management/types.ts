@@ -8,6 +8,7 @@ import {
   BarChart3,
   Layers,
   Settings,
+  History,
 } from "lucide-react";
 
 export interface EducationSubject {
@@ -117,7 +118,8 @@ export type TabId =
   | "teachers"
   | "enrollments"
   | "sessions"
-  | "settings";
+  | "settings"
+  | "logs";
 
 export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "لوحة التحكم", icon: BarChart3 },
@@ -128,7 +130,54 @@ export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ class
   { id: "enrollments", label: "التسجيلات", icon: Layers },
   { id: "sessions", label: "الحصص", icon: Clock },
   { id: "settings", label: "الإعدادات", icon: Settings },
+  { id: "logs", label: "سجلات النظام التعليمي", icon: History },
 ];
+
+export interface EducationLogItem {
+  id: string;
+  userId?: string | null;
+  companyId: string;
+  category: string;
+  action: string;
+  description: string;
+  targetType?: string | null;
+  targetId?: string | null;
+  targetName?: string | null;
+  metadata?: any;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  isSuccess: boolean;
+  errorMessage?: string | null;
+  tags?: string[] | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+    avatarUrl?: string | null;
+  } | null;
+  actorName: string;
+  actorRole: string;
+  actorType: string;
+}
+
+export interface EducationLogStats {
+  totalLogs: number;
+  todayLogs: number;
+  weekLogs: number;
+  targetTypeCounts: Record<string, number>;
+  actionCounts: Record<string, number>;
+  recent: Array<{
+    id: string;
+    action: string;
+    description: string;
+    targetType?: string;
+    targetName?: string;
+    createdAt: string;
+    actorName: string;
+    isSuccess: boolean;
+  }>;
+}
 
 export const SESSION_STATUS: Record<string, { label: string; color: string }> = {
   SCHEDULED: {

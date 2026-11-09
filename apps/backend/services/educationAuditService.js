@@ -190,9 +190,18 @@ async function getEducationLogs({
   userId = '',
   isSuccess = undefined,
 }) {
-  const prisma = getSharedPrismaClient();
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
+
+  // Multi-tenant defense in depth: reject any query missing companyId
+  if (!companyId) {
+    return {
+      logs: [],
+      pagination: { total: 0, page: pageNum, limit: pageSize, totalPages: 0 },
+    };
+  }
+
+  const prisma = getSharedPrismaClient();
   const skip = (pageNum - 1) * pageSize;
 
   const where = {
@@ -304,6 +313,17 @@ async function getEducationLogs({
  * Get aggregate statistics for Education logs
  */
 async function getEducationLogsStats(companyId) {
+  if (!companyId) {
+    return {
+      totalLogs: 0,
+      todayLogs: 0,
+      weekLogs: 0,
+      targetTypeCounts: {},
+      actionCounts: {},
+      recent: [],
+    };
+  }
+
   const prisma = getSharedPrismaClient();
 
   const now = new Date();
@@ -377,6 +397,7 @@ async function getEducationLogsStats(companyId) {
  * Generate CSV export for education logs
  */
 async function exportEducationLogsCsv(companyId, filters = {}) {
+  if (!companyId) return '\uFEFF';
   const { logs } = await getEducationLogs({
     companyId,
     page: 1,
@@ -388,17 +409,27 @@ async function exportEducationLogsCsv(companyId, filters = {}) {
   let csv = '\uFEFF';
   csv += 'التاريخ والوقت,نوع الإجراء,القسم,العنصر المستهدف,الوصف,المنفذ,الدور,الحالة,مستوى الأهمية,عنوان IP\n';
 
+  // Helper to prevent CSV formula injection (=, +, -, @, tab, newline)
+  const sanitizeCsvField = (val) => {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
+    return str.replace(/"/g, '""');
+  };
+
   logs.forEach((log) => {
     const dateStr = new Date(log.createdAt).toLocaleString('ar-EG');
-    const actionLabel = ACTION_DEFINITIONS[log.action]?.label || log.action;
-    const targetType = log.targetType || 'عام';
-    const targetName = (log.targetName || '').replace(/"/g, '""');
-    const description = (log.description || '').replace(/"/g, '""');
-    const actor = (log.actorName || '').replace(/"/g, '""');
-    const role = (log.actorRole || '').replace(/"/g, '""');
+    const actionLabel = sanitizeCsvField(ACTION_DEFINITIONS[log.action]?.label || log.action);
+    const targetType = sanitizeCsvField(log.targetType || 'عام');
+    const targetName = sanitizeCsvField(log.targetName || '');
+    const description = sanitizeCsvField(log.description || '');
+    const actor = sanitizeCsvField(log.actorName || '');
+    const role = sanitizeCsvField(log.actorRole || '');
     const status = log.isSuccess ? 'ناجح' : 'فشل';
-    const severity = log.severity || 'LOW';
-    const ip = log.metadata?.client?.ip || '';
+    const severity = sanitizeCsvField(log.severity || 'LOW');
+    const ip = sanitizeCsvField(log.metadata?.client?.ip || '');
 
     csv += `"${dateStr}","${actionLabel}","${targetType}","${targetName}","${description}","${actor}","${role}","${status}","${severity}","${ip}"\n`;
   });

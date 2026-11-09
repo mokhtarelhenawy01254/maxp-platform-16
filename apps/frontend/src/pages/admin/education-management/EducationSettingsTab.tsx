@@ -28,6 +28,7 @@ import {
   Briefcase,
   School,
   Lock,
+  History,
 } from "lucide-react";
 import { api, fetchJson, getAuthHeaders } from "./api";
 import { useSidebarSettings } from "../../../contexts/SidebarSettingsContext";
@@ -63,6 +64,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Clock,
   Megaphone,
   Settings,
+  History,
 };
 
 const PRESETS = [

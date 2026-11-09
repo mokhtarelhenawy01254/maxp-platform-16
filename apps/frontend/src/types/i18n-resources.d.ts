@@ -17946,6 +17946,8 @@ declare module 'react-i18next' {
         educationSessions: string;
         educationCalendar: string;
         educationFunnel: string;
+        educationSettings: string;
+        educationLogs: string;
         hotelModule: string;
         hotelDashboard: string;
         mainSection: string;

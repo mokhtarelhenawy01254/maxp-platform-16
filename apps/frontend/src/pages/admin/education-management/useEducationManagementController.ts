@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import type {
   EducationSubject,
   EducationPackage,
@@ -14,9 +14,13 @@ import { TABS } from "./types";
 import { api, searchCustomersApi, fetchJson, getAuthHeaders } from "./api";
 
 export function useEducationManagementController() {
+  const location = useLocation();
   const { "*": path } = useParams();
   const navigate = useNavigate();
-  const urlTab = (path || "").split("/")[0];
+  const pathFromLocation = location.pathname.startsWith("/admin/education/")
+    ? location.pathname.replace(/^\/admin\/education\/?/, "").split("/")[0]
+    : "";
+  const urlTab = (path || pathFromLocation || "").split("/")[0];
   const activeTab = (
     TABS.map((t) => t.id).includes(urlTab as TabId) ? urlTab : "dashboard"
   ) as TabId;

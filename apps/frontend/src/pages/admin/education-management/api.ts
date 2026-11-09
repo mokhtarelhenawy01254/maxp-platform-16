@@ -117,3 +117,41 @@ export const fetchJson = async (
     }
   }
 };
+
+export const fetchEducationLogsApi = async (params: Record<string, any> = {}): Promise<{
+  logs: any[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+  actionDefinitions: Record<string, any>;
+}> => {
+  const url = new URL(api("logs"));
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "" && v !== "ALL") {
+      url.searchParams.set(k, String(v));
+    }
+  });
+
+  const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.error || "فشل جلب سجلات النظام التعليمي");
+  }
+  return {
+    logs: data.data || [],
+    pagination: data.pagination || { total: 0, page: 1, limit: 25, totalPages: 1 },
+    actionDefinitions: data.actionDefinitions || {},
+  };
+};
+
+export const fetchEducationLogsStatsApi = async (): Promise<any> => {
+  return await fetchJson(api("logs/stats"));
+};
+
+export const getEducationLogsExportUrl = (params: Record<string, any> = {}): string => {
+  const url = new URL(api("logs/export"));
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "" && v !== "ALL") {
+      url.searchParams.set(k, String(v));
+    }
+  });
+  return url.toString();
+};

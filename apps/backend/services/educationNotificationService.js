@@ -174,7 +174,7 @@ async function sendEducationNotification({
     if (!content) return { success: false, reason: 'no_template', error: 'لم يتم العثور على نص القالب' };
 
     const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
-    return await sendNotification({
+    const sendResult = await sendNotification({
       companyId,
       recipientPhone,
       recipientName: recipientName || variables.parentName || variables.studentName || 'عميلنا',
@@ -188,6 +188,27 @@ async function sendEducationNotification({
       priority: 4,
       deliveryStrategy,
     });
+
+    try {
+      const { logEducationEvent } = require('./educationAuditService');
+      logEducationEvent({
+        companyId,
+        action: 'SEND_NOTIFICATION',
+        entityType: 'NOTIFICATION',
+        entityName: recipientName || recipientPhone,
+        description: `إرسال إشعار تعليمي (${eventType}) إلى ${recipientName || recipientPhone}`,
+        details: {
+          eventType,
+          recipientPhone,
+          recipientName,
+          recipientType,
+          isDelivered: sendResult?.success !== false,
+        },
+        actorType: 'SYSTEM',
+      }).catch(e => console.error('[NotificationAudit]', e.message));
+    } catch {}
+
+    return sendResult;
   } catch (error) {
     console.error(`[EducationNotification] Error sending ${eventType}:`, error.message);
     return { success: false, error: error.message };

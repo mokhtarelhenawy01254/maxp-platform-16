@@ -144,6 +144,18 @@ const DEFAULT_EDUCATION_TABS = [
     visible: true,
     locked: true,
     iconName: "Settings"
+  },
+  {
+    id: "logs",
+    key: "/admin/education/logs",
+    defaultLabelAr: "سجلات النظام التعليمي",
+    defaultLabelEn: "Educational System Logs",
+    labelAr: "سجلات النظام التعليمي",
+    labelEn: "Educational System Logs",
+    order: 12,
+    visible: true,
+    locked: false,
+    iconName: "History"
   }
 ];
 

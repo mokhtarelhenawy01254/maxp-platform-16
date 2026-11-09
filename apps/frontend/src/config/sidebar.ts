@@ -1894,6 +1894,7 @@ export const getSidebarConfig = (
                 { to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, label: t('sidebar.educationCalendar') },
                 { to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, label: t('sidebar.educationFunnel') },
                 { to: '/admin/education/settings', itemId: 'education-settings', icon: Settings, label: t('sidebar.educationSettings', 'إعدادات النظام') },
+                { to: '/admin/education/logs', itemId: 'education-logs', icon: History, label: t('sidebar.educationLogs', 'سجلات النظام التعليمي') },
             ]
         },
 

@@ -13,6 +13,7 @@ import {
   EducationEnrollmentsTab,
   EducationSessionsTab,
   EducationSettingsTab,
+  EducationLogsTab,
   EducationSettingsData,
 } from "./education-management";
 import { api, fetchJson } from "./education-management/api";
@@ -344,6 +345,9 @@ export default function EducationManagementPage() {
                 setEducationSettings(updated);
               }}
             />
+          )}
+          {activeTab === "logs" && (
+            <EducationLogsTab />
           )}
         </>
       )}
