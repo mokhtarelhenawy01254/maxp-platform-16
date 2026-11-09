@@ -5,11 +5,13 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
   ShieldCheckIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import courierPortalApi, { getCourierToken } from './services/courierPortalApi';
 import CourierDeliverySheet from './CourierDeliverySheet';
 import CourierShipmentCard from './CourierShipmentCard';
+import CourierBarcodeScannerModal from './CourierBarcodeScannerModal';
 import { useOfflineQueue } from './services/offlineQueue';
 
 type FilterTab = 'ALL' | 'PENDING' | 'DELIVERED' | 'RETURNED';
@@ -27,6 +29,7 @@ export const CourierRunPage: React.FC = () => {
   // Delivery action sheet state
   const [activeShipment, setActiveShipment] = useState<any | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
 
   const fetchRun = useCallback(async () => {
     if (!id) return;
@@ -209,9 +212,9 @@ export const CourierRunPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="w-full max-w-[1800px] mx-auto mt-2">
-          <div className="relative">
+        {/* Search Bar & Barcode Scanner Button */}
+        <div className="w-full max-w-[1800px] mx-auto mt-2 flex items-center gap-2">
+          <div className="relative flex-1">
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
               <MagnifyingGlassIcon className="w-4 h-4" />
             </div>
@@ -223,6 +226,14 @@ export const CourierRunPage: React.FC = () => {
               className="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            aria-label="مسح الباركود بالكاميرا"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition shadow-xs whitespace-nowrap active:scale-95"
+          >
+            <CameraIcon className="w-4 h-4" />
+            <span>مسح باركود</span>
+          </button>
         </div>
 
         {/* Filter Tabs */}
@@ -304,6 +315,17 @@ export const CourierRunPage: React.FC = () => {
           onActionComplete={handleActionComplete}
         />
       )}
+
+      {/* Barcode Scanner Modal */}
+      <CourierBarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        shipments={shipments}
+        onShipmentScanned={(scannedShipment) => {
+          setActiveShipment(scannedShipment);
+          setIsSheetOpen(true);
+        }}
+      />
     </div>
   );
 };

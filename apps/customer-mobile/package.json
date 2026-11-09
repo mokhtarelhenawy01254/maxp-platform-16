@@ -1,0 +1,10 @@
+{
+  "name": "maxp-customer-mobile",
+  "version": "1.0.0",
+  "description": "تطبيق أندرويد المستقل للعملاء والتجار وتتبع الشحنات اللحظي - MaxP Shipping",
+  "private": true,
+  "scripts": {
+    "build:debug": "cd android && gradlew.bat assembleDebug",
+    "build:release": "cd android && gradlew.bat assembleRelease"
+  }
+}
