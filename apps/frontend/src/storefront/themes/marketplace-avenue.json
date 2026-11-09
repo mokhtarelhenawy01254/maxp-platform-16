@@ -427,121 +427,42 @@
           }
         },
         {
-          "type": "story-parallax",
+          "type": "marketplace-magazine",
           "settings": {
-            "badge": "Urbanears",
-            "title": "جاهز لصوت يبهرك",
-            "content": "سماعات Alby Urbanears: صوت نقي وتصميم خفيف يناسب يومك بالكامل، مع ضمان رسمي وتوصيل سريع لكل المحافظات.",
-            "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
-            "overlayOpacity": 0.42,
-            "ctaText": "اكتشف المجموعة",
-            "ctaLink": "/shop"
-          }
-        },
-        {
-          "type": "journal-strip",
-          "variant": "editorial-cards",
-          "settings": {
-            "badge": "المدونة",
-            "title": "أحدث المقالات",
-            "subtitle": "أدلة شراء ومقارنات تساعدك تختار بسرعة.",
-            "items": [
+            "limit": 12,
+            "bannerEyebrow": "Urbanears",
+            "bannerTitle": "جاهز لصوت يبهرك",
+            "bannerImage": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+            "bannerLink": "/shop",
+            "articlesTitle": "أحدث المقالات",
+            "articles": [
               {
                 "title": "أفضل موديلات لابتوب للألعاب",
                 "date": "22 نوفمبر 2024",
-                "meta": "تعليق واحد",
                 "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
                 "title": "إزاي تختار نظام صوت HI-FI",
                 "date": "14 نوفمبر 2024",
-                "meta": "0 تعليقات",
                 "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
                 "title": "Logitech POP Keys",
                 "date": "11 نوفمبر 2024",
-                "meta": "تعليق واحد",
                 "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               }
-            ]
-          }
-        },
-        {
-          "type": "product-grid",
-          "variant": "marketplace-rail",
-          "settings": {
-            "title": "أحدث المنتجات",
-            "limit": 3,
-            "ctaText": "كل المنتجات",
-            "ctaLink": "/shop"
-          }
-        },
-        {
-          "type": "product-grid",
-          "variant": "marketplace-tabs",
-          "settings": {
-            "variant": "marketplace-tabs",
-            "title": "المنتجات المميزة",
-            "limit": 9,
-            "ctaText": "شاهد الكل",
-            "ctaLink": "/shop?sort=popular"
-          }
-        },
-        {
-          "type": "offer-bento",
-          "variant": "campaign-stack",
-          "settings": {
-            "badge": "عروض الألعاب",
-            "title": "خصم على ألعاب PS5",
-            "subtitle": "اختيارات ألعاب بخصومات محدودة وباقات جاهزة للتوصيل.",
-            "cards": [
-              {
-                "label": "لفترة محدودة",
-                "title": "خصم على ألعاب PS5",
-                "subtitle": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
-                "ctaText": "اشترِ الآن",
-                "link": "/sale",
-                "tone": "primary",
-                "stat": "حتى 25%",
-                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80"
-              }
-            ]
-          }
-        },
-        {
-          "type": "product-grid",
-          "variant": "marketplace-rail",
-          "settings": {
-            "title": "ألعاب مختارة",
-            "limit": 4,
-            "hideHeader": false,
-            "saleOnly": true
-          }
-        },
-        {
-          "type": "countdown-banner",
-          "variant": "standard",
-          "settings": {
-            "heading": "مكنسة بريميوم VCC",
-            "description": "عرض ساعة واحدة على أجهزة العناية والتنظيف المنزلية.",
-            "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
-            "ctaText": "اشترِ الآن",
-            "ctaLink": "/sale",
-            "endAt": "2026-12-31T23:59:59+02:00"
-          }
-        },
-        {
-          "type": "product-grid",
-          "variant": "marketplace-rail",
-          "settings": {
-            "title": "أفضل 100 جهاز منزلي",
-            "limit": 8,
-            "ctaText": "تسوّق المزيد",
-            "ctaLink": "/shop"
+            ],
+            "latestTitle": "أحدث المنتجات",
+            "tabsTitle": "منتجات مميزة",
+            "promoBadge": "لفترة محدودة",
+            "promoTitle": "خصم على ألعاب PS5",
+            "promoText": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
+            "promoImage": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+            "promoLink": "/sale",
+            "appliancesTitle": "أفضل 100 جهاز منزلي"
           }
         },
         {

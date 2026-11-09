@@ -3449,6 +3449,20 @@ export const STOREFRONT_SECTION_MANIFEST = {
       },
     ],
   },
+  "marketplace-magazine": {
+    label: "بلوك مجلة ماركت بليس",
+    component: "marketplace-magazine",
+    note: "تكوين ماركت بليس الأوسط: عمود ضيق (بانر + مقالات + رف منتجات) وعمود واسع (شبكة بتبويبات + بانر داكن + شبكة أجهزة) في ٣ صفوف متوازية.",
+    pages: ["home", "shop"],
+    fields: [
+      { key: "bannerTitle", label: "عنوان البانر الجانبي", type: "text" },
+      { key: "bannerImage", label: "صورة البانر الجانبي", type: "url" },
+      { key: "tabsTitle", label: "عنوان شبكة التبويبات", type: "text" },
+      { key: "promoTitle", label: "عنوان البانر الداكن", type: "text" },
+      { key: "appliancesTitle", label: "عنوان شبكة الأجهزة", type: "text" },
+      { key: "limit", label: "عدد المنتجات", type: "number" },
+    ],
+  },
   "recently-viewed": {
     label: "شوهدت مؤخرًا",
     component: "recently-viewed",
