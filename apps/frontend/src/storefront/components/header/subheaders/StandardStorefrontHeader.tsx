@@ -61,6 +61,18 @@ export const StandardStorefrontHeader: React.FC<StandardStorefrontHeaderProps> =
     moreResultsPath,
   } = controller;
 
+  // Department-store chrome for the marketplace-avenue theme: quick-link strip plus the popular
+  // search tags row the source demo keeps under its search field. Scoped to the theme id so no
+  // other storefront changes shape.
+  const isMarketplaceAvenueHeader = theme.id === 'marketplace-avenue';
+  const marketplaceQuickLinks = (
+    theme.header?.actions && Array.isArray(theme.header.actions) ? theme.header.actions : []
+  ).slice(0, 6);
+  const marketplaceSearchTags =
+    theme.direction === 'rtl'
+      ? ['لابتوب', 'موبايل', 'ألعاب', 'ساعات', 'كراسي', 'شاشات']
+      : ['Laptop', 'Phone', 'Games', 'Watches', 'Chairs', 'TVs'];
+
   return (
     <>
       <StorefrontHead />
@@ -258,6 +270,41 @@ export const StandardStorefrontHeader: React.FC<StandardStorefrontHeaderProps> =
               </div>
             </div>
           )}
+
+        {isMarketplaceAvenueHeader && (
+          <div className="hidden border-b border-[#e7e7e7] bg-white md:block">
+            <div className="container flex h-9 items-center justify-between gap-4 px-4 text-[11px] text-[#777777] md:px-6">
+              <div className="flex items-center gap-4">
+                {marketplaceQuickLinks.map((action, index) => (
+                  <React.Fragment key={`${action.label}-${index}`}>
+                    {index > 0 ? <span className="text-[#d8d8d8]">|</span> : null}
+                    <Link to={action.to} className="transition-colors hover:text-[#ad7d61]">
+                      {action.label}
+                    </Link>
+                  </React.Fragment>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="uppercase tracking-[0.14em] text-[#a3a3a3]">خط ساخن 24/7</span>
+                <span className="text-[12px] font-semibold text-[#333333]">
+                  {(theme.footer && (theme.footer as { phoneText?: string }).phoneText) || '01000 000 000'}
+                </span>
+              </div>
+            </div>
+            <div className="container flex h-8 items-center gap-3 border-t border-[#f1f1f1] px-4 text-[11px] md:px-6">
+              <span className="text-[#a3a3a3]">الأكثر بحثًا:</span>
+              {marketplaceSearchTags.map((tag) => (
+                <Link
+                  key={tag}
+                  to={`/shop?search=${encodeURIComponent(tag)}`}
+                  className="rounded-full border border-[#ececec] px-2.5 py-[2px] text-[#666666] transition-colors hover:border-[#ad7d61] hover:text-[#ad7d61]"
+                >
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div
           className={`container flex items-center justify-between px-4 md:px-6 ${

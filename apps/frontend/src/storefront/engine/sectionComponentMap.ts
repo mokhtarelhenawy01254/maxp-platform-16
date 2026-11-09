@@ -83,6 +83,7 @@ export const STOREFRONT_SECTION_COMPONENT_MAP: Readonly<Record<string, string>> 
   'shopping-intents': 'shopping-intents',
   'offer-bento': 'offer-bento',
   'journal-strip': 'journal-strip',
+  'recently-viewed': 'recently-viewed',
   'info-content': 'info-content',
   'member-registration': 'member-registration',
   'shop-hero': 'hero-banner',

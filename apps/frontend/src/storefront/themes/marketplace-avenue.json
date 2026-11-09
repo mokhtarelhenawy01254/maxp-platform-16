@@ -123,9 +123,34 @@
     ],
     "actions": [
       {
-        "label": "حسابي",
-        "to": "/registration",
-        "style": "outline"
+        "label": "من نحن",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "شركاؤنا",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "وظائف",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "تتبع طلبك",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "اتصل بنا",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "الأسئلة الشائعة",
+        "to": "/contact",
+        "style": "link"
       }
     ]
   },
@@ -395,6 +420,13 @@
           }
         },
         {
+          "type": "recently-viewed",
+          "settings": {
+            "title": "شوهدت مؤخرًا",
+            "limit": 6
+          }
+        },
+        {
           "type": "story-parallax",
           "settings": {
             "badge": "Urbanears",
@@ -440,7 +472,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "carousel",
+          "variant": "marketplace-rail",
           "settings": {
             "title": "أحدث المنتجات",
             "limit": 3,
@@ -482,7 +514,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "minimal-card",
+          "variant": "marketplace-rail",
           "settings": {
             "title": "ألعاب مختارة",
             "limit": 4,
@@ -504,7 +536,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "carousel",
+          "variant": "marketplace-rail",
           "settings": {
             "title": "أفضل 100 جهاز منزلي",
             "limit": 8,
@@ -621,7 +653,7 @@
         },
         {
           "type": "product-grid",
-          "variant": "carousel",
+          "variant": "marketplace-rail",
           "settings": {
             "title": "منتجات مقترحة أخرى",
             "limit": 12,

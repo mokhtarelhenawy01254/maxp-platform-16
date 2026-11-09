@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ProductGridProps } from './product-grid/gridTypes';
 import { MarketplaceTabsGrid } from './product-grid/MarketplaceTabsGrid';
+import { MarketplaceRailGrid } from './product-grid/MarketplaceRailGrid';
 import {
   useProductGridController,
   ProductGridLoadingSection,
@@ -32,6 +33,10 @@ export const ProductGrid: React.FC<ProductGridProps> = (props) => {
 
   if (controller.variant === 'marketplace-tabs') {
     return <MarketplaceTabsGrid controller={controller} />;
+  }
+
+  if (controller.variant === 'marketplace-rail') {
+    return <MarketplaceRailGrid controller={controller} />;
   }
 
   const backgroundClass = resolveProductGridSectionBackground({

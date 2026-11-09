@@ -531,6 +531,7 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
       "featured-collections",
       "shopping-intents",
       "journal-strip",
+      "recently-viewed",
       "filters-sidebar",
       "shop-command-bar",
       "newsletter",

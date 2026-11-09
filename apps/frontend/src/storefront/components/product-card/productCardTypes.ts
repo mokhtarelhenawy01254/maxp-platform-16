@@ -23,7 +23,8 @@ export type ProductCardVariant =
   | 'butcher-black-label'
   | 'carry-frame'
   | 'pedal-frame'
-  | 'signal-rack';
+  | 'signal-rack'
+  | 'marketplace-row';
 
 export interface ProductCardProps {
   product: Product;

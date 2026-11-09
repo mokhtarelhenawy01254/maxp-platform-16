@@ -21,6 +21,7 @@ import { ElessiSpecialtyBuybox } from './product-info/buyboxes/ElessiSpecialtyBu
 import { ElessiDigitalBuybox } from './product-info/buyboxes/ElessiDigitalBuybox';
 import { ElessiMainBuybox } from './product-info/buyboxes/ElessiMainBuybox';
 import { StandardBuybox } from './product-info/buyboxes/StandardBuybox';
+import { useRecordRecentlyViewed } from '../hooks/useRecentlyViewedProducts';
 
 // Re-export conversion and navigation helpers for backwards compatibility and unit test suites
 export {
@@ -32,6 +33,7 @@ export {
 
 export const ProductInfo: React.FC<ProductInfoProps> = (props) => {
   const ctrl = useProductInfoController(props);
+  useRecordRecentlyViewed(ctrl.product);
 
   if (ctrl.isLoading) {
     return <ProductInfoLoadingSkeleton />;

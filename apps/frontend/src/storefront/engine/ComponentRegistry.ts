@@ -41,6 +41,7 @@ const PrivacyPolicySection = React.lazy(() => import('../compliance/PrivacyPolic
 const TermsSection = React.lazy(() => import('../compliance/TermsSection'));
 const MarketingConsentSection = React.lazy(() => import('../sections/MarketingConsentSection'));
 const JournalStrip = React.lazy(() => import('../sections/JournalStrip'));
+const RecentlyViewed = React.lazy(() => import('../sections/RecentlyViewed'));
 const ShoeFitFinder = React.lazy(() => import('../sections/ShoeFitFinder'));
 const TikTokFeedSection = React.lazy(() => import('../sections/TikTokFeedSection'));
 const AffiliateDisclosure = React.lazy(() => import('../sections/AffiliateDisclosure'));
@@ -175,6 +176,7 @@ const baseComponentRegistry: Record<
   'offer-bento': OfferBento,
   'shoe-fit-finder': ShoeFitFinder,
   'journal-strip': JournalStrip,
+  'recently-viewed': RecentlyViewed,
   'info-content': InfoContentSection,
   'cookie-consent': CookieConsentSection,
   'privacy-policy': PrivacyPolicySection,

@@ -79,6 +79,7 @@ export const STOREFRONT_PRODUCT_GRID_VARIANTS = [
   { value: "legacy-compact-listing", label: "قائمة كلاسيكية كثيفة" },
   { value: "carousel", label: "سلايدر أفقي" },
   { value: "marketplace-tabs", label: "شبكة بتبويبات ماركت بليس" },
+  { value: "marketplace-rail", label: "رف ماركت بليس المضغوط (٦ أعمدة)" },
   { value: "grid", label: "شبكة افتراضية" },
   { value: "playful-toybox", label: "صندوق ألعاب مرح (أطفال)" },
 ] as const satisfies readonly StorefrontSectionVariantDefinition[];
@@ -3446,6 +3447,16 @@ export const STOREFRONT_SECTION_MANIFEST = {
         placeholder: "Deal Block|منتجات سريعة الدوران|دفع بيعي أوضح للمنتجات المهمة|شاهد المنتجات|/shop?sort=popular|primary|Top Sellers",
         helperText: "كل سطر: label|title|subtitle|ctaText|link|tone|stat|image",
       },
+    ],
+  },
+  "recently-viewed": {
+    label: "شوهدت مؤخرًا",
+    component: "recently-viewed",
+    note: "يعرض آخر المنتجات التي فتحها الزائر، محفوظة محليًا في المتصفح، بنفس شكل كروت الرفوف المضغوطة.",
+    pages: ["home", "shop", "pdp", "cart"],
+    fields: [
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "limit", label: "عدد المنتجات", type: "number" },
     ],
   },
   "journal-strip": {

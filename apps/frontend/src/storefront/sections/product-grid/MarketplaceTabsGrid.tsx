@@ -35,7 +35,6 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
   const {
     filteredProducts,
     settings,
-    resolvedCardVariant,
     shopProductCardStyleOverrides,
     resolveGridCardImageLoading,
     resolveGridCardImageFetchPriority,
@@ -94,12 +93,12 @@ export const MarketplaceTabsGrid: React.FC<{ controller: ProductGridController }
         </div>
 
         {products.length > 0 ? (
-          <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gridFrameClassName}`}>
+          <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gridFrameClassName}`}>
             {products.map((product, index) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                variant={resolvedCardVariant}
+                variant="marketplace-row"
                 styleOverrides={shopProductCardStyleOverrides}
                 quickViewLabel={settings?.['quickViewLabel'] as string}
                 addToWishlistLabel={settings?.['addToWishlistLabel'] as string}

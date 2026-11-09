@@ -544,6 +544,17 @@ export const storefrontVariantRegistry = {
   ],
   ProductGrid: [
     {
+      id: 'marketplace-rail',
+      section: 'ProductGrid',
+      purpose: 'Dense six-up rail of compact horizontal product row cards, matching the marketplace demo latest/top/recommended rails',
+      bestPages: ['home', 'shop'],
+      bestArchetypes: ['marketplace', 'general-store', 'electronics'],
+      rtlSuitability: 'high',
+      density: 'high',
+      tone: 'retail-direct',
+      status: 'implemented-now',
+    },
+    {
       id: 'marketplace-tabs',
       section: 'ProductGrid',
       purpose: 'Department-store product rail: four merchandising pills (featured / discounted / cheapest / priciest) above one four-up grid, mirroring the marketplace demo tabs',

@@ -19,6 +19,7 @@ import { FashionProductCard } from './product-card/variants/FashionProductCard';
 import { SpecialtyFrameProductCard } from './product-card/variants/SpecialtyFrameProductCard';
 import { MinimalProductCard } from './product-card/variants/MinimalProductCard';
 import { StandardProductCard } from './product-card/variants/StandardProductCard';
+import { MarketplaceRowCard } from './product-card/variants/MarketplaceRowCard';
 
 export type { ProductCardProps, ProductCardVariant, ProductCardController };
 
@@ -56,6 +57,8 @@ const renderVariant = (ctrl: ProductCardController): React.ReactNode => {
       return <SpecialtyFrameProductCard ctrl={ctrl} />;
     case 'minimal':
       return <MinimalProductCard ctrl={ctrl} />;
+    case 'marketplace-row':
+      return <MarketplaceRowCard ctrl={ctrl} />;
     case 'overlay':
     case 'standard':
     default:
