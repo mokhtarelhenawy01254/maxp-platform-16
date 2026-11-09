@@ -152,7 +152,7 @@ describe("EducationManagementPage (Batch 483)", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders page header, sector badge, and all 7 navigation tabs", async () => {
+  it("renders page header and sector badge without redundant tabs bar", async () => {
     renderWithRouter();
 
     await waitFor(() => {
@@ -160,13 +160,8 @@ describe("EducationManagementPage (Batch 483)", () => {
     });
 
     expect(screen.getByText("القطاع التعليمي")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /لوحة التحكم/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /المواد/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /الباقات/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /الطلاب/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /(?:المدرسين|المهندسين|Instructors)/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /التسجيلات/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /الحصص/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /إعدادات النظام/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^لوحة التحكم$/ })).toBeNull();
   });
 
   it("renders dashboard statistics and quick widgets", async () => {

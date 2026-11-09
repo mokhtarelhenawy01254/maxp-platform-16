@@ -1,9 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useState, useEffect } from "react";
 import { School, AlertTriangle, Settings } from "lucide-react";
 import {
-  TABS,
-  TabId,
   useEducationManagementController,
   EducationDashboardTab,
   EducationSubjectsTab,
@@ -19,9 +16,6 @@ import {
 import { api, fetchJson } from "./education-management/api";
 
 export default function EducationManagementPage() {
-  const { t, i18n } = useTranslation();
-  const isEn = i18n.language === "en";
-
   const {
     activeTab,
     setActiveTab,
@@ -98,43 +92,6 @@ export default function EducationManagementPage() {
     };
   }, []);
 
-  const tabsList = useMemo(() => {
-    if (!educationSettings?.tabs || educationSettings.tabs.length === 0) {
-      return TABS.map((tab) => ({
-        ...tab,
-        label: tab.id === "teachers" ? (isEn ? "Instructors" : "المهندسين") : tab.label,
-      }));
-    }
-
-    const result: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [];
-
-    // Order according to educationSettings.tabs
-    educationSettings.tabs.forEach((st) => {
-      if (st.visible === false && st.id !== "settings") return;
-      const baseTab = TABS.find((t) => t.id.toLowerCase() === st.id.toLowerCase());
-      if (baseTab) {
-        const customLabel = isEn
-          ? (st.labelEn || st.labelAr || baseTab.label)
-          : (st.labelAr || baseTab.label);
-        result.push({
-          id: baseTab.id,
-          label: customLabel,
-          icon: baseTab.icon,
-        });
-      }
-    });
-
-    // Make sure activeTab is visible if navigated directly
-    if (!result.some((r) => r.id === activeTab)) {
-      const activeBaseTab = TABS.find((t) => t.id === activeTab);
-      if (activeBaseTab) {
-        result.push(activeBaseTab);
-      }
-    }
-
-    return result;
-  }, [educationSettings, isEn, activeTab]);
-
   return (
     <div
       className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 rtl font-sans"
@@ -175,29 +132,6 @@ export default function EducationManagementPage() {
             إعدادات النظام
           </button>
         </div>
-      </div>
-
-      {/* Tabs Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 border-b border-border/60 -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
-        {tabsList.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              {tab.label}
-            </button>
-          );
-        })}
       </div>
 
       {error ? (
