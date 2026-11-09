@@ -35,15 +35,23 @@ export const AppDownloadsPage: React.FC = () => {
   const handleCopyDeploymentPack = () => {
     const text = `دليل روابط وتطبيقات MaxP لمنشأة: ${companyName}
 
-1. برنامج مراقبة وإنتاجية فريق العمل لسطح المكتب (Windows Setup .exe):
+1. تطبيق كابتن ومندوب الشحن (Courier Android APK):
+https://maxp.online/downloads/maxp-courier.apk
+(البوابة المباشرة: https://maxp.online/courier-portal/login)
+
+2. تطبيق عميل الشحن والتاجر وتتبع الطرود (Customer Android APK):
+https://maxp.online/downloads/maxp-customer.apk
+(البوابة المباشرة: https://maxp.online/client-portal/shipping)
+
+3. تطبيق الموبايل العام للأندرويد (MaxP Companion APK):
+https://maxp.online/downloads/maxp.apk
+
+4. برنامج مراقبة وإنتاجية فريق العمل لسطح المكتب (Windows Setup .exe):
 https://maxp.online/download/MaxP-Workspace-Setup.exe
 النسخة المحمولة بدون تثبيت (Portable .zip):
 https://maxp.online/downloads/MaxP-Monitor-Portable.zip
 
-2. تطبيق الموبايل للأندرويد (Android APK):
-https://maxp.online/downloads/maxp.apk
-
-3. تطبيق الموبايل للآيفون ونظام iOS:
+5. تطبيق الموبايل للآيفون ونظام iOS:
 https://maxp.online (تثبيت فوري عبر متصفح Safari - إضافة إلى الشاشة الرئيسية)
 
 معرّف المنشأة المرجعي لربط الأجهزة: ${companyToken || "تواصل مع مدير الحساب"}`;
