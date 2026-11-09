@@ -8648,8 +8648,17 @@ const buildCommerceFlowOverrides = (theme: StorefrontTheme): ThemePageOverrides 
           guaranteeStyle: 'minimal',
           ...(isDistrictMarket
             ? {
-                guaranteeItems:
-                  'أصلية 100%|منتج أصلي ومضمون.\nدفع عند الاستلام|ادفع بعد معاينة المنتج مع المندوب.\nاستبدال خلال 14 يوم|سياسة استبدال واضحة وسريعة.',
+                guaranteeItems: [
+                  { title: 'أصلية 100%', description: 'منتج أصلي ومضمون.' },
+                  {
+                    title: 'دفع عند الاستلام',
+                    description: 'ادفع بعد معاينة المنتج مع المندوب.',
+                  },
+                  {
+                    title: 'استبدال خلال 14 يوم',
+                    description: 'سياسة استبدال واضحة وسريعة.',
+                  },
+                ],
               }
             : {}),
         },
