@@ -606,6 +606,12 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "marketplace-departments",
     "ماركت بليس أقسام متعددة",
   ),
+  "marketplace-avenue-ar": createThemeCategoryMeta(
+    "general",
+    "عام",
+    "marketplace-departments",
+    "ماركت بليس أقسام متعددة · عربي",
+  ),
 };
 
 export const getStorefrontThemeCategoryMeta = (
