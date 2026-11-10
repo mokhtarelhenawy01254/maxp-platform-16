@@ -3471,6 +3471,56 @@ const AppContent = () => {
                 </Suspense>
               }
             />
+
+            {/* Public Shipment Tracking (SHIP-W3: Waybill Tracking) */}
+            <Route
+              path="/track"
+              element={<ShipmentTrackingPage />}
+            />
+            <Route
+              path="/track/:waybill"
+              element={<ShipmentTrackingPage />}
+            />
+
+            {/* Courier Portal (Standalone mobile fleet shell) */}
+            <Route
+              path="/courier-portal/login"
+              element={<CourierLoginPage />}
+            />
+            <Route
+              path="/courier-portal"
+              element={<CourierHomePage />}
+            />
+            <Route
+              path="/courier-portal/runs/:id"
+              element={<CourierRunPage />}
+            />
+            <Route
+              path="/courier-portal/custody"
+              element={<CourierCustodyPage />}
+            />
+            <Route
+              path="/courier/run/:id"
+              element={<CourierMobileRunPage />}
+            />
+
+            {/* Marketplace Downloads & Client Applications Cockpit (Public & Authenticated) */}
+            <Route
+              path="/marketplace/downloads"
+              element={
+                isAuthenticated ? (
+                  <Layout>
+                    <AppDownloadsPage />
+                  </Layout>
+                ) : (
+                  <AppDownloadsPage />
+                )
+              }
+            />
+            <Route
+              path="/apps/downloads"
+              element={<Navigate to="/marketplace/downloads" replace />}
+            />
             {/* Protected Routes with ProtectedRoute component (handles auth internally) */}
             {/* Protected Routes - Only accessible when authenticated */}
             {isLoading ? (
@@ -3597,18 +3647,6 @@ const AppContent = () => {
                 <Route
                   path="/marketplace/v2"
                   element={<Navigate to="/marketplace" replace />}
-                />
-                <Route
-                  path="/marketplace/downloads"
-                  element={
-                    <Layout>
-                      <AppDownloadsPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/apps/downloads"
-                  element={<Navigate to="/marketplace/downloads" replace />}
                 />
                 <Route
                   path="/marketplace/themes"
@@ -7755,37 +7793,6 @@ const AppContent = () => {
                       </AppAccessRoute>
                     </Layout>
                   }
-                />
-                {/* Courier Portal (Standalone mobile fleet shell) */}
-                <Route
-                  path="/courier-portal/login"
-                  element={<CourierLoginPage />}
-                />
-                <Route
-                  path="/courier-portal"
-                  element={<CourierHomePage />}
-                />
-                <Route
-                  path="/courier-portal/runs/:id"
-                  element={<CourierRunPage />}
-                />
-                <Route
-                  path="/courier-portal/custody"
-                  element={<CourierCustodyPage />}
-                />
-                <Route
-                  path="/courier/run/:id"
-                  element={<CourierMobileRunPage />}
-                />
-
-                {/* Public Shipment Tracking (SHIP-W3: Waybill Tracking) */}
-                <Route
-                  path="/track"
-                  element={<ShipmentTrackingPage />}
-                />
-                <Route
-                  path="/track/:waybill"
-                  element={<ShipmentTrackingPage />}
                 />
 
                 {/* Shipping Client Portal Direct & Alias Routes (SHIP-W13) */}
