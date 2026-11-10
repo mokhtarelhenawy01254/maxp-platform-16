@@ -20,7 +20,8 @@ import {
   Sparkles,
   UserCheck,
   LayoutGrid,
-  List
+  List,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildApiUrl } from "../../utils/urlHelper";
