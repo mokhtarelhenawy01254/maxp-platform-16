@@ -79,14 +79,14 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     primaryActionLabel: "تحميل تطبيق المندوب (APK)",
     telemetry: {
       targetSystem: "Android 8.0+ (ARM64 & x86)",
-      primarySize: "24.5 MB",
+      primarySize: "3.8 MB",
       ramConsumption: "< 35 MB RAM",
     },
     files: [
       {
         id: "courier-apk",
         label: "تطبيق المندوب الرسمي (APK)",
-        size: "24.5 MB",
+        size: "3.8 MB",
         url: "https://maxp.online/downloads/maxp-courier.apk",
         extension: ".apk",
         isPrimary: true,
@@ -149,14 +149,14 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     primaryActionLabel: "تحميل تطبيق الشحن والعملاء (APK)",
     telemetry: {
       targetSystem: "Android 8.0+ (ARM64 & x86)",
-      primarySize: "22.8 MB",
+      primarySize: "3.8 MB",
       ramConsumption: "< 30 MB RAM",
     },
     files: [
       {
         id: "customer-apk",
         label: "تطبيق الشحن والعملاء (APK)",
-        size: "22.8 MB",
+        size: "3.8 MB",
         url: "https://maxp.online/downloads/maxp-customer.apk",
         extension: ".apk",
         isPrimary: true,

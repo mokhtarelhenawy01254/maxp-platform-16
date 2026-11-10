@@ -3474,6 +3474,80 @@ const AppContent = () => {
                 </Suspense>
               }
             />
+            {/* Public Shipment Tracking (SHIP-W3: Waybill Tracking) */}
+            <Route
+              path="/track"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <ShipmentTrackingPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/track/:waybill"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <ShipmentTrackingPage />
+                </Suspense>
+              }
+            />
+            {/* Courier Portal (Standalone mobile fleet shell) */}
+            <Route
+              path="/courier-portal/login"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CourierLoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/courier-portal"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CourierHomePage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/courier-portal/runs/:id"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CourierRunPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/courier-portal/custody"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CourierCustodyPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/courier/run/:id"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <CourierMobileRunPage />
+                </Suspense>
+              }
+            />
+            {/* Marketplace Downloads (Publicly accessible with or without Layout) */}
+            <Route
+              path="/marketplace/downloads"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  {isAuthenticated ? (
+                    <Layout>
+                      <AppDownloadsPage />
+                    </Layout>
+                  ) : (
+                    <AppDownloadsPage />
+                  )}
+                </Suspense>
+              }
+            />
+            <Route path="/apps/downloads" element={<Navigate to="/marketplace/downloads" replace />} />
             {/* Protected Routes with ProtectedRoute component (handles auth internally) */}
             {/* Protected Routes - Only accessible when authenticated */}
             {isLoading ? (
@@ -3601,18 +3675,7 @@ const AppContent = () => {
                   path="/marketplace/v2"
                   element={<Navigate to="/marketplace" replace />}
                 />
-                <Route
-                  path="/marketplace/downloads"
-                  element={
-                    <Layout>
-                      <AppDownloadsPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/apps/downloads"
-                  element={<Navigate to="/marketplace/downloads" replace />}
-                />
+
                 <Route
                   path="/marketplace/themes"
                   element={
@@ -7759,37 +7822,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* Courier Portal (Standalone mobile fleet shell) */}
-                <Route
-                  path="/courier-portal/login"
-                  element={<CourierLoginPage />}
-                />
-                <Route
-                  path="/courier-portal"
-                  element={<CourierHomePage />}
-                />
-                <Route
-                  path="/courier-portal/runs/:id"
-                  element={<CourierRunPage />}
-                />
-                <Route
-                  path="/courier-portal/custody"
-                  element={<CourierCustodyPage />}
-                />
-                <Route
-                  path="/courier/run/:id"
-                  element={<CourierMobileRunPage />}
-                />
 
-                {/* Public Shipment Tracking (SHIP-W3: Waybill Tracking) */}
-                <Route
-                  path="/track"
-                  element={<ShipmentTrackingPage />}
-                />
-                <Route
-                  path="/track/:waybill"
-                  element={<ShipmentTrackingPage />}
-                />
 
                 {/* Shipping Client Portal Direct & Alias Routes (SHIP-W13) */}
                 <Route path="/shipping-client" element={<Navigate to="/client-portal/shipping" replace />} />
