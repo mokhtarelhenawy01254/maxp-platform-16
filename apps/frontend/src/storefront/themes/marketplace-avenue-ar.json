@@ -1466,6 +1466,11 @@
               }
             }
           }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {}
         }
       ]
     },

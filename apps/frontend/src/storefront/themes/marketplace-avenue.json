@@ -787,6 +787,11 @@
             "title": "Review your order",
             "subtitle": "A clear review step for quantity and price before checkout."
           }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary",
+          "settings": {}
         }
       ]
     },
