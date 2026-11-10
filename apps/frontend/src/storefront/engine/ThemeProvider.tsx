@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { StorefrontTheme } from '../types/theme.types';
 import StorefrontSkeleton from '../components/StorefrontSkeleton';
 import {
@@ -7,7 +7,9 @@ import {
   type StorefrontThemeInput,
 } from './runtimeThemeResolver';
 import { resolvePageStyleVars, resolveActivePageKeyFromPath, extractPageStyles, type ResolvedPageStyleVars } from './themeResolverCore';
-import { getStorefrontLocale } from '../i18n';
+import { getStorefrontLocale } from '../i18n/storefrontLocale';
+import { localizeThemeShell } from '../i18n/shellLocale';
+import type { StorefrontLocale } from '../i18n/types';
 import { ensureDocumentFontAvailable } from '../utils/arabicTypography';
 
 interface ThemeContextType {
@@ -249,6 +251,40 @@ export const StorefrontThemeProvider: React.FC<{
     blockUntilResolved ? null : createStorefrontThemeFallback(initialTheme),
   );
 
+  const [activeLocale, setActiveLocale] = useState<StorefrontLocale>(() =>
+    typeof window !== 'undefined'
+      ? getStorefrontLocale(window.location?.search, initialTheme?.defaultLocale)
+      : 'ar',
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const syncFromUrl = () =>
+      setActiveLocale(getStorefrontLocale(window.location?.search, theme?.defaultLocale));
+    const onLocaleChange = (event: Event) => {
+      const next = (event as CustomEvent<{ locale?: string }>).detail?.locale;
+      if (next === 'ar' || next === 'en') {
+        setActiveLocale(next);
+        return;
+      }
+      syncFromUrl();
+    };
+    window.addEventListener('storefront:locale-change', onLocaleChange);
+    window.addEventListener('popstate', syncFromUrl);
+    return () => {
+      window.removeEventListener('storefront:locale-change', onLocaleChange);
+      window.removeEventListener('popstate', syncFromUrl);
+    };
+  }, [theme?.defaultLocale]);
+
+  // header/footer labels follow the active locale; page sections are localized by PageComposer.
+  const localizedTheme = useMemo(
+    () => (theme ? localizeThemeShell(theme, activeLocale) : theme),
+    [theme, activeLocale],
+  );
+
   useEffect(() => {
     let isActive = true;
 
@@ -459,14 +495,14 @@ export const StorefrontThemeProvider: React.FC<{
 
   if (asFragment) {
     return (
-      <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
+      <ThemeContext.Provider value={{ theme: localizedTheme ?? theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
         {children}
       </ThemeContext.Provider>
     );
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
+    <ThemeContext.Provider value={{ theme: localizedTheme ?? theme, setTheme: (nextTheme) => setTheme(nextTheme), activePageKey, pageStyleVars: resolvedPageVars }}>
       <div 
         id="storefront-engine-root" 
         className="storefront-container isolation-auto min-h-screen bg-background text-foreground"

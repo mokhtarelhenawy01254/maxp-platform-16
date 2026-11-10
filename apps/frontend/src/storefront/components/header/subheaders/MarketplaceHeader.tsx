@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { StorefrontHomeLink } from "../storefrontHeaderHelpers";
 import { StorefrontSearchOverlay } from "./StorefrontSearchOverlay";
 import type { StorefrontHeaderController } from "../storefrontHeaderTypes";
+import { LanguageSwitcher } from "../../LanguageSwitcher";
+import { useStorefrontLocale } from "../../../i18n/useStorefrontLocale";
 
 interface MarketplaceHeaderProps {
   controller: StorefrontHeaderController;
@@ -36,7 +38,12 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
     mobileMenuOpen,
   } = controller;
 
-  const isRtl = theme.direction === "rtl";
+  // a theme that ships both locales follows the visitor's choice; a single-language theme keeps
+  // its own direction so flipping ?lang never mirrors a layout that has no English copy.
+  const bilingual = Array.isArray(theme.supportedLocales) && theme.supportedLocales.length > 1;
+  const { locale } = useStorefrontLocale(theme.defaultLocale);
+  const isRtl = bilingual ? locale === "ar" : theme.direction === "rtl";
+  const headerDir = isRtl ? "rtl" : "ltr";
   const quickLinks = (theme.header?.actions || []).slice(0, 6);
   const categories = (theme.header?.dropdowns || []).slice(0, 5);
   const phone = (theme.footer && (theme.footer as { phoneText?: string }).phoneText) || "01000 000 000";
@@ -48,7 +55,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
 
   return (
     <>
-      <header dir={theme.direction} className="sticky top-0 z-50 w-full">
+      <header dir={headerDir} className="sticky top-0 z-50 w-full">
         {/* band 1 — utility */}
         <div className="hidden bg-[#0d0625] text-white md:block">
           <div className="container flex h-[42px] items-center justify-between gap-4 px-4 text-[12px] md:px-6">
@@ -62,6 +69,11 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
             <div className="flex items-center gap-5">
               <span className="text-white/60">{isRtl ? "خط ساخن 24/7" : "Hotline 24/7"}</span>
               <span className="font-semibold">{phone}</span>
+              {bilingual ? (
+                <span className="hidden items-center gap-1 rounded-full bg-white/10 px-2 py-1 md:inline-flex">
+                  <LanguageSwitcher className="text-white" />
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
