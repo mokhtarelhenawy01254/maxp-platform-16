@@ -1,5 +1,6 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../sharedDatabase');
 const inboxNotificationService = require('../inboxNotificationService');
+const { safePreviewText } = require('../../utils/messagePreviewUtils');
 const { getNormalizedSettings } = require('../whatsappInboxSettingsService');
 const {
   CLOSED_CHAT_STATUSES,
@@ -425,7 +426,7 @@ const WhatsAppSyncService = {
 
   truncatePreview(content, type) {
     if (!content && type !== 'text') return `[${String(type || 'message').toUpperCase()}]`;
-    return content && content.length > 80 ? `${content.substring(0, 80)}...` : content;
+    return safePreviewText(content, 80);
   }
 };
 

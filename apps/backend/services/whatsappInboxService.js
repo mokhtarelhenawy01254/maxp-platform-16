@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { safePreviewText } = require('../utils/messagePreviewUtils');
 const socketService = require('./socketService');
 const whatsappAssignmentEngineService = require('./whatsappAssignmentEngineService');
 const inboxNotificationService = require('./inboxNotificationService');
@@ -263,7 +264,7 @@ class WhatsAppInboxService {
         isRead: true,
         unreadCount: 0,
         lastMessageAt: new Date(),
-        lastMessagePreview: content.substring(0, 120),
+        lastMessagePreview: safePreviewText(content, 120),
         lastMessageIsFromCustomer: false,
         metadata: buildConversationMetadata(conversation.metadata, {
           inboxRouting: {
@@ -344,7 +345,7 @@ class WhatsAppInboxService {
       where: { id: conversationId },
       data: {
         lastMessageAt: new Date(),
-        lastMessagePreview: `[SMS] ${content.substring(0, 100)}`,
+        lastMessagePreview: `[SMS] ${safePreviewText(content, 100)}`,
         lastMessageIsFromCustomer: false
       }
     });
@@ -650,7 +651,7 @@ class WhatsAppInboxService {
         isRead: true,
         unreadCount: 0,
         lastMessageAt: new Date(),
-        lastMessagePreview: correction.substring(0, 120),
+        lastMessagePreview: safePreviewText(correction, 120),
         lastMessageIsFromCustomer: false,
         metadata: buildConversationMetadata(conversation.metadata, {
           inboxRouting: {
@@ -662,7 +663,7 @@ class WhatsAppInboxService {
     });
 
     await this._logActivity(companyId, userId, 'SEND_CORRECTION', conversationId, {
-      sessionId,
+      sessionId: getSessionIdFromMetadata(conversation.metadata),
       contentPreview: correction.substring(0, 60),
       originalMessageId: messageId,
       guardrailCreated: !!guardrail,

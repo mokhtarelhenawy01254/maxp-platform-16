@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { getPageToken } = require('../controller/conversation/conversationShared');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
+const { safePreviewText } = require('../utils/messagePreviewUtils');
 
 const FACEBOOK_GRAPH_VERSION = getMetaGraphApiVersion();
 const MAX_LIST_LIMIT = 100;
@@ -704,7 +705,7 @@ const pullFacebookConversationMessages = async (companyId, conversationId, optio
       where: { id: conversationId },
       data: {
         lastMessageAt: latestMessage.createdAt,
-        lastMessagePreview: String(latestMessage.content || '').slice(0, 120),
+        lastMessagePreview: safePreviewText(String(latestMessage.content || ''), 120),
         lastMessageIsFromCustomer: latestMessage.isFromCustomer,
         unreadCount,
         updatedAt: new Date()

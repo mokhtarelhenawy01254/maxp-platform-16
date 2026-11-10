@@ -117,7 +117,7 @@ const postMessageConverstation = async (req, res) => {
     const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
     if (isFacebook) {
       const lastInboundMsg = await executeWithRetry(async () => {
-        return await prisma.message.findFirst({
+        return await getSharedPrismaClient().message.findFirst({
           where: {
             conversationId: id,
             isFromCustomer: true
@@ -823,7 +823,7 @@ const uploadFile = async (req, res) => {
     const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
     if (isFacebook) {
       const lastInboundMsg = await executeWithRetry(async () => {
-        return await prisma.message.findFirst({
+        return await getSharedPrismaClient().message.findFirst({
           where: {
             conversationId: id,
             isFromCustomer: true
@@ -1712,7 +1712,7 @@ const postReply = async (req, res) => {
                 await recordSentMessageStat({
                   companyId: conversation.companyId,
                   facebookPageId: actualPageId,
-                  recipientFacebookId: recipientId,
+                  recipientFacebookId: facebookUserId,
                   recipientCustomerId: conversation.customerId,
                   messageId: facebookMessageId,
                   messageContent: message,
@@ -1777,7 +1777,7 @@ const postReply = async (req, res) => {
                 });
               }
               // NEW: Handle the specific Facebook error 2018001 more gracefully
-              if (!facebookSent && response.error === 'NO_MATCHING_USER') {
+              if (!facebookSent && facebookErrorDetails && facebookErrorDetails.error === 'NO_MATCHING_USER') {
                 //console.log(`⚠️ [FACEBOOK-REPLY] User hasn't started conversation with page`);
 
                 // Update the conversation to indicate this issue
@@ -2018,7 +2018,7 @@ const sendExistingImage = async (req, res) => {
     const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
     if (isFacebook) {
       const lastInboundMsg = await executeWithRetry(async () => {
-        return await prisma.message.findFirst({
+        return await getSharedPrismaClient().message.findFirst({
           where: {
             conversationId: id,
             isFromCustomer: true
@@ -2254,7 +2254,7 @@ const sendMediaMessage = async (req, res) => {
     const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
     if (isFacebook) {
       const lastInboundMsg = await executeWithRetry(async () => {
-        return await prisma.message.findFirst({
+        return await getSharedPrismaClient().message.findFirst({
           where: {
             conversationId: id,
             isFromCustomer: true
@@ -2427,7 +2427,7 @@ const sendLocationMessage = async (req, res) => {
     const isFacebook = !conversation.channel || conversation.channel === 'FACEBOOK';
     if (isFacebook) {
       const lastInboundMsg = await executeWithRetry(async () => {
-        return await prisma.message.findFirst({
+        return await getSharedPrismaClient().message.findFirst({
           where: {
             conversationId: id,
             isFromCustomer: true
@@ -2536,24 +2536,24 @@ const sendLocationMessage = async (req, res) => {
     const io = socketService.getIO();
     if (io) {
       const socketData = proxySocketMessageData({
-        id: message.id,
-        conversationId: message.conversationId,
-        content: message.content,
-        type: message.type.toLowerCase(),
-        isFromCustomer: message.isFromCustomer,
-        timestamp: message.createdAt,
+        id: savedMessage.id,
+        conversationId: savedMessage.conversationId,
+        content: savedMessage.content,
+        type: savedMessage.type.toLowerCase(),
+        isFromCustomer: savedMessage.isFromCustomer,
+        timestamp: savedMessage.createdAt,
         senderId: senderId,
         senderName: senderName,
         location: {
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude)
         },
-        metadata: JSON.parse(message.metadata),
+        metadata: JSON.parse(savedMessage.metadata),
         companyId: companyId,
         platform: conversation.channel === 'TELEGRAM' ? 'telegram' : (conversation.channel ? conversation.channel.toLowerCase() : 'facebook'),
         channel: conversation.channel || 'FACEBOOK'
       }, {
-        messageId: message.id
+        messageId: savedMessage.id
       });
       io.to(`company_${companyId}`).emit('new_message', socketData);
       console.log(`⚡ [SOCKET] Location message emitted to company ${companyId}`);
@@ -2561,7 +2561,7 @@ const sendLocationMessage = async (req, res) => {
 
     res.json({
       success: true,
-      data: message
+      data: savedMessage
     });
   } catch (error) {
     console.error('Error sending location message:', error);
