@@ -16,8 +16,12 @@ const {
   findConvertedPresentationBySlug,
 } = require('../utils/presentationConversion');
 const { buildAffiliateUrl } = require('../services/amazonAffiliateService');
+const { localizePublicResponse } = require('../middleware/publicLocaleMiddleware');
 
 const router = express.Router();
+
+// ?lang=en → swap `name` for the row's English name before the payload leaves (Arabic untouched).
+router.use(localizePublicResponse);
 const ALLOWED_SORT_FIELDS = new Set(['createdAt', 'updatedAt', 'name', 'price']);
 const LOCAL_UPLOAD_CACHE_TTL_MS = 5 * 60 * 1000;
 const localUploadAvailabilityCache = new Map();

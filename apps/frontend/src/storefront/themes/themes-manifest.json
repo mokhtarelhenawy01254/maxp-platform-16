@@ -1798,6 +1798,37 @@
     }
   },
   {
+    "id": "marketplace-avenue-ar",
+    "name": "ماركت بليس أفنيو",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "marketplace-departments",
+        "label": "ماركت بليس أقسام متعددة · عربي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "23 27% 53%",
+      "0 0% 100%",
+      "352 71% 59%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 3,
+      "checkoutSections": 0,
+      "pdpSections": 3,
+      "cartSections": 1,
+      "totalSections": 15
+    }
+  },
+  {
     "id": "max-care-go",
     "name": "Max Care Go",
     "description": "قالب صيدلية موبايل-أول للطلبات السريعة: رفع روشتة، إعادة طلب، وعروض يومية تشجع العميل يكمل الطلب.",
