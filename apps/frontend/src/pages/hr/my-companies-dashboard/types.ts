@@ -23,6 +23,7 @@ export interface MyCompaniesOrder {
   currency: string;
   createdAt: string;
   permissions: CompanyOrderPermissions;
+  isGuest?: boolean;
 }
 
 export interface TotalsByCompany {

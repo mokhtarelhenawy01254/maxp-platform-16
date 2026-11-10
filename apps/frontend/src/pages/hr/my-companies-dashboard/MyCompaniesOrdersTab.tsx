@@ -475,7 +475,14 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
                     >
                       {/* رقم الأوردر */}
                       <td className="py-3 px-3 sm:px-4 font-mono font-bold text-gray-900 dark:text-white">
-                        {order.orderNumber}
+                        <div className="flex items-center gap-1.5">
+                          <span>{order.orderNumber}</span>
+                          {order.isGuest && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-sans font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                              ضيف
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* الشركة كشارة */}
@@ -529,25 +536,33 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
                             <button
                               type="button"
                               onClick={() => {
-                                if (perms.canChangeStatus) {
+                                if (perms.canChangeStatus && !order.isGuest) {
                                   setStatusModalOrder(order);
                                   setModalTargetStatus("CONFIRMED");
                                   setModalNotes("");
                                 }
                               }}
-                              disabled={!perms.canChangeStatus}
+                              disabled={!perms.canChangeStatus || order.isGuest}
                               className={`p-1.5 rounded-md transition-colors ${
-                                perms.canChangeStatus
+                                perms.canChangeStatus && !order.isGuest
                                   ? "text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
                                   : "text-gray-300 dark:text-gray-600 opacity-40 cursor-not-allowed"
                               }`}
-                              title={!perms.canChangeStatus ? `مالكش صلاحية في شركة ${order.companyName}` : "تغيير الحالة"}
+                              title={
+                                order.isGuest
+                                  ? "أوردر ضيف — افتحه من صفحة الشركة"
+                                  : !perms.canChangeStatus
+                                  ? `مالكش صلاحية في شركة ${order.companyName}`
+                                  : "تغيير الحالة"
+                              }
                             >
                               <CheckCircleIcon className="w-5 h-5" />
                             </button>
-                            {!perms.canChangeStatus && (
+                            {(order.isGuest || !perms.canChangeStatus) && (
                               <div className="hidden group-hover:block absolute bottom-full mb-1 z-30 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-black rounded shadow-md whitespace-nowrap pointer-events-none">
-                                مالكش صلاحية في شركة {order.companyName}
+                                {order.isGuest
+                                  ? "أوردر ضيف — افتحه من صفحة الشركة"
+                                  : `مالكش صلاحية في شركة ${order.companyName}`}
                               </div>
                             )}
                           </div>
@@ -557,38 +572,66 @@ export const MyCompaniesOrdersTab: React.FC<MyCompaniesOrdersTabProps> = ({ comp
                             <button
                               type="button"
                               onClick={() => {
-                                if (perms.canCancel) {
+                                if (perms.canCancel && !order.isGuest) {
                                   setCancelModalOrder(order);
                                   setCancelReason("");
                                 }
                               }}
-                              disabled={!perms.canCancel || order.status === "CANCELLED"}
+                              disabled={!perms.canCancel || order.status === "CANCELLED" || order.isGuest}
                               className={`p-1.5 rounded-md transition-colors ${
-                                perms.canCancel && order.status !== "CANCELLED"
+                                perms.canCancel && order.status !== "CANCELLED" && !order.isGuest
                                   ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                   : "text-gray-300 dark:text-gray-600 opacity-40 cursor-not-allowed"
                               }`}
-                              title={!perms.canCancel ? `مالكش صلاحية في شركة ${order.companyName}` : "إلغاء الطلب"}
+                              title={
+                                order.isGuest
+                                  ? "أوردر ضيف — افتحه من صفحة الشركة"
+                                  : !perms.canCancel
+                                  ? `مالكش صلاحية في شركة ${order.companyName}`
+                                  : "إلغاء الطلب"
+                              }
                             >
                               <XCircleIcon className="w-5 h-5" />
                             </button>
-                            {!perms.canCancel && (
+                            {(order.isGuest || !perms.canCancel) && (
                               <div className="hidden group-hover:block absolute bottom-full mb-1 z-30 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-black rounded shadow-md whitespace-nowrap pointer-events-none">
-                                مالكش صلاحية في شركة {order.companyName}
+                                {order.isGuest
+                                  ? "أوردر ضيف — افتحه من صفحة الشركة"
+                                  : `مالكش صلاحية في شركة ${order.companyName}`}
                               </div>
                             )}
                           </div>
 
                           {/* زر «افتح» — يبدل السياق ويفتح الأوردر في شاشته الأصلية */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenOrder(order)}
-                            className="p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-md transition-colors flex items-center gap-1 text-xs font-medium"
-                            title={`فتح الطلب داخل سياق شركة ${order.companyName}`}
-                          >
-                            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">افتح</span>
-                          </button>
+                          <div className="relative group inline-block">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!order.isGuest) {
+                                  handleOpenOrder(order);
+                                }
+                              }}
+                              disabled={order.isGuest}
+                              className={`p-1.5 rounded-md transition-colors flex items-center gap-1 text-xs font-medium ${
+                                order.isGuest
+                                  ? "text-gray-300 dark:text-gray-600 opacity-40 cursor-not-allowed"
+                                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                              }`}
+                              title={
+                                order.isGuest
+                                  ? "أوردر ضيف — افتحه من صفحة الشركة"
+                                  : `فتح الطلب داخل سياق شركة ${order.companyName}`
+                              }
+                            >
+                              <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                              <span className="hidden sm:inline">افتح</span>
+                            </button>
+                            {order.isGuest && (
+                              <div className="hidden group-hover:block absolute bottom-full mb-1 z-30 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-black rounded shadow-md whitespace-nowrap pointer-events-none">
+                                أوردر ضيف — افتحه من صفحة الشركة
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
