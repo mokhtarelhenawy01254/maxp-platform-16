@@ -79,6 +79,7 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "crafted": () => import("./crafted.json"),
   "fresh-cart": () => import("./fresh-cart.json"),
   "skill-lab": () => import("./skill-lab.json"),
+  "junior-ai-lab": () => import("./junior-ai-lab.json"),
   "baladi-market-eg": () => import("./baladi-market-eg.json"),
   "nile-elegance-eg": () => import("./nile-elegance-eg.json"),
   "prime-butcher-luxe": () => import("./prime-butcher-luxe.json"),

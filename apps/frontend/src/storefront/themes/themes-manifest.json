@@ -1395,6 +1395,37 @@
     }
   },
   {
+    "id": "junior-ai-lab",
+    "name": "مختبر الذكاء الصغير",
+    "description": "قالب أكاديمية أطفال يبيع مسارًا واضحًا من أساسيات البرمجة إلى مشاريع الذكاء الاصطناعي، مع مستويات مفهومة ومتابعة لولي الأمر.",
+    "category": "education",
+    "categoryMeta": {
+      "primary": {
+        "id": "education",
+        "label": "تعليم"
+      },
+      "secondary": {
+        "id": "kids-coding-ai",
+        "label": "برمجة وذكاء اصطناعي للأطفال"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "161 74% 38%",
+      "214 30% 94%",
+      "39 92% 56%"
+    ],
+    "previewImage": "/assets/themes/junior-ai-lab/preview.png",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 0,
+      "pdpSections": 5,
+      "cartSections": 3,
+      "totalSections": 21
+    }
+  },
+  {
     "id": "khemet-fashion-eg",
     "name": "KHEMET CLOSET",
     "description": "نسخة ملابس حريمي من عائلة KHEMET: لوك بوك أولًا، فئات حسب الإطلالة، تقييمات بصور من العميلات على الرئيسية، وPDP بعدّاد مبيعات وتوصيل متوقع وتبديل مقاس — هوية تحريرية أخضر ودهبي.",

@@ -552,6 +552,12 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "kids-academy",
     "أكاديمية أطفال",
   ),
+  "junior-ai-lab": createThemeCategoryMeta(
+    "education",
+    "تعليم",
+    "kids-coding-ai",
+    "برمجة وذكاء اصطناعي للأطفال",
+  ),
   "baladi-market-eg": createThemeCategoryMeta(
     "general",
     "عام",
@@ -765,6 +771,8 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "قالب كورسات ومنتجات رقمية يبيع المسارات الجاهزة والشهادات والعروض من أول شاشة وبأسلوب واضح ومباشر.",
   "academy-little-coders":
     "قالب أكاديمية أطفال (برمجة وروبوتات): مسارات ومستويات وباقات وحجز حصة تجريبية — 6 صفحات بزنس.",
+  "junior-ai-lab":
+    "قالب أكاديمية أطفال يبيع مسارًا واضحًا من أساسيات البرمجة إلى مشاريع الذكاء الاصطناعي، مع مستويات مفهومة ومتابعة لولي الأمر.",
   "baladi-market-eg":
     "متجر مصري مباشر بدون صفحة رئيسية — الزائر يدخل على المنتجات من أول ثانية مع ألوان مصرية دافئة ورسائل بيع محلية تشجع الحسم السريع.",
   "nile-elegance-eg":
@@ -863,6 +871,7 @@ export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "fresh-cart": "/assets/themes/elessi-harvest-fold/hero-market.jpg",
   "skill-lab": "/assets/themes/pc-hub-eg/workbook-14-air.jpg",
   "academy-little-coders": "/assets/themes/academy-little-coders/preview.png",
+  "junior-ai-lab": "/assets/themes/junior-ai-lab/preview.png",
   "nile-elegance-eg":
     "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=1600",
   "zen-organic":
