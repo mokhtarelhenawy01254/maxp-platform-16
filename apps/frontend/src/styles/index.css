@@ -160,11 +160,11 @@ html *::after {
   --color-border: oklch(0.850 0.024 250.1);
   --color-input: oklch(1.000 0.000 0.0);
   --color-ring: oklch(0.581 0.229 263.9);
-  --color-destructive: oklch(0.637 0.208 25.3);
+  --color-destructive: oklch(0.577 0.215 27.3);
   --color-destructive-foreground: oklch(1.000 0.000 0.0);
   --color-warning: oklch(0.769 0.165 70.1);
-  --color-warning-foreground: oklch(1.000 0.000 0.0);
-  --color-success: oklch(0.692 0.153 159.9);
+  --color-warning-foreground: oklch(0.25 0.045 70);
+  --color-success: oklch(0.52 0.13 160);
   --color-success-foreground: oklch(1.000 0.000 0.0);
   --color-card: oklch(1.000 0.000 0.0);
   --color-card-foreground: oklch(0.221 0.039 258.3);
@@ -178,8 +178,8 @@ html *::after {
   --color-info-foreground: oklch(1.000 0.000 0.0);
 
   /* Theme Fonts */
-  --theme-font-heading: "Cairo", "Geist Variable", sans-serif;
-  --theme-font-body: "Cairo", "Manrope", "Geist Variable", sans-serif;
+  --theme-font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+  --theme-font-body: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif;
   --theme-radius: 14px;
 
   /* Spacing Scale (4px base — matches Tailwind defaults) */
@@ -446,8 +446,8 @@ html *::after {
   --color-indigo-700: oklch(0.457 0.215 277.0);
   --color-indigo-800: oklch(0.398 0.177 277.4);
   --color-indigo-900: oklch(0.359 0.135 278.7);
-  --font-sans: "Cairo", "Geist Variable", "Manrope", sans-serif;
-  --font-heading: "Cairo", "Geist Variable", sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', 'Geist Variable', system-ui, sans-serif;
+  --font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
   --radius-lg: var(--theme-radius);
   --radius-md: calc(var(--theme-radius) - 2px);
   --radius-sm: calc(var(--theme-radius) - 4px);
@@ -538,14 +538,27 @@ html *::after {
   --color-muted-foreground: oklch(0.733 0.049 252.4);
   --color-border: oklch(0.331 0.051 252.6);
   --color-input: oklch(0.212 0.038 257.2);
-  --color-card: oklch(0.217 0.042 257.8);
+  --color-card: oklch(0.28 0.05 257.8);
   --color-card-foreground: oklch(0.965 0.017 259.4);
-  --color-popover: oklch(0.217 0.042 257.8);
+  --color-popover: oklch(0.28 0.05 257.8);
   --color-popover-foreground: oklch(0.965 0.017 259.4);
   --popover: var(--color-popover);
   --popover-foreground: var(--color-popover-foreground);
   --color-accent: oklch(0.270 0.051 256.1);
   --color-accent-foreground: oklch(0.965 0.017 259.4);
+
+  /* Status tokens MUST be redefined in dark — inheriting light values fails contrast */
+  --color-primary: oklch(0.656 0.182 267.0);
+  --color-primary-foreground: oklch(0.169 0.033 249.5);
+  --color-ring: oklch(0.656 0.182 267.0);
+  --color-info: oklch(0.656 0.182 267.0);
+  --color-info-foreground: oklch(0.169 0.033 249.5);
+  --color-success: oklch(0.72 0.15 160);
+  --color-success-foreground: oklch(0.15 0.04 160);
+  --color-warning: oklch(0.80 0.15 70);
+  --color-warning-foreground: oklch(0.25 0.045 70);
+  --color-destructive: oklch(0.65 0.21 25);
+  --color-destructive-foreground: oklch(0.15 0.03 25);
 
   --app-bg-gradient: linear-gradient(
     135deg,
@@ -974,7 +987,7 @@ html.dark {
 
 body {
   font-family:
-    "Cairo",
+    'IBM Plex Sans Arabic',
     var(--theme-font-body),
     ui-sans-serif,
     system-ui,
@@ -1002,7 +1015,7 @@ body {
 html[lang="ar"],
 html[dir="rtl"] body {
   font-family:
-    "Cairo",
+    'IBM Plex Sans Arabic',
     var(--theme-font-body),
     ui-sans-serif,
     system-ui,
@@ -1743,9 +1756,9 @@ select {
 /* Business OS Theme Foundation */
 [data-theme="business-os-enterprise"] {
   --theme-font-heading:
-    "Outfit", "Cairo", "Geist Variable", "Segoe UI", sans-serif;
+    'IBM Plex Sans Arabic', 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
   --theme-font-body:
-    "Manrope", "Cairo", "Geist Variable", "Segoe UI", sans-serif;
+    'IBM Plex Sans Arabic', 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
   --theme-radius: 18px;
   --business-card-border: color-mix(
     in srgb,

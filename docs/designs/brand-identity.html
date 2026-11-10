@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>MaxP — الهوية البصرية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #060B0E;
+    --ink-soft: #090D16;
+    --teal: #2DD4BF;
+    --sky: #38BDF8;
+    --indigo: #818CF8;
+    --primary: #2F6BFF;
+    --primary-600: #2156D4;
+    --secondary: #23C7C9;
+    --tertiary: #8B5CF6;
+    --success: #007F4E;
+    --warning: #F59E09;
+    --warning-fg: #2E1E0A;
+    --destructive: #DC2626;
+    --bg: #F4F8FC;
+    --card: #FFFFFF;
+    --fg: #0F1B2D;
+    --muted: #53677C;
+    --border: #D4DEE8;
+    --grad: linear-gradient(135deg, #2DD4BF 0%, #38BDF8 50%, #818CF8 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif; }
+  body { color: var(--fg); background: var(--bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  [dir="rtl"] * { letter-spacing: normal !important; }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .page:last-child { page-break-after: auto; }
+  .page-dark { background: var(--ink); color: #F4F8FC; }
+  .page-light { background: var(--bg); color: var(--fg); }
+
+  .pad { padding: 16mm 14mm; flex: 1; display: flex; flex-direction: column; }
+
+  h1 { font-size: 28pt; font-weight: 700; line-height: 1.25; }
+  h2 { font-size: 16pt; font-weight: 700; margin-bottom: 4mm; }
+  h3 { font-size: 12pt; font-weight: 600; margin-bottom: 2mm; }
+  p { font-size: 10pt; line-height: 1.7; color: var(--muted); }
+  .page-dark p { color: #94A3B8; }
+
+  .kicker {
+    font-size: 8pt; font-weight: 600; color: var(--primary);
+    margin-bottom: 2mm; letter-spacing: 0;
+  }
+  .page-dark .kicker { color: var(--teal); }
+
+  .footer {
+    position: absolute; bottom: 8mm; right: 14mm; left: 14mm;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 8pt; color: var(--muted);
+    border-top: 1px solid var(--border); padding-top: 3mm;
+  }
+  .page-dark .footer { border-color: rgba(255,255,255,.12); color: #64748B; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Cover */
+  .cover { justify-content: space-between; }
+  .cover-mark { width: 28mm; height: 28mm; margin-bottom: 8mm; }
+  .cover-title { font-size: 42pt; font-weight: 700; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1.1; }
+  .cover-sub { font-size: 14pt; font-weight: 600; color: #E2E8F0; margin-top: 4mm; }
+  .cover-tag { font-size: 11pt; color: #94A3B8; margin-top: 2mm; }
+  .cover-meta { display: flex; gap: 8mm; margin-top: 10mm; font-size: 9pt; color: #64748B; }
+  .cover-meta b { color: #E2E8F0; display: block; font-size: 11pt; }
+  .grid-lines { position: absolute; inset: 0; opacity: .05; pointer-events: none; }
+
+  .swatch-row { display: flex; gap: 4mm; flex-wrap: wrap; }
+  .swatch { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); flex: 1; min-width: 28mm; background: var(--card); }
+  .swatch .chip { height: 18mm; }
+  .swatch .info { padding: 2.5mm 3mm; }
+  .swatch .name { font-size: 8.5pt; font-weight: 700; }
+  .swatch .hex { font-size: 8pt; color: var(--muted); font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+  .swatch .contrast { font-size: 7.5pt; margin-top: 1mm; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 5mm;
+  }
+  .card h3 { font-size: 11pt; }
+
+  .type-spec { border-inline-start: 3px solid var(--primary); padding-inline-start: 4mm; margin-bottom: 5mm; }
+  .type-spec .sample { line-height: 1.3; }
+  .type-spec .meta { font-size: 8pt; color: var(--muted); margin-top: 1mm; }
+
+  table.spec { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  table.spec th { text-align: right; font-weight: 600; color: var(--muted); font-size: 8pt; padding: 2mm 2.5mm; border-bottom: 1px solid var(--border); }
+  table.spec td { padding: 2mm 2.5mm; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.spec td.hex { direction: ltr; text-align: left; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 8.5pt; }
+
+  .dot { display: inline-block; width: 5mm; height: 5mm; border-radius: 4px; vertical-align: middle; margin-inline-end: 2mm; border: 1px solid rgba(0,0,0,.08); }
+
+  .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .do, .dont { border-radius: 12px; padding: 5mm; }
+  .do { background: #E8F5EE; border: 1px solid #B7E4CD; }
+  .dont { background: #FDECEC; border: 1px solid #F5C6C6; }
+  .do h3 { color: var(--success); }
+  .dont h3 { color: var(--destructive); }
+  .do li, .dont li { font-size: 9pt; line-height: 1.8; margin-inline-start: 5mm; }
+
+  .logo-box { border: 1px dashed var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; height: 42mm; }
+  .logo-dark { background: var(--ink); }
+  .logo-light { background: #fff; }
+
+  .gradient-bar { height: 14mm; border-radius: 10px; background: var(--grad); }
+  .rule-list li { font-size: 9.5pt; line-height: 1.9; margin-inline-start: 5mm; color: var(--fg); }
+
+  .badge { display: inline-block; padding: 1mm 3mm; border-radius: 999px; font-size: 8pt; font-weight: 600; }
+  .badge-aa { background: #E8F5EE; color: var(--success); }
+  .badge-fail { background: #FDECEC; color: var(--destructive); }
+
+  .m-svg { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<section class="page page-dark cover">
+  <svg class="grid-lines" width="100%" height="100%">
+    <defs>
+      <pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M40 0H0V40" fill="none" stroke="#fff" stroke-width="0.5"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#g)"/>
+  </svg>
+  <div class="pad" style="justify-content:center; position:relative;">
+    <svg class="cover-mark" viewBox="0 0 512 512" fill="none">
+      <defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#2DD4BF"/><stop offset=".5" stop-color="#38BDF8"/><stop offset="1" stop-color="#818CF8"/>
+      </linearGradient></defs>
+      <rect width="512" height="512" rx="128" fill="#0D1520"/>
+      <rect x="8" y="8" width="496" height="496" rx="120" stroke="url(#bg1)" stroke-width="6" stroke-opacity=".4"/>
+      <path d="M128 384V128L256 264L384 128V384" stroke="url(#bg1)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="cover-title">MaxP</div>
+    <div class="cover-sub">نظام الهوية البصرية والتصميم</div>
+    <div class="cover-tag">منصة إدارة التواصل والتجارة الإلكترونية · maxp.online</div>
+    <div class="cover-meta">
+      <div><b class="tnum">1.0</b>الإصدار</div>
+      <div><b class="tnum">11 نوفمبر 2026</b>التاريخ</div>
+      <div><b>IBM Plex Sans Arabic</b>الخط الرسمي</div>
+      <div><b>Teal · Sky · Indigo</b>تدرّج العلامة</div>
+    </div>
+  </div>
+  <div class="footer">
+    <span>MaxP Brand Identity</span>
+    <span class="tnum" dir="ltr">01 / 09</span>
+  </div>
+</section>
+
+<!-- ═══════════ 02 الجوهر ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">01 — الجوهر</div>
+    <h2>هوية على قدر المنصة</h2>
+    <p>MaxP أداة عمل للتجار المصريين: لوحة تشغيل نهارية، متاجر تتبنى عالم التاجر، ووكلاء ذكاء اصطناعي. الهوية ليست «ثيمًا جميلًا» — إنها عقد وضوح: كل لون له معنى، وكل رقم على الشاشة قابل للقراءة.</p>
+
+    <div class="three-col" style="margin-top:8mm;">
+      <div class="card">
+        <h3 style="color:var(--primary)">اللوحة</h3>
+        <p>Business OS فاتح. كروت بيضاء، حدود شعرية، أزرق تشغيلي واحد للأفعال. صفر تدرجات زخرفية.</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--teal)">العلامة</h3>
+        <p>لاندنج وOG وأيقونات على حبر داكن، بتدرّج Teal → Sky → Indigo. هنا فقط يُسمح بالتدرّج.</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--tertiary)">المتجر</h3>
+        <p>ثيم التاجر حكم مطلق. MaxP لا يفرض أزرق اللوحة على واجهة المتجر.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:8mm">الشخصية</h3>
+    <table class="spec">
+      <tr><th>السمة</th><th>نعني بها</th><th>لا نعني بها</th></tr>
+      <tr><td>واضحة</td><td>أرقام tabular، تسمية صريحة، حالة كاملة</td><td>زخرفة وعناوين متوهجة</td></tr>
+      <tr><td>صادقة</td><td>عمولة 0%، خصم ترجيع 60%، Bosta بنقرة</td><td>«الذكاء الاصطناعي الخارق»</td></tr>
+      <tr><td>هادئة</td><td>أكسنت ≤ 10%، حركة لنقل الحالة فقط</td><td>نيون وشيمر وجزيرات عائمة</td></tr>
+      <tr><td>عربية</td><td>RTL أولًا، IBM Plex، لا تباعد حروف</td><td>خط مونو على الكلمات العربية</td></tr>
+    </table>
+
+    <h3 style="margin-top:8mm">النبرة</h3>
+    <p>«Show, don't tell». الزر يقول «أنشئ منتجًا» لا «اضغط هنا». الكارت يعرض «0% عمولة» لا «أفضل أسعار». الواجهة ليست مكانًا لشرح لماذا صممنا الزر.</p>
+  </div>
+  <div class="footer"><span>MaxP · الجوهر</span><span class="tnum" dir="ltr">02 / 09</span></div>
+</section>
+
+<!-- ═══════════ 03 الشعار ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">02 — الشعار</div>
+    <h2>المونوجرام M</h2>
+    <p>العلامة المعتمدة: مونوجرام M بخط سميك أطرافه دائرية، داخل مربع بزوايا 128/512، بإطار تدرّج خفيف. المصدر: <span dir="ltr">public/favicon.svg</span>.</p>
+
+    <div class="two-col" style="margin-top:6mm">
+      <div>
+        <div class="logo-box logo-dark">
+          <svg width="72" height="72" viewBox="0 0 512 512" fill="none">
+            <defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#2DD4BF"/><stop offset=".5" stop-color="#38BDF8"/><stop offset="1" stop-color="#818CF8"/>
+            </linearGradient></defs>
+            <rect width="512" height="512" rx="128" fill="#0D1520"/>
+            <rect x="8" y="8" width="496" height="496" rx="120" stroke="url(#bg2)" stroke-width="8" stroke-opacity=".45"/>
+            <path d="M128 384V128L256 264L384 128V384" stroke="url(#bg2)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p style="margin-top:2mm; font-size:8.5pt">على الحبر الداكن — التدرّج مسموح</p>
+      </div>
+      <div>
+        <div class="logo-box logo-light">
+          <svg width="72" height="72" viewBox="0 0 512 512" fill="none">
+            <rect width="512" height="512" rx="128" fill="#0F1B2D"/>
+            <path d="M128 384V128L256 264L384 128V384" stroke="#2F6BFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p style="margin-top:2mm; font-size:8.5pt">على الفاتح — حبر أو أزرق تشغيلي، بلا تدرّج</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:7mm">تدرّج العلامة</h3>
+    <div class="gradient-bar"></div>
+    <div class="swatch-row" style="margin-top:3mm">
+      <div class="swatch"><div class="chip" style="background:#2DD4BF"></div><div class="info"><div class="name">Teal</div><div class="hex">#2DD4BF</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#38BDF8"></div><div class="info"><div class="name">Sky</div><div class="hex">#38BDF8</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#818CF8"></div><div class="info"><div class="name">Indigo</div><div class="hex">#818CF8</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#060B0E"></div><div class="info"><div class="name">Ink</div><div class="hex">#060B0E</div></div></div>
+    </div>
+    <p style="margin-top:3mm; font-size:8.5pt">الاستخدام: خط الشعار، الأيقونات على الداكن، أغلفة OG. ممنوع كخلفية زر أو كارت في اللوحة.</p>
+
+    <h3 style="margin-top:6mm">الشعار القديم</h3>
+    <p>ملف <span dir="ltr">logo.png</span> (كلمة max-p بنفسجي على أسود) <b>legacy</b> — لا يُستخدم في أي سطح جديد، ويُستبدل تدريجيًا بالمونوجرام.</p>
+
+    <h3 style="margin-top:6mm">قواعد</h3>
+    <ul class="rule-list">
+      <li>مساحة أمان = ارتفاع حرف M من كل جهة.</li>
+      <li>حد أدنى: 24px أيقونة · 96px كلمة.</li>
+      <li>لا ظل، لا outline، لا إمالة، لا تغيير ألوان التدرّج.</li>
+      <li>أيقونة الشبكة <span dir="ltr">maxp_network.svg (#4F46E5)</span> لتمييز الشحن فقط، مش شعار أساسي.</li>
+    </ul>
+  </div>
+  <div class="footer"><span>MaxP · الشعار</span><span class="tnum" dir="ltr">03 / 09</span></div>
+</section>
+
+<!-- ═══════════ 04 الألوان - المنتج ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">03 — الألوان · اللوحة</div>
+    <h2>توكنز التشغيل (فاتح)</h2>
+    <p>هذه الألوان هي الواجهة اليومية للتاجر. كل قيمة محسوبة ضد الأبيض (نص الزر) أو ضد الخلفية (نص). AA = 4.5:1.</p>
+
+    <table class="spec" style="margin-top:5mm">
+      <tr><th>التوكن</th><th>العينة</th><th>HEX</th><th>الاستخدام</th><th>التباين</th></tr>
+      <tr>
+        <td>primary</td><td><span class="dot" style="background:#2F6BFF"></span></td>
+        <td class="hex">#2F6BFF</td><td>الأفعال والروابط</td>
+        <td><span class="badge badge-aa">4.50 AA</span></td>
+      </tr>
+      <tr>
+        <td>primary-600</td><td><span class="dot" style="background:#2156D4"></span></td>
+        <td class="hex">#2156D4</td><td>نص/زر فوق أزرق</td>
+        <td><span class="badge badge-aa">6.28 AA</span></td>
+      </tr>
+      <tr>
+        <td>success</td><td><span class="dot" style="background:#007F4E"></span></td>
+        <td class="hex">#007F4E</td><td>نجاح / مدفوع</td>
+        <td><span class="badge badge-aa">5.07 AA</span></td>
+      </tr>
+      <tr>
+        <td>warning</td><td><span class="dot" style="background:#F59E09"></span></td>
+        <td class="hex">#F59E09</td><td>تحذير — نص داكن فوقه</td>
+        <td><span class="badge badge-aa">9.78 مع #2E1E0A</span></td>
+      </tr>
+      <tr>
+        <td>destructive</td><td><span class="dot" style="background:#DC2626"></span></td>
+        <td class="hex">#DC2626</td><td>خطأ / حذف</td>
+        <td><span class="badge badge-aa">4.83 AA</span></td>
+      </tr>
+      <tr>
+        <td>secondary</td><td><span class="dot" style="background:#23C7C9"></span></td>
+        <td class="hex">#23C7C9</td><td>تيل — نص داكن فوقه</td>
+        <td><span class="badge badge-fail">2.08 مع الأبيض</span></td>
+      </tr>
+      <tr>
+        <td>tertiary</td><td><span class="dot" style="background:#8B5CF6"></span></td>
+        <td class="hex">#8B5CF6</td><td>بنفسجي — شارات فقط ≤10%</td>
+        <td><span class="badge badge-fail">4.23 نص كبير فقط</span></td>
+      </tr>
+      <tr>
+        <td>background</td><td><span class="dot" style="background:#F4F8FC"></span></td>
+        <td class="hex">#F4F8FC</td><td>خلفية اللوحة</td><td>—</td>
+      </tr>
+      <tr>
+        <td>card</td><td><span class="dot" style="background:#FFFFFF"></span></td>
+        <td class="hex">#FFFFFF</td><td>الكروت</td><td>—</td>
+      </tr>
+      <tr>
+        <td>foreground</td><td><span class="dot" style="background:#0F1B2D"></span></td>
+        <td class="hex">#0F1B2D</td><td>النص</td>
+        <td><span class="badge badge-aa">17.3</span></td>
+      </tr>
+      <tr>
+        <td>muted-foreground</td><td><span class="dot" style="background:#53677C"></span></td>
+        <td class="hex">#53677C</td><td>نص ثانوي</td>
+        <td><span class="badge badge-aa">5.84</span></td>
+      </tr>
+      <tr>
+        <td>border</td><td><span class="dot" style="background:#D4DEE8"></span></td>
+        <td class="hex">#D4DEE8</td><td>حدود شعرية</td>
+        <td><span class="badge badge-aa">1.48 زخرفي</span></td>
+      </tr>
+    </table>
+
+    <div class="two-col" style="margin-top:6mm">
+      <div class="card">
+        <h3>ممنوع</h3>
+        <p>أبيض نصًا فوق secondary أو warning. بنفسجي كخلفية قسم. تدرّج على أزرار اللوحة. كلاس Tailwind رقمي (<span dir="ltr">bg-blue-500</span>).</p>
+      </div>
+      <div class="card">
+        <h3>استراتيجية Restrained</h3>
+        <p>الأكسنت (أزرق + بنفسجي + تيل) لا يتجاوز 10% من مساحة الشاشة. الباقي حياديات: أبيض، <span dir="ltr">#F4F8FC</span>، حدود <span dir="ltr">#D4DEE8</span>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>MaxP · الألوان</span><span class="tnum" dir="ltr">04 / 09</span></div>
+</section>
+
+<!-- ═══════════ 05 الغامق ═══════════ -->
+<section class="page page-dark">
+  <div class="pad">
+    <div class="kicker">04 — الألوان · الوضع الغامق</div>
+    <h2 style="color:#F4F8FC">الغامق ليس عكس الفاتح</h2>
+    <p>الوضع الغامق يعيد تعريف الحالة. توارث قيم الفاتح هو العيب الذي أُصلح في هذا الإصدار: الكارت كان 1.08:1 عن الخلفية (غير مرئي)، والنجاح والتحذير كانا بنفس قيم الفاتح.</p>
+
+    <table class="spec" style="margin-top:5mm; color:#F4F8FC">
+      <tr><th style="color:#94A3B8">التوكن</th><th style="color:#94A3B8">العينة</th><th style="color:#94A3B8">HEX</th><th style="color:#94A3B8">القاعدة</th></tr>
+      <tr>
+        <td>background</td><td><span class="dot" style="background:#071120"></span></td>
+        <td class="hex" style="color:#94A3B8">#071120</td><td>حبر مزرق، ليس أسود نقي</td>
+      </tr>
+      <tr>
+        <td>card</td><td><span class="dot" style="background:#192941"></span></td>
+        <td class="hex" style="color:#94A3B8">#192941</td>
+        <td>≥ 1.3:1 عن الخلفية — الكارت يُرى</td>
+      </tr>
+      <tr>
+        <td>success</td><td><span class="dot" style="background:#2FD49A"></span></td>
+        <td class="hex" style="color:#94A3B8">#2FD49A</td><td>أفتح + نص داكن فوقه</td>
+      </tr>
+      <tr>
+        <td>warning</td><td><span class="dot" style="background:#F7B03E"></span></td>
+        <td class="hex" style="color:#94A3B8">#F7B03E</td><td>عنبري أفتح + نص داكن</td>
+      </tr>
+      <tr>
+        <td>destructive</td><td><span class="dot" style="background:#F87171"></span></td>
+        <td class="hex" style="color:#94A3B8">#F87171</td><td>أحمر أفتح من الفاتح</td>
+      </tr>
+      <tr>
+        <td>primary</td><td><span class="dot" style="background:#5B8DFF"></span></td>
+        <td class="hex" style="color:#94A3B8">#5B8DFF</td><td>أزرق أفتح للتباين على الداكن</td>
+      </tr>
+      <tr>
+        <td>border</td><td><span class="dot" style="background:#2A3A52"></span></td>
+        <td class="hex" style="color:#94A3B8">#2A3A52</td><td>حدود مرئية لا شفافة باهتة</td>
+      </tr>
+    </table>
+
+    <h3 style="margin-top:8mm; color:#F4F8FC">عينات حية</h3>
+    <div class="three-col">
+      <div style="background:#192941; border-radius:12px; padding:4mm; border:1px solid #2A3A52">
+        <div style="font-size:8pt; color:#A8B8C8">كارت غامق</div>
+        <div style="font-size:14pt; font-weight:700; color:#F4F8FC" class="tnum">12,480 ج.م</div>
+        <div style="display:inline-block; margin-top:2mm; background:#2FD49A; color:#052015; padding:1mm 3mm; border-radius:999px; font-size:8pt; font-weight:700">مدفوع</div>
+      </div>
+      <div style="background:#192941; border-radius:12px; padding:4mm; border:1px solid #2A3A52">
+        <div style="font-size:8pt; color:#A8B8C8">تحذير مخزون</div>
+        <div style="font-size:14pt; font-weight:700; color:#F4F8FC" class="tnum">3 قطع</div>
+        <div style="display:inline-block; margin-top:2mm; background:#F7B03E; color:#2E1E0A; padding:1mm 3mm; border-radius:999px; font-size:8pt; font-weight:700">قارب على النفاد</div>
+      </div>
+      <div style="background:#192941; border-radius:12px; padding:4mm; border:1px solid #2A3A52">
+        <div style="font-size:8pt; color:#A8B8C8">فشل دفع</div>
+        <div style="font-size:14pt; font-weight:700; color:#F4F8FC" class="tnum">طلب 2841</div>
+        <div style="display:inline-block; margin-top:2mm; background:#F87171; color:#2A0808; padding:1mm 3mm; border-radius:999px; font-size:8pt; font-weight:700">فشل</div>
+      </div>
+    </div>
+
+    <p style="margin-top:8mm">القاعدة: كل زوج حالة ≥ 4.5:1 للنص في الوضعين. ممنوع `.dark` بدون تعريف warning / success / destructive / card.</p>
+  </div>
+  <div class="footer"><span>MaxP · الغامق</span><span class="tnum" dir="ltr">05 / 09</span></div>
+</section>
+
+<!-- ═══════════ 06 الخطوط ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">05 — الخطوط</div>
+    <h2>IBM Plex Sans Arabic</h2>
+    <p>الخط الرسمي للوحة والواجهة. يُحمَّل من Google Fonts في <span dir="ltr">index.html</span> بأوزان 400 / 600 / 700. اللاتيني الاحتياطي Plus Jakarta Sans. Cairo غير محمّل — ممنوع في اللوحة.</p>
+
+    <div style="margin-top:6mm">
+      <div class="type-spec">
+        <div class="sample" style="font-size:22pt; font-weight:700">منصة تشتغل بالأرقام</div>
+        <div class="meta">Heading · IBM Plex Sans Arabic Bold 700 · 22pt</div>
+      </div>
+      <div class="type-spec">
+        <div class="sample" style="font-size:14pt; font-weight:600">إدارة الطلبات والمخزون والشحن في مكان واحد</div>
+        <div class="meta">Subtitle · SemiBold 600 · 14pt</div>
+      </div>
+      <div class="type-spec">
+        <div class="sample" style="font-size:10.5pt; font-weight:400">تكلفة الشحن تُحسب على وزن السلة الفعلي، وتُسلَّم لبوشة أو Mylerz أو أرامكس حسب منطقة العميل. العمولة على البيع 0%.</div>
+        <div class="meta">Body · Regular 400 · 10.5pt · line-height 1.7</div>
+      </div>
+      <div class="type-spec">
+        <div class="sample tnum" style="font-size:16pt; font-weight:700">12,480.00 ج.م</div>
+        <div class="meta">Numeric · Bold 700 · tabular-nums إلزامي</div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:6mm">مقياس ثابت (لا fluid type)</h3>
+    <p class="tnum" style="direction:ltr; text-align:left">12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 px</p>
+
+    <h3 style="margin-top:6mm">قواعد عربية إلزامية</h3>
+    <ul class="rule-list">
+      <li><span dir="ltr">letter-spacing: normal !important</span> على كل RTL — التباعد يقطع الاتصال.</li>
+      <li>ممنوع UPPERCASE أو <span dir="ltr">tracking-wider</span> على عناوين وتواريخ عربية.</li>
+      <li>ممنوع <span dir="ltr">font-mono</span> على كلمات عربية — المونو لل أكواد اللاتينية والعملات الرقمية فقط.</li>
+      <li><span dir="ltr">text-wrap: balance</span> على العناوين، <span dir="ltr">text-pretty</span> على الفقرات.</li>
+      <li>مقياس خط الإدخال على الموبايل ≥ 16px (يمنع زوم iOS).</li>
+    </ul>
+
+    <h3 style="margin-top:6mm">Stack الرسمي</h3>
+    <div class="card" style="direction:ltr; text-align:left; font-family:'JetBrains Mono', monospace; font-size:8.5pt; line-height:1.6">
+      --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans',<br>
+      &nbsp;&nbsp;system-ui, sans-serif;<br>
+      --font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+    </div>
+  </div>
+  <div class="footer"><span>MaxP · الخطوط</span><span class="tnum" dir="ltr">06 / 09</span></div>
+</section>
+
+<!-- ═══════════ 07 شكل ومسافات وأيقونات ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">06 — الشكل · المسافات · الأيقونات</div>
+    <h2>الهندسة والحركة</h2>
+
+    <div class="two-col" style="margin-top:4mm">
+      <div class="card">
+        <h3>نصف القطر</h3>
+        <p>الكروت والأزرار: <b>14px</b> (<span dir="ltr">--theme-radius</span>). الأشكال الكاملة للـ sheets والبوتوم بار.</p>
+        <div style="display:flex; gap:4mm; margin-top:3mm">
+          <div style="width:18mm; height:18mm; background:var(--primary); border-radius:14px"></div>
+          <div style="width:18mm; height:18mm; background:var(--primary); border-radius:10px"></div>
+          <div style="width:18mm; height:18mm; background:var(--primary); border-radius:50%"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>الشبكة 4px</h3>
+        <p>كل مسافة multiple of 4. من <span dir="ltr">--space-1 (4px)</span> إلى <span dir="ltr">--space-12 (48px)</span>.</p>
+        <div style="display:flex; gap:2mm; align-items:flex-end; margin-top:3mm">
+          <div style="width:4px; height:16px; background:var(--primary)"></div>
+          <div style="width:8px; height:16px; background:var(--primary)"></div>
+          <div style="width:12px; height:16px; background:var(--primary)"></div>
+          <div style="width:16px; height:16px; background:var(--primary)"></div>
+          <div style="width:20px; height:16px; background:var(--primary)"></div>
+          <div style="width:24px; height:16px; background:var(--primary)"></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:6mm">الأيقونات</h3>
+    <p>القياس الرسمي <b>lucide-react</b>. الأحجام 16 / 18 / 20 / 24، سمك 1.75. <span dir="ltr">@heroicons/react</span> legacy — يمنع في ملف جديد. ممنوع خلط المكتبتين في ملف واحد. كل زر أيقونة عليه <span dir="ltr">aria-label</span> وهدف لمس ≥ 44px.</p>
+
+    <h3 style="margin-top:6mm">الحركة</h3>
+    <ul class="rule-list">
+      <li>150–250ms · <span dir="ltr">ease-out</span> — لنقل الحالة فقط (hover, focus, open).</li>
+      <li>الأزرار: <span dir="ltr">:active { transform: scale(0.97) }</span> · <span dir="ltr">transition: transform 160ms</span>.</li>
+      <li>ممنوع حركة زخرفية، شيمر متكرر، أو صفحات «تتشقلب» عند التحميل — skeleton يُظهر الهيكل.</li>
+      <li>احترام <span dir="ltr">prefers-reduced-motion</span>.</li>
+    </ul>
+
+    <h3 style="margin-top:6mm">حدود وظلال</h3>
+    <p>حد شعري 1px بلون <span dir="ltr">--color-border</span>. ظل <span dir="ltr">--shadow-xs</span> أو <span dir="ltr">--shadow-soft</span> فقط. ممنوع ظلال ملونة أو glassmorphism كافتراضي.</p>
+
+    <h3 style="margin-top:6mm">الوصولية</h3>
+    <ul class="rule-list">
+      <li>نص ≥ 4.5:1 · واجهة ≥ 3:1 — في الفاتح والغامق.</li>
+      <li><span dir="ltr">focus-visible:ring-2 ring-primary ring-offset-1</span> — ممنوع <span dir="ltr">outline-none</span> مجردة.</li>
+      <li>HTML دلالي: <span dir="ltr">button / a / label</span>.</li>
+      <li>موبايل: عمق بوكس واحد، padding جانبي ≤ 16px، خط إدخال ≥ 16px.</li>
+    </ul>
+  </div>
+  <div class="footer"><span>MaxP · الشكل</span><span class="tnum" dir="ltr">07 / 09</span></div>
+</section>
+
+<!-- ═══════════ 08 Do / Don't ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">07 — قواعد صارمة</div>
+    <h2>افعل / لا تفعل</h2>
+
+    <div class="do-dont" style="margin-top:5mm">
+      <div class="do">
+        <h3>✓ افعل</h3>
+        <ul>
+          <li>توكن دلالي: <span dir="ltr">bg-card</span> · <span dir="ltr">text-primary</span></li>
+          <li>IBM Plex Sans Arabic في اللوحة</li>
+          <li>lucide في كل ملف جديد</li>
+          <li>نص داكن فوق warning وsecondary</li>
+          <li><span dir="ltr">ms-2</span> / <span dir="ltr">start-0</span> في RTL</li>
+          <li>أرقام حقيقية: 0% عمولة، 60% تقليل ترجيع</li>
+          <li>شاشة مستقلة &lt; 400 سطر</li>
+          <li>tabular-nums على كل مبلغ</li>
+          <li>skeleton + empty + error لكل قائمة</li>
+          <li>تدرّج العلامة على الداكن فقط</li>
+        </ul>
+      </div>
+      <div class="dont">
+        <h3>✗ لا تفعل</h3>
+        <ul>
+          <li>كلاس رقمي: <span dir="ltr">bg-blue-500</span> · <span dir="ltr">text-gray-400</span></li>
+          <li>Cairo في اللوحة بدون تحميل</li>
+          <li>heroicons في ملف جديد</li>
+          <li>أبيض فوق <span dir="ltr">#F59E09</span></li>
+          <li><span dir="ltr">ml-2</span> / <span dir="ltr">left-0</span> في واجهة RTL</li>
+          <li>«الذكاء الاصطناعي الخارق» · P95 · أسماء موديلات للتاجر</li>
+          <li>God-component يجمع تابات</li>
+          <li>إيموجي زينة في الإنتاج (<span dir="ltr">🚀⚡✨</span>)</li>
+          <li>نيون / OLED أسود / glassmorphism افتراضي</li>
+          <li>فقرات تشرح «لماذا صممنا الزر»</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin-top:7mm">مثال: كارت حالة طلب</h3>
+    <div class="two-col">
+      <div>
+        <p style="font-size:8pt; color:var(--destructive); margin-bottom:2mm">✗ خطأ</p>
+        <div style="background:linear-gradient(135deg,#6366f1,#a855f7); color:#fff; border-radius:12px; padding:4mm">
+          <div style="font-size:8pt; opacity:.8">🚀 طلبك في الطريق</div>
+          <div style="font-size:14pt; font-weight:700">1,250 جنيه</div>
+        </div>
+        <p style="font-size:8pt; margin-top:2mm">تدرّج بنفسجي، إيموجي، بلا tabular، بلا حالة دلالية.</p>
+      </div>
+      <div>
+        <p style="font-size:8pt; color:var(--success); margin-bottom:2mm">✓ صحيح</p>
+        <div style="background:#fff; border:1px solid var(--border); border-radius:12px; padding:4mm">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span style="font-size:8.5pt; color:var(--muted)">طلب 2841</span>
+            <span style="background:#E8F5EE; color:#007F4E; padding:1mm 2.5mm; border-radius:999px; font-size:8pt; font-weight:700">مدفوع</span>
+          </div>
+          <div style="font-size:14pt; font-weight:700; margin-top:2mm" class="tnum">1,250.00 ج.م</div>
+          <div style="font-size:8pt; color:var(--muted); margin-top:1mm">Bosta · يُسلَّم غدًا</div>
+        </div>
+        <p style="font-size:8pt; margin-top:2mm">توكنز، حالة دلالية، رقم tabular، بلا زخرفة.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>MaxP · القواعد</span><span class="tnum" dir="ltr">08 / 09</span></div>
+</section>
+
+<!-- ═══════════ 09 الحوكمة ═══════════ -->
+<section class="page page-light">
+  <div class="pad">
+    <div class="kicker">08 — الحوكمة والملفات</div>
+    <h2>من يملك القرار</h2>
+    <p>هذا النظام يُطبَّق بالكود. أي انحراف = عيب في تدقيق التصميم، لا «ذوق شخصي».</p>
+
+    <table class="spec" style="margin-top:5mm">
+      <tr><th>الملف</th><th>الدور</th></tr>
+      <tr><td><span dir="ltr">BRAND.md</span></td><td>المصدر للبشر والإيجنت — هذه الوثيقة المختصرة الحية</td></tr>
+      <tr><td><span dir="ltr">shared/theme-system/maxp.tokens.json</span></td><td>التوكنز للآلة والأدوات</td></tr>
+      <tr><td><span dir="ltr">apps/frontend/src/styles/index.css</span></td><td>التطبيق الفعلي في Tailwind v4</td></tr>
+      <tr><td><span dir="ltr">apps/frontend/index.html</span></td><td>تحميل الخطوط + meta theme-color</td></tr>
+      <tr><td><span dir="ltr">shared/theme-system/storefrontThemeContract.json</span></td><td>عقد ثيمات المتاجر — لا يلمس اللوحة</td></tr>
+      <tr><td><span dir="ltr">docs/designs/MaxP-Brand-Identity.pdf</span></td><td>البراند بوك المطبوع</td></tr>
+      <tr><td><span dir="ltr">.agents/context/DESIGN.md</span></td><td>قواعد تنفيذ اللوحة للإيجنت</td></tr>
+    </table>
+
+    <h3 style="margin-top:7mm">قواعد التغيير</h3>
+    <ul class="rule-list">
+      <li>لون جديد = توكن دلالي في <span dir="ltr">index.css</span> + <span dir="ltr">maxp.tokens.json</span>، لا Hex في مكوّن.</li>
+      <li>تباين نص ≥ 4.5:1 وواجهة ≥ 3:1 في الفاتح والغامق — يُقاس لا يُخمَّن.</li>
+      <li>تعديل <span dir="ltr">:root</span> أو <span dir="ltr">.dark</span> = تعديل هوية، يُراجع ضد هذا الملف.</li>
+      <li>قبل commit: الـ diff لا يحتوي ألوان hardcoded جديدة في <span dir="ltr">src/</span> خارج ثيمات المتجر.</li>
+      <li>أيقونة جديدة = lucide. لا استيراد heroicons في ملف لم يكن يستخدمها.</li>
+    </ul>
+
+    <h3 style="margin-top:7mm">ما أُصلح في هذا الإصدار (P0)</h3>
+    <ul class="rule-list">
+      <li>توكنز الحالة في <span dir="ltr">.dark</span> (كانت مفقودة تمامًا).</li>
+      <li>تباين success / destructive / warning ليطابق AA.</li>
+      <li>فصل الكارت عن الخلفية في الغامق (كان 1.08:1).</li>
+      <li>توحيد خط اللوحة على IBM Plex Sans Arabic وإزالة Cairo غير المحمّل.</li>
+      <li>مزامنة <span dir="ltr">theme-color</span> مع الأزرق التشغيلي.</li>
+      <li>تفعيل <span dir="ltr">rtl: true</span> في <span dir="ltr">components.json</span>.</li>
+    </ul>
+
+    <h3 style="margin-top:7mm">ما لم يُغلق بعد (P1)</h3>
+    <p>هجرة heroicons (744 ملف) إلى lucide · تنظيف 1000+ كلاس لون hardcoded · إضافة focus-visible لبقية مكوّنات ui · منطقة journey البنفسجية في واتساب (خارج نطاق هذا الإصدار عمدًا لتجربة مستخدم نشطة).</p>
+
+    <div style="margin-top:auto; padding-top:8mm; display:flex; align-items:center; gap:4mm">
+      <svg width="40" height="40" viewBox="0 0 512 512" fill="none">
+        <defs><linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2DD4BF"/><stop offset=".5" stop-color="#38BDF8"/><stop offset="1" stop-color="#818CF8"/>
+        </linearGradient></defs>
+        <rect width="512" height="512" rx="128" fill="#0D1520"/>
+        <path d="M128 384V128L256 264L384 128V384" stroke="url(#bg3)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div style="font-weight:700">MaxP · maxp.online</div>
+        <div style="font-size:8.5pt; color:var(--muted)">الهوية ليست ذوقًا — إنها عقد قابل للقياس.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>MaxP · الحوكمة</span><span class="tnum" dir="ltr">09 / 09</span></div>
+</section>
+
+</body>
+</html>
