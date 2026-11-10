@@ -158,6 +158,33 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
   const [notifyWhatsApp, setNotifyWhatsApp] = useState(true);
 
   const [financialsData, setFinancialsData] = useState<any | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [enrollStudentFilter, setEnrollStudentFilter] = useState("");
+
+  const eligibleStudents = useMemo(() => {
+    const enrolledIds = new Set(groupDetails?.members?.map((m) => m.studentId) || []);
+    return allStudents.filter((st) => {
+      if (enrolledIds.has(st.id)) return false;
+      if (!enrollStudentFilter.trim()) return true;
+      const q = enrollStudentFilter.toLowerCase().trim();
+      const name = `${st.firstName || ""} ${st.lastName || ""}`.toLowerCase();
+      const code = (st.code || "").toLowerCase();
+      const phone = st.phone || "";
+      return name.includes(q) || code.includes(q) || phone.includes(q);
+    });
+  }, [allStudents, groupDetails?.members, enrollStudentFilter]);
+
+  const filteredMembers = useMemo(() => {
+    if (!groupDetails?.members) return [];
+    if (!memberSearch.trim()) return groupDetails.members;
+    const q = memberSearch.toLowerCase().trim();
+    return groupDetails.members.filter((m) =>
+      m.studentName?.toLowerCase().includes(q) ||
+      m.studentCode?.toLowerCase().includes(q) ||
+      m.studentPhone?.includes(q) ||
+      m.guardianName?.toLowerCase().includes(q)
+    );
+  }, [groupDetails?.members, memberSearch]);
 
   // Fetch initial data
   const fetchData = async () => {
@@ -316,8 +343,15 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         setEnrollModalOpen(false);
         setEnrollStudentId("");
         setEnrollAmountPaid("");
+        setEnrollStudentFilter("");
         fetchGroupDetails(activeGroup.id);
         fetchData();
+        setActiveGroup((prev) => prev ? {
+          ...prev,
+          activeMembers: data.data?.status === "ACTIVE" ? (prev.activeMembers || 0) + 1 : prev.activeMembers,
+          waitingMembers: data.data?.status === "WAITING_LIST" ? (prev.waitingMembers || 0) + 1 : prev.waitingMembers,
+          totalMembers: (prev.totalMembers || 0) + 1,
+        } : null);
       } else {
         toast.error(data.error || "فشل تسكين الطالب");
       }
@@ -341,6 +375,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         toast.success("تم إزالة الطالب من المجموعة");
         fetchGroupDetails(activeGroup.id);
         fetchData();
+        setActiveGroup((prev) => prev ? {
+          ...prev,
+          activeMembers: Math.max(0, (prev.activeMembers || 1) - 1),
+          totalMembers: Math.max(0, (prev.totalMembers || 1) - 1),
+        } : null);
       } else {
         toast.error(data.error || "فشل إزالة الطالب");
       }
@@ -373,6 +412,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         setTargetGroupId("");
         fetchGroupDetails(activeGroup.id);
         fetchData();
+        setActiveGroup((prev) => prev ? {
+          ...prev,
+          activeMembers: Math.max(0, (prev.activeMembers || 1) - 1),
+          totalMembers: Math.max(0, (prev.totalMembers || 1) - 1),
+        } : null);
       } else {
         toast.error(data.error || "فشل نقل الطالب");
       }
@@ -383,8 +427,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
   // Open Attendance Modal for active group
   const handleOpenAttendanceModal = () => {
-    if (!activeGroup || !groupDetails?.members?.length) {
-      toast.info("لا يوجد طلاب مسكنين في المجموعة لتسجيل الحضور");
+    const activeMembers = groupDetails?.members?.filter((m) => m.status === "ACTIVE") || [];
+    if (!activeGroup || activeMembers.length === 0) {
+      toast.info("لا يوجد طلاب منتظمين في المجموعة لتسجيل الحضور");
       return;
     }
     // Default everyone to PRESENT
@@ -446,7 +491,10 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         (g.code && g.code.toLowerCase().includes(search.toLowerCase()));
       const matchSubject = !selectedSubject || g.subjectId === selectedSubject;
       const matchTeacher = !selectedTeacher || g.teacherId === selectedTeacher;
-      const matchStatus = !selectedStatus || g.status === selectedStatus;
+      const matchStatus = !selectedStatus ||
+        (selectedStatus === "FULL" ? (g.status === "FULL" || g.isFull) :
+         selectedStatus === "OPEN" ? (g.status === "OPEN" && !g.isFull) :
+         g.status === selectedStatus);
       return matchSearch && matchSubject && matchTeacher && matchStatus;
     });
   }, [groups, search, selectedSubject, selectedTeacher, selectedStatus]);
@@ -1047,21 +1095,45 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
               {/* Tab 1: Students Roster & Waiting list */}
               {drawerTab === "members" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="text-xs font-semibold text-foreground">
                       قائمة الطلاب المسكنين (
                       {groupDetails?.members?.filter((m) => m.status === "ACTIVE").length || 0} من أصل{" "}
                       {activeGroup.capacity})
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setEnrollModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      تسكين طالب جديد
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        title="طباعة كشف طلاب المجموعة"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted text-foreground border border-border rounded-lg text-xs font-medium hover:bg-muted/80 transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        طباعة الكشف
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEnrollModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        تسكين طالب جديد
+                      </button>
+                    </div>
                   </div>
+
+                  {groupDetails?.members && groupDetails.members.length > 3 && (
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={memberSearch}
+                        onChange={(e) => setMemberSearch(e.target.value)}
+                        placeholder="بحث عن طالب بالاسم، الكود، أو رقم الهاتف..."
+                        className="w-full bg-background border border-input rounded-xl pr-8 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  )}
 
                   {groupDetails?.members?.length === 0 ? (
                     <div className="p-8 text-center bg-muted/30 rounded-xl space-y-2">
@@ -1074,9 +1146,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         اضغط هنا لتسكين أول طالب
                       </button>
                     </div>
+                  ) : filteredMembers.length === 0 ? (
+                    <div className="p-6 text-center bg-muted/20 rounded-xl text-xs text-muted-foreground">
+                      لا يوجد طلاب مطابقون لبحثك "{memberSearch}".
+                    </div>
                   ) : (
                     <div className="space-y-2">
-                      {groupDetails?.members?.map((member) => (
+                      {filteredMembers.map((member) => (
                         <div
                           key={member.id}
                           className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between gap-3 text-xs shadow-xs"
@@ -1182,7 +1258,10 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                               {session.topic || "محاضرة دورية للمجموعة"}
                             </span>
                             <span className="font-mono text-[11px] text-muted-foreground">
-                              {new Date(session.sessionDate).toLocaleDateString("ar-EG")}
+                              {(() => {
+                                const d = new Date(session.sessionDate);
+                                return isNaN(d.getTime()) ? (session.sessionDate || "—") : d.toLocaleDateString("ar-EG");
+                              })()}
                             </span>
                           </div>
 
@@ -1344,6 +1423,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       </option>
                     ))}
                   </select>
+                  {subjects.length === 0 && (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
+                      ⚠️ لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1353,13 +1437,18 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     onChange={(e) => setEditingGroup({ ...editingGroup, teacherId: e.target.value })}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">اختر المعلم...</option>
+                    <option value="">اختر المعلم (اختياري)...</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
                     ))}
                   </select>
+                  {teachers.length === 0 && (
+                    <span className="text-[10px] text-muted-foreground block">
+                      (يمكنك إنشاء المجموعة وتعيين المعلم لاحقاً)
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1537,20 +1626,37 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
             <form onSubmit={handleEnrollStudent} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">اختر الطالب *</label>
+                <label className="font-semibold text-foreground">اختر الطالب للتسكين *</label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={enrollStudentFilter}
+                    onChange={(e) => setEnrollStudentFilter(e.target.value)}
+                    placeholder="ابحث عن طالب بالاسم، الهاتف، أو الكود..."
+                    className="w-full bg-background border border-input rounded-xl pr-8 pl-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary"
+                  />
+                </div>
                 <select
                   required
                   value={enrollStudentId}
                   onChange={(e) => setEnrollStudentId(e.target.value)}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">اختر الطالب من المسجلين...</option>
-                  {allStudents.map((st) => (
+                  <option value="">
+                    {eligibleStudents.length === 0
+                      ? "لا يوجد طلاب متاحون للتسكين"
+                      : "اختر الطالب من القائمة..."}
+                  </option>
+                  {eligibleStudents.map((st) => (
                     <option key={st.id} value={st.id}>
                       {st.firstName} {st.lastName || ""} {st.code ? `(${st.code})` : ""} - {st.phone || "بدون هاتف"}
                     </option>
                   ))}
                 </select>
+                <span className="text-[10px] text-muted-foreground">
+                  (يتم إخفاء الطلاب المسكنين بالفعل في هذه المجموعة تلقائياً لمنع التكرار)
+                </span>
               </div>
 
               <div className="space-y-1">
@@ -1726,8 +1832,16 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
               {/* Bulk Attendance Checklist */}
               <div className="space-y-2 pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground">كشف حضور الطلاب:</span>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">كشف حضور الطلاب:</span>
+                    <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      حاضر: {Object.values(attendanceRecords).filter((r) => r.status === "PRESENT").length}
+                    </span>
+                    <span className="text-[11px] font-semibold text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">
+                      غائب: {Object.values(attendanceRecords).filter((r) => r.status === "ABSENT").length}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
