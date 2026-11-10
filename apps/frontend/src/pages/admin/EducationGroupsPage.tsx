@@ -339,7 +339,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.data?.message || "تم تسكين الطالب بنجاح");
+        toast.success(data.data?.message || "تم تسجيل الطالب بنجاح");
         setEnrollModalOpen(false);
         setEnrollStudentId("");
         setEnrollAmountPaid("");
@@ -353,10 +353,10 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           totalMembers: (prev.totalMembers || 0) + 1,
         } : null);
       } else {
-        toast.error(data.error || "فشل تسكين الطالب");
+        toast.error(data.error || "فشل تسجيل الطالب");
       }
     } catch (err: any) {
-      toast.error("حدث خطأ أثناء التسكين");
+      toast.error("حدث خطأ أثناء التسجيل");
     }
   };
 
@@ -528,7 +528,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             إدارة المجموعات التعليمية
           </h1>
           <p className="text-xs text-muted-foreground">
-            إدارة فصول ومجموعات الطلاب، المواعيد الأسبوعية الثابتة، التسكين، الحضور والغياب الجماعي، وتسويات المعلمين.
+            إدارة فصول ومجموعات الطلاب، المواعيد الأسبوعية الثابتة، التسجيل، الحضور والغياب الجماعي، وتسويات المعلمين.
           </p>
         </div>
 
@@ -583,7 +583,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">الطلاب المسكنين</span>
+            <span className="text-xs font-medium">الطلاب المسجلين</span>
             <GraduationCap className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">{stats.totalStudentsEnrolled}</div>
@@ -865,7 +865,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                      الطلاب المسكنين:{" "}
+                      الطلاب المسجلين:{" "}
                       <strong className="text-foreground">
                         {group.activeMembers || 0} / {group.capacity}
                       </strong>
@@ -1097,7 +1097,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="text-xs font-semibold text-foreground">
-                      قائمة الطلاب المسكنين (
+                      قائمة الطلاب المسجلين (
                       {groupDetails?.members?.filter((m) => m.status === "ACTIVE").length || 0} من أصل{" "}
                       {activeGroup.capacity})
                     </div>
@@ -1117,7 +1117,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
-                        تسكين طالب جديد
+                        تسجيل طالب جديد
                       </button>
                     </div>
                   </div>
@@ -1137,13 +1137,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
                   {groupDetails?.members?.length === 0 ? (
                     <div className="p-8 text-center bg-muted/30 rounded-xl space-y-2">
-                      <p className="text-xs text-muted-foreground">لا يوجد طلاب مسكنين في هذه المجموعة حتى الآن.</p>
+                      <p className="text-xs text-muted-foreground">لا يوجد طلاب مسجلين في هذه المجموعة حتى الآن.</p>
                       <button
                         type="button"
                         onClick={() => setEnrollModalOpen(true)}
                         className="text-xs text-primary font-semibold hover:underline"
                       >
-                        اضغط هنا لتسكين أول طالب
+                        اضغط هنا لتسجيل أول طالب
                       </button>
                     </div>
                   ) : filteredMembers.length === 0 ? (
@@ -1335,7 +1335,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         <ul className="list-disc list-inside text-muted-foreground space-y-1 text-[11px]">
                           <li>يتم احتساب أجر المعلم وصافي دخل السنتر آلياً مع كل اشتراك يتم تحصيله.</li>
                           <li>
-                            في نظام النسبة المئوية: تزيد مستحقات المعلم كلما زاد عدد الطلاب المسكنين في المجموعة.
+                            في نظام النسبة المئوية: تزيد مستحقات المعلم كلما زاد عدد الطلاب المسجلين في المجموعة.
                           </li>
                           <li>
                             في نظام الأجر الثابت: يتم احتساب الأجر بعدد المحاضرات المنفذة فعلياً بغض النظر عن الغياب.
@@ -1614,7 +1614,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto space-y-4 rtl font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-bold text-foreground">تسكين طالب في ({activeGroup.name})</h3>
+              <h3 className="text-base font-bold text-foreground">تسجيل طالب في ({activeGroup.name})</h3>
               <button
                 type="button"
                 onClick={() => setEnrollModalOpen(false)}
@@ -1626,7 +1626,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
             <form onSubmit={handleEnrollStudent} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">اختر الطالب للتسكين *</label>
+                <label className="font-semibold text-foreground">اختر الطالب للتسجيل *</label>
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -1645,7 +1645,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 >
                   <option value="">
                     {eligibleStudents.length === 0
-                      ? "لا يوجد طلاب متاحون للتسكين"
+                      ? "لا يوجد طلاب متاحون للتسجيل"
                       : "اختر الطالب من القائمة..."}
                   </option>
                   {eligibleStudents.map((st) => (
@@ -1655,7 +1655,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   ))}
                 </select>
                 <span className="text-[10px] text-muted-foreground">
-                  (يتم إخفاء الطلاب المسكنين بالفعل في هذه المجموعة تلقائياً لمنع التكرار)
+                  (يتم إخفاء الطلاب المسجلين بالفعل في هذه المجموعة تلقائياً لمنع التكرار)
                 </span>
               </div>
 
@@ -1702,7 +1702,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
                 >
-                  تأكيد التسكين
+                  تأكيد التسجيل
                 </button>
               </div>
             </form>

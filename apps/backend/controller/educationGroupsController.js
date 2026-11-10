@@ -451,7 +451,7 @@ const addMember = async (req, res) => {
         status: memberStatus,
         message: memberStatus === 'WAITING_LIST'
           ? 'تم إضافة الطالب في قائمة الانتظار لاكتمال العدد'
-          : 'تم تسكين الطالب في المجموعة بنجاح'
+          : 'تم تسجيل الطالب في المجموعة بنجاح'
       }
     });
   } catch (err) {
