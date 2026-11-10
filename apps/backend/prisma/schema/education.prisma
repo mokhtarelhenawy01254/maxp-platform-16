@@ -232,7 +232,7 @@ model EducationSession {
 model EducationGroup {
   id               String    @id
   companyId        String
-  name             String?
+  name             String
   code             String?
   subjectId        String
   teacherId        String?
