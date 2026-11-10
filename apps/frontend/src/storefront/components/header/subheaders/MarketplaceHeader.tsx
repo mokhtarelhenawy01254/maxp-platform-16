@@ -6,7 +6,7 @@ import type { StorefrontHeaderController } from "../storefrontHeaderTypes";
 import { LanguageSwitcher } from "../../LanguageSwitcher";
 import { useStorefrontLocale } from "../../../i18n/useStorefrontLocale";
 import { useCartStore } from "../../../store/useCartStore";
-import { formatStorefrontCurrency } from "../../../../utils/currency";
+import { formatStorefrontCurrency } from "../../../utils/currency";
 
 interface MarketplaceHeaderProps {
   controller: StorefrontHeaderController;
