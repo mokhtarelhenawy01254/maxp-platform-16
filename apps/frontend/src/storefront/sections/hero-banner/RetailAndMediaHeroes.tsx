@@ -5,14 +5,14 @@ import { renderHeroAction } from './heroActions';
 import { HeroSlide, HeroVariantProps } from './heroTypes';
 
 export const CenteredHero: React.FC<HeroVariantProps> = (props) => (
-  <section className="py-32 text-center bg-background">
-    <div className="container max-w-4xl space-y-10">
-      <h1 className="text-6xl font-black tracking-tight">{props.title}</h1>
-      <p className="text-xl text-muted-foreground">{props.subtitle}</p>
+  <section className="py-12 md:py-16 text-center bg-background">
+    <div className="container max-w-4xl space-y-5 md:space-y-7">
+      <h1 className="text-3xl md:text-5xl font-black tracking-tight">{props.title}</h1>
+      <p className="text-base md:text-lg text-muted-foreground">{props.subtitle}</p>
       {renderHeroAction(
         props.primaryHref,
         props.ctaText || 'تسوّق الآن',
-        'bg-primary text-primary-foreground px-10 py-4 rounded-full font-bold text-lg inline-block',
+        'bg-primary text-primary-foreground px-8 py-3 rounded-full font-bold text-base inline-block',
       )}
     </div>
   </section>
