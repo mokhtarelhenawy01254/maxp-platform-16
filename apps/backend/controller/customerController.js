@@ -1497,7 +1497,7 @@ const getCustomerDetails = async (req, res) => {
         id: n.id,
         title: 'ملاحظة',
         content: n.content?.substring(0, 100),
-        author: n.author ? `${n.author.firstName} ${n.author.lastName}` : 'غير معروف',
+        author: n.user ? `${n.user.firstName || ''} ${n.user.lastName || ''}`.trim() : (n.author ? `${n.author.firstName} ${n.author.lastName}` : 'غير معروف'),
         timestamp: n.createdAt
       }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 20);
@@ -1525,11 +1525,42 @@ const getCustomerDetails = async (req, res) => {
       cashbackTotal = parseFloat(cbAgg._sum?.amount || 0);
     }
 
+    let parsedCustomerMeta = {};
+    if (customer.metadata) {
+      try {
+        parsedCustomerMeta = typeof customer.metadata === 'string' ? JSON.parse(customer.metadata) : (customer.metadata || {});
+      } catch (e) {
+        console.error('Failed to parse metadata in getCustomerDetails:', e);
+      }
+    }
+
+    const enrichedCustomer = {
+      ...customer,
+      address: customer.address || parsedCustomerMeta.address || '',
+      city: customer.city || parsedCustomerMeta.city || '',
+      country: customer.country || parsedCustomerMeta.country || '',
+      birthday: parsedCustomerMeta.birthday || '',
+      phone2: customer.phone2 || parsedCustomerMeta.phone2 || '',
+      whatsappPhone: parsedCustomerMeta.whatsappPhone || customer.whatsappId || '',
+      leadStage: parsedCustomerMeta.leadStage || 'NEW_LEAD',
+      leadPriority: parsedCustomerMeta.leadPriority || 'WARM',
+      leadSource: parsedCustomerMeta.leadSource || 'OTHER',
+      customerJob: parsedCustomerMeta.customerJob || '',
+      customerInterests: parsedCustomerMeta.customerInterests || '',
+      inquiryDetails: parsedCustomerMeta.inquiryDetails || '',
+      expectedBudget: parsedCustomerMeta.expectedBudget || '',
+      preferredContactMethod: parsedCustomerMeta.preferredContactMethod || 'WHATSAPP',
+      nextFollowUpDate: parsedCustomerMeta.nextFollowUpDate || '',
+      followUpLog: Array.isArray(parsedCustomerMeta.followUpLog) ? parsedCustomerMeta.followUpLog : []
+    };
+
+    delete enrichedCustomer.password;
+
     // الرد بكل البيانات
     res.json({
       success: true,
       data: {
-        customer,
+        customer: enrichedCustomer,
         stats: {
           ordersCount: customer._count?.orders || 0,
           conversationsCount: customer._count?.conversations || 0,
@@ -2381,12 +2412,38 @@ const updateCustomer = async (req, res) => {
     }
 
     const { customerId } = req.params;
-    const { firstName, lastName, email, phone, phone2, password, address, city, country, status, notes, birthday, customerRating } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      phone2,
+      whatsappPhone,
+      password,
+      address,
+      city,
+      country,
+      status,
+      notes,
+      birthday,
+      customerRating,
+      leadStage,
+      leadPriority,
+      leadSource,
+      customerJob,
+      customerInterests,
+      inquiryDetails,
+      expectedBudget,
+      preferredContactMethod,
+      nextFollowUpDate,
+      followUpLog,
+      newFollowUpEntry
+    } = req.body;
 
     // التحقق من وجود العميل وانتمائه للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
       where: { id: customerId },
-      select: { id: true, companyId: true, metadata: true, firstName: true, lastName: true, email: true, status: true, notes: true }
+      select: { id: true, companyId: true, metadata: true, firstName: true, lastName: true, email: true, status: true, notes: true, phone2: true }
     });
 
     if (!customer) {
@@ -2407,15 +2464,17 @@ const updateCustomer = async (req, res) => {
     let parsedMeta = {};
     if (customer.metadata) {
       try {
-        parsedMeta = JSON.parse(customer.metadata);
+        parsedMeta = typeof customer.metadata === 'string' ? JSON.parse(customer.metadata) : (customer.metadata || {});
       } catch (e) {
         console.error('Failed to parse metadata in updateCustomer:', e);
       }
     }
     
+    // تاريخ الميلاد - الحفاظ عليه وتحديثه بأمان دون حذفه تلقائياً
     if (birthday !== undefined) {
-      if (birthday) {
-        parsedMeta.birthday = birthday;
+      const trimmedBday = String(birthday || '').trim();
+      if (trimmedBday) {
+        parsedMeta.birthday = trimmedBday;
       } else {
         delete parsedMeta.birthday;
       }
@@ -2433,25 +2492,143 @@ const updateCustomer = async (req, res) => {
       else delete parsedMeta.country;
     }
     if (phone2 !== undefined) {
-      if (phone2) parsedMeta.phone2 = phone2;
+      if (phone2) parsedMeta.phone2 = String(phone2).trim();
       else delete parsedMeta.phone2;
+    }
+    if (whatsappPhone !== undefined) {
+      if (whatsappPhone) parsedMeta.whatsappPhone = String(whatsappPhone).trim();
+      else delete parsedMeta.whatsappPhone;
+    }
+    if (leadStage !== undefined) {
+      if (leadStage) parsedMeta.leadStage = String(leadStage).trim();
+      else delete parsedMeta.leadStage;
+    }
+    if (leadPriority !== undefined) {
+      if (leadPriority) parsedMeta.leadPriority = String(leadPriority).trim();
+      else delete parsedMeta.leadPriority;
+    }
+    if (leadSource !== undefined) {
+      if (leadSource) parsedMeta.leadSource = String(leadSource).trim();
+      else delete parsedMeta.leadSource;
+    }
+    if (customerJob !== undefined) {
+      if (customerJob) parsedMeta.customerJob = String(customerJob).trim();
+      else delete parsedMeta.customerJob;
+    }
+    if (customerInterests !== undefined) {
+      if (customerInterests) parsedMeta.customerInterests = String(customerInterests).trim();
+      else delete parsedMeta.customerInterests;
+    }
+    if (inquiryDetails !== undefined) {
+      if (inquiryDetails) parsedMeta.inquiryDetails = String(inquiryDetails).trim();
+      else delete parsedMeta.inquiryDetails;
+    }
+    if (expectedBudget !== undefined) {
+      if (expectedBudget) parsedMeta.expectedBudget = String(expectedBudget).trim();
+      else delete parsedMeta.expectedBudget;
+    }
+    if (preferredContactMethod !== undefined) {
+      if (preferredContactMethod) parsedMeta.preferredContactMethod = String(preferredContactMethod).trim();
+      else delete parsedMeta.preferredContactMethod;
+    }
+    if (nextFollowUpDate !== undefined) {
+      if (nextFollowUpDate) parsedMeta.nextFollowUpDate = String(nextFollowUpDate).trim();
+      else delete parsedMeta.nextFollowUpDate;
+    }
+    if (followUpLog !== undefined && Array.isArray(followUpLog)) {
+      parsedMeta.followUpLog = followUpLog;
+    }
+
+    // تسجيل تواصل / متابعة جديدة إن وجدت
+    if (newFollowUpEntry && (newFollowUpEntry.details || newFollowUpEntry.notes || newFollowUpEntry.content)) {
+      const entryText = String(newFollowUpEntry.details || newFollowUpEntry.notes || newFollowUpEntry.content).trim();
+      const entryType = newFollowUpEntry.type || 'CALL';
+      const entryOutcome = newFollowUpEntry.outcome || 'ANSWERED';
+      const entryNextDate = newFollowUpEntry.nextFollowUpDate ? String(newFollowUpEntry.nextFollowUpDate).trim() : null;
+      const authorName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'الموظف' : 'النظام';
+      
+      if (!Array.isArray(parsedMeta.followUpLog)) {
+        parsedMeta.followUpLog = [];
+      }
+      
+      const newLogItem = {
+        id: `fu_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        type: entryType,
+        outcome: entryOutcome,
+        details: entryText,
+        nextFollowUpDate: entryNextDate,
+        createdAt: new Date().toISOString(),
+        author: authorName,
+        authorId: req.user?.id || req.user?.userId || null
+      };
+      
+      parsedMeta.followUpLog.unshift(newLogItem);
+      
+      if (entryNextDate) {
+        parsedMeta.nextFollowUpDate = entryNextDate;
+      }
+      
+      // حفظ نسخة أيضاً في customerNote لتظهر في سجل النشاط العام
+      try {
+        const typeLabels = {
+          CALL: 'اتصال هاتفي',
+          WHATSAPP: 'محادثة واتساب',
+          VISIT: 'اجتماع / زيارة',
+          OFFER: 'عرض سعر',
+          EMAIL: 'بريد إلكتروني',
+          NOTE: 'متابعة عامة'
+        };
+        const outcomeLabels = {
+          ANSWERED: 'تم الرد والاتفاق',
+          FOLLOW_UP: 'طلب متابعة لاحقة',
+          NO_ANSWER: 'لم يرد',
+          BUSY: 'مشغول',
+          NOT_INTERESTED: 'غير مهتم'
+        };
+        const noteContent = `[سجل تواصل - ${typeLabels[entryType] || entryType} | ${outcomeLabels[entryOutcome] || entryOutcome}]: ${entryText}${entryNextDate ? ` (موعد المتابعة: ${entryNextDate})` : ''}`;
+        const noteAuthorId = req.user?.userId || req.user?.id;
+        if (noteAuthorId) {
+          await getSharedPrismaClient().customerNote.create({
+            data: {
+              customerId,
+              authorId: noteAuthorId,
+              content: noteContent
+            }
+          });
+        }
+      } catch (noteErr) {
+        console.error('Failed to auto-create CustomerNote from followUp:', noteErr.message);
+      }
     }
 
     const newMetadata = Object.keys(parsedMeta).length > 0 ? JSON.stringify(parsedMeta) : null;
 
-    // Hash password if provided
+    // Hash password if provided and non-empty
     let hashedPassword = undefined;
     if (password !== undefined) {
-      const bcrypt = require('bcryptjs');
-      hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+      const trimmedPass = typeof password === 'string' ? password.trim() : '';
+      if (trimmedPass.length > 0) {
+        const bcrypt = require('bcryptjs');
+        hashedPassword = await bcrypt.hash(trimmedPass, 10);
+      }
     }
+
+    // معالجة البريد الإلكتروني: إذا تم مسحه أو تركه فارغاً يحفظ كـ null
+    const cleanEmail = email !== undefined
+      ? ((typeof email === 'string' && email.trim().length > 0) ? email.trim() : null)
+      : undefined;
 
     // تحديث بيانات العميل
     const phoneFields = {};
     if (phone !== undefined) {
       const { toCanonicalE164 } = require('../utils/phoneNormalization');
-      phoneFields.phone = phone || null;
-      phoneFields.phoneNormalized = toCanonicalE164(phone) || null;
+      phoneFields.phone = phone ? String(phone).trim() : null;
+      phoneFields.phoneNormalized = phone ? (toCanonicalE164(phone) || null) : null;
+    }
+
+    const phone2Fields = {};
+    if (phone2 !== undefined) {
+      phone2Fields.phone2 = (phone2 && String(phone2).trim().length > 0) ? String(phone2).trim() : null;
     }
 
     const ratingFields = {};
@@ -2475,8 +2652,9 @@ const updateCustomer = async (req, res) => {
       data: {
         firstName: firstName !== undefined ? firstName : customer.firstName,
         lastName: lastName !== undefined ? lastName : customer.lastName,
-        ...(email !== undefined ? { email: email || null } : {}),
+        ...(cleanEmail !== undefined ? { email: cleanEmail } : {}),
         ...phoneFields,
+        ...phone2Fields,
         ...ratingFields,
         ...(hashedPassword !== undefined ? { password: hashedPassword } : {}),
         status: status !== undefined ? status : customer.status,
@@ -2497,9 +2675,15 @@ const updateCustomer = async (req, res) => {
 
     console.log(`✏️ Customer ${firstName} ${lastName} updated by user from company ${companyId}`);
 
+    const safeUpdated = {
+      ...updatedCustomer,
+      ...parsedMeta
+    };
+    delete safeUpdated.password;
+
     res.json({
       success: true,
-      data: updatedCustomer,
+      data: safeUpdated,
       message: 'تم تحديث بيانات العميل بنجاح'
     });
 
@@ -2524,7 +2708,34 @@ const createCustomer = async (req, res) => {
       });
     }
 
-    const { firstName, lastName, email, phone, password, address, city, country, status, notes, tags, metadata } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      phone2,
+      whatsappPhone,
+      password,
+      address,
+      city,
+      country,
+      status,
+      notes,
+      tags,
+      metadata,
+      birthday,
+      leadStage,
+      leadPriority,
+      leadSource,
+      customerJob,
+      customerInterests,
+      inquiryDetails,
+      expectedBudget,
+      preferredContactMethod,
+      nextFollowUpDate,
+      initialFollowUpNote,
+      followUpLog
+    } = req.body;
 
     if (!firstName) {
       return res.status(400).json({
@@ -2533,7 +2744,7 @@ const createCustomer = async (req, res) => {
       });
     }
 
-    // تجهيز حقل metadata ليتضمن العنوان والمدينة والدولة
+    // تجهيز حقل metadata ليتضمن الحقول الموسعة
     let parsedMetadata = {};
     if (metadata) {
       try {
@@ -2544,11 +2755,42 @@ const createCustomer = async (req, res) => {
     }
     
     // دمج الحقول الإضافية
-    if (address) parsedMetadata.address = address;
-    if (city) parsedMetadata.city = city;
-    if (country) parsedMetadata.country = country;
+    if (address) parsedMetadata.address = String(address).trim();
+    if (city) parsedMetadata.city = String(city).trim();
+    if (country) parsedMetadata.country = String(country).trim();
+    if (birthday) parsedMetadata.birthday = String(birthday).trim();
+    if (phone2) parsedMetadata.phone2 = String(phone2).trim();
+    if (whatsappPhone) parsedMetadata.whatsappPhone = String(whatsappPhone).trim();
+    if (leadStage) parsedMetadata.leadStage = String(leadStage).trim();
+    if (leadPriority) parsedMetadata.leadPriority = String(leadPriority).trim();
+    if (leadSource) parsedMetadata.leadSource = String(leadSource).trim();
+    if (customerJob) parsedMetadata.customerJob = String(customerJob).trim();
+    if (customerInterests) parsedMetadata.customerInterests = String(customerInterests).trim();
+    if (inquiryDetails) parsedMetadata.inquiryDetails = String(inquiryDetails).trim();
+    if (expectedBudget) parsedMetadata.expectedBudget = String(expectedBudget).trim();
+    if (preferredContactMethod) parsedMetadata.preferredContactMethod = String(preferredContactMethod).trim();
+    if (nextFollowUpDate) parsedMetadata.nextFollowUpDate = String(nextFollowUpDate).trim();
+    
+    // إعداد سجل المتابعة
+    parsedMetadata.followUpLog = Array.isArray(followUpLog) ? followUpLog : [];
+    if (initialFollowUpNote && String(initialFollowUpNote).trim()) {
+      const authorName = req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'الموظف' : 'النظام';
+      parsedMetadata.followUpLog.unshift({
+        id: `fu_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        type: 'NOTE',
+        outcome: 'FOLLOW_UP',
+        details: String(initialFollowUpNote).trim(),
+        nextFollowUpDate: nextFollowUpDate ? String(nextFollowUpDate).trim() : null,
+        createdAt: new Date().toISOString(),
+        author: authorName,
+        authorId: req.user?.id || req.user?.userId || null
+      });
+    }
 
-    const hashedPassword = password ? await require('bcryptjs').hash(password, 10) : undefined;
+    // تنظيف الإيميل وكلمة المرور لمنع حفظ إيميلات المشرف تلقائياً
+    const cleanEmail = (typeof email === 'string' && email.trim().length > 0) ? email.trim() : null;
+    const trimmedPass = (typeof password === 'string' && password.trim().length > 0) ? password.trim() : null;
+    const hashedPassword = trimmedPass ? await require('bcryptjs').hash(trimmedPass, 10) : undefined;
 
     // منع التكرار: كل رقم موبايل = عميل واحد بس في نفس الشركة
     if (phone) {
@@ -2564,19 +2806,35 @@ const createCustomer = async (req, res) => {
 
     const newCustomer = await getSharedPrismaClient().customer.create({
       data: {
-        firstName,
-        lastName: lastName || '',
-        email: email || null,
-        phone: phone || null,
+        firstName: firstName.trim(),
+        lastName: (lastName || '').trim(),
+        email: cleanEmail,
+        phone: phone ? String(phone).trim() : null,
+        phone2: phone2 ? String(phone2).trim() : null,
         phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,
-        tags: tags ? JSON.stringify(tags) : '[]',
+        tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]',
         metadata: JSON.stringify(parsedMetadata),
         companyId
       }
     });
+
+    // إنشاء ملاحظة أولية إن وجدت
+    if (initialFollowUpNote && String(initialFollowUpNote).trim() && (req.user?.userId || req.user?.id)) {
+      try {
+        await getSharedPrismaClient().customerNote.create({
+          data: {
+            customerId: newCustomer.id,
+            authorId: req.user?.userId || req.user?.id,
+            content: `[ملاحظة تواصل أولية]: ${String(initialFollowUpNote).trim()}`
+          }
+        });
+      } catch (noteErr) {
+        console.error('Failed to auto-create CustomerNote on createCustomer:', noteErr.message);
+      }
+    }
 
     // إنشاء محفظة للعميل الجديد
     try {
@@ -2587,9 +2845,15 @@ const createCustomer = async (req, res) => {
 
     console.log(`➕ New customer created: ${firstName} ${lastName} in company ${companyId}`);
 
+    const safeCreated = {
+      ...newCustomer,
+      ...parsedMetadata
+    };
+    delete safeCreated.password;
+
     res.status(201).json({
       success: true,
-      data: newCustomer,
+      data: safeCreated,
       message: 'تم إنشاء العميل بنجاح'
     });
   } catch (error) {

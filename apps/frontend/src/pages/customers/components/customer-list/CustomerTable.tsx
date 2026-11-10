@@ -175,9 +175,9 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">
                   <div className="flex items-center gap-1">
-                    {customer.phone && (
+                    {((customer as any).whatsappPhone || customer.phone) && (
                       <a
-                        href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, "")}`}
+                        href={`https://wa.me/${((customer as any).whatsappPhone || customer.phone).replace(/[^0-9]/g, "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="مراسلة سريعة عبر واتساب"
