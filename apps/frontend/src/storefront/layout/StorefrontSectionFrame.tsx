@@ -47,33 +47,15 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   index,
   sectionEntry,
 }) => {
-  if (!element) {
-    return null;
-  }
-  const isHidden =
-    typeof sectionEntry === "object" &&
-    sectionEntry !== null &&
-    (sectionEntry.hidden === true || sectionEntry.settings?.hidden === true);
-  if (isHidden) {
-    return null;
-  }
-
+  // ── Rules of Hooks: every hook below runs unconditionally ──
+  // Pure values derived from props are computed BEFORE any early return so the
+  // hook order is stable even when a section toggles hidden/display-conditions
+  // between renders (previously returned null before the hook calls, which
+  // crashes React with "Rendered fewer hooks than expected").
   const dynamicCtx = useStorefrontDynamicContext();
-  const effectiveDynamicCtx = (sectionEntry as any)?.dynamicContext || dynamicCtx;
-  const displayConditions =
-    typeof sectionEntry === "object" && sectionEntry !== null
-      ? (sectionEntry.settings?.displayConditions ??
-         sectionEntry.settings?.visibilityConditions ??
-         (sectionEntry as any).displayConditions ??
-         (sectionEntry as any).visibilityConditions)
-      : undefined;
-
-  if (displayConditions && !evaluateDisplayConditions(displayConditions, effectiveDynamicCtx)) {
-    return null;
-  }
   const { theme, pageStyleVars } = useStorefrontTheme();
-  const reveal = isRevealEnabledTheme(theme?.id);
   const currentBreakpoint = useCurrentBreakpoint();
+  const sectionRef = useRef<HTMLDivElement | null>(null);
 
   const settings =
     typeof sectionEntry === "object" && sectionEntry !== null
@@ -84,17 +66,16 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
     typeof sectionEntry === "object" && sectionEntry?.key
       ? sectionEntry.key
       : `sf-section-${index}`;
-
-  // Resolve responsive styles for the live breakpoint (Ticket 2G / 5R)
-  const sectionStyle = buildSectionStyle(settings, undefined, currentBreakpoint);
-  const hasResponsive = hasDeviceOverrides(settings, "mobile") || hasDeviceOverrides(settings, "tablet");
-
-  // Generate responsive media query styles for live storefront window resizing (Ticket 5R / 5B pattern)
-  const sectionSelector = `[data-section-key="${sectionKey}"]`;
-  const responsiveCss = generateResponsiveCss(settings, sectionSelector);
-
-  const sectionRef = useRef<HTMLDivElement | null>(null);
   const sectionType = typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type;
+
+  const effectiveDynamicCtx = (sectionEntry as any)?.dynamicContext || dynamicCtx;
+  const displayConditions =
+    typeof sectionEntry === "object" && sectionEntry !== null
+      ? (sectionEntry.settings?.displayConditions ??
+         sectionEntry.settings?.visibilityConditions ??
+         (sectionEntry as any).displayConditions ??
+         (sectionEntry as any).visibilityConditions)
+      : undefined;
 
   // ─────────────────────────────────────────────────────────────
   // Ticket ANIM-1: Animations (Entrance, Hover, Parallax)
@@ -149,6 +130,30 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   });
 
   const [parallaxY, setParallaxY] = useState<number>(0);
+
+  if (!element) {
+    return null;
+  }
+  const isHidden =
+    typeof sectionEntry === "object" &&
+    sectionEntry !== null &&
+    (sectionEntry.hidden === true || sectionEntry.settings?.hidden === true);
+  if (isHidden) {
+    return null;
+  }
+
+  if (displayConditions && !evaluateDisplayConditions(displayConditions, effectiveDynamicCtx)) {
+    return null;
+  }
+  const reveal = isRevealEnabledTheme(theme?.id);
+
+  // Resolve responsive styles for the live breakpoint (Ticket 2G / 5R)
+  const sectionStyle = buildSectionStyle(settings, undefined, currentBreakpoint);
+  const hasResponsive = hasDeviceOverrides(settings, "mobile") || hasDeviceOverrides(settings, "tablet");
+
+  // Generate responsive media query styles for live storefront window resizing (Ticket 5R / 5B pattern)
+  const sectionSelector = `[data-section-key="${sectionKey}"]`;
+  const responsiveCss = generateResponsiveCss(settings, sectionSelector);
 
   // Entrance scroll observer + immediate in-viewport detection + 1200ms fallback safety net (Ticket ANIM-1.1)
   useEffect(() => {

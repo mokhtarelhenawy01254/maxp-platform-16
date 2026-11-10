@@ -872,11 +872,11 @@ export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "butcher-shop-eg":
     "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=1600&q=80",
   "soft-graceful":
-    "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
+    "/assets/themes/soft-graceful/preview.png",
   "allure":
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
   "redline-auto":
-    "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
+    "/assets/themes/redline-auto/redline-auto--80_2437ebe3-f884-4c9b-911f-7e65d195688f.png",
 };
 
 const RASTER_THEME_PREVIEW_PATTERN =

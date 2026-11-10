@@ -21,7 +21,7 @@
       "ring": "40 60% 48%"
     },
     "typography": {
-      "headingFont": "Noto Serif, Cairo, serif",
+      "headingFont": "Cairo, \"Noto Serif\", serif",
       "bodyFont": "Almarai, sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

@@ -21,7 +21,7 @@
       "ring": "26 42% 48%"
     },
     "typography": {
-      "headingFont": "\"Cormorant Garamond\", \"IBM Plex Sans Arabic\", serif",
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Cormorant Garamond\", serif",
       "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

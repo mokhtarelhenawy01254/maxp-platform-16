@@ -79,7 +79,7 @@ const FeaturedProduct: React.FC<FeaturedProductProps> = ({ section, settings }) 
   const description =
     settings?.description ||
     'Crafted with care and attention to detail — a refined piece designed to move from everyday looks to special occasions.';
-  const image = settings?.image || 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=800';
+  const image = settings?.image || '/assets/themes/soft-graceful/soft-graceful--defaults--white-pinstripe-blazer-dress.png';
   const gallery = parseGallery(settings?.gallery);
   const price = settings?.price || '$491.00';
   const comparePrice = settings?.comparePrice || '';

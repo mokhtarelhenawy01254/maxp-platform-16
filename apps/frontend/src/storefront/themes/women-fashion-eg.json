@@ -21,7 +21,7 @@
       "ring": "340 78% 62%"
     },
     "typography": {
-      "headingFont": "\"Playfair Display\", \"Cairo\", serif",
+      "headingFont": "Cairo, \"Playfair Display\", serif",
       "bodyFont": "\"Tajawal\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

@@ -21,7 +21,7 @@
       "ring": "151 28% 18%"
     },
     "typography": {
-      "headingFont": "\"Noto Serif\", serif",
+      "headingFont": "\"Noto Naskh Arabic\", \"Noto Serif\", serif",
       "bodyFont": "\"Manrope\", \"IBM Plex Sans Arabic\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

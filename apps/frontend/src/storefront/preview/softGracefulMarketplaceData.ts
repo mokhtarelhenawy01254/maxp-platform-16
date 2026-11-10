@@ -48,8 +48,9 @@ const buildMarketplacePreviewReviewsResponse = (
   };
 };
 
+// Self-hosted demo imagery (was hotlinked from a third-party Shopify store CDN)
 const cdn = (file: string, width = 900) =>
-  `https://texture-a2xirfpg.myshopify.com/cdn/shop/files/${file}?v=1787655842&width=${width}`;
+  `/assets/themes/soft-graceful/soft-graceful--${file}?width=${width}`;
 
 type CategoryKey =
   | "womens"

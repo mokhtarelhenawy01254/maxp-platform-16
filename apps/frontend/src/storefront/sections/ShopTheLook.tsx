@@ -56,24 +56,24 @@ const parseTabs = (value: ShopTheLookProps['settings'] extends undefined ? never
 };
 
 const DEFAULT_TABS: LookTab[] = [
-  { label: 'Men', title: 'Urban Rider Leather Jacket', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_33_12.png?v=1787286499&width=900', hotspots: [
+  { label: 'Men', title: 'Urban Rider Leather Jacket', image: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_33_12.png', hotspots: [
     { x: '60', y: '28', title: 'Refined Craftsmanship', description: 'Premium stitching and tailored finishing.', link: '/shop?category=mens' },
     { x: '42', y: '46', title: 'Premium Fabrics', description: 'Soft, durable materials built to last.', link: '/shop?category=mens' },
     { x: '70', y: '64', title: 'Everyday Comfort', description: 'Designed for effortless daily wear.', link: '/shop?category=mens' },
   ] },
-  { label: 'Women', title: 'Classic White Belted Shirt Dress', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=900', hotspots: [
+  { label: 'Women', title: 'Classic White Belted Shirt Dress', image: '/assets/themes/soft-graceful/soft-graceful--defaults--white-pinstripe-blazer-dress.png', hotspots: [
     { x: '48', y: '30', title: 'Tailored Silhouette', description: 'A relaxed, feminine fit.', link: '/shop?category=womens' },
     { x: '65', y: '52', title: 'Polished Detail', description: 'Collared neckline and refined finish.', link: '/shop?category=womens' },
   ] },
-  { label: 'Kids', title: 'Little Sunshine Ruffle Dress', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45542.png?v=1787663167&width=900', hotspots: [
+  { label: 'Kids', title: 'Little Sunshine Ruffle Dress', image: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle45542.png', hotspots: [
     { x: '50', y: '40', title: 'Soft Comfort', description: 'Gentle fabrics for little ones.', link: '/shop?category=kids' },
   ] },
 ];
 
 const LOOK_IMAGES: Record<string, string> = {
-  Men: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_33_12.png?v=1787286499&width=900',
-  Women: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=900',
-  Kids: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45542.png?v=1787663167&width=900',
+  Men: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_33_12.png',
+  Women: '/assets/themes/soft-graceful/soft-graceful--defaults--white-pinstripe-blazer-dress.png',
+  Kids: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle45542.png',
 };
 
 const ShopTheLook: React.FC<ShopTheLookProps> = ({ section: _section, settings }) => {

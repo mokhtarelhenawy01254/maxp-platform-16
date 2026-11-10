@@ -19,7 +19,7 @@
       "ring": "15 55% 52%"
     },
     "typography": {
-      "headingFont": "\"Amatic SC\", \"Tajawal\", cursive",
+      "headingFont": "\"Aref Ruqaa Ink\", \"Amatic SC\", Tajawal, cursive",
       "bodyFont": "\"Noto Sans Arabic\", \"Source Sans Pro\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

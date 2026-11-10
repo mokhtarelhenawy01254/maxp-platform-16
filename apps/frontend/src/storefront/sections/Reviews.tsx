@@ -45,12 +45,12 @@ const parseReviews = (value: ReviewsProps['settings'] extends undefined ? never 
 };
 
 const DEFAULT_REVIEWS: ReviewItem[] = [
-  { name: 'Mackle Johnathan', role: 'Manager', quote: 'The quality and fit are outstanding — every piece feels curated and premium.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45444.png?v=1787286485&width=120', rating: 5 },
-  { name: 'Noah Anderson', role: 'Stylist', quote: 'From the fabric to the stitching, everything reads intentional and timeless.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle93_3.png?v=1787287360&width=120', rating: 5 },
-  { name: 'Ava Thompson', role: 'Buyer', quote: 'Effortless to style and always gets compliments — my go-to wardrobe edit.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45440.png?v=1787286887&width=120', rating: 4 },
-  { name: 'James Richardson', role: 'Director', quote: 'Professional, polished, and a seamless shopping experience start to finish.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle33_7.png?v=1784364663&width=120', rating: 5 },
-  { name: 'Olivia Bennett', role: 'Creator', quote: 'The color and size options made the decision effortless and exact.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/88396e42bdc4fabeb247862b7d9c51cef76aa494.jpg?v=1784534763&width=120', rating: 5 },
-  { name: 'Emma Wilson', role: 'Client', quote: 'Refined pieces that move beautifully from the office to the evening.', avatar: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_7.png?v=1787287360&width=120', rating: 4 },
+  { name: 'Mackle Johnathan', role: 'Manager', quote: 'The quality and fit are outstanding — every piece feels curated and premium.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_45444.png', rating: 5 },
+  { name: 'Noah Anderson', role: 'Stylist', quote: 'From the fabric to the stitching, everything reads intentional and timeless.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle93_3.png', rating: 5 },
+  { name: 'Ava Thompson', role: 'Buyer', quote: 'Effortless to style and always gets compliments — my go-to wardrobe edit.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle45440.png', rating: 4 },
+  { name: 'James Richardson', role: 'Director', quote: 'Professional, polished, and a seamless shopping experience start to finish.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle33_7.png', rating: 5 },
+  { name: 'Olivia Bennett', role: 'Creator', quote: 'The color and size options made the decision effortless and exact.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--88396e42bdc4fabeb247862b7d9c51cef76aa494.jpg', rating: 5 },
+  { name: 'Emma Wilson', role: 'Client', quote: 'Refined pieces that move beautifully from the office to the evening.', avatar: '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle96_7.png', rating: 4 },
 ];
 
 const renderStars = (rating: number | string | undefined) => {

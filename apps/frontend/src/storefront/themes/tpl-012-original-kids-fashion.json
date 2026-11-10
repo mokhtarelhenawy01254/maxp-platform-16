@@ -21,7 +21,7 @@
       "ring": "40 50% 60%"
     },
     "typography": {
-      "headingFont": "Playfair Display, Cairo, serif",
+      "headingFont": "Cairo, \"Playfair Display\", serif",
       "bodyFont": "IBM Plex Sans Arabic, sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

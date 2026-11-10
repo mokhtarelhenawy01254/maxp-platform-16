@@ -19,7 +19,7 @@
       "ring": "42 75% 55%"
     },
     "typography": {
-      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "headingFont": "Cairo, \"Cormorant Garamond\", serif",
       "bodyFont": "\"Montserrat\", \"Cairo\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

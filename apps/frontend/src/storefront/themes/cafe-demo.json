@@ -19,7 +19,7 @@
       "ring": "25 20% 45%"
     },
     "typography": {
-      "headingFont": "Playfair Display, Cairo, serif",
+      "headingFont": "Cairo, \"Playfair Display\", serif",
       "bodyFont": "Inter, Cairo, sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

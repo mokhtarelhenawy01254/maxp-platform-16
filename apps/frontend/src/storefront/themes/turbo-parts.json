@@ -19,7 +19,7 @@
       "ring": "0 80% 48%"
     },
     "typography": {
-      "headingFont": "\"Barlow Condensed\", \"Cairo\", sans-serif",
+      "headingFont": "Cairo, \"Barlow Condensed\", sans-serif",
       "bodyFont": "\"Barlow\", \"Cairo\", sans-serif",
       "baseSize": "15px",
       "direction": "rtl"

@@ -592,6 +592,20 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     const sectionEntry = resolveComponentInstance(rawSectionEntry, effectiveGlobalComponents);
     const sectionId = getSectionId(sectionEntry, index);
     const componentKey = getSectionComponentKey(sectionEntry, index);
+    // Computed BEFORE the container branch below — it references renderedSectionEntry,
+    // and declaring it after that branch is a TDZ crash when renderSection is invoked
+    // directly with a container entry (sidebar/product-detail layouts).
+    const brandSanitizedSectionEntry =
+      runtimeText?.shouldReplaceThemeBrand && typeof sectionEntry !== 'string'
+        ? sanitizeStorefrontSectionConfig(sectionEntry, runtimeText.replaceThemeBrandText)
+        : sectionEntry;
+    const renderedSectionEntry =
+      typeof brandSanitizedSectionEntry !== 'string' && brandSanitizedSectionEntry?.settings
+        ? {
+            ...brandSanitizedSectionEntry,
+            settings: localizeSectionSettings(brandSanitizedSectionEntry.settings, activeLocale),
+          }
+        : brandSanitizedSectionEntry;
     if (sectionId === 'container') {
       return (
         <TreeRenderer
@@ -640,18 +654,6 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     }
 
     const SectionComponent = ComponentRegistry[sectionId];
-    const brandSanitizedSectionEntry =
-      runtimeText?.shouldReplaceThemeBrand && typeof sectionEntry !== 'string'
-        ? sanitizeStorefrontSectionConfig(sectionEntry, runtimeText.replaceThemeBrandText)
-        : sectionEntry;
-
-    const renderedSectionEntry =
-      typeof brandSanitizedSectionEntry !== 'string' && brandSanitizedSectionEntry?.settings
-        ? {
-            ...brandSanitizedSectionEntry,
-            settings: localizeSectionSettings(brandSanitizedSectionEntry.settings, activeLocale),
-          }
-        : brandSanitizedSectionEntry;
     if (!SectionComponent) {
       if (import.meta.env.DEV) {
         return (

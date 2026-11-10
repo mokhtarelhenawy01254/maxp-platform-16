@@ -19,7 +19,7 @@
       "ring": "188 86% 53%"
     },
     "typography": {
-      "headingFont": "Inter, Cairo, sans-serif",
+      "headingFont": "Cairo, Inter, sans-serif",
       "bodyFont": "Inter, Cairo, sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

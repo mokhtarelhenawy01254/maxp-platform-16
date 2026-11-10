@@ -94,6 +94,10 @@ jobs:
         if: steps.changed.outputs.files != ''
         run: node scripts/validate-theme-schema.mjs ${{ steps.changed.outputs.files }}
 
+      - name: Arabic-first typography gate (RTL heading fonts)
+        if: steps.changed.outputs.files != ''
+        run: node scripts/validate-theme-fonts.mjs ${{ steps.changed.outputs.files }}
+
       - name: Section gate (manifest + ComponentRegistry)
         if: steps.changed.outputs.files != ''
         run: apps/frontend/node_modules/.bin/tsx scripts/validate-theme-sections.ts ${{ steps.changed.outputs.files }}

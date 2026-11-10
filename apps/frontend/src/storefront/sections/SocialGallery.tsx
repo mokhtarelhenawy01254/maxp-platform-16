@@ -20,12 +20,12 @@ const normalizeVariant = (value: unknown): string => {
 };
 
 const DEFAULT_IMAGES = [
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=600',
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45382.png?v=1784544330&width=600',
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329&width=600',
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45380.png?v=1784544330&width=600',
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/181d35ac45c081698fb605a0ea26ecd2e95158dc.jpg?v=1784544331&width=600',
-  'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45446.png?v=1784783015&width=600',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_45382.png',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_45379.png',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_45380.png',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--181d35ac45c081698fb605a0ea26ecd2e95158dc.jpg',
+  '/assets/themes/soft-graceful/soft-graceful--defaults--Rectangle_45446.png',
 ];
 
 const parseImages = (value: SocialGalleryProps['settings'] extends undefined ? never : unknown): string[] => {

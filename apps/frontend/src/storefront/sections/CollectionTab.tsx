@@ -52,10 +52,10 @@ const parseTabs = (value: CollectionTabProps['settings'] extends undefined ? nev
 };
 
 const DEFAULT_TABS: CollectionTabTab[] = [
-  { label: 'Winter', title: 'Winter Collection', subtitle: 'Layered warmth for the cold season.', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_3.svg?v=1784620486' },
-  { label: 'Spring', title: 'Spring Collection', subtitle: 'Light fabrics and soft color.', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_4.svg?v=1784620486' },
-  { label: 'Summer', title: 'Summer Essentials', subtitle: 'Breathable, airy basics for longer days.', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/sunny-day_1_1.svg?v=1784620486' },
-  { label: 'Autumn', title: 'Autumn Layers', subtitle: 'Earthy tones and transition pieces.', image: 'https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_5.svg?v=1784620486' },
+  { label: 'Winter', title: 'Winter Collection', subtitle: 'Layered warmth for the cold season.', image: '/assets/themes/soft-graceful/soft-graceful--defaults--Vector_3.svg' },
+  { label: 'Spring', title: 'Spring Collection', subtitle: 'Light fabrics and soft color.', image: '/assets/themes/soft-graceful/soft-graceful--defaults--Vector_4.svg' },
+  { label: 'Summer', title: 'Summer Essentials', subtitle: 'Breathable, airy basics for longer days.', image: '/assets/themes/soft-graceful/soft-graceful--defaults--sunny-day_1_1.svg' },
+  { label: 'Autumn', title: 'Autumn Layers', subtitle: 'Earthy tones and transition pieces.', image: '/assets/themes/soft-graceful/soft-graceful--defaults--Vector_5.svg' },
 ];
 
 const CollectionTab: React.FC<CollectionTabProps> = ({ section, settings }) => {

@@ -20,7 +20,7 @@
       "ring": "22 42% 38%"
     },
     "typography": {
-      "headingFont": "\"Playfair Display\", \"Cinzel\", serif",
+      "headingFont": "Alexandria, \"Playfair Display\", Cinzel, serif",
       "bodyFont": "\"Inter\", \"IBM Plex Sans Arabic\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

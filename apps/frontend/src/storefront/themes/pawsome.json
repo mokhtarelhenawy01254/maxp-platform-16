@@ -19,7 +19,7 @@
       "ring": "42 85% 55%"
     },
     "typography": {
-      "headingFont": "\"Quicksand\", \"Cairo\", sans-serif",
+      "headingFont": "Cairo, Quicksand, sans-serif",
       "bodyFont": "\"Quicksand\", \"Cairo\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

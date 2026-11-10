@@ -21,7 +21,7 @@
       "ring": "95 22% 36%"
     },
     "typography": {
-      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "headingFont": "Cairo, \"Cormorant Garamond\", serif",
       "bodyFont": "\"Tajawal\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"

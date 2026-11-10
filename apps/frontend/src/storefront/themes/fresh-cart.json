@@ -19,7 +19,7 @@
       "ring": "145 65% 42%"
     },
     "typography": {
-      "headingFont": "\"Inter\", \"Cairo\", sans-serif",
+      "headingFont": "Cairo, Inter, sans-serif",
       "bodyFont": "\"Inter\", \"Cairo\", sans-serif",
       "baseSize": "15px",
       "direction": "rtl"

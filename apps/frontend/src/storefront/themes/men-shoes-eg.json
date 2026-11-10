@@ -21,7 +21,7 @@
       "ring": "18 95% 52%"
     },
     "typography": {
-      "headingFont": "\"Teko\", \"Cairo\", sans-serif",
+      "headingFont": "Cairo, Teko, sans-serif",
       "bodyFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
