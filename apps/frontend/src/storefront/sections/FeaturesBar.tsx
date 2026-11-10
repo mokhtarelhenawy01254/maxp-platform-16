@@ -172,7 +172,10 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
     return (
       <section className="w-full bg-transparent py-4 md:py-6">
         <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
-          <div className="rounded-[30px] md:rounded-[50px] bg-[#0d0625] px-6 py-4 md:py-5 text-white shadow-lg">
+          <div
+            style={{ borderRadius: 'clamp(20px, 3.2vw, 50px)' }}
+            className="bg-[#0d0625] px-6 py-4 md:py-5 text-white shadow-lg"
+          >
             <div className="grid grid-cols-2 divide-y divide-white/10 sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
               {items.slice(0, 5).map((item, index) => {
                 const Icon = ICONS[String(item.icon || '')] || ICONS.shield;

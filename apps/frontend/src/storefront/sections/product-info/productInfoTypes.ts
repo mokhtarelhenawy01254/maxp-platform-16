@@ -37,6 +37,8 @@ export interface ProductInfoController {
   id: string | undefined;
   variant: string;
   theme: StorefrontTheme;
+  settings?: Record<string, any>;
+  sectionSettings?: Record<string, any>;
   product: Product | null | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -150,6 +152,7 @@ export interface ProductInfoController {
   isElessiDigitalBuybox: boolean;
   isRedlineAuto: boolean;
   isAnyElessiBuybox: boolean;
+  isMarketplaceBazaar?: boolean;
   isKhemetInlineQuickOrderBuybox: boolean;
   mergedInlinePdpQuickOrder?: React.ReactNode;
   inlineQuantityOffers?: React.ReactNode;

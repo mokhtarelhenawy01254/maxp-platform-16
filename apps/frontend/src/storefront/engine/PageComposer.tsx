@@ -913,14 +913,20 @@ export const PageComposer: React.FC<PageComposerProps> = ({
         return !isProductDetailCompanionSection(sectionId, componentKey);
       });
 
+      const isMarketplace3Col = getSectionVariant(infoSection) === 'marketplace-bazaar';
+
       const useCompactMobileProductDetail =
         pageSettings?.['compactMobileLayout'] === true;
-      const productDetailComposerClassName = useCompactMobileProductDetail
-        ? 'storefront-page-composer container px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-8'
-        : 'storefront-page-composer container px-3 py-2.5 sm:px-4 sm:py-5 md:px-6 md:py-8';
-      const productDetailGridClassName = useCompactMobileProductDetail
-        ? 'grid grid-cols-1 gap-2.5 sm:gap-3 md:gap-7 lg:grid-cols-2 lg:gap-10'
-        : 'grid grid-cols-1 gap-3 sm:gap-5 md:gap-7 lg:grid-cols-2 lg:gap-10';
+      const productDetailComposerClassName = isMarketplace3Col
+        ? 'storefront-page-composer max-w-[1630px] mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6'
+        : useCompactMobileProductDetail
+          ? 'storefront-page-composer container px-3 py-2 sm:px-4 sm:py-3 md:px-6 md:py-8'
+          : 'storefront-page-composer container px-3 py-2.5 sm:px-4 sm:py-5 md:px-6 md:py-8';
+      const productDetailGridClassName = isMarketplace3Col
+        ? 'grid grid-cols-1 gap-[30px] lg:grid-cols-[calc(35%-20px)_calc(35%-20px)_calc(30%-20px)]'
+        : useCompactMobileProductDetail
+          ? 'grid grid-cols-1 gap-2.5 sm:gap-3 md:gap-7 lg:grid-cols-2 lg:gap-10'
+          : 'grid grid-cols-1 gap-3 sm:gap-5 md:gap-7 lg:grid-cols-2 lg:gap-10';
 
       return (
         <div className={productDetailComposerClassName}>
@@ -930,10 +936,17 @@ export const PageComposer: React.FC<PageComposerProps> = ({
             }`}
             dir={detailColumnsDirection}
           >
-            <div dir={contentDirection}>
+            <div dir={contentDirection} className={isMarketplace3Col ? 'lg:col-span-1' : ''}>
               {renderSection(gallerySection, galleryIndex)}
             </div>
-            <div dir={contentDirection} className="flex min-w-0 flex-col gap-3 sm:gap-5">
+            <div
+              dir={contentDirection}
+              className={
+                isMarketplace3Col
+                  ? 'lg:col-span-2 lg:contents flex flex-col gap-[30px]'
+                  : 'flex min-w-0 flex-col gap-3 sm:gap-5'
+              }
+            >
               {renderSection(infoSection, infoIndex)}
               {companionSections.map(({ sectionEntry, index }) =>
                 renderSection(sectionEntry, index),

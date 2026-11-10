@@ -997,6 +997,17 @@ export const storefrontVariantRegistry = {
   ],
   ProductInfo: [
     {
+      id: 'marketplace-bazaar',
+      section: 'ProductInfo',
+      purpose: 'Marketplace product details with delivery banner, sold counter, wishlist/compare row and structured shipping breakdown',
+      bestPages: ['pdp'],
+      bestArchetypes: ['marketplace', 'multi-category', 'retail-hub'],
+      rtlSuitability: 'high',
+      density: 'high',
+      tone: 'marketplace',
+      status: 'implemented-now',
+    },
+    {
       id: 'graceful',
       section: 'ProductInfo',
       purpose: 'Texture-style buybox: divider under the title, coral variant chips, grey quantity stepper, and black+blue CTA pair',

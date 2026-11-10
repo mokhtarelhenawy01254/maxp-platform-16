@@ -15,6 +15,7 @@ export interface StandardGalleryProps {
   showMobileImageCount?: boolean;
   overlayMobileDots?: boolean;
   onOpenZoom?: () => void;
+  discountPct?: number;
 }
 
 export const StandardGallery: React.FC<StandardGalleryProps> = ({
@@ -30,6 +31,7 @@ export const StandardGallery: React.FC<StandardGalleryProps> = ({
   showMobileImageCount = true,
   overlayMobileDots = false,
   onOpenZoom,
+  discountPct = 0,
 }) => {
   const hasMultipleImages = images.length > 1;
   const mobileDotButtons = images.map((_: string, i: number) => (
@@ -164,6 +166,12 @@ export const StandardGallery: React.FC<StandardGalleryProps> = ({
           }`}
           productName={product?.name}
         />
+
+        {discountPct > 0 ? (
+          <span className="absolute start-3 top-3 z-10 inline-flex items-center rounded-full bg-[#4caf50] px-2.5 py-1 text-xs font-bold text-white shadow-sm">
+            -{discountPct}%
+          </span>
+        ) : null}
 
         {overlayActions ? (
           <div className="absolute end-3 top-[4.6rem] z-10 flex flex-col gap-2 sm:top-3">

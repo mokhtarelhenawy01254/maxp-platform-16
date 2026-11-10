@@ -327,6 +327,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
           swipeHandlers={ctrl.swipeHandlers}
           prefersArabicCopy={ctrl.prefersArabicCopy}
           compactMobile={ctrl.isMenShoesEg}
+          discountPct={ctrl.galleryDiscountPct}
         />
       )}
       {ctrl.variant === 'mirror-carousel' ||

@@ -6,6 +6,7 @@ import {
   StorefrontSectionFrame,
 } from '../layout/StorefrontSectionFrame';
 import { useProduct, setGlobalPresentationSlug } from '../hooks/useProduct';
+import { useCategories } from '../hooks/useCategories';
 import {
   resolveThemeBuilderTemplate,
   type ThemeBuilderTemplate,
@@ -72,6 +73,136 @@ export const StorefrontThemeBuilderPdpWrapper: React.FC<{
       locale={currentLocale}
     />
   );
+};
+
+export const StorefrontProductPageBreadcrumbs: React.FC<{
+  theme: any;
+  previewProduct: { name: string } | null;
+  pathname: string;
+  search: string;
+}> = ({ theme, previewProduct, pathname, search }) => {
+  const { id } = useParams<{ id: string }>();
+  const effectiveId = id || (theme?.id ? `preview:${theme.id}` : undefined);
+  const { product } = useProduct(effectiveId);
+  const { categories } = useCategories();
+
+  const isRtl = theme?.direction === 'rtl';
+  const homeLabel = isRtl ? 'الرئيسية' : 'Home';
+  const shopLabel = isRtl ? 'المتجر' : 'Shop';
+
+  // Base trail starts with Home, Shop
+  const trail: string[] = [homeLabel, shopLabel];
+
+  // Resolve category ancestry if available
+  if (product?.category) {
+    const cat = product.category as any;
+    const ancestry: string[] = [];
+
+    if (cat.parent) {
+      let curr = cat.parent;
+      const seen = new Set<string>();
+      while (curr && curr.name && !seen.has(curr.id || curr.name) && seen.size < 10) {
+        seen.add(curr.id || curr.name);
+        ancestry.unshift(curr.name);
+        curr = curr.parent;
+      }
+      ancestry.push(cat.name);
+    } else if (cat.parentId && Array.isArray(categories) && categories.length > 0) {
+      let parentId: string | undefined = cat.parentId;
+      const seen = new Set<string>();
+      const parentNames: string[] = [];
+      while (parentId && !seen.has(parentId) && seen.size < 10) {
+        seen.add(parentId);
+        const parentCat = categories.find((c: any) => c.id === parentId);
+        if (parentCat) {
+          parentNames.unshift(parentCat.name);
+          parentId = (parentCat as any).parentId;
+        } else {
+          break;
+        }
+      }
+      ancestry.push(...parentNames, cat.name);
+    } else if (cat.id && Array.isArray(categories) && categories.length > 0) {
+      const found = categories.find((c: any) => c.id === cat.id);
+      if (found && (found as any).parentId) {
+        let parentId: string | undefined = (found as any).parentId;
+        const seen = new Set<string>();
+        const parentNames: string[] = [];
+        while (parentId && !seen.has(parentId) && seen.size < 10) {
+          seen.add(parentId);
+          const parentCat = categories.find((c: any) => c.id === parentId);
+          if (parentCat) {
+            parentNames.unshift(parentCat.name);
+            parentId = (parentCat as any).parentId;
+          } else {
+            break;
+          }
+        }
+        ancestry.push(...parentNames, found.name || cat.name);
+      } else {
+        ancestry.push(cat.name);
+      }
+    } else if (cat.name) {
+      ancestry.push(cat.name);
+    }
+
+    if (ancestry.length > 0) {
+      trail.push(...ancestry);
+    }
+  } else {
+    // Legacy fallback mappings for specific elessi presets when no category exists on product
+    const isSproutRoom = theme?.id === 'elessi-sprout-room';
+    const isHarvestFold = theme?.id === 'elessi-harvest-fold';
+    const isSignalDeck = theme?.id === 'elessi-signal-deck';
+    const isPedalLab = theme?.id === 'elessi-pedal-lab';
+    const isGlowRoutine = theme?.id === 'elessi-glow-routine';
+    const isGemAtelier = theme?.id === 'elessi-gem-atelier';
+    const isTailSupply = theme?.id === 'elessi-tail-supply';
+    const isGarageFit = theme?.id === 'elessi-garage-fit';
+    const isChronoGallery = theme?.id === 'elessi-chrono-gallery';
+    const isCarryLane = theme?.id === 'elessi-carry-lane';
+
+    if (isSproutRoom) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'النباتات' : 'Plants');
+    } else if (isHarvestFold) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'الخضار والفاكهة' : 'Fresh produce');
+    } else if (isSignalDeck) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'الأجهزة والملحقات' : 'Devices & accessories');
+    } else if (isPedalLab) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'الدراجات' : 'Bikes');
+    } else if (isGlowRoutine) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'العناية اليومية' : 'Daily care');
+    } else if (isGemAtelier) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'المجوهرات والهدايا' : 'Jewelry & gifts');
+    } else if (isTailSupply) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'مستلزمات الحيوانات' : 'Pet essentials');
+    } else if (isGarageFit) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'قطع الغيار والإضافات' : 'Parts & add-ons');
+    } else if (isChronoGallery) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'الساعات والإضافات' : 'Watches & accessories');
+    } else if (isCarryLane) {
+      trail.length = 0;
+      trail.push(homeLabel, isRtl ? 'الحقائب' : 'Bags');
+    }
+  }
+
+  // Leaf segment: product name
+  const leafName =
+    product?.name ||
+    previewProduct?.name ||
+    (isRtl ? 'التفاصيل' : 'Details');
+  trail.push(leafName);
+
+  return elessiCompactProductCrumbs(trail, pathname, search);
 };
 
 export interface StorefrontRoutesProps {
@@ -258,55 +389,17 @@ export const StorefrontRoutes: React.FC<StorefrontRoutesProps> = ({
 
   const productPageElement = (
     <div key={`product:${routePageKey}`} className="w-full flex flex-col">
-      {isElessiPackTheme
-        ? elessiCompactProductCrumbs(
-            isSproutRoom
-              ? theme.direction === 'rtl'
-                ? ['الرئيسية', 'النباتات', previewProduct?.name || 'التفاصيل']
-                : ['Home', 'Plants', previewProduct?.name || 'Details']
-              : isHarvestFold
-                ? theme.direction === 'rtl'
-                  ? ['الرئيسية', 'الخضار والفاكهة', previewProduct?.name || 'التفاصيل']
-                  : ['Home', 'Fresh produce', previewProduct?.name || 'Details']
-                : isSignalDeck
-                  ? theme.direction === 'rtl'
-                    ? ['الرئيسية', 'الأجهزة والملحقات', previewProduct?.name || 'التفاصيل']
-                    : ['Home', 'Devices & accessories', previewProduct?.name || 'Details']
-                  : isPedalLab
-                    ? theme.direction === 'rtl'
-                      ? ['الرئيسية', 'الدراجات', previewProduct?.name || 'التفاصيل']
-                      : ['Home', 'Bikes', previewProduct?.name || 'Details']
-                    : isGlowRoutine
-                      ? theme.direction === 'rtl'
-                        ? ['الرئيسية', 'العناية اليومية', previewProduct?.name || 'التفاصيل']
-                        : ['Home', 'Daily care', previewProduct?.name || 'Details']
-                      : isGemAtelier
-                        ? theme.direction === 'rtl'
-                          ? ['الرئيسية', 'المجوهرات والهدايا', previewProduct?.name || 'التفاصيل']
-                          : ['Home', 'Jewelry & gifts', previewProduct?.name || 'Details']
-                        : isTailSupply
-                          ? theme.direction === 'rtl'
-                            ? ['الرئيسية', 'مستلزمات الحيوانات', previewProduct?.name || 'التفاصيل']
-                            : ['Home', 'Pet essentials', previewProduct?.name || 'Details']
-                          : isGarageFit
-                            ? theme.direction === 'rtl'
-                              ? ['الرئيسية', 'قطع الغيار والإضافات', previewProduct?.name || 'التفاصيل']
-                              : ['Home', 'Parts & add-ons', previewProduct?.name || 'Details']
-                            : isChronoGallery
-                              ? theme.direction === 'rtl'
-                                ? ['الرئيسية', 'الساعات والإضافات', previewProduct?.name || 'التفاصيل']
-                                : ['Home', 'Watches & accessories', previewProduct?.name || 'Details']
-                              : isCarryLane
-                                ? theme.direction === 'rtl'
-                                  ? ['الرئيسية', 'الحقائب', previewProduct?.name || 'التفاصيل']
-                                  : ['Home', 'Bags', previewProduct?.name || 'Details']
-                                : theme.direction === 'rtl'
-                                  ? ['الرئيسية', previewProduct?.name || 'التفاصيل']
-                                  : ['Home', previewProduct?.name || 'Details'],
-            location.pathname,
-            location.search,
-          )
-        : null}
+      {isElessiPackTheme ||
+      theme.id === 'marketplace-avenue' ||
+      theme.id === 'marketplace-avenue-ar' ||
+      theme.id?.startsWith('marketplace-') ? (
+        <StorefrontProductPageBreadcrumbs
+          theme={theme}
+          previewProduct={previewProduct}
+          pathname={location.pathname}
+          search={location.search}
+        />
+      ) : null}
       {theme.id === 'zen-organic' && (
         <div className="w-full bg-[#fdfdfc] py-14 md:py-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#f1f3ee]/80 via-[#fdfdfc] to-[#fdfdfc] relative overflow-hidden border-b border-[#e9ebe5] mb-8">
           <div

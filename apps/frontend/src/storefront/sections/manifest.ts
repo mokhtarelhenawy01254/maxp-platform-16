@@ -1535,6 +1535,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "elessi-care-buybox", label: "شراء العناية Elessi" },
       { value: "elessi-organic-buybox", label: "شراء العضوي Elessi" },
       { value: "elessi-plant-buybox", label: "شراء النباتات Elessi" },
+      { value: "marketplace-bazaar", label: "Marketplace Bazaar" },
     ],
     fields: [
       {

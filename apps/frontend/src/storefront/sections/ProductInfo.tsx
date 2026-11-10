@@ -20,6 +20,7 @@ import { ElessiBikeBuybox } from './product-info/buyboxes/ElessiBikeBuybox';
 import { ElessiSpecialtyBuybox } from './product-info/buyboxes/ElessiSpecialtyBuybox';
 import { ElessiDigitalBuybox } from './product-info/buyboxes/ElessiDigitalBuybox';
 import { ElessiMainBuybox } from './product-info/buyboxes/ElessiMainBuybox';
+import { MarketplaceBuybox } from './product-info/buyboxes/MarketplaceBuybox';
 import { StandardBuybox } from './product-info/buyboxes/StandardBuybox';
 import { useRecordRecentlyViewed } from '../hooks/useRecentlyViewedProducts';
 
@@ -114,6 +115,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = (props) => {
 
   if (ctrl.isAnyElessiBuybox) {
     return <ElessiMainBuybox ctrl={ctrl} />;
+  }
+
+  if (ctrl.variant === 'marketplace-bazaar') {
+    return <MarketplaceBuybox ctrl={ctrl} />;
   }
 
   return <StandardBuybox ctrl={ctrl} />;
