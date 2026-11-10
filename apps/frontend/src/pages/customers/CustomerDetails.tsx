@@ -8,6 +8,7 @@ import { CustomerDetailsHeader } from "./components/customer-details/CustomerDet
 import { CustomerDetailsStats } from "./components/customer-details/CustomerDetailsStats";
 import { CustomerDetailsTabsNav } from "./components/customer-details/CustomerDetailsTabsNav";
 import { CustomerInfoTab } from "./components/customer-details/CustomerInfoTab";
+import { CustomerFollowUpsTab } from "./components/customer-details/CustomerFollowUpsTab";
 import { CustomerOrdersTab } from "./components/customer-details/CustomerOrdersTab";
 import { CustomerConversationsTab } from "./components/customer-details/CustomerConversationsTab";
 import { CustomerNotesTab } from "./components/customer-details/CustomerNotesTab";
@@ -90,6 +91,13 @@ const CustomerDetails: React.FC = () => {
               tempBirthday={ctrl.tempBirthday}
               onTempBirthdayChange={ctrl.setTempBirthday}
               onSaveBirthday={ctrl.handleSaveBirthday}
+            />
+          )}
+
+          {ctrl.activeTab === "followups" && (
+            <CustomerFollowUpsTab
+              customer={ctrl.customer}
+              onReload={ctrl.loadCustomerDetails}
             />
           )}
 

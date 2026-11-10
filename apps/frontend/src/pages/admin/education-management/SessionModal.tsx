@@ -178,7 +178,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   .filter((e) => e.isActive !== false && e.remainingHours > 0)
                   .map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.student?.firstName} {e.student?.lastName || ""} -{" "}
+                      {e.student?.code ? `[#${e.student.code}] ` : ""}{e.student?.firstName} {e.student?.lastName || ""} -{" "}
                       {e.package?.name || "باقة"} ({e.remainingHours}/{e.totalHours} س متبقية)
                     </option>
                   ))}
@@ -191,6 +191,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-muted-foreground">الطالب:</span>
                     <span className="font-semibold text-foreground">
+                      {selectedEnrollment.student?.code ? `[#${selectedEnrollment.student.code}] ` : ""}
                       {selectedEnrollment.student?.firstName} {selectedEnrollment.student?.lastName || ""}
                     </span>
                   </div>

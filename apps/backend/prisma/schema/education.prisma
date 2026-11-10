@@ -48,6 +48,7 @@ model EducationPackage {
 model EducationStudent {
   id         String     @id @default(cuid())
   companyId  String
+  code       String?    /// Student code / كود الطالب
   customerId String     /// Parent (Customer/CRM)
   firstName  String
   lastName   String
@@ -69,6 +70,7 @@ model EducationStudent {
   sessions    EducationSession[]
 
   @@index([companyId])
+  @@index([companyId, code])
   @@index([customerId])
   @@map("education_students")
 }
@@ -223,4 +225,89 @@ model EducationSession {
   @@index([scheduledAt])
   @@index([status])
   @@map("education_sessions")
+}
+
+/// مجموعة تعليمية — الجدول كان يُنشأ بـraw SQL وقت التشغيل بدون موديل،
+/// فكان prisma db push يعتبره drift ويحاول DROPه (Schema Guard أوقف النشر).
+model EducationGroup {
+  id               String    @id
+  companyId        String
+  name             String
+  code             String?
+  subjectId        String
+  teacherId        String?
+  level            String?
+  capacity         Int       @default(15)
+  feeType          String    @default("MONTHLY")
+  feeAmount        Float     @default(0)
+  teacherRateType  String    @default("PERCENTAGE")
+  teacherRateValue Float     @default(50)
+  scheduleDays     Json      @default("[]")
+  startTime        String?   @default("17:00")
+  endTime          String?   @default("18:30")
+  room             String?
+  status           String    @default("OPEN")
+  startDate        DateTime?
+  endDate          DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([companyId], map: "idx_education_groups_company")
+  @@index([subjectId], map: "idx_education_groups_subject")
+  @@index([teacherId], map: "idx_education_groups_teacher")
+  @@map("education_groups")
+}
+
+model EducationGroupMember {
+  id              String    @id
+  companyId       String
+  groupId         String
+  studentId       String
+  status          String    @default("ACTIVE")
+  joinedAt        DateTime  @default(now())
+  paymentStatus   String    @default("PAID")
+  amountPaid      Float     @default(0)
+  nextRenewalDate DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([groupId], map: "idx_edu_group_members_group")
+  @@index([studentId], map: "idx_edu_group_members_student")
+  @@index([companyId], map: "idx_edu_group_members_company")
+  @@map("education_group_members")
+}
+
+model EducationGroupSession {
+  id          String   @id
+  companyId   String
+  groupId     String
+  teacherId   String?
+  sessionDate DateTime
+  topic       String?
+  homework    String?
+  status      String   @default("COMPLETED")
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([groupId], map: "idx_edu_group_sessions_group")
+  @@index([companyId], map: "idx_edu_group_sessions_company")
+  @@map("education_group_sessions")
+}
+
+model EducationGroupAttendance {
+  id               String    @id
+  companyId        String
+  sessionId        String
+  groupId          String
+  studentId        String
+  status           String    @default("PRESENT")
+  notes            String?
+  notifiedParentAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([sessionId], map: "idx_edu_group_att_session")
+  @@index([studentId], map: "idx_edu_group_att_student")
+  @@map("education_group_attendance")
 }

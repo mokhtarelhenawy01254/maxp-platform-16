@@ -23,6 +23,23 @@ const getApiBase = (): string => {
 };
 const getPublicBase = (): string => `${getApiBase()}/public`;
 
+/**
+ * Active storefront locale for public API calls. English is opt-in (?lang=en or the language
+ * toggle's saved choice), so Arabic requests keep their exact URL and stay cache-compatible.
+ */
+const getActiveStorefrontLang = (): "ar" | "en" => {
+  if (typeof window === "undefined") return "ar";
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("lang");
+    if (fromUrl === "en" || fromUrl === "ar") return fromUrl;
+    const stored = window.localStorage.getItem("maxp_storefront_lang");
+    if (stored === "en" || stored === "ar") return stored;
+  } catch {
+    /* private mode / blocked storage */
+  }
+  return "ar";
+};
+
 const hasWindow = typeof window !== "undefined";
 const LOCAL_STORE_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "lvh.me"]);
 
@@ -287,7 +304,10 @@ export const storefrontFetch = async (
   options: StorefrontFetchOptions = {},
 ): Promise<any> => {
   const { headers, query } = buildStorefrontRequestContext(options);
-  const url = buildUrl(getPublicBase(), path, query);
+  const activeLang = getActiveStorefrontLang();
+  // ask the API for English names only when the visitor actually chose English
+  const queryWithLang = activeLang === "en" ? { ...query, lang: "en" } : query;
+  const url = buildUrl(getPublicBase(), path, queryWithLang);
 
   const response = await fetch(url, {
     ...options,

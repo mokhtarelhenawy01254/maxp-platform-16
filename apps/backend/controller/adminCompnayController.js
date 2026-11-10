@@ -1861,14 +1861,11 @@ const loginAsCompanyAdmin = async (req, res) => {
         const { companyId } = req.params;
         const { reason } = req.body || {};
 
-        if (!reason || !String(reason).trim()) {
-            return res.status(400).json({
-                success: false,
-                message: 'سبب الدخول كمدير الشركة إلزامي لتسجيل العملية في سجل النشاط والتدقيق الأمني'
-            });
-        }
+        const effectiveReason = (reason && String(reason).trim())
+            ? String(reason).trim()
+            : 'دخول إداري مباشر من السوبر أدمن';
 
-        console.log('🚀 [LOGIN_AS_ADMIN] Start for companyId:', companyId, 'Reason:', reason.trim());
+        console.log('🚀 [LOGIN_AS_ADMIN] Start for companyId:', companyId, 'Reason:', effectiveReason);
         console.log('👤 [LOGIN_AS_ADMIN] Requesting User:', req.user);
 
         // Check if company exists
@@ -1928,7 +1925,7 @@ const loginAsCompanyAdmin = async (req, res) => {
                     companyId: existingCompany.id,
                     action: 'IMPERSONATE',
                     category: 'AUTH',
-                    description: `دخول إداري كمسؤول الشركة (${adminUser.email}) - السبب: ${String(reason).trim()}`,
+                    description: `دخول إداري كمسؤول الشركة (${adminUser.email}) - السبب: ${effectiveReason}`,
                     isSuccess: true,
                     severity: 'HIGH',
                     metadata: JSON.stringify({
@@ -1936,7 +1933,7 @@ const loginAsCompanyAdmin = async (req, res) => {
                         targetAdminEmail: adminUser.email,
                         targetCompanyId: existingCompany.id,
                         superAdminEmail: req.user.email,
-                        reason: String(reason).trim(),
+                        reason: effectiveReason,
                         ipAddress: req.ip || req.connection?.remoteAddress,
                         userAgent: req.headers['user-agent']
                     })

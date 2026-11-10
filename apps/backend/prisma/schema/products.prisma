@@ -143,6 +143,8 @@ model CustomerBlockRule {
 model Category {
   id               String     @id @default(cuid())
   name             String
+  /// English display name used by the storefront when ?lang=en or the visitor picks English.
+  nameEn           String?
   description      String?
   image            String?
   parentId         String?
@@ -354,6 +356,8 @@ model ProductPresentation {
 model Product {
   id                         String                    @id @default(cuid())
   name                       String
+  /// English display name used by the public storefront API when ?lang=en.
+  nameEn                     String?
   description                String?
   sku                        String?
   price                      Decimal                   @db.Decimal(10, 2)

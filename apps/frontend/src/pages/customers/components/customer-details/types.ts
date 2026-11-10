@@ -11,6 +11,8 @@ export interface CustomerDetailsData {
     lastName: string;
     email?: string;
     phone?: string;
+    phone2?: string;
+    whatsappPhone?: string;
     address?: string;
     city?: string;
     country?: string;
@@ -18,6 +20,25 @@ export interface CustomerDetailsData {
     notes?: string;
     birthday?: string;
     status: string;
+    leadStage?: string;
+    leadPriority?: string;
+    leadSource?: string;
+    customerJob?: string;
+    customerInterests?: string;
+    inquiryDetails?: string;
+    expectedBudget?: string;
+    preferredContactMethod?: string;
+    nextFollowUpDate?: string;
+    followUpLog?: Array<{
+      id: string;
+      type: string;
+      outcome: string;
+      details: string;
+      nextFollowUpDate?: string | null;
+      createdAt: string;
+      author?: string;
+      authorId?: string | null;
+    }>;
     customerRating?: string;
     deliveryRate?: number;
     totalDelivered?: number;
@@ -92,6 +113,7 @@ export interface CustomerDetailsData {
 
 export type CustomerDetailTabKey =
   | "info"
+  | "followups"
   | "orders"
   | "conversations"
   | "notes"

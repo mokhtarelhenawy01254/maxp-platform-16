@@ -31,6 +31,37 @@
     }
   },
   {
+    "id": "academy-little-coders",
+    "name": "أكاديمية كود كيدز",
+    "description": "قالب أكاديمية أطفال (برمجة وروبوتات): مسارات ومستويات وباقات وحجز حصة تجريبية — 6 صفحات بزنس.",
+    "category": "education",
+    "categoryMeta": {
+      "primary": {
+        "id": "education",
+        "label": "تعليم"
+      },
+      "secondary": {
+        "id": "kids-academy",
+        "label": "أكاديمية أطفال"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "258 82% 60%",
+      "258 60% 96%",
+      "24 96% 56%"
+    ],
+    "previewImage": "/assets/themes/academy-little-coders/preview.png",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 4,
+      "checkoutSections": 0,
+      "pdpSections": 4,
+      "cartSections": 3,
+      "totalSections": 20
+    }
+  },
+  {
     "id": "airlume-ai",
     "name": "Airlume Travel",
     "description": "واجهة سفر حديثة مع Hero عائم وبطاقات مزايا غير منتظمة لعرض تجربة حجز أكثر وضوحًا.",
@@ -1737,7 +1768,7 @@
   },
   {
     "id": "marketplace-avenue",
-    "name": "ماركت بليس أفنيو",
+    "name": "Marketplace Avenue",
     "description": "Preset رسمي للـ storefront.",
     "category": "general",
     "categoryMeta": {
@@ -1753,7 +1784,7 @@
     "direction": "ltr",
     "previewColors": [
       "23 27% 53%",
-      "0 0% 97%",
+      "0 0% 100%",
       "352 71% 59%"
     ],
     "previewImage": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
@@ -1763,7 +1794,38 @@
       "checkoutSections": 0,
       "pdpSections": 3,
       "cartSections": 1,
-      "totalSections": 16
+      "totalSections": 15
+    }
+  },
+  {
+    "id": "marketplace-avenue-ar",
+    "name": "ماركت بليس أفنيو",
+    "description": "Preset رسمي للـ storefront.",
+    "category": "general",
+    "categoryMeta": {
+      "primary": {
+        "id": "general",
+        "label": "عام"
+      },
+      "secondary": {
+        "id": "marketplace-departments",
+        "label": "ماركت بليس أقسام متعددة · عربي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "23 27% 53%",
+      "0 0% 100%",
+      "352 71% 59%"
+    ],
+    "previewImage": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 3,
+      "checkoutSections": 0,
+      "pdpSections": 3,
+      "cartSections": 1,
+      "totalSections": 15
     }
   },
   {

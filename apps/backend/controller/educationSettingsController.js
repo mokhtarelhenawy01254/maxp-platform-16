@@ -38,6 +38,18 @@ const DEFAULT_EDUCATION_TABS = [
     iconName: "Gift"
   },
   {
+    id: "groups",
+    key: "/admin/education/groups",
+    defaultLabelAr: "المجموعات الدراسية (الجروبات)",
+    defaultLabelEn: "Study Groups",
+    labelAr: "المجموعات الدراسية (الجروبات)",
+    labelEn: "Study Groups",
+    order: 2.5,
+    visible: true,
+    locked: false,
+    iconName: "Users"
+  },
+  {
     id: "students",
     key: "/admin/education/students",
     defaultLabelAr: "الطلاب",

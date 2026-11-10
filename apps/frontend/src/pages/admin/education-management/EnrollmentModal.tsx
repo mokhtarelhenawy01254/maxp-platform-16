@@ -274,7 +274,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                   </option>
                   {activeStudents.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName || ""} {s.phone ? `- ${s.phone}` : ""}
+                      {s.code ? `[#${s.code}] ` : ""}{s.firstName} {s.lastName || ""} {s.phone ? `- ${s.phone}` : ""}
                     </option>
                   ))}
                 </select>

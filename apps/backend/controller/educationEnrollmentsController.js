@@ -26,7 +26,7 @@ const getAll = async (req, res) => {
     const data = await getSharedPrismaClient().educationEnrollment.findMany({
       where,
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         package: { include: { subject: { select: { id: true, name: true } } } },
         teacher: { select: { id: true, name: true } }
       },
@@ -48,7 +48,7 @@ const getById = async (req, res) => {
     const data = await getSharedPrismaClient().educationEnrollment.findFirst({
       where: { id, companyId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true, phone: true } },
         package: { include: { subject: { select: { id: true, name: true } } } },
         teacher: { select: { id: true, name: true, phone: true } },
         sessions: { orderBy: { scheduledAt: 'desc' } }
@@ -112,7 +112,7 @@ const create = async (req, res) => {
         expiresAt: parsedExpiresAt
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         package: { include: { subject: { select: { id: true, name: true } } } },
         teacher: { select: { id: true, name: true } }
       }
@@ -196,7 +196,7 @@ const update = async (req, res) => {
         isActive: isActive !== undefined ? !!isActive : undefined,
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         package: { include: { subject: { select: { id: true, name: true } } } },
         teacher: { select: { id: true, name: true } }
       }

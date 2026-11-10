@@ -1,0 +1,353 @@
+{
+  "id": "academy-little-coders",
+  "name": "أكاديمية كود كيدز",
+  "tokens": {
+    "colors": {
+      "primary": "258 82% 60%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "258 60% 96%",
+      "secondaryForeground": "258 50% 34%",
+      "accent": "24 96% 56%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 60% 99%",
+      "foreground": "252 26% 18%",
+      "muted": "258 45% 96%",
+      "mutedForeground": "252 12% 46%",
+      "border": "258 35% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "252 26% 18%",
+      "ring": "258 82% 60%"
+    },
+    "typography": {
+      "headingFont": "\"Baloo Bhaijaan 2\", Tajawal, sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", Tajawal, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.75rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 18px 40px -30px rgba(88, 52, 190, 0.45)",
+      "hoverShadow": "0 26px 56px -28px rgba(88, 52, 190, 0.55)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "header": {
+    "brandName": "كود كيدز",
+    "showSearch": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "الكورسات",
+        "to": "/shop"
+      },
+      {
+        "label": "المسارات",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "description": "أكاديمية برمجة وروبوتات للأطفال من 6 لـ 12 سنة — مجموعات صغيرة، مدرسين متخصصين، تقرير أسبوعي لولي الأمر.",
+    "copyrightText": "© 2026 كود كيدز — الإسكندرية.",
+    "socialLinks": {},
+    "navigation": []
+  },
+  "description": "قالب أكاديمية أطفال (برمجة وروبوتات): مسارات، مستويات، باقات، وحجز حصة تجريبية — 6 صفحات بزنس.",
+  "direction": "rtl",
+  "seo": {
+    "titleTemplate": "%s | كود كيدز",
+    "description": "كورسات برمجة وروبوتات وذكاء اصطناعي للأطفال 6–12 سنة، مجموعات 12 طفل بحد أقصى، وشهادة إتمام من الأكاديمية."
+  },
+  "preview": {
+    "colors": [
+      "258 82% 60%",
+      "24 96% 56%",
+      "40 60% 99%"
+    ],
+    "imageUrl": "/assets/themes/academy-little-coders/preview.png"
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "دفعة جديدة",
+            "message": "خصم 15% على دفعة يناير — المقاعد محدودة (12 طفل لكل مجموعة)",
+            "saleLabel": "احجز مقعد"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "playful-split",
+          "settings": {
+            "eyebrow": "برمجة · روبوتات · ذكاء اصطناعي",
+            "title": "خلي طفلك يبني أول لعبة بنفسه",
+            "subtitle": "12 حصة عملية، مدرّب متخصص، ومجموعة صغيرة — ونتيجة يشوفها البيت كله في آخر الترم.",
+            "ctaText": "احجز حصة تجريبية",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوف المسارات",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "kids-guarantee",
+          "settings": {
+            "title": "ليه كود كيدز؟",
+            "items": [
+              {
+                "title": "12 طفل بحد أقصى",
+                "description": "كل طفل بياخد متابعة فردية في الحصة"
+              },
+              {
+                "title": "تقرير أسبوعي",
+                "description": "بتشوف تقدم ابنك ومشروعه كل أسبوع"
+              },
+              {
+                "title": "مشروع نهائي",
+                "description": "لعبة أو روبوت يقدّمه قدام الأهل"
+              },
+              {
+                "title": "شهادة إتمام",
+                "description": "معتمدة من الأكاديمية بعد كل مستوى"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "playful-bubbles",
+          "settings": {
+            "title": "اختار مسار طفلك",
+            "subtitle": "3 محاور، كل محور 3 مستويات — من Junior لـ Senior.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "bundle-matrix",
+          "settings": {
+            "title": "باقات المستويات",
+            "subtitle": "كل مستوى 12 حصة — والباقة الكاملة بتوفّر أكثر.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الكورسات المتاحة دلوقتي",
+            "subtitle": "كل كورس فيه عدد حصص، عمر مناسب، ومستوى واضح.",
+            "limit": 6
+          }
+        },
+        {
+          "type": "countdown-banner",
+          "variant": "inline",
+          "settings": {
+            "title": "دفعة يناير بتبدأ 5 يناير",
+            "subtitle": "آخر ميعاد للتسجيل 25 ديسمبر أو لحد ما المقاعد تخلص.",
+            "ctaText": "احجز مقعد",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "standard",
+          "settings": {
+            "title": "أولياء الأمور بيقولوا إيه",
+            "subtitle": "تقييمات من دفعات سبتمبر وديسمبر.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "standard",
+          "settings": {
+            "title": "مواعيد الدفعات الجديدة",
+            "subtitle": "ابعت بريدك ونبلّغك بفتح التسجيل قبل ما نعلنه.",
+            "placeholder": "بريد ولي الأمر",
+            "buttonText": "بلّغني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "sidebar-left",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "title": "كل الكورسات",
+            "subtitle": "فلتر بالعمر أو المستوى أو المسار واختار الكورس المناسب.",
+            "ctaText": "الكورسات المتاحة",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner",
+          "settings": {
+            "title": "دوّر بسرعة"
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "sortLabel": "رتّب حسب",
+            "categoryLabel": "المسار",
+            "priceLabel": "السعر",
+            "allProductsLabel": "كل الكورسات",
+            "clearButtonText": "مسح الفلاتر",
+            "showMobileLabel": "إظهار الفلاتر",
+            "hideMobileLabel": "إخفاء الفلاتر"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الكورسات",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "standard",
+          "settings": {
+            "ctaText": "أضف للباقة"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "related-products",
+          "variant": "standard"
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        "cart-items",
+        "order-summary",
+        {
+          "type": "trusted-badges",
+          "settings": {
+            "title": "الدفع والاسترجاع"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "title": "المسارات والمستويات"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "playful-bubbles",
+          "settings": {
+            "title": "المحاور الثلاثة",
+            "limit": 3
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "من جوه الحصة",
+            "subtitle": "نماذج من مشاريع الأطفال في آخر 3 دفعات.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "richtext",
+          "variant": "standard",
+          "settings": {
+            "title": "المنهج بالتفصيل",
+            "content": "Junior: Scratch وأساسيات التفكير المنطقي. Middle: Scratch متقدم + مشروع لعبة. Senior: بايثون + مقدمة ذكاء اصطناعي، ومشروع تقدّمه الأكاديمية في يوم العرض."
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "standard",
+          "settings": {
+            "title": "اعرف مواعيد الدفعة القادمة",
+            "placeholder": "بريد ولي الأمر",
+            "buttonText": "بلّغني"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلّمنا",
+            "subtitle": "بنرد من السبت للخميس، 10 ص لـ 7 م.",
+            "content": "العنوان: 68 شارع فؤاد، الإسكندرية · واتساب: 0100 000 0000 · بريد: hello@example.com"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "قبل ما تحجز",
+            "items": [
+              {
+                "title": "حصة تجريبية",
+                "description": "ابنك يدخل حصة كاملة قبل الدفع"
+              },
+              {
+                "title": "تقييم مستوى",
+                "description": "مكالمة 10 دقائق لتحديد المستوى المناسب"
+              },
+              {
+                "title": "دفع آمن",
+                "description": "فيزا أو محفظة أو كاش في المركز"
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خلّينا نكلمك",
+            "subtitle": "سيبلنا بريدك ونتواصل معاك في نفس اليوم.",
+            "placeholder": "بريد ولي الأمر",
+            "buttonText": "تواصل معايا"
+          }
+        }
+      ]
+    }
+  }
+}

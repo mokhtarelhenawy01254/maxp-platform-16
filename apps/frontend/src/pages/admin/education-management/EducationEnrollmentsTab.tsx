@@ -68,10 +68,17 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm text-foreground truncate">
-                    {e.student
-                      ? `${e.student.firstName} ${e.student.lastName || ""}`
-                      : "—"}
+                  <div className="font-semibold text-sm text-foreground truncate flex items-center gap-1.5">
+                    <span>
+                      {e.student
+                        ? `${e.student.firstName} ${e.student.lastName || ""}`
+                        : "—"}
+                    </span>
+                    {e.student?.code && (
+                      <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20 shrink-0" dir="ltr">
+                        #{e.student.code}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {e.package?.name} {e.package?.subject?.name ? `• ${e.package.subject.name}` : ""}
@@ -221,9 +228,18 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                 return (
                   <tr key={e.id} className={`hover:bg-muted/30 transition-colors ${e.isActive === false ? "opacity-60 bg-muted/20" : ""}`}>
                     <td className={CELL_CLS + " font-medium text-foreground"}>
-                      {e.student
-                        ? `${e.student.firstName} ${e.student.lastName || ""}`
-                        : "—"}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          {e.student
+                            ? `${e.student.firstName} ${e.student.lastName || ""}`
+                            : "—"}
+                        </span>
+                        {e.student?.code && (
+                          <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20" dir="ltr">
+                            #{e.student.code}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className={CELL_CLS + " text-muted-foreground"}>
                       {e.package?.name || "—"}

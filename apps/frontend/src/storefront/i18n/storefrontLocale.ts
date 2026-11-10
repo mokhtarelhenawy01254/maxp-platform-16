@@ -1,4 +1,5 @@
 import type { StorefrontPageConfig, StorefrontSectionConfig } from "../types/theme.types";
+import { mergeLocaleOverrides } from "./shellLocale";
 import type { StorefrontLocale, TextDirection, StorefrontI18nSettings } from "./types";
 
 export const STOREFRONT_LOCALE_STORAGE_KEY = "maxp_storefront_lang";
@@ -9,7 +10,10 @@ export const STOREFRONT_LOCALE_STORAGE_KEY = "maxp_storefront_lang";
  * 2. Persisted value in window.localStorage (maxp_storefront_lang)
  * 3. Default fallback: 'ar'
  */
-export function getStorefrontLocale(search?: string): StorefrontLocale {
+export function getStorefrontLocale(
+  search?: string,
+  fallbackLocale?: StorefrontLocale,
+): StorefrontLocale {
   if (typeof search === "string" && search.length > 0) {
     try {
       const normalizedSearch = search.startsWith("?") ? search : `?${search}`;
@@ -44,7 +48,7 @@ export function getStorefrontLocale(search?: string): StorefrontLocale {
     }
   }
 
-  return "ar";
+  return fallbackLocale === "en" ? "en" : "ar";
 }
 
 /**
@@ -89,12 +93,10 @@ export function localizeSectionSettings<T extends Record<string, any>>(
     return settings;
   }
 
-  const result: Record<string, any> = { ...settings };
-  for (const [key, value] of Object.entries(enOverrides)) {
-    if (value !== undefined && value !== null && value !== "") {
-      result[key] = value;
-    }
-  }
+  // Deep merge (arrays by index) so a theme only has to carry the strings that actually change:
+  // an English slide override may be `{title, eyebrow}` and still keep the base image and link.
+  const merged = mergeLocaleOverrides(settings as Record<string, any>, enOverrides);
+  const result: Record<string, any> = { ...(merged as Record<string, any>) };
 
   // Synonym mappings so any section component querying either heading/title or buttonText/ctaText finds the localized value
   const titleVal = enOverrides["title"] ?? enOverrides["heading"];

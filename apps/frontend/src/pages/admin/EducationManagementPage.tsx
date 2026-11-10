@@ -14,6 +14,7 @@ import {
   EducationSettingsData,
 } from "./education-management";
 import { api, fetchJson } from "./education-management/api";
+import EducationGroupsPage from "./EducationGroupsPage";
 
 export default function EducationManagementPage() {
   const {
@@ -234,6 +235,9 @@ export default function EducationManagementPage() {
               handleTogglePackage={handleTogglePackage}
               handleDeletePackage={handleDeletePackage}
             />
+          )}
+          {activeTab === "groups" && (
+            <EducationGroupsPage embedded />
           )}
           {activeTab === "students" && (
             <EducationStudentsTab

@@ -18,10 +18,23 @@ export interface DateInputProps {
 
 const isoToDisplay = (iso?: string | null): string => {
   if (!iso || typeof iso !== "string") return "";
-  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return "";
-  const [, year, month, day] = match;
-  return `${day}/${month}/${year}`;
+  const trimmed = iso.trim();
+  if (!trimmed) return "";
+  // If already DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+  // If YYYY-MM-DD or ISO timestamp
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  // If DD-MM-YYYY or DD.MM.YYYY
+  const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, d, m, y] = ddmmyyyyMatch;
+    return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  }
+  return "";
 };
 
 const displayToIso = (
@@ -78,10 +91,13 @@ export const DateInput: React.FC<DateInputProps> = ({
 
   // Sync external value changes
   useEffect(() => {
-    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      setDisplayText(isoToDisplay(value));
-      setInternalError(false);
-    } else if (!value) {
+    if (value) {
+      const formatted = isoToDisplay(value);
+      if (formatted) {
+        setDisplayText(formatted);
+        setInternalError(false);
+      }
+    } else {
       setDisplayText("");
       setInternalError(false);
     }
@@ -117,14 +133,14 @@ export const DateInput: React.FC<DateInputProps> = ({
       const { valid, iso } = displayToIso(formatted, min, max);
       if (valid) {
         setInternalError(false);
-        onChange({ target: { value: iso } });
+        onChange({ target: { value: iso, name: name || "" } } as any);
       } else {
         setInternalError(true);
-        onChange({ target: { value: "" } });
+        onChange({ target: { value: "", name: name || "" } } as any);
       }
     } else if (formatted.length === 0) {
       setInternalError(false);
-      onChange({ target: { value: "" } });
+      onChange({ target: { value: "", name: name || "" } } as any);
     }
   };
 
@@ -133,10 +149,10 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (!trimmed) {
       if (required) {
         setInternalError(true);
-        onChange({ target: { value: "" } });
+        onChange({ target: { value: "", name: name || "" } } as any);
       } else {
         setInternalError(false);
-        onChange({ target: { value: "" } });
+        onChange({ target: { value: "", name: name || "" } } as any);
       }
       return;
     }
@@ -144,10 +160,10 @@ export const DateInput: React.FC<DateInputProps> = ({
     const { valid, iso } = displayToIso(trimmed, min, max);
     if (valid) {
       setInternalError(false);
-      onChange({ target: { value: iso } });
+      onChange({ target: { value: iso, name: name || "" } } as any);
     } else {
       setInternalError(true);
-      onChange({ target: { value: "" } });
+      onChange({ target: { value: "", name: name || "" } } as any);
     }
   };
 
@@ -174,7 +190,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     if (iso) {
       setDisplayText(isoToDisplay(iso));
       setInternalError(false);
-      onChange({ target: { value: iso } });
+      onChange({ target: { value: iso, name: name || "" } } as any);
     }
   };
 

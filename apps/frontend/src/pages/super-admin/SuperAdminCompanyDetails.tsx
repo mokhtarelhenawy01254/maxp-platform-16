@@ -221,18 +221,20 @@ const SuperAdminCompanyDetails = () => {
               <Sparkles className="size-4" /> تعديل الشركة
             </Button>
 
-            {/* Action 3 (Impersonation Modal Trigger): Login as Admin */}
+            {/* Action 3: Direct 1-Click Login as Admin */}
             <Button
               type="button"
               variant="outline"
               className="h-9 sm:h-10 rounded-xl border-primary/40 text-primary hover:bg-primary/10 font-bold gap-1.5 text-xs sm:text-sm px-3.5"
-              onClick={() => {
-                setImpersonateReason("");
-                setImpersonateModalOpen(true);
-              }}
+              onClick={() => void handleLoginAsAdmin()}
               disabled={!company || impersonating}
             >
-              <KeyRound className="size-4" /> دخول كمسؤول
+              {impersonating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <KeyRound className="size-4" />
+              )}
+              دخول كمسؤول
             </Button>
 
             {/* "More" Menu for Secondary / Auxiliary Actions */}
@@ -519,7 +521,7 @@ const SuperAdminCompanyDetails = () => {
         </Tabs>
       ) : null}
 
-      {/* 4. Impersonation Confirmation Modal with Mandatory Reason */}
+      {/* 4. Impersonation Confirmation Modal (Optional Reason) */}
       <Dialog open={impersonateModalOpen} onOpenChange={setImpersonateModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -528,33 +530,22 @@ const SuperAdminCompanyDetails = () => {
               <DialogTitle className="text-lg font-black">تسجيل الدخول كمسؤول الشركة</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground pt-1">
-              أنت على وشك الدخول بصلاحيات مدير شركة <span className="font-bold text-foreground">{company?.name}</span>. سيتم تسجيل هذا الإجراء فوراً في سجل التدقيق الأمني.
+              أنت على وشك الدخول بصلاحيات مدير شركة <span className="font-bold text-foreground">{company?.name}</span>.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3.5 py-2">
-            <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200 text-xs">
-              <AlertTriangle className="size-4 shrink-0" />
-              <AlertTitle className="font-bold">إجراء إشرافي حساس</AlertTitle>
-              <AlertDescription className="text-[11px] mt-0.5">
-                أي إجراء يتم تنفيذه داخل حساب الشركة سينعكس على بياناتهم الحية ومحفظتهم.
-              </AlertDescription>
-            </Alert>
-
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-foreground">
-                سبب تسجيل الدخول كمسؤول الشركة <span className="text-destructive">*</span>
+                سبب تسجيل الدخول كمسؤول الشركة <span className="text-xs text-muted-foreground font-normal">(اختياري)</span>
               </Label>
               <Textarea
                 value={impersonateReason}
                 onChange={(e) => setImpersonateReason(e.target.value)}
-                placeholder="يرجى توضيح سبب الدخول بالتفصيل (مثل: حل مشكلة في إعدادات الطلبات، مراجعة استهلاك المحفظة، دعم فني مباشر...)"
+                placeholder="يمكنك كتابة سبب اختياري للتوثيق، أو المتابعة والدخول مباشرة..."
                 className="min-h-[85px] rounded-xl text-xs"
                 disabled={impersonating}
               />
-              <p className="text-[10px] text-muted-foreground">
-                كتابة السبب إلزامية لتفعيل زر الدخول ولن تتم العملية بدونه.
-              </p>
             </div>
           </div>
 
@@ -570,7 +561,7 @@ const SuperAdminCompanyDetails = () => {
             <Button
               type="button"
               className="bg-primary text-primary-foreground font-bold shadow-sm gap-1.5"
-              disabled={impersonating || !impersonateReason.trim()}
+              disabled={impersonating}
               onClick={async () => {
                 await handleLoginAsAdmin(impersonateReason.trim());
               }}

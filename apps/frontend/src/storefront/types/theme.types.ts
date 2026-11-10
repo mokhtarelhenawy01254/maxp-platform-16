@@ -119,6 +119,8 @@ export interface StorefrontThemeTokens {
 }
 
 export interface StorefrontHeaderConfig {
+  /** Per-locale label overrides, resolved by localizeThemeShell(). */
+  i18n?: Partial<Record<'ar' | 'en', Record<string, unknown>>>;
   variant?:
     | 'default'
     | 'floating-dark'
@@ -170,11 +172,15 @@ export interface StorefrontHeaderConfig {
   };
   dropdowns?: Array<{
     label?: string;
+    /** department landing page; the category bar falls back to the first item's link */
+    to?: string;
     items?: Array<{ label?: string; to?: string }>;
   }>;
 }
 
 export interface StorefrontFooterConfig {
+  /** Per-locale label overrides, resolved by localizeThemeShell(). */
+  i18n?: Partial<Record<'ar' | 'en', Record<string, unknown>>>;
   variant?:
     | 'default'
     | 'editorial-soft'
@@ -232,6 +238,9 @@ export interface StorefrontTheme {
   id: string;
   name: string;
   direction: 'ltr' | 'rtl';
+  /** Locale served when neither ?lang nor the visitor's saved choice decides. */
+  defaultLocale?: 'ar' | 'en';
+  supportedLocales?: Array<'ar' | 'en'>;
   tokens: StorefrontThemeTokens;
   header?: StorefrontHeaderConfig;
   footer?: StorefrontFooterConfig;

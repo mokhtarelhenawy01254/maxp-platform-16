@@ -34,9 +34,11 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
   handleDeleteStudent,
 }) => {
   const q = studentSearch.toLowerCase().trim();
+  const codeQ = q.startsWith("#") ? q.slice(1).trim() : q;
   const filtered = students.filter(
     (s) =>
       !q ||
+      (s.code || "").toLowerCase().includes(codeQ) ||
       (s.firstName || "").toLowerCase().includes(q) ||
       (s.lastName || "").toLowerCase().includes(q) ||
       (s.phone || "").toLowerCase().includes(q) ||
@@ -57,7 +59,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
             <input
               className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="بحث عن طالب بالاسم أو الهاتف..."
+              placeholder="بحث عن طالب بالاسم، الكود، أو الهاتف..."
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
             />
@@ -82,10 +84,17 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             }`}
           >
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-sm text-foreground">
-                  {s.firstName} {s.lastName || ""}
-                </h3>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="font-semibold text-sm text-foreground truncate">
+                    {s.firstName} {s.lastName || ""}
+                  </h3>
+                  {s.code && (
+                    <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 shrink-0" dir="ltr">
+                      #{s.code}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {s.grade || "الصف غير محدد"}
                 </p>

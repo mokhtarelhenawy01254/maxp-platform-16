@@ -8,6 +8,7 @@ import {
   ClockIcon,
   StarIcon,
   SparklesIcon,
+  PhoneIcon,
 } from "@heroicons/react/24/outline";
 import { CustomerDetailTabKey } from "./types";
 
@@ -28,6 +29,7 @@ export const CustomerDetailsTabsNav: React.FC<CustomerDetailsTabsNavProps> = ({
     icon: React.ComponentType<{ className?: string }>;
   }> = [
     { key: "info", label: t("customers.tabs.info"), icon: UserIcon },
+    { key: "followups", label: "سجل التواصل والمتابعة", icon: PhoneIcon },
     { key: "orders", label: t("orders.title"), icon: ShoppingBagIcon },
     {
       key: "conversations",

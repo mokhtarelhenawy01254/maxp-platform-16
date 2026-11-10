@@ -1,0 +1,1607 @@
+{
+  "id": "marketplace-avenue-ar",
+  "name": "ماركت بليس أفنيو",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "23 27% 53%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 100%",
+      "secondaryForeground": "0 0% 20%",
+      "accent": "352 71% 59%",
+      "accentForeground": "0 0% 100%",
+      "background": "260 14% 96%",
+      "foreground": "0 0% 20%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 47%",
+      "border": "0 0% 91%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 20%",
+      "ring": "23 27% 53%"
+    },
+    "typography": {
+      "headingFont": "\"Urbanist\", \"Tajawal\", sans-serif",
+      "bodyFont": "\"Albert Sans\", \"Tajawal\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0px",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -32px rgba(51, 51, 51, 0.45)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | ماركت بليس أفنيو",
+    "description": "متجر أقسام متعددة: أجهزة منزلية وإلكترونيات وألعاب ومستلزمات البيت في مكان واحد."
+  },
+  "header": {
+    "variant": "marketplace-bazaar",
+    "brandName": "ماركت بليس",
+    "tagline": "أجهزة · إلكترونيات · ألعاب",
+    "announcementText": "",
+    "announcementLinkText": "",
+    "announcementLinkTo": "/contact",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "الأقسام",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "اتصل بنا",
+        "to": "/contact"
+      }
+    ],
+    "dropdowns": [
+      {
+        "label": "إلكترونيات",
+        "to": "/shop?category=electronics",
+        "items": [
+          {
+            "label": "موبايلات",
+            "to": "/shop?category=mobiles"
+          },
+          {
+            "label": "لابتوبات",
+            "to": "/shop?category=laptops"
+          },
+          {
+            "label": "تلفزيونات",
+            "to": "/shop?category=televisions"
+          },
+          {
+            "label": "سماعات",
+            "to": "/shop?category=headphones"
+          },
+          {
+            "label": "ساعات ذكية",
+            "to": "/shop?category=smart-watches"
+          },
+          {
+            "label": "تابلت",
+            "to": "/shop?category=tablets"
+          }
+        ]
+      },
+      {
+        "label": "أجهزة منزلية",
+        "to": "/shop?category=appliances",
+        "items": [
+          {
+            "label": "غسالات",
+            "to": "/shop?category=washing-machines"
+          },
+          {
+            "label": "ثلاجات",
+            "to": "/shop?category=refrigerators"
+          },
+          {
+            "label": "تكييفات",
+            "to": "/shop?category=air-conditioners"
+          },
+          {
+            "label": "مكانس كهربائية",
+            "to": "/shop?category=vacuum-cleaners"
+          },
+          {
+            "label": "ميكروويف",
+            "to": "/shop?category=microwaves"
+          },
+          {
+            "label": "سخانات مياه",
+            "to": "/shop?category=water-heaters"
+          }
+        ]
+      },
+      {
+        "label": "المنزل والمطبخ",
+        "to": "/shop?category=home-kitchen",
+        "items": [
+          {
+            "label": "خلاطات ومحضرات طعام",
+            "to": "/shop?category=blenders"
+          },
+          {
+            "label": "حلل وأواني طهي",
+            "to": "/shop?category=cookware"
+          },
+          {
+            "label": "حلل ضغط",
+            "to": "/shop?category=pressure-cookers"
+          },
+          {
+            "label": "أدوات مائدة",
+            "to": "/shop?category=dinnerware"
+          },
+          {
+            "label": "أجهزة قهوة",
+            "to": "/shop?category=coffee-makers"
+          },
+          {
+            "label": "أدوات مطبخ",
+            "to": "/shop?category=kitchen-tools"
+          }
+        ]
+      },
+      {
+        "label": "أدوات وتحسين المنزل",
+        "to": "/shop?category=tools-improvement",
+        "items": [
+          {
+            "label": "أدوات كهربائية",
+            "to": "/shop?category=power-tools"
+          },
+          {
+            "label": "عدة يدوية",
+            "to": "/shop?category=hand-tools"
+          },
+          {
+            "label": "إضاءة",
+            "to": "/shop?category=lighting"
+          },
+          {
+            "label": "أدوات صحية",
+            "to": "/shop?category=plumbing"
+          },
+          {
+            "label": "صناعي وعلمي",
+            "to": "/shop?category=industrial-scientific"
+          }
+        ]
+      },
+      {
+        "label": "العناية الشخصية",
+        "to": "/shop?category=beauty-care",
+        "items": [
+          {
+            "label": "مجففات شعر",
+            "to": "/shop?category=hair-dryers"
+          },
+          {
+            "label": "ماكينات حلاقة",
+            "to": "/shop?category=shavers"
+          },
+          {
+            "label": "العناية بالبشرة",
+            "to": "/shop?category=skincare"
+          },
+          {
+            "label": "عطور",
+            "to": "/shop?category=perfumes"
+          }
+        ]
+      },
+      {
+        "label": "المنتجات الصحية والمنزلية",
+        "to": "/shop?category=health-home",
+        "items": [
+          {
+            "label": "مكملات غذائية",
+            "to": "/shop?category=supplements"
+          },
+          {
+            "label": "أجهزة قياس طبية",
+            "to": "/shop?category=medical-devices"
+          }
+        ]
+      },
+      {
+        "label": "بضائع رياضية",
+        "to": "/shop?category=sports",
+        "items": [
+          {
+            "label": "أدوات رياضية منزلية",
+            "to": "/shop?category=fitness-equipment"
+          },
+          {
+            "label": "مستلزمات رياضية",
+            "to": "/shop?category=sports-gear"
+          }
+        ]
+      },
+      {
+        "label": "حديقة",
+        "to": "/shop?category=garden",
+        "items": [
+          {
+            "label": "أدوات حديقة",
+            "to": "/shop?category=garden-tools"
+          },
+          {
+            "label": "أحواض ونباتات",
+            "to": "/shop?category=planters"
+          },
+          {
+            "label": "أثاث خارجي",
+            "to": "/shop?category=outdoor-furniture"
+          }
+        ]
+      },
+      {
+        "label": "أزياء",
+        "to": "/shop?category=fashion",
+        "items": [
+          {
+            "label": "أحذية رجالي",
+            "to": "/shop?category=men-shoes"
+          },
+          {
+            "label": "شنط",
+            "to": "/shop?category=bags"
+          },
+          {
+            "label": "ملابس نسائية",
+            "to": "/shop?category=women-clothing"
+          },
+          {
+            "label": "إكسسوارات",
+            "to": "/shop?category=accessories"
+          }
+        ]
+      },
+      {
+        "label": "أطفال وألعاب",
+        "to": "/shop?category=baby-toys",
+        "items": [
+          {
+            "label": "ألعاب أطفال",
+            "to": "/shop?category=toys"
+          },
+          {
+            "label": "مستلزمات أطفال",
+            "to": "/shop?category=baby-essentials"
+          }
+        ]
+      },
+      {
+        "label": "سيارات وإكسسوارات",
+        "to": "/shop?category=automotive",
+        "items": [
+          {
+            "label": "إكسسوارات سيارات",
+            "to": "/shop?category=car-accessories"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "label": "من نحن",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "شركاؤنا",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "وظائف",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "تتبع طلبك",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "اتصل بنا",
+        "to": "/contact",
+        "style": "link"
+      },
+      {
+        "label": "الأسئلة الشائعة",
+        "to": "/contact",
+        "style": "link"
+      }
+    ],
+    "i18n": {
+      "en": {
+        "brandName": "Marketplace",
+        "tagline": "Appliances · Electronics · Games",
+        "navigation": [
+          {
+            "label": "Home"
+          },
+          {
+            "label": "Shop"
+          },
+          {
+            "label": "Categories"
+          },
+          {
+            "label": "Deals"
+          },
+          {
+            "label": "Contact"
+          }
+        ],
+        "dropdowns": [
+          {
+            "label": "Electronics",
+            "items": [
+              {
+                "label": "Mobiles"
+              },
+              {
+                "label": "Laptops"
+              },
+              {
+                "label": "Televisions"
+              },
+              {
+                "label": "Headphones"
+              },
+              {
+                "label": "Smart Watches"
+              },
+              {
+                "label": "Tablets"
+              }
+            ]
+          },
+          {
+            "label": "Appliances",
+            "items": [
+              {
+                "label": "Washing Machines"
+              },
+              {
+                "label": "Refrigerators"
+              },
+              {
+                "label": "Air Conditioners"
+              },
+              {
+                "label": "Vacuum Cleaners"
+              },
+              {
+                "label": "Microwaves"
+              },
+              {
+                "label": "Water Heaters"
+              }
+            ]
+          },
+          {
+            "label": "Home & Kitchen",
+            "items": [
+              {
+                "label": "Blenders"
+              },
+              {
+                "label": "Cookware"
+              },
+              {
+                "label": "Pressure Cookers"
+              },
+              {
+                "label": "Dinnerware"
+              },
+              {
+                "label": "Coffee Makers"
+              },
+              {
+                "label": "Kitchen Tools"
+              }
+            ]
+          },
+          {
+            "label": "Tools",
+            "items": [
+              {
+                "label": "Power Tools"
+              },
+              {
+                "label": "Hand Tools"
+              },
+              {
+                "label": "Lighting"
+              },
+              {
+                "label": "Plumbing"
+              },
+              {
+                "label": "Industrial & Scientific"
+              }
+            ]
+          },
+          {
+            "label": "Beauty",
+            "items": [
+              {
+                "label": "Hair Dryers"
+              },
+              {
+                "label": "Shavers"
+              },
+              {
+                "label": "Skincare"
+              },
+              {
+                "label": "Perfumes"
+              }
+            ]
+          },
+          {
+            "label": "Health & Household",
+            "items": [
+              {
+                "label": "Supplements"
+              },
+              {
+                "label": "Medical Devices"
+              }
+            ]
+          },
+          {
+            "label": "Sports",
+            "items": [
+              {
+                "label": "Home Fitness"
+              },
+              {
+                "label": "Sports Gear"
+              }
+            ]
+          },
+          {
+            "label": "Garden & Outdoor",
+            "items": [
+              {
+                "label": "Garden Tools"
+              },
+              {
+                "label": "Planters"
+              },
+              {
+                "label": "Outdoor Furniture"
+              }
+            ]
+          },
+          {
+            "label": "Fashion",
+            "items": [
+              {
+                "label": "Men's Shoes"
+              },
+              {
+                "label": "Bags"
+              },
+              {
+                "label": "Women's Clothing"
+              },
+              {
+                "label": "Accessories"
+              }
+            ]
+          },
+          {
+            "label": "Baby & Toys",
+            "items": [
+              {
+                "label": "Toys"
+              },
+              {
+                "label": "Baby Essentials"
+              }
+            ]
+          },
+          {
+            "label": "Automotive",
+            "items": [
+              {
+                "label": "Car Accessories"
+              }
+            ]
+          }
+        ],
+        "actions": [
+          {
+            "label": "About Us"
+          },
+          {
+            "label": "Our Partners"
+          },
+          {
+            "label": "Work With Us"
+          },
+          {
+            "label": "Track Your Order"
+          },
+          {
+            "label": "Contact Us"
+          },
+          {
+            "label": "FAQs"
+          }
+        ]
+      }
+    }
+  },
+  "footer": {
+    "variant": "retail-direct",
+    "description": "ماركت بليس أفنيو — أقسام متعددة للأجهزة المنزلية والإلكترونيات وألعاب الكونسول، بعروض أسبوعية وشحن سريع لكل المحافظات.",
+    "phoneText": "01000 000 000",
+    "emailText": "care@marketplace-avenue.com",
+    "addressText": "القاهرة، مصر",
+    "contactRows": [
+      {
+        "label": "الخط الساخن",
+        "value": "01000 000 000",
+        "href": "tel:01000000000"
+      },
+      {
+        "label": "البريد",
+        "value": "care@marketplace-avenue.com",
+        "href": "mailto:care@marketplace-avenue.com"
+      }
+    ],
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "twitter": "https://x.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل المنتجات",
+            "to": "/shop"
+          },
+          {
+            "label": "الأقسام",
+            "to": "/collections"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          },
+          {
+            "label": "الأكثر مبيعًا",
+            "to": "/shop?sort=popular"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاسترجاع والاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "اتصل بنا",
+            "to": "/contact"
+          },
+          {
+            "label": "الأسئلة الشائعة",
+            "to": "/contact"
+          }
+        ]
+      },
+      {
+        "title": "عن المتجر",
+        "links": [
+          {
+            "label": "من نحن",
+            "to": "/contact"
+          },
+          {
+            "label": "شركاؤنا",
+            "to": "/contact"
+          },
+          {
+            "label": "سياسة الخصوصية",
+            "to": "/privacy"
+          },
+          {
+            "label": "الشروط والأحكام",
+            "to": "/terms"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ],
+    "copyrightText": "© 2026 ماركت بليس أفنيو. جميع الحقوق محفوظة.",
+    "i18n": {
+      "en": {
+        "description": "Marketplace Avenue - appliances, electronics and gaming in one multi-department store.",
+        "navigation": [
+          {
+            "title": "Get to Know Us",
+            "links": [
+              {
+                "label": "About Us",
+                "to": "/contact"
+              },
+              {
+                "label": "Our Partners",
+                "to": "/contact"
+              },
+              {
+                "label": "Work With Us",
+                "to": "/contact"
+              },
+              null
+            ]
+          },
+          {
+            "title": "Shop",
+            "links": [
+              {
+                "label": "All products",
+                "to": "/shop"
+              },
+              {
+                "label": "Categories",
+                "to": "/collections"
+              },
+              {
+                "label": "Deals",
+                "to": "/sale"
+              },
+              {
+                "label": "Top sellers",
+                "to": "/shop?sort=popular"
+              }
+            ]
+          },
+          {
+            "title": "Useful Links",
+            "links": [
+              {
+                "label": "Shipping",
+                "to": "/shipping"
+              },
+              {
+                "label": "Returns",
+                "to": "/returns"
+              },
+              {
+                "label": "Contact Us",
+                "to": "/contact"
+              },
+              {
+                "label": "FAQs",
+                "to": "/contact"
+              }
+            ]
+          }
+        ],
+        "legalLinks": [
+          {
+            "label": "Privacy Policy"
+          },
+          {
+            "label": "Terms & Conditions"
+          }
+        ],
+        "copyrightText": "(c) 2026 Marketplace Avenue. All rights reserved."
+      }
+    }
+  },
+  "pages": {
+    "home": {
+      "title": "الرئيسية",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "marketplace-slider",
+          "settings": {
+            "variant": "marketplace-slider",
+            "eyebrow": "ماركت بليس أفنيو",
+            "title": "كل الأقسام في متجر واحد",
+            "subtitle": "",
+            "ctaText": "تسوّق الآن",
+            "ctaLink": "/shop",
+            "slides": [
+              {
+                "eyebrow": "تصميم جديد في غلاف أنيق",
+                "title": "سامسونج جالاكسي فليب 5",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "ctaText": "تسوّق الآن",
+                "ctaLink": "/shop"
+              },
+              {
+                "eyebrow": "إلهام نوردي للديكور",
+                "title": "مجموعة كراسي إنبورن النوردية",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "ctaText": "تسوّق الآن",
+                "ctaLink": "/collections"
+              },
+              {
+                "eyebrow": "خصومات منتصف الأسبوع!",
+                "title": "ريدمي بودز 3",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "countdownEndAt": "2026-12-31T23:59:59+02:00",
+                "ctaText": "اذهب للتسوق",
+                "ctaLink": "/sale"
+              }
+            ],
+            "offerCard": {
+              "eyebrow": "عرض خاص",
+              "title": "غسالة أوتوماتيك 8 كجم",
+              "price": "7,999 ج",
+              "note": "عرض خاص",
+              "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+              "link": "/sale"
+            },
+            "miniCategories": {
+              "title": "الأقسام الأكثر طلبًا",
+              "link": "/collections",
+              "items": [
+                {
+                  "label": "أجهزة منزلية",
+                  "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "كونسولات",
+                  "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "ثلاجات",
+                  "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "ألعاب",
+                  "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "مكاوي",
+                  "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                },
+                {
+                  "label": "لابتوبات",
+                  "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "موبايلات",
+                  "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/shop"
+                },
+                {
+                  "label": "شاشات",
+                  "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                  "link": "/collections"
+                }
+              ]
+            },
+            "bestPicks": {
+              "title": "أفضل اختيارات الأسبوع",
+              "linkLabel": "تسوّق المزيد",
+              "link": "/shop?sort=popular",
+              "items": [
+                {
+                  "title": "Oculus Quest 2",
+                  "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                  "price": "4,490 ج",
+                  "comparePrice": "4,990 ج",
+                  "rating": "4.5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "PlayStation 5",
+                  "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                  "price": "8,000 ج",
+                  "rating": "5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "Fossil Gen 6",
+                  "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80",
+                  "price": "4,400 ج",
+                  "rating": "4.5",
+                  "link": "/shop"
+                },
+                {
+                  "title": "Apple MacBook Air M1",
+                  "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
+                  "price": "8,800 ج",
+                  "rating": "5",
+                  "link": "/shop"
+                }
+              ]
+            },
+            "i18n": {
+              "en": {
+                "eyebrow": "Marketplace Avenue",
+                "title": "Every department in one store",
+                "ctaText": "Shop now",
+                "slides": [
+                  {
+                    "eyebrow": "Fresh design in an elegant case",
+                    "title": "Samsung Galaxy Flip5",
+                    "ctaText": "Buy Now"
+                  },
+                  {
+                    "eyebrow": "Nordic inspiration for decor",
+                    "title": "Inborn Nordic Chair Collection",
+                    "ctaText": "Buy Now"
+                  },
+                  {
+                    "eyebrow": "Midweek discounts!",
+                    "title": "Redmi Buds 3",
+                    "ctaText": "To Shop"
+                  }
+                ],
+                "offerCard": {
+                  "eyebrow": "Special Offer",
+                  "title": "Washing Machine",
+                  "price": "$799",
+                  "note": "Special Offer"
+                },
+                "miniCategories": {
+                  "title": "Hot categories",
+                  "items": [
+                    {
+                      "label": "Appliances"
+                    },
+                    {
+                      "label": "Consoles"
+                    },
+                    {
+                      "label": "Fridges"
+                    },
+                    {
+                      "label": "Games"
+                    },
+                    {
+                      "label": "Irons"
+                    },
+                    {
+                      "label": "Laptops"
+                    },
+                    {
+                      "label": "Phones"
+                    },
+                    {
+                      "label": "TVs"
+                    }
+                  ]
+                },
+                "bestPicks": {
+                  "title": "Best pick of the week",
+                  "linkLabel": "Shop more"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "marketplace-utility-strip",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "items": [
+                  {
+                    "title": "Fast, Free Shipping",
+                    "description": "On order over $50"
+                  },
+                  {
+                    "title": "Next Day Delivery",
+                    "description": "Free - spend over $99"
+                  },
+                  {
+                    "title": "60-Day Free Returns",
+                    "description": "All shipping methods"
+                  },
+                  {
+                    "title": "Expert Customer Service",
+                    "description": "Choose chat or call us"
+                  },
+                  {
+                    "title": "Exclusive Brands",
+                    "description": "More exclusive products"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "recently-viewed",
+          "settings": {
+            "title": "شوهدت مؤخرًا",
+            "limit": 6,
+            "i18n": {
+              "en": {
+                "title": "Recently viewed"
+              }
+            }
+          }
+        },
+        {
+          "type": "marketplace-magazine",
+          "settings": {
+            "limit": 12,
+            "bannerEyebrow": "Urbanears",
+            "bannerTitle": "جاهز لصوت يبهرك",
+            "bannerImage": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+            "bannerLink": "/shop",
+            "articlesTitle": "أحدث المقالات",
+            "articles": [
+              {
+                "title": "أفضل موديلات لابتوب للألعاب",
+                "date": "22 نوفمبر 2024",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "إزاي تختار نظام صوت HI-FI",
+                "date": "14 نوفمبر 2024",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "Logitech POP Keys",
+                "date": "11 نوفمبر 2024",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ],
+            "latestTitle": "أحدث المنتجات",
+            "tabsTitle": "منتجات مميزة",
+            "promoBadge": "لفترة محدودة",
+            "promoTitle": "خصم على ألعاب PS5",
+            "promoText": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
+            "promoImage": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+            "promoLink": "/sale",
+            "appliancesTitle": "أفضل 100 جهاز منزلي",
+            "i18n": {
+              "en": {
+                "bannerTitle": "Get ready to impressive sound",
+                "articlesTitle": "Last articles",
+                "articles": [
+                  {
+                    "title": "Best Gaming Laptop Models",
+                    "date": "22 Nov 2024"
+                  },
+                  {
+                    "title": "How to choose a HI-FI stereo",
+                    "date": "14 Nov 2024"
+                  },
+                  {
+                    "date": "11 Nov 2024"
+                  }
+                ],
+                "latestTitle": "Latest products",
+                "tabsTitle": "Featured products",
+                "promoBadge": "Limited time",
+                "promoTitle": "Get discount on PS5 games",
+                "promoText": "S.T.A.L.K.E.R. 2 / Horizon Zero Dawn / Mafia / Cyberpunk 2077",
+                "appliancesTitle": "Top 100 appliances"
+              }
+            }
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "marketplace-tiles",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "hideBadge": true,
+            "hideSubtitle": true,
+            "hideCta": true,
+            "limit": 12,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "preferRuntimeCategories": false,
+            "collections": [
+              {
+                "title": "أجهزة منزلية",
+                "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كراسي",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "مكياج",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "جيمنج",
+                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "جاكيتات",
+                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "لابتوبات",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "غسيل",
+                "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كمبيوترات",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "موبايلات",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "تصفيف شعر",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "طاولات",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "ألعاب أطفال",
+                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "collections": [
+                  {
+                    "title": "Appliances"
+                  },
+                  {
+                    "title": "Chairs"
+                  },
+                  {
+                    "title": "Face"
+                  },
+                  {
+                    "title": "Gaming"
+                  },
+                  {
+                    "title": "Jumpers"
+                  },
+                  {
+                    "title": "Laptops"
+                  },
+                  {
+                    "title": "Laundry"
+                  },
+                  {
+                    "title": "PCs"
+                  },
+                  {
+                    "title": "Phones"
+                  },
+                  {
+                    "title": "Styling"
+                  },
+                  {
+                    "title": "Tables"
+                  },
+                  {
+                    "title": "Toys"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "hover-cards",
+          "variant": "marketplace-trio",
+          "settings": {
+            "variant": "marketplace-trio",
+            "heading": "عروض واختيارات سريعة",
+            "description": "ثلاث بطاقات تفتح مسارات الشراء الأسرع داخل المتجر.",
+            "cards": [
+              {
+                "title": "مغامرة المستوى التالي",
+                "description": "ساعة آبل بطرق استخدام جديدة بدون لمس الشاشة.",
+                "ctaText": "تسوّق الآن",
+                "link": "/shop",
+                "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80"
+              },
+              {
+                "title": "سلسلة هيرث لوفت",
+                "description": "مساحات جلوس مريحة بخطوط ناعمة لركنة مثالية.",
+                "ctaText": "تسوّق الآن",
+                "link": "/collections",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80"
+              },
+              {
+                "title": "سيشوار بلو بلاش",
+                "description": "تشطيب أزرق هادئ ووسادة ناعمة مع غطاء قابل للفك.",
+                "ctaText": "تسوّق الآن",
+                "link": "/shop",
+                "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "cards": [
+                  {
+                    "title": "Next level adventure",
+                    "description": "A magical new way to use your watch without touching the screen.",
+                    "ctaText": "Shop now"
+                  },
+                  {
+                    "title": "Hearth loft series",
+                    "description": "The expansive proportions of the seating's surface, with soft, curved arms.",
+                    "ctaText": "Shop now"
+                  },
+                  {
+                    "title": "Hair dryer blue blush",
+                    "description": "Finished in Blue Blush, cushioned with soft fabric and a removable lid.",
+                    "ctaText": "Shop now"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "marketplace-rail",
+          "settings": {
+            "title": "منتجات مقترحة أخرى",
+            "limit": 12,
+            "ctaText": "تسوّق المزيد",
+            "ctaLink": "/shop",
+            "i18n": {
+              "en": {
+                "title": "More recommended products"
+              }
+            }
+          }
+        },
+        {
+          "type": "info-content",
+          "variant": "marketplace-simple",
+          "settings": {
+            "variant": "marketplace-simple",
+            "badge": "عن المتجر",
+            "title": "متجر إلكتروني للأجهزة المنزلية والإلكترونيات",
+            "subtitle": "",
+            "body": "متجر إلكتروني للأجهزة المنزلية والإلكترونيات: كل ما يحتاجه البيت والأسرة في مكان واحد — أجهزة منزلية، إلكترونيات، ألعاب، ومستلزمات العناية — بأسعار واضحة وتوفر محدّث قبل الدفع.",
+            "detailsTitle": "ليه تشتري مننا؟",
+            "details": "شحن سريع لكل المحافظات، ضمان رسمي على الأجهزة، واسترجاع خلال 60 يوم، وفريق دعم يجيب على أسئلتك قبل تأكيد الطلب.",
+            "ctaText": "اعرف سياسة الشحن",
+            "ctaLink": "/shipping",
+            "i18n": {
+              "en": {
+                "title": "Online store of household appliances and electronics",
+                "body": "A multi-department store for the home: appliances, electronics, gaming and care essentials in one place, with clear pricing and live stock before checkout.",
+                "detailsTitle": "Why shop with us",
+                "details": "Fast delivery nationwide, official warranty on appliances, 60-day returns, and a support team that answers before you pay."
+              }
+            }
+          }
+        }
+      ]
+    },
+    "shop": {
+      "title": "المتجر",
+      "sections": [
+        {
+          "type": "shop-hero",
+          "settings": {
+            "badge": "كل المنتجات",
+            "title": "تسوّق كل الأقسام في مكان واحد",
+            "subtitle": "فلتر بالسعر والقسم والتوفر، واطلب في خطوتين.",
+            "i18n": {
+              "en": {
+                "badge": "All products",
+                "title": "Shop every department in one place",
+                "subtitle": "Filter by price, department and availability, then check out in two steps."
+              }
+            }
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "",
+            "limit": 24
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "items": [
+                  {
+                    "title": "Fast Free Shipping",
+                    "description": "On orders over $50"
+                  },
+                  {
+                    "title": "Next Day Delivery",
+                    "description": "Free over $99"
+                  },
+                  {
+                    "title": "60 Days Returns",
+                    "description": "On all eligible items"
+                  },
+                  {
+                    "title": "Expert Support",
+                    "description": "Live chat or hotline 24/7"
+                  },
+                  {
+                    "title": "Exclusive Brands",
+                    "description": "Verified quality selection"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "title": "المنتج",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "وصف المنتج",
+            "shippingTitle": "الشحن والتوصيل",
+            "shippingText": "تجهيز الطلب يتم خلال 24 ساعة، والتوصيل من يوم إلى 3 أيام عمل حسب المحافظة.",
+            "returnsTitle": "الاسترجاع",
+            "returnsText": "استرجاع مجاني خلال 60 يوم من الاستلام بحالة المنتج الأصلية.",
+            "i18n": {
+              "en": {
+                "descriptionTitle": "Product description",
+                "shippingTitle": "Shipping & delivery",
+                "shippingText": "Orders are packed within 24 hours and delivered in 1-3 business days.",
+                "returnsTitle": "Returns",
+                "returnsText": "Free returns within 60 days of delivery."
+              }
+            }
+          }
+        },
+        {
+          "type": "related-products",
+          "settings": {
+            "title": "منتجات مشابهة",
+            "limit": 4,
+            "i18n": {
+              "en": {
+                "title": "Related products"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "cart": {
+      "title": "السلة",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "راجع طلبك قبل الدفع",
+            "subtitle": "خطوة مراجعة سريعة وواضحة للكمية والسعر قبل إتمام الشراء.",
+            "i18n": {
+              "en": {
+                "title": "Review your order",
+                "subtitle": "A clear review step for quantity and price before checkout."
+              }
+            }
+          }
+        }
+      ]
+    },
+    "collections": {
+      "title": "الأقسام",
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "hideBadge": true,
+            "hideSubtitle": true,
+            "hideCta": true,
+            "limit": 12,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "preferRuntimeCategories": false,
+            "collections": [
+              {
+                "title": "أجهزة منزلية",
+                "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كراسي",
+                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "مكياج",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "جيمنج",
+                "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "جاكيتات",
+                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "لابتوبات",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "غسيل",
+                "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "كمبيوترات",
+                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "موبايلات",
+                "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "تصفيف شعر",
+                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "طاولات",
+                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "ألعاب أطفال",
+                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "contact": {
+      "title": "اتصل بنا",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "تواصل معنا بسهولة",
+            "subtitle": "الخط الساخن 24/7، واتساب، أو بريد إلكتروني — فريق الدعم يرد على أسئلتك قبل الطلب.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "i18n": {
+              "en": {
+                "title": "Talk to us easily",
+                "subtitle": "Hotline 24/7, WhatsApp or email - support answers before you order.",
+                "ctaText": "Start shopping"
+              }
+            }
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "items": [
+              {
+                "icon": "grid",
+                "title": "شحن سريع مجاني",
+                "description": "على الطلبات فوق 500 ج"
+              },
+              {
+                "icon": "clipboard",
+                "title": "توصيل اليوم التالي",
+                "description": "مجانًا فوق 990 ج"
+              },
+              {
+                "icon": "target",
+                "title": "استرجاع خلال 60 يوم",
+                "description": "لكل طرق الشحن"
+              },
+              {
+                "icon": "search",
+                "title": "خدمة عملاء خبراء",
+                "description": "شات أو مكالمة"
+              },
+              {
+                "icon": "shield",
+                "title": "ماركات حصرية",
+                "description": "منتجات أكثر تميّزًا"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "items": [
+                  {
+                    "title": "Fast Free Shipping",
+                    "description": "On orders over $50"
+                  },
+                  {
+                    "title": "Next Day Delivery",
+                    "description": "Free over $99"
+                  },
+                  {
+                    "title": "60 Days Returns",
+                    "description": "On all eligible items"
+                  },
+                  {
+                    "title": "Expert Support",
+                    "description": "Live chat or hotline 24/7"
+                  },
+                  {
+                    "title": "Exclusive Brands",
+                    "description": "Verified quality selection"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "preview": {
+    "accent": "#ad7d61",
+    "summary": "متجر أقسام متعددة يقلّد تركيب ماركت بليس: سلايدر + عرض جانبي + أقسام ساخنة + رف أفضل الاختيارات."
+  },
+  "defaultLocale": "ar",
+  "supportedLocales": [
+    "ar",
+    "en"
+  ]
+}

@@ -92,9 +92,32 @@ export const useCustomerDetailsController = () => {
               customerData.customer.city || parsedMeta.city;
             customerData.customer.country =
               customerData.customer.country || parsedMeta.country;
-            if (parsedMeta.birthday) {
-              customerData.customer.birthday = parsedMeta.birthday;
-            }
+            customerData.customer.birthday =
+              customerData.customer.birthday || parsedMeta.birthday || parsedMeta.birthDate || parsedMeta.dateOfBirth;
+            customerData.customer.phone2 =
+              customerData.customer.phone2 || parsedMeta.phone2;
+            customerData.customer.whatsappPhone =
+              customerData.customer.whatsappPhone || parsedMeta.whatsappPhone;
+            customerData.customer.leadStage =
+              customerData.customer.leadStage || parsedMeta.leadStage;
+            customerData.customer.leadPriority =
+              customerData.customer.leadPriority || parsedMeta.leadPriority;
+            customerData.customer.leadSource =
+              customerData.customer.leadSource || parsedMeta.leadSource;
+            customerData.customer.customerJob =
+              customerData.customer.customerJob || parsedMeta.customerJob;
+            customerData.customer.customerInterests =
+              customerData.customer.customerInterests || parsedMeta.customerInterests;
+            customerData.customer.inquiryDetails =
+              customerData.customer.inquiryDetails || parsedMeta.inquiryDetails;
+            customerData.customer.expectedBudget =
+              customerData.customer.expectedBudget || parsedMeta.expectedBudget;
+            customerData.customer.preferredContactMethod =
+              customerData.customer.preferredContactMethod || parsedMeta.preferredContactMethod;
+            customerData.customer.nextFollowUpDate =
+              customerData.customer.nextFollowUpDate || parsedMeta.nextFollowUpDate;
+            customerData.customer.followUpLog =
+              customerData.customer.followUpLog || parsedMeta.followUpLog || [];
           }
         } catch (e) {
           console.error("Error parsing customer metadata:", e);
