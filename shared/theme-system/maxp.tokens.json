@@ -1,105 +1,76 @@
 {
-  "$schema": "./maxp.tokens.schema.json",
-  "name": "MaxP Design Tokens",
-  "version": "1.0.0",
+  "name": "MaxP Operix Caliber — Design Tokens",
+  "version": "1.1.0",
   "updated": "2026-11-11",
-  "sourceOfTruth": "apps/frontend/src/styles/index.css",
+  "extractedFrom": [
+    "apps/frontend/src/pages/landing/operix-luxury/operixLuxury.css",
+    "apps/frontend/src/pages/landing/operix-luxury/components/OlNav.tsx",
+    "apps/frontend/src/styles/index.css (admin business-os-enterprise)"
+  ],
   "docs": "BRAND.md",
+  "officialIdentity": "operix-luxury",
   "color": {
-    "brand": {
-      "ink": "#060B0E",
-      "inkSoft": "#090D16",
-      "teal": "#2DD4BF",
-      "sky": "#38BDF8",
-      "indigo": "#818CF8",
-      "networkIndigo": "#4F46E5",
-      "gradient": "linear-gradient(135deg, #2DD4BF 0%, #38BDF8 50%, #818CF8 100%)"
+    "operix": {
+      "green": "#013735",
+      "greenDark": "#002624",
+      "greenLight": "#025956",
+      "mint": "#3fffba",
+      "mintDark": "#22c790",
+      "mintAlpha": "rgba(63,255,186,0.16)",
+      "yellow": "#ffdb43",
+      "bg": "#f0f5f3",
+      "white": "#FFFFFF",
+      "neutral700": "#5F5F5F",
+      "textMuted": "#4E6362",
+      "linkHover": "#02817D",
+      "stroke": "rgba(1,55,53,0.08)",
+      "selectionBg": "#013735",
+      "selectionText": "#3fffba"
     },
-    "light": {
+    "adminCurrent": {
       "primary": "#2F6BFF",
-      "primaryForeground": "#FFFFFF",
-      "primary600": "#2156D4",
-      "primary700": "#1C45A6",
       "secondary": "#23C7C9",
-      "secondaryForeground": "#0F1B2D",
-      "tertiary": "#8B5CF6",
       "background": "#F4F8FC",
-      "foreground": "#0F1B2D",
-      "card": "#FFFFFF",
-      "cardForeground": "#0F1B2D",
-      "muted": "#E6EEF6",
-      "mutedForeground": "#53677C",
-      "border": "#D4DEE8",
-      "input": "#FFFFFF",
-      "ring": "#2F6BFF",
-      "accent": "#E6EEF6",
-      "success": "#007F4E",
-      "successForeground": "#FFFFFF",
-      "warning": "#F59E09",
-      "warningForeground": "#2E1E0A",
-      "destructive": "#DC2626",
-      "destructiveForeground": "#FFFFFF",
-      "info": "#2F6BFF"
+      "darkBg": "#071120",
+      "note": "business-os-enterprise — مختلف عن Operix؛ قرارات التوحيد معلقة على المالك"
     },
-    "dark": {
-      "primary": "#5B8DFF",
-      "primaryForeground": "#0B1220",
-      "background": "#071120",
-      "foreground": "#F4F8FC",
-      "card": "#192941",
-      "cardForeground": "#F4F8FC",
-      "muted": "#1A2740",
-      "mutedForeground": "#A8B8C8",
-      "border": "#2A3A52",
-      "success": "#2FD49A",
-      "successForeground": "#052015",
-      "warning": "#F7B03E",
-      "warningForeground": "#2E1E0A",
-      "destructive": "#F87171",
-      "destructiveForeground": "#2A0808"
+    "legacyDoNotUse": {
+      "purpleLogo": "public/logo.png",
+      "faviconGradient": ["#2DD4BF", "#38BDF8", "#818CF8"],
+      "networkIndigo": "#4F46E5",
+      "oldLandingRed": "#B81A1A",
+      "oldLandingGold": "#D4901A"
     }
   },
   "typography": {
-    "sans": "'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif",
-    "heading": "'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif",
-    "mono": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-    "forbiddenOnArabic": ["monospace", "letter-spacing", "text-transform: uppercase"],
-    "scale": [12, 14, 16, 18, 20, 24, 30, 36],
-    "bodySize": 16,
-    "tabularNums": true
+    "official": "'IBM Plex Sans Arabic', 'Inter', sans-serif",
+    "headingWeight": 700,
+    "arabicRules": "no letter-spacing, no uppercase on Arabic",
+    "legacyEnglish": "Space Grotesk (platformLanding.css only — not Operix)"
+  },
+  "logo": {
+    "type": "component",
+    "source": "OlNav.tsx",
+    "mark": "40x40 rounded-xl bg #013735, letter M #3fffba bold",
+    "wordmark": "MaxP + pill OS bg #3fffba text #002624",
+    "tagline": "نظام تشغيل التجارة والمتاجر",
+    "doNotUse": ["public/logo.png", "favicon gradient as primary mark"]
   },
   "radius": {
-    "theme": "14px",
-    "sm": "10px",
-    "md": "12px",
-    "lg": "14px",
-    "xl": "20px"
-  },
-  "spacing": {
-    "unit": 4,
-    "scale": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
-  },
-  "icons": {
-    "standard": "lucide-react",
-    "legacy": "@heroicons/react",
-    "rule": "New files MUST use lucide. Never mix libraries in one file."
+    "button": "14px",
+    "card": "16-18px",
+    "cockpitPlate": "22px"
   },
   "motion": {
-    "duration": "150-250ms",
-    "easing": "ease-out",
-    "buttonActive": "scale(0.97)"
+    "easing": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+    "hoverLift": "translateY(-2px)",
+    "flipWord": "600ms rotateX",
+    "comet": "5.5s conic"
   },
-  "surfaces": {
-    "admin": "light business-os — tokens only, no brand gradient",
-    "landing": "dark ink + brand gradient allowed",
-    "storefront": "merchant theme via storefrontThemeContract.json"
-  },
+  "assets": "apps/frontend/public/operix-assets/",
   "accessibility": {
-    "textAA": 4.5,
-    "uiAA": 3.0,
-    "darkCardOnBgMin": 1.3,
-    "touchTarget": 44,
-    "inputFontMin": 16,
-    "focusVisible": "ring-2 ring-primary ring-offset-1"
+    "primaryOnWhite": "4.5+ estimated for #013735 (very dark petrol)",
+    "mintOnGreen": "use #3fffba on #013735 — high contrast pair from the live site",
+    "warning": "do not put white text on mint"
   }
 }
