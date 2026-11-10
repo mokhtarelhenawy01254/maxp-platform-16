@@ -299,7 +299,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
             {/* Wishlist */}
             <button
               type="button"
-              onClick={() => toggleWishlist(product)}
+              onClick={() => toggleWishlist(product.id)}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
               aria-label={prefersArabicCopy ? 'المفضلة' : 'Wishlist'}
             >
