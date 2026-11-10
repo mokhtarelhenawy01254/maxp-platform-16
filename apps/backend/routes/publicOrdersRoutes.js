@@ -43,6 +43,7 @@ const { splitCustomerName } = require('../utils/customerName');
 const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
+  parseMetadataObject,
 } = require('../utils/volumeDiscountUtils');
 const { calculateDiscount: calcStorePromotionDiscount } = require('../utils/storePromotionUtils');
 const { buildCompositeDiscountReason, resolveCheckoutPricing } = require('../utils/orderDiscountUtils');
