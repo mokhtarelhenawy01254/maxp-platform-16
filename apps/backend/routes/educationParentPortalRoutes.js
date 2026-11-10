@@ -3,10 +3,19 @@ const router = express.Router();
 const authController = require('../controller/educationParentAuthController');
 const portalController = require('../controller/educationParentPortalController');
 const { authenticateParentToken } = require('../utils/verifyParentToken');
+const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 // Parent auth routes
 router.post('/login', authController.login);
+// 🔗 تفعيل حساب ولي الأمر (عام — التوكن في الرابط)
+router.get('/activate', authController.validateActivation);
+router.post('/activate', authController.activateAccount);
+// (أدمن) توليد رابط تفعيل لولي أمر
+router.post('/activation-link',
+  verifyToken.authenticateToken,
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  authController.createActivationLink);
 router.get('/me', authenticateParentToken, authController.me);
 router.put('/me/password', authenticateParentToken, authController.changePassword);
 

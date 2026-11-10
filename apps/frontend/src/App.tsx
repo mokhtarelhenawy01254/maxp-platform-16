@@ -1378,7 +1378,9 @@ const PatientInvoicesPage = React.lazy(
   () => import("./pages/patient/PatientInvoicesPage"),
 );
 const ParentLoginPage = React.lazy(
-  () => import("./pages/auth/ParentLoginPage"),
+  () => import("./pages/auth/ParentLoginPage"),);
+const ParentActivatePage = React.lazy(
+  () => import("./pages/auth/ParentActivatePage"),
 );
 const StudentPortalLayout = React.lazy(
   () => import("./pages/academy-portal/StudentPortalLayout"),
@@ -2570,6 +2572,14 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <ParentLoginPage />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/parent/activate"
+              element={
+                <AuthLayout>
+                  <ParentActivatePage />
                 </AuthLayout>
               }
             />

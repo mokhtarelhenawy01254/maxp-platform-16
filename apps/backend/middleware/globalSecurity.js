@@ -593,6 +593,9 @@ const PUBLIC_ROUTES = [
 
   // Parent Portal (public login endpoint)
   'POST /api/v1/education/parent-portal/login',
+  // Parent account activation (public: token in the link)
+  'GET /api/v1/education/parent-portal/activate',
+  'POST /api/v1/education/parent-portal/activate',
 
   // Booking Doctor Portal (public login endpoint)
   'POST /api/v1/booking/doctor-portal/login',

@@ -7,6 +7,8 @@ model Customer {
   phone2                         String?
   phoneNormalized                String?
   password                      String?  /// Hashed password for parent portal login
+  parentActivationToken          String?  @unique /// توكن تفعيل حساب ولي الأمر
+  parentActivationExpiresAt      DateTime? /// انتهاء صلاحية رابط التفعيل
   tierMethod                     String?
   tierBenefits                   String?
   avatar                         String?
