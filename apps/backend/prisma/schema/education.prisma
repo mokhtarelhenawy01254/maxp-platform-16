@@ -48,6 +48,7 @@ model EducationPackage {
 model EducationStudent {
   id         String     @id @default(cuid())
   companyId  String
+  code       String?    /// Student code / كود الطالب
   customerId String     /// Parent (Customer/CRM)
   firstName  String
   lastName   String
@@ -69,6 +70,7 @@ model EducationStudent {
   sessions    EducationSession[]
 
   @@index([companyId])
+  @@index([companyId, code])
   @@index([customerId])
   @@map("education_students")
 }

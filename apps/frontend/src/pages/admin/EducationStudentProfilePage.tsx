@@ -248,6 +248,12 @@ const EducationStudentProfilePage: React.FC = () => {
               <h1 className="text-xl font-bold tracking-tight text-foreground">
                 {activeStudent.firstName} {activeStudent.lastName}
               </h1>
+              {activeStudent.code && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 inline-flex items-center gap-1">
+                  <span>كود الطالب:</span>
+                  <span className="font-mono" dir="ltr">#{activeStudent.code}</span>
+                </span>
+              )}
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                   activeStudent.isActive !== false

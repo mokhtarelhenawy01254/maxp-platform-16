@@ -1028,18 +1028,25 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                       {(student.firstName || "?").charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveDrawer({
-                            type: "student",
-                            id: student.id,
-                          })
-                        }
-                        className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate text-right block"
-                      >
-                        {student.firstName} {student.lastName || ""}
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveDrawer({
+                              type: "student",
+                              id: student.id,
+                            })
+                          }
+                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate text-right block"
+                        >
+                          {student.firstName} {student.lastName || ""}
+                        </button>
+                        {student.code && (
+                          <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20 shrink-0" dir="ltr">
+                            #{student.code}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-muted-foreground truncate">
                         {student.grade || (isEn ? "Enrolled Student" : "طالب مسجل")}
                       </div>

@@ -34,6 +34,7 @@ export interface EducationPackage {
 export interface EducationStudent {
   id: string;
   customerId: string;
+  code?: string;
   firstName: string;
   lastName?: string;
   phone?: string;
@@ -42,6 +43,7 @@ export interface EducationStudent {
   gender?: string;
   grade?: string;
   subjects?: string[] | { id: string; name: string }[];
+  currentLevel?: number;
   notes?: string;
   isActive: boolean;
   customer?: { id: string; firstName: string; lastName: string; phone: string; phone2?: string; email?: string };
@@ -77,7 +79,7 @@ export interface EducationEnrollment {
   enrollmentDate: string;
   expiresAt?: string;
   isActive: boolean;
-  student?: { id: string; firstName: string; lastName?: string };
+  student?: { id: string; code?: string; firstName: string; lastName?: string };
   package?: { id: string; name: string; subject?: { id: string; name: string } };
   teacher?: { id: string; name: string };
 }
@@ -95,7 +97,7 @@ export interface EducationSession {
   notes?: string;
   status: string;
   createdAt: string;
-  student?: { id: string; firstName: string; lastName?: string };
+  student?: { id: string; code?: string; firstName: string; lastName?: string };
   teacher?: { id: string; name: string };
   subject?: { id: string; name: string };
   enrollment?: { id: string; remainingHours: number };

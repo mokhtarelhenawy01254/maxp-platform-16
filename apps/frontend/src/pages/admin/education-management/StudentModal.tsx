@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone, MapPin } from "lucide-react";
+import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone, MapPin, Hash } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
 
@@ -23,6 +23,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   onSave,
 }) => {
   const [form, setForm] = useState({
+    code: (student as any)?.code || "",
     firstName: "",
     lastName: "",
     phone: "",
@@ -32,6 +33,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     notes: "",
     customerId: "",
     ...student,
+    code: (student as any)?.code || "",
     phone2: (student as any)?.phone2 || "",
     address: (student as any)?.address || "",
     gender: student?.gender
@@ -161,6 +163,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     try {
       const payload: any = {
         ...form,
+        code: form.code ? form.code.trim() : "",
         firstName: form.firstName.trim(),
         lastName: form.lastName ? form.lastName.trim() : "",
         phone: form.phone ? form.phone.trim() : "",
@@ -210,6 +213,38 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           </button>
         </div>
         <div className="space-y-3">
+          {/* Student Code Field */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-primary" />
+                <span>كود الطالب</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground font-normal">
+                  {student?.id ? "معرف فريد للطالب" : "اختياري — سيتم إنشاؤه تلقائياً إذا تُرك فارغاً"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rnd = Math.floor(1000 + Math.random() * 9000);
+                    setForm((prev) => ({ ...prev, code: `STU-${rnd}` }));
+                  }}
+                  className="text-[10px] text-primary hover:underline font-medium cursor-pointer"
+                >
+                  توليد تلقائي
+                </button>
+              </div>
+            </div>
+            <input
+              className={INPUT_CLS + " font-mono tracking-wide"}
+              value={form.code || ""}
+              onChange={(e) => setForm({ ...form, code: e.target.value })}
+              placeholder="مثال: STU-1001"
+              dir="ltr"
+            />
+          </div>
+
           {/* First & Last Name */}
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">

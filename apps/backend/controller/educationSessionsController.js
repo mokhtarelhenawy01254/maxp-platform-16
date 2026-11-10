@@ -23,7 +23,7 @@ const getAll = async (req, res) => {
     const data = await getSharedPrismaClient().educationSession.findMany({
       where,
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         teacher: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
         enrollment: { select: { id: true, remainingHours: true } }
@@ -46,7 +46,7 @@ const getById = async (req, res) => {
     const data = await getSharedPrismaClient().educationSession.findFirst({
       where: { id, companyId },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, phone: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true, phone: true } },
         teacher: { select: { id: true, name: true, phone: true } },
         subject: { select: { id: true, name: true } },
         enrollment: { select: { id: true, remainingHours: true, totalHours: true } }
@@ -111,7 +111,7 @@ const create = async (req, res) => {
         }
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         subject: { select: { id: true, name: true } }
       },
       orderBy: { scheduledAt: 'asc' }
@@ -149,7 +149,7 @@ const create = async (req, res) => {
         notes: notes ? String(notes).trim() : null
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         teacher: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } }
       }
@@ -217,7 +217,7 @@ const update = async (req, res) => {
         notes: notes !== undefined ? (notes ? String(notes).trim() : null) : undefined
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         teacher: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } }
       }
@@ -286,7 +286,7 @@ const confirm = async (req, res) => {
         where: { id },
         data: { status: 'CONFIRMED', actualDuration: duration, notes },
         include: {
-          student: { select: { id: true, firstName: true, lastName: true } },
+          student: { select: { id: true, code: true, firstName: true, lastName: true } },
           teacher: { select: { id: true, name: true } },
           subject: { select: { id: true, name: true } }
         }
@@ -381,7 +381,7 @@ const cancel = async (req, res) => {
       where: { id },
       data: { status: 'CANCELLED' },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
+        student: { select: { id: true, code: true, firstName: true, lastName: true } },
         teacher: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } }
       }

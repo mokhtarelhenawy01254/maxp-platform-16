@@ -147,10 +147,17 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-sm text-foreground truncate">
-                  {s.student
-                    ? `${s.student.firstName} ${s.student.lastName || ""}`
-                    : "—"}
+                <div className="font-semibold text-sm text-foreground truncate flex items-center gap-1.5">
+                  <span>
+                    {s.student
+                      ? `${s.student.firstName} ${s.student.lastName || ""}`
+                      : "—"}
+                  </span>
+                  {s.student?.code && (
+                    <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20 shrink-0" dir="ltr">
+                      #{s.student.code}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <User className="w-3 h-3 text-primary shrink-0" />
@@ -263,9 +270,18 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
               {filtered.map((s) => (
                 <tr key={s.id} className="hover:bg-muted/30 transition-colors">
                   <td className={CELL_CLS + " font-medium text-foreground"}>
-                    {s.student
-                      ? `${s.student.firstName} ${s.student.lastName || ""}`
-                      : "—"}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span>
+                        {s.student
+                          ? `${s.student.firstName} ${s.student.lastName || ""}`
+                          : "—"}
+                      </span>
+                      {s.student?.code && (
+                        <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20" dir="ltr">
+                          #{s.student.code}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className={CELL_CLS + " text-muted-foreground"}>
                     {s.teacher?.name || "—"}

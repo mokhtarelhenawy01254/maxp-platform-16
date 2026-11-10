@@ -166,7 +166,12 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                   <h3 className="font-bold text-sm text-foreground truncate">
                     {student.firstName} {student.lastName || ""}
                   </h3>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                    {student.code && (
+                      <span className="font-mono bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded text-[10px] font-semibold" dir="ltr">
+                        #{student.code}
+                      </span>
+                    )}
                     {student.grade && (
                       <span className="bg-background px-2 py-0.5 rounded text-[11px] border border-border/60">
                         {student.grade}
