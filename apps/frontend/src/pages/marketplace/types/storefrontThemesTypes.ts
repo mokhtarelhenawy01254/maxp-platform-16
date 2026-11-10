@@ -31,6 +31,7 @@ export const MARKETPLACE_CATEGORY_ORDER = [
   "medical",
   "kids",
   "digital",
+  "education",
   "services",
 ];
 
@@ -57,6 +58,7 @@ export const MARKETPLACE_SUBCATEGORY_ORDER: Record<string, string[]> = {
   medical: ["dental-lab"],
   kids: ["toys"],
   digital: ["web3"],
+  "education": ["kids-academy"],
   services: ["travel-services"],
 };
 
