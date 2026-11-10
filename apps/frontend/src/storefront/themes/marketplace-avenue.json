@@ -75,10 +75,10 @@
     ],
     "dropdowns": [
       {
-        "label": "Electronics",
+        "label": "Mobiles & Tech",
         "items": [
           {
-            "label": "Electronics",
+            "label": "Mobiles & Tech",
             "to": "/collections"
           },
           {
@@ -96,10 +96,10 @@
         ]
       },
       {
-        "label": "Appliances",
+        "label": "Home Appliances",
         "items": [
           {
-            "label": "Appliances",
+            "label": "Home Appliances",
             "to": "/collections"
           },
           {
@@ -113,10 +113,10 @@
         ]
       },
       {
-        "label": "Home & Garden",
+        "label": "Home & Living",
         "items": [
           {
-            "label": "Home & Garden",
+            "label": "Home & Living",
             "to": "/collections"
           },
           {
@@ -130,10 +130,10 @@
         ]
       },
       {
-        "label": "Baby & Kids",
+        "label": "Kids & Baby",
         "items": [
           {
-            "label": "Baby & Kids",
+            "label": "Kids & Baby",
             "to": "/collections"
           },
           {
@@ -147,10 +147,10 @@
         ]
       },
       {
-        "label": "Beauty & Care",
+        "label": "Beauty & Health",
         "items": [
           {
-            "label": "Beauty & Care",
+            "label": "Beauty & Health",
             "to": "/collections"
           },
           {
@@ -166,32 +166,32 @@
     ],
     "actions": [
       {
-        "label": "About Us",
+        "label": "Our Story",
         "to": "/contact",
         "style": "link"
       },
       {
-        "label": "Our Partners",
+        "label": "Partner Brands",
         "to": "/contact",
         "style": "link"
       },
       {
-        "label": "Work With Us",
+        "label": "Sell With Us",
         "to": "/contact",
         "style": "link"
       },
       {
-        "label": "Track You Order",
+        "label": "Order Tracking",
         "to": "/contact",
         "style": "link"
       },
       {
-        "label": "Contact Us",
+        "label": "Talk To Us",
         "to": "/contact",
         "style": "link"
       },
       {
-        "label": "FAQs",
+        "label": "Help Center",
         "to": "/contact",
         "style": "link"
       }
@@ -226,15 +226,15 @@
         "title": "Get to Know Us",
         "links": [
           {
-            "label": "About Us",
+            "label": "Our Story",
             "to": "/contact"
           },
           {
-            "label": "Our Partners",
+            "label": "Partner Brands",
             "to": "/contact"
           },
           {
-            "label": "Work With Us",
+            "label": "Sell With Us",
             "to": "/contact"
           }
         ]
@@ -272,11 +272,11 @@
             "to": "/returns"
           },
           {
-            "label": "Contact Us",
+            "label": "Talk To Us",
             "to": "/contact"
           },
           {
-            "label": "FAQs",
+            "label": "Help Center",
             "to": "/contact"
           }
         ]
@@ -319,21 +319,21 @@
             "ctaLink": "/shop",
             "slides": [
               {
-                "eyebrow": "Fresh design in an elegant case",
-                "title": "Samsung Galaxy Flip5",
+                "eyebrow": "Slim build, big screen",
+                "title": "Foldable Flagship Series",
                 "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
                 "ctaText": "Buy Now",
                 "ctaLink": "/shop"
               },
               {
-                "eyebrow": "Nordic inspiration for decor",
-                "title": "Inborn Nordic Chair Collection",
+                "eyebrow": "Comfort-first living",
+                "title": "Scandi Lounge Collection",
                 "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
                 "ctaText": "Buy Now",
                 "ctaLink": "/collections"
               },
               {
-                "eyebrow": "Midweek discounts!",
+                "eyebrow": "Weekly price drops",
                 "title": "Redmi Buds 3",
                 "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
                 "countdownEndAt": "2026-12-31T23:59:59+02:00",
@@ -342,19 +342,19 @@
               }
             ],
             "offerCard": {
-              "eyebrow": "Special Offer",
+              "eyebrow": "Bundle Deal",
               "title": "Washing Machine",
               "price": "$799",
-              "note": "Special Offer",
+              "note": "Bundle Deal",
               "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
               "link": "/sale"
             },
             "miniCategories": {
-              "title": "Hot categories",
+              "title": "Shop by department",
               "link": "/collections",
               "items": [
                 {
-                  "label": "Appliances",
+                  "label": "Home Appliances",
                   "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
                   "link": "/collections"
                 },
@@ -396,8 +396,8 @@
               ]
             },
             "bestPicks": {
-              "title": "Best pick of the week",
-              "linkLabel": "Shop more",
+              "title": "Editors' picks",
+              "linkLabel": "Browse all deals",
               "link": "/shop?sort=popular",
               "items": [
                 {
@@ -442,28 +442,28 @@
             "items": [
               {
                 "icon": "grid",
-                "title": "Fast, Free Shipping",
-                "description": "On order over $50"
+                "title": "Free delivery over EGP 500",
+                "description": "Nationwide coverage"
               },
               {
                 "icon": "clipboard",
-                "title": "Next Day Delivery",
-                "description": "Free - spend over $99"
+                "title": "Next-day dispatch",
+                "description": "Order before 3 PM"
               },
               {
                 "icon": "target",
-                "title": "60-Day Free Returns",
-                "description": "All shipping methods"
+                "title": "14-day easy returns",
+                "description": "No-questions exchange"
               },
               {
                 "icon": "search",
-                "title": "Expert Customer Service",
-                "description": "Choose chat or call us"
+                "title": "Support that answers",
+                "description": "Chat, call or WhatsApp"
               },
               {
                 "icon": "shield",
-                "title": "Exclusive Brands",
-                "description": "More exclusive products"
+                "title": "Verified sellers",
+                "description": "Authentic products only"
               }
             ]
           }
@@ -483,7 +483,7 @@
             "bannerTitle": "Get ready to impressive sound",
             "bannerImage": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
             "bannerLink": "/shop",
-            "articlesTitle": "Last articles",
+            "articlesTitle": "From the journal",
             "articles": [
               {
                 "title": "Best Gaming Laptop Models",
@@ -529,7 +529,7 @@
             "preferRuntimeCategories": true,
             "collections": [
               {
-                "title": "Appliances",
+                "title": "Home Appliances",
                 "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
@@ -680,16 +680,16 @@
               {
                 "icon": "grid",
                 "title": "Fast Free Shipping",
-                "description": "On orders over $50"
+                "description": "Nationwide coverage"
               },
               {
                 "icon": "clipboard",
-                "title": "Next Day Delivery",
-                "description": "Free over $99"
+                "title": "Next-day dispatch",
+                "description": "Order before 3 PM"
               },
               {
                 "icon": "target",
-                "title": "60 Days Returns",
+                "title": "14-day easy returns",
                 "description": "On all eligible items"
               },
               {
@@ -699,7 +699,7 @@
               },
               {
                 "icon": "shield",
-                "title": "Exclusive Brands",
+                "title": "Verified sellers",
                 "description": "Verified quality selection"
               }
             ]
@@ -892,16 +892,16 @@
               {
                 "icon": "grid",
                 "title": "Fast Free Shipping",
-                "description": "On orders over $50"
+                "description": "Nationwide coverage"
               },
               {
                 "icon": "clipboard",
-                "title": "Next Day Delivery",
-                "description": "Free over $99"
+                "title": "Next-day dispatch",
+                "description": "Order before 3 PM"
               },
               {
                 "icon": "target",
-                "title": "60 Days Returns",
+                "title": "14-day easy returns",
                 "description": "On all eligible items"
               },
               {
@@ -911,7 +911,7 @@
               },
               {
                 "icon": "shield",
-                "title": "Exclusive Brands",
+                "title": "Verified sellers",
                 "description": "Verified quality selection"
               }
             ]

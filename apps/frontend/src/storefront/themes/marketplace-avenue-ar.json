@@ -360,7 +360,7 @@
         ],
         "dropdowns": [
           {
-            "label": "Electronics",
+            "label": "Mobiles & Tech",
             "items": [
               {
                 "label": "Mobiles"
@@ -383,7 +383,7 @@
             ]
           },
           {
-            "label": "Appliances",
+            "label": "Home Appliances",
             "items": [
               {
                 "label": "Washing Machines"
@@ -540,22 +540,22 @@
         ],
         "actions": [
           {
-            "label": "About Us"
+            "label": "Our Story"
           },
           {
-            "label": "Our Partners"
+            "label": "Partner Brands"
           },
           {
-            "label": "Work With Us"
+            "label": "Sell With Us"
           },
           {
             "label": "Track Your Order"
           },
           {
-            "label": "Contact Us"
+            "label": "Talk To Us"
           },
           {
-            "label": "FAQs"
+            "label": "Help Center"
           }
         ]
       }
@@ -669,15 +669,15 @@
             "title": "Get to Know Us",
             "links": [
               {
-                "label": "About Us",
+                "label": "Our Story",
                 "to": "/contact"
               },
               {
-                "label": "Our Partners",
+                "label": "Partner Brands",
                 "to": "/contact"
               },
               {
-                "label": "Work With Us",
+                "label": "Sell With Us",
                 "to": "/contact"
               },
               null
@@ -716,11 +716,11 @@
                 "to": "/returns"
               },
               {
-                "label": "Contact Us",
+                "label": "Talk To Us",
                 "to": "/contact"
               },
               {
-                "label": "FAQs",
+                "label": "Help Center",
                 "to": "/contact"
               }
             ]
@@ -873,32 +873,32 @@
                 "ctaText": "Shop now",
                 "slides": [
                   {
-                    "eyebrow": "Fresh design in an elegant case",
-                    "title": "Samsung Galaxy Flip5",
+                    "eyebrow": "Slim build, big screen",
+                    "title": "Foldable Flagship Series",
                     "ctaText": "Buy Now"
                   },
                   {
-                    "eyebrow": "Nordic inspiration for decor",
-                    "title": "Inborn Nordic Chair Collection",
+                    "eyebrow": "Comfort-first living",
+                    "title": "Scandi Lounge Collection",
                     "ctaText": "Buy Now"
                   },
                   {
-                    "eyebrow": "Midweek discounts!",
+                    "eyebrow": "Weekly price drops",
                     "title": "Redmi Buds 3",
                     "ctaText": "To Shop"
                   }
                 ],
                 "offerCard": {
-                  "eyebrow": "Special Offer",
+                  "eyebrow": "Bundle Deal",
                   "title": "Washing Machine",
                   "price": "$799",
-                  "note": "Special Offer"
+                  "note": "Bundle Deal"
                 },
                 "miniCategories": {
-                  "title": "Hot categories",
+                  "title": "Shop by department",
                   "items": [
                     {
-                      "label": "Appliances"
+                      "label": "Home Appliances"
                     },
                     {
                       "label": "Consoles"
@@ -924,8 +924,8 @@
                   ]
                 },
                 "bestPicks": {
-                  "title": "Best pick of the week",
-                  "linkLabel": "Shop more"
+                  "title": "Editors' picks",
+                  "linkLabel": "Browse all deals"
                 }
               }
             }
@@ -968,24 +968,24 @@
               "en": {
                 "items": [
                   {
-                    "title": "Fast, Free Shipping",
-                    "description": "On order over $50"
+                    "title": "Free delivery over EGP 500",
+                    "description": "Nationwide coverage"
                   },
                   {
-                    "title": "Next Day Delivery",
-                    "description": "Free - spend over $99"
+                    "title": "Next-day dispatch",
+                    "description": "Order before 3 PM"
                   },
                   {
-                    "title": "60-Day Free Returns",
-                    "description": "All shipping methods"
+                    "title": "14-day easy returns",
+                    "description": "No-questions exchange"
                   },
                   {
-                    "title": "Expert Customer Service",
-                    "description": "Choose chat or call us"
+                    "title": "Support that answers",
+                    "description": "Chat, call or WhatsApp"
                   },
                   {
-                    "title": "Exclusive Brands",
-                    "description": "More exclusive products"
+                    "title": "Verified sellers",
+                    "description": "Authentic products only"
                   }
                 ]
               }
@@ -1044,7 +1044,7 @@
             "i18n": {
               "en": {
                 "bannerTitle": "Get ready to impressive sound",
-                "articlesTitle": "Last articles",
+                "articlesTitle": "From the journal",
                 "articles": [
                   {
                     "title": "Best Gaming Laptop Models",
@@ -1147,7 +1147,7 @@
               "en": {
                 "collections": [
                   {
-                    "title": "Appliances"
+                    "title": "Home Appliances"
                   },
                   {
                     "title": "Chairs"
@@ -1344,14 +1344,14 @@
                 "items": [
                   {
                     "title": "Fast Free Shipping",
-                    "description": "On orders over $50"
+                    "description": "Nationwide coverage"
                   },
                   {
-                    "title": "Next Day Delivery",
-                    "description": "Free over $99"
+                    "title": "Next-day dispatch",
+                    "description": "Order before 3 PM"
                   },
                   {
-                    "title": "60 Days Returns",
+                    "title": "14-day easy returns",
                     "description": "On all eligible items"
                   },
                   {
@@ -1359,7 +1359,7 @@
                     "description": "Live chat or hotline 24/7"
                   },
                   {
-                    "title": "Exclusive Brands",
+                    "title": "Verified sellers",
                     "description": "Verified quality selection"
                   }
                 ]
@@ -1608,14 +1608,14 @@
                 "items": [
                   {
                     "title": "Fast Free Shipping",
-                    "description": "On orders over $50"
+                    "description": "Nationwide coverage"
                   },
                   {
-                    "title": "Next Day Delivery",
-                    "description": "Free over $99"
+                    "title": "Next-day dispatch",
+                    "description": "Order before 3 PM"
                   },
                   {
-                    "title": "60 Days Returns",
+                    "title": "14-day easy returns",
                     "description": "On all eligible items"
                   },
                   {
@@ -1623,7 +1623,7 @@
                     "description": "Live chat or hotline 24/7"
                   },
                   {
-                    "title": "Exclusive Brands",
+                    "title": "Verified sellers",
                     "description": "Verified quality selection"
                   }
                 ]

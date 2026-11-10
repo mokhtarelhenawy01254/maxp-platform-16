@@ -147,3 +147,8 @@
 .storefront-page-composer .ql-align-justify {
   text-align: justify !important;
 }
+/* Marketplace PDP: promote the product-info frame to the 3-column grid so the
+   buybox <section> (info) and <aside> (shipping rail) land in tracks 2 and 3. */
+.sf-pdp-3col [data-storefront-section] {
+  display: contents;
+}
