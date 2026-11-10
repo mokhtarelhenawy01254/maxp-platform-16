@@ -2349,6 +2349,37 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    let soldLast24h = 0;
+    try {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const soldAgg = await prisma.orderItem.aggregate({
+        where: {
+          productId: product.id,
+          order: {
+            companyId: req.companyId,
+            createdAt: { gte: since },
+            status: {
+              notIn: [
+                'CANCELLED',
+                'RETURNED',
+                'PARTIALLY_RETURNED',
+                'REFUNDED',
+                'PARTIALLY_REFUNDED',
+                'DUPLICATE_ORDER',
+                'TRASH',
+                'DRAFT',
+              ],
+            },
+          },
+        },
+        _sum: { quantity: true },
+      });
+      soldLast24h = Number(soldAgg?._sum?.quantity || 0);
+    } catch (soldErr) {
+      console.warn('⚠️ [SOLD-24H] aggregate failed:', soldErr?.message);
+      soldLast24h = 0;
+    }
+
     const [demandSignals, affiliatePricing, amazonBuyUrl] = await Promise.all([
       getProductDemandSignals(prisma, {
         companyId: req.companyId,
@@ -2366,7 +2397,10 @@ router.get('/:id', async (req, res) => {
 
     const responsePayload = {
       success: true,
-      data: applyAffiliatePricing(formattedProduct, affiliatePricing),
+      data: {
+        ...applyAffiliatePricing(formattedProduct, affiliatePricing),
+        soldLast24h,
+      },
     };
 
     if (detailCacheKey) {
