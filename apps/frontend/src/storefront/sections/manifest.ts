@@ -3522,6 +3522,22 @@ export const STOREFRONT_SECTION_MANIFEST = {
       }
     ]
   },
+  "contact-form": {
+    label: "فورم تواصل",
+    component: "contact-form",
+    variants: [
+      { value: "standard", label: "قياسي" },
+    ],
+    fields: [
+      { key: "title", label: "العنوان", type: "text", placeholder: "تواصل معنا" },
+      { key: "subtitle", label: "الوصف المختصر", type: "textarea" },
+      { key: "whatsapp", label: "رقم واتساب للاستقبال", type: "text" },
+      { key: "email", label: "البريد الإلكتروني", type: "text" },
+      { key: "submitText", label: "نص زر الإرسال", type: "text" },
+      { key: "successText", label: "نص بعد الإرسال", type: "text" },
+    ],
+    pages: ["contact", "about"],
+  },
   "info-content": {
     label: "محتوى نصي",
     component: "info-content",

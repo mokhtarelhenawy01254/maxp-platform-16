@@ -36,6 +36,7 @@ const MemberRegistration = React.lazy(() => import('../sections/MemberRegistrati
 const ShoppingIntents = React.lazy(() => import('../sections/ShoppingIntents'));
 const OfferBento = React.lazy(() => import('../sections/OfferBento'));
 const InfoContentSection = React.lazy(() => import('../sections/InfoContentSection'));
+const ContactFormSection = React.lazy(() => import('../sections/ContactFormSection'));
 const CookieConsentSection = React.lazy(() => import('../sections/CookieConsentSection'));
 const PrivacyPolicySection = React.lazy(() => import('../compliance/PrivacyPolicySection'));
 const TermsSection = React.lazy(() => import('../compliance/TermsSection'));
@@ -180,6 +181,7 @@ const baseComponentRegistry: Record<
   'recently-viewed': RecentlyViewed,
   'marketplace-magazine': MarketplaceMagazine,
   'info-content': InfoContentSection,
+  'contact-form': ContactFormSection,
   'cookie-consent': CookieConsentSection,
   'privacy-policy': PrivacyPolicySection,
   'terms-of-use': TermsSection,

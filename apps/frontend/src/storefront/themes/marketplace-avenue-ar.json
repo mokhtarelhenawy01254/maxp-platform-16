@@ -1567,6 +1567,73 @@
                 "subtitle": "Hotline 24/7, WhatsApp or email - support answers before you order.",
                 "ctaText": "Start shopping"
               }
+            },
+            "heroHeight": "compact"
+          }
+        },
+        {
+          "type": "contact-form",
+          "variant": "standard",
+          "settings": {
+            "title": "تواصل معنا",
+            "subtitle": "فريق الدعم بيرد على استفساراتك من السبت للخميس، ١٠ص – ٦م.",
+            "whatsapp": "201000000000",
+            "email": "support@example.com",
+            "submitText": "إرسال الرسالة",
+            "successText": "تم تجهيز رسالتك — كمّل الإرسال من واتساب أو البريد.",
+            "infoItems": [
+              {
+                "icon": "pin",
+                "title": "العنوان",
+                "value": "القاهرة، مصر — المقر الرئيسي"
+              },
+              {
+                "icon": "phone",
+                "title": "الخط الساخن",
+                "value": "01000 000 000",
+                "href": "tel:01000000000"
+              },
+              {
+                "icon": "mail",
+                "title": "البريد الإلكتروني",
+                "value": "support@example.com",
+                "href": "mailto:support@example.com"
+              },
+              {
+                "icon": "clock",
+                "title": "مواعيد العمل",
+                "value": "السبت – الخميس · ١٠ص – ٦م"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "title": "Talk to us",
+                "subtitle": "Our support team answers Saturday to Thursday, 10am – 6pm.",
+                "submitText": "Send message",
+                "successText": "Your message is ready — finish sending it on WhatsApp or email.",
+                "infoItems": [
+                  {
+                    "icon": "pin",
+                    "title": "Address",
+                    "value": "Cairo, Egypt — head office"
+                  },
+                  {
+                    "icon": "phone",
+                    "title": "Hotline",
+                    "value": "01000 000 000"
+                  },
+                  {
+                    "icon": "mail",
+                    "title": "Email",
+                    "value": "support@example.com"
+                  },
+                  {
+                    "icon": "clock",
+                    "title": "Working hours",
+                    "value": "Sat – Thu · 10am – 6pm"
+                  }
+                ]
+              }
             }
           }
         },
