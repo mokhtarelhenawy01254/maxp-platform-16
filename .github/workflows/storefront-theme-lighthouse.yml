@@ -74,19 +74,23 @@ jobs:
           set -euo pipefail
           IFS=',' read -ra LIST <<< "${{ inputs.urls }}"
           i=0
+          mkdir -p .lh-runs
           for u in "${LIST[@]}"; do
             u="$(echo "$u" | xargs)"
             [ -z "$u" ] && continue
             i=$((i+1))
             echo "=== collecting [$i]: $u"
+            rm -rf .lighthouseci
             lhci collect \
               --url="$u" \
               --numberOfRuns=${{ inputs.runs }} \
-              --collect.outputDir=".lighthouseci/run-$i" \
               --settings.preset=desktop 2>&1 | tee -a lhci-collect.log
+            if [ -d .lighthouseci ]; then
+              mv .lighthouseci ".lh-runs/run-$i"
+            fi
           done
           echo "=== output directory contents ==="
-          find .lighthouseci -name 'lhr-*.json' | sort
+          find .lh-runs -name 'lhr-*.json' | sort
 
       - name: Upload raw Lighthouse JSON results
         if: always()
@@ -94,7 +98,7 @@ jobs:
         with:
           name: lighthouse-raw-json
           path: |
-            .lighthouseci/
+            .lh-runs/
             lhci-collect.log
           retention-days: 30
           if-no-files-found: error
@@ -105,7 +109,7 @@ jobs:
           node - <<'NODE' | tee -a "$GITHUB_STEP_SUMMARY"
           const fs = require('fs');
           const path = require('path');
-          const dir = '.lighthouseci';
+          const dir = '.lh-runs';
           if (!fs.existsSync(dir)) { console.log('لا يوجد تقرير — الفحص لم ينتج ملفات.'); process.exit(0); }
           const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => {
             const p = path.join(d, e.name);
