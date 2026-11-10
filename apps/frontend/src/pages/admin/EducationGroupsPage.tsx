@@ -69,10 +69,10 @@ export interface EducationGroup {
   totalMembers: number;
   activeMembers: number;
   waitingMembers: number;
-  feeType: "MONTHLY" | "FULL_COURSE";
-  feeAmount: number;
-  teacherRateType: "PERCENTAGE" | "FIXED_PER_SESSION" | "PER_STUDENT";
-  teacherRateValue: number;
+  feeType?: "MONTHLY" | "FULL_COURSE";
+  feeAmount?: number;
+  teacherRateType?: "PERCENTAGE" | "FIXED_PER_SESSION" | "PER_STUDENT";
+  teacherRateValue?: number;
   scheduleDays: string[];
   startTime?: string | null;
   endTime?: string | null;
@@ -335,7 +335,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         body: JSON.stringify({
           studentId: enrollStudentId,
           paymentStatus: enrollPaymentStatus,
-          amountPaid: enrollAmountPaid || (enrollPaymentStatus === "PAID" ? activeGroup.feeAmount : 0),
+          amountPaid: enrollAmountPaid || (enrollPaymentStatus === "PAID" ? (activeGroup.feeAmount || 0) : 0),
         }),
       });
       const data = await res.json();
@@ -551,9 +551,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 code: `GRP-${101 + groups.length}`,
                 capacity: 15,
                 feeType: "MONTHLY",
-                feeAmount: 350,
+                feeAmount: 0,
                 teacherRateType: "PERCENTAGE",
-                teacherRateValue: 50,
+                teacherRateValue: 0,
                 scheduleDays: ["SATURDAY", "TUESDAY"],
                 startTime: "17:00",
                 endTime: "18:30",
@@ -733,9 +733,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 code: `GRP-${101 + groups.length}`,
                 capacity: 15,
                 feeType: "MONTHLY",
-                feeAmount: 350,
+                feeAmount: 0,
                 teacherRateType: "PERCENTAGE",
-                teacherRateValue: 50,
+                teacherRateValue: 0,
                 scheduleDays: ["SATURDAY", "TUESDAY"],
                 startTime: "17:00",
                 endTime: "18:30",
@@ -881,13 +881,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       style={{ width: `${Math.min(fillPercentage, 100)}%` }}
                     />
                   </div>
-
-                  <div className="flex items-center justify-between pt-1 text-xs border-t border-border/50">
-                    <span className="text-muted-foreground">الاشتراك:</span>
-                    <span className="font-bold text-foreground">
-                      {group.feeAmount} ج {group.feeType === "MONTHLY" ? "/ شهر" : "/ للمستوى"}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -935,7 +928,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   <th className="py-3 px-4">المعلم</th>
                   <th className="py-3 px-4">المواعيد الثابتة</th>
                   <th className="py-3 px-4">الإشغال</th>
-                  <th className="py-3 px-4">الاشتراك</th>
                   <th className="py-3 px-4">الحالة</th>
                   <th className="py-3 px-4 text-center">الإجراءات</th>
                 </tr>
@@ -963,9 +955,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       <span className="font-semibold text-foreground">
                         {g.activeMembers || 0} / {g.capacity}
                       </span>
-                    </td>
-                    <td className="py-3 px-4 font-bold text-foreground">
-                      {g.feeAmount} ج {g.feeType === "MONTHLY" ? "شهرياً" : "كورس"}
                     </td>
                     <td className="py-3 px-4">
                       <span
@@ -1463,7 +1452,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-2">
                   <label className="font-semibold text-foreground">الطاقة الاستيعابية (الحد الأقصى) *</label>
                   <input
                     type="number"
@@ -1471,55 +1460,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     required
                     value={editingGroup.capacity || 15}
                     onChange={(e) => setEditingGroup({ ...editingGroup, capacity: parseInt(e.target.value, 10) })}
-                    className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-foreground">نوع الاشتراك</label>
-                  <select
-                    value={editingGroup.feeType || "MONTHLY"}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, feeType: e.target.value as any })}
-                    className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="MONTHLY">اشتراك شهري</option>
-                    <option value="FULL_COURSE">اشتراك المستوى بالكامل</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-foreground">قيمة الاشتراك (ج.م)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingGroup.feeAmount || 0}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, feeAmount: parseFloat(e.target.value) })}
-                    className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-foreground">طريقة محاسبة المعلم</label>
-                  <select
-                    value={editingGroup.teacherRateType || "PERCENTAGE"}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, teacherRateType: e.target.value as any })}
-                    className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="PERCENTAGE">نسبة مئوية من الاشتراكات (%)</option>
-                    <option value="FIXED_PER_SESSION">مبلغ ثابت لكل محاضرة</option>
-                    <option value="PER_STUDENT">مبلغ عن كل طالب شهرياً</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-foreground">
-                    قيمة نسبة/أجر المعلم ({editingGroup.teacherRateType === "PERCENTAGE" ? "%" : "ج.م"})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingGroup.teacherRateValue || 50}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, teacherRateValue: parseFloat(e.target.value) })}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1680,7 +1620,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   min="0"
                   value={enrollAmountPaid}
                   onChange={(e) => setEnrollAmountPaid(e.target.value)}
-                  placeholder={`القيمة الافتراضية: ${activeGroup.feeAmount} ج`}
+                  placeholder={activeGroup.feeAmount ? `القيمة الافتراضية: ${activeGroup.feeAmount} ج` : "0 ج"}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 />
               </div>
