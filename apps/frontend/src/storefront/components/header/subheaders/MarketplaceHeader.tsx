@@ -45,7 +45,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
   const isRtl = bilingual ? locale === "ar" : theme.direction === "rtl";
   const headerDir = isRtl ? "rtl" : "ltr";
   const quickLinks = (theme.header?.actions || []).slice(0, 6);
-  const categories = (theme.header?.dropdowns || []).slice(0, 5);
+  const categories = (theme.header?.dropdowns || []).slice(0, 8);
   const phone = (theme.footer && (theme.footer as { phoneText?: string }).phoneText) || "01000 000 000";
 
   const submitSearch = (event: React.FormEvent) => {
@@ -162,15 +162,44 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
         {/* band 3 — categories + nav */}
         <div className="bg-[#e14a5c] text-white">
           <div className="container flex h-[51px] items-center gap-8 overflow-x-auto px-4 text-[15px] font-semibold md:px-6">
-            {categories.map((dropdown) => (
-              <Link
-                key={dropdown.label}
-                to={dropdown.items?.[0]?.to || "/collections"}
-                className="whitespace-nowrap text-white/90 transition-colors hover:text-white"
-              >
-                {dropdown.label}
-              </Link>
-            ))}
+            {categories.map((dropdown) => {
+              const items = (dropdown.items || []).filter(
+                (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
+              );
+              const label = dropdown.label || items[0]?.label || "";
+              return (
+                <div key={label} className="group relative shrink-0">
+                  <Link
+                    to={dropdown.to || items[0]?.to || "/collections"}
+                    className="flex items-center gap-1 whitespace-nowrap text-white/90 transition-colors hover:text-white"
+                  >
+                    {label}
+                    {items.length ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    ) : null}
+                  </Link>
+                  {/* department flyout — the sub-categories the catalogue actually holds */}
+                  {items.length ? (
+                    <div className="pointer-events-none invisible absolute start-0 top-full z-50 w-[250px] translate-y-1 rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground opacity-0 shadow-xl transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                      <ul className="flex flex-col">
+                        {items.map((item: { label: string; to: string }) => (
+                          <li key={item.to + item.label}>
+                            <Link
+                              to={item.to}
+                              className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                              {item.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
             {navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
               <Link
                 key={link.to + link.label}

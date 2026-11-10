@@ -172,6 +172,8 @@ export interface StorefrontHeaderConfig {
   };
   dropdowns?: Array<{
     label?: string;
+    /** department landing page; the category bar falls back to the first item's link */
+    to?: string;
     items?: Array<{ label?: string; to?: string }>;
   }>;
 }
