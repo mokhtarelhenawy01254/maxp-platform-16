@@ -1482,25 +1482,6 @@ router.post('/', async (req, res) => {
           item.quantityOffer.freeShipping = isFreeShippingTrusted;
         }
 
-        // 🔒 Same trust for the metadata mirrors of the flag — checkout pricing reads
-        // item.quantityOffer, metadata.quantityOffer and metadata.freeShipping alike.
-        let itemMetaObj = item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
-          ? item.metadata
-          : null;
-        if (!itemMetaObj && typeof item.metadata === 'string') {
-          const parsedItemMeta = parseMetadataObject(item.metadata);
-          if (parsedItemMeta && typeof parsedItemMeta === 'object' && !Array.isArray(parsedItemMeta)) {
-            itemMetaObj = parsedItemMeta;
-            item.metadata = itemMetaObj;
-          }
-        }
-        if (itemMetaObj?.quantityOffer && typeof itemMetaObj.quantityOffer === 'object') {
-          itemMetaObj.quantityOffer.freeShipping = isFreeShippingTrusted;
-        }
-        if (itemMetaObj && itemMetaObj.freeShipping !== undefined) {
-          itemMetaObj.freeShipping = isFreeShippingTrusted;
-        }
-
         if (!groups.has(quantityOffer.groupId)) {
           groups.set(quantityOffer.groupId, {
             groupId: quantityOffer.groupId,
@@ -1526,6 +1507,36 @@ router.post('/', async (req, res) => {
         return groups;
       }, new Map()).values(),
     );
+
+    // 🔒 Scrub EVERY line's freeShipping mirrors — checkout pricing reads them on any
+    // item, not just offer lines. Group lines inherit their group's trusted value;
+    // lines without a quantity offer can never legitimately claim free shipping.
+    const groupTrustedMap = new Map(
+      quantityOfferSummaries.map((summary) => [summary.groupId, Boolean(summary.freeShipping)])
+    );
+    for (const item of cartItems) {
+      const lineGroupId = getQuantityOfferMetadata(item)?.groupId;
+      const lineTrusted = lineGroupId ? (groupTrustedMap.get(lineGroupId) ?? false) : false;
+      if (item.quantityOffer) {
+        item.quantityOffer.freeShipping = lineTrusted;
+      }
+      let itemMetaObj = item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
+        ? item.metadata
+        : null;
+      if (!itemMetaObj && typeof item.metadata === 'string') {
+        const parsedItemMeta = parseMetadataObject(item.metadata);
+        if (parsedItemMeta && typeof parsedItemMeta === 'object' && !Array.isArray(parsedItemMeta)) {
+          itemMetaObj = parsedItemMeta;
+          item.metadata = itemMetaObj;
+        }
+      }
+      if (itemMetaObj?.quantityOffer && typeof itemMetaObj.quantityOffer === 'object') {
+        itemMetaObj.quantityOffer.freeShipping = lineTrusted;
+      }
+      if (itemMetaObj && itemMetaObj.freeShipping !== undefined) {
+        itemMetaObj.freeShipping = lineTrusted;
+      }
+    }
 
     const quantityOfferFreeShipping = quantityOfferSummaries.some(
       (summary) => Boolean(summary.freeShipping),

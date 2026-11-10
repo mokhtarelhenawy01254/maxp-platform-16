@@ -33,8 +33,9 @@ const decodeEscapedUnicode = (text) => {
 
 const safePreviewText = (text, maxLength) => {
   const decoded = decodeEscapedUnicode(typeof text === 'string' ? text : String(text ?? ''));
-  if (!maxLength || decoded.length <= maxLength) return decoded;
-  return `${decoded.slice(0, maxLength)}...`;
+  const capped = !maxLength || decoded.length <= maxLength ? decoded : `${decoded.slice(0, maxLength)}...`;
+  // Slicing can split an astral char at the cap — strip any unpaired half.
+  return capped.replace(LONE_SURROGATE_RE, '');
 };
 
 module.exports = { decodeEscapedUnicode, safePreviewText };
