@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { StorefrontHomeLink } from "../storefrontHeaderHelpers";
 import { StorefrontSearchOverlay } from "./StorefrontSearchOverlay";
@@ -18,6 +18,7 @@ interface MarketplaceHeaderProps {
  * marketplace demo, mapped onto our header controller so search/cart/nav stay live.
  */
 export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller }) => {
+  const [moreOpen, setMoreOpen] = useState(false);
   const {
     theme,
     displayStoreName,
@@ -190,7 +191,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
         {/* band 3 — categories + nav */}
         <div className="bg-[#e14a5c] text-white">
           <div className="container flex h-[51px] items-center justify-between gap-6 px-4 text-[15px] font-semibold md:px-6">
-            <div className="flex items-center gap-7 overflow-x-auto py-1">
+            <div className="flex items-center gap-7 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {categories.map((dropdown) => {
                 const items = (dropdown.items || []).filter(
                   (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
@@ -229,6 +230,58 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                   </div>
                 );
               })}
+              {/* overflow menu — the categories/nav that do not fit are reachable here
+                  instead of a raw horizontal scrollbar */}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((open) => !open)}
+                  aria-label={isRtl ? "المزيد من الأقسام" : "More departments"}
+                  aria-expanded={moreOpen}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="19" cy="12" r="2" />
+                  </svg>
+                </button>
+                {moreOpen ? (
+                  <div className="absolute start-0 top-full z-50 mt-1 w-[240px] rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground shadow-xl">
+                    <ul className="flex max-h-[320px] flex-col overflow-y-auto">
+                      {categories.map((dropdown) => {
+                        const items = (dropdown.items || []).filter(
+                          (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
+                        );
+                        const label = dropdown.label || items[0]?.label || "";
+                        return (
+                          <li key={`more-${label}`}>
+                            <Link
+                              to={dropdown.to || items[0]?.to || "/collections"}
+                              onClick={() => setMoreOpen(false)}
+                              className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                              {label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                      <li className="my-1 border-t border-border" />
+                      {(navLinks || []).map((link: { label: string; to: string }) => (
+                        <li key={`more-nav-${link.to}-${link.label}`}>
+                          <Link
+                            to={link.to}
+                            onClick={() => setMoreOpen(false)}
+                            className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            {link.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
               {navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
                 <Link
                   key={link.to + link.label}

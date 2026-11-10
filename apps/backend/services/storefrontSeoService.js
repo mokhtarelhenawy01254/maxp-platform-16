@@ -222,6 +222,16 @@ const cleanCanonicalUrl = (rawUrl) => {
       "mc_eid",
     ];
     trackingParams.forEach((param) => u.searchParams.delete(param));
+    // Collapse duplicate query params (observed: ?lang=ar&lang=ar on product
+    // canonicals — a duplicate canonical token splits ranking signals).
+    const seenKeys = [...new Set([...u.searchParams.keys()])];
+    for (const key of seenKeys) {
+      const values = u.searchParams.getAll(key);
+      if (values.length > 1) {
+        u.searchParams.delete(key);
+        u.searchParams.append(key, values[values.length - 1]);
+      }
+    }
     const clean = `${u.origin}${u.pathname}`;
     const remaining = u.searchParams.toString();
     return remaining ? `${clean}?${remaining}` : clean;
