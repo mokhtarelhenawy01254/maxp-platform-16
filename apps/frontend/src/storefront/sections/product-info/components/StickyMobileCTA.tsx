@@ -7,13 +7,15 @@ export const StickyMobileCTA = ({
   currency,
   onAddToCart,
   isVisible,
-  label = '???? ????',
+  label = 'السعر الإجمالي',
+  buttonLabel,
 }: {
   activePrice: number;
   currency: string;
   onAddToCart: () => void;
   isVisible: boolean;
   label?: string;
+  buttonLabel?: string;
 }) => {
   const displayPrice = formatStorefrontCurrency(activePrice, currency);
 
@@ -49,7 +51,7 @@ export const StickyMobileCTA = ({
           onClick={onAddToCart}
           className="flex-1 h-14 bg-primary text-primary-foreground rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20"
         >
-          ??? ?????
+          {buttonLabel || (typeof document !== 'undefined' && document.documentElement.dir === 'rtl' ? 'أضف إلى السلة' : 'Add to cart')}
         </StaticMotionButton>
       </div>
     </StaticMotionDiv>
