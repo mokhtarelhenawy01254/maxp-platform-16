@@ -1885,6 +1885,7 @@ export const getSidebarConfig = (
                 { to: '/admin/education/dashboard', itemId: 'education-dashboard', icon: BarChart3, label: t('sidebar.educationDashboard') },
                 { to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, label: t('sidebar.educationSubjects') },
                 { to: '/admin/education/packages', itemId: 'education-packages', icon: Gift, label: t('sidebar.educationPackages') },
+                { to: '/admin/education/groups', itemId: 'education-groups', icon: Users, label: t('sidebar.educationGroups', 'المجموعات الدراسية (الجروبات)') },
                 { to: '/admin/education/students', itemId: 'education-students', icon: Users, label: t('sidebar.educationStudents') },
                 { to: '/admin/education/teachers', itemId: 'education-teachers', icon: Users, label: t('sidebar.educationTeachers') },
                 { to: '/admin/education/enrollments', itemId: 'education-enrollments', icon: Layers, label: t('sidebar.educationEnrollments') },

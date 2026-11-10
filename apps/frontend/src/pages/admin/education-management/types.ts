@@ -116,6 +116,7 @@ export type TabId =
   | "dashboard"
   | "subjects"
   | "packages"
+  | "groups"
   | "students"
   | "teachers"
   | "enrollments"
@@ -127,6 +128,7 @@ export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ class
   { id: "dashboard", label: "لوحة التحكم", icon: BarChart3 },
   { id: "subjects", label: "المواد", icon: BookOpen },
   { id: "packages", label: "الباقات", icon: Gift },
+  { id: "groups", label: "المجموعات (الجروبات)", icon: Users },
   { id: "students", label: "الطلاب", icon: Users },
   { id: "teachers", label: "المهندسين", icon: GraduationCap },
   { id: "enrollments", label: "التسجيلات", icon: Layers },
