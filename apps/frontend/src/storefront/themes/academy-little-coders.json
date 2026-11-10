@@ -240,9 +240,6 @@
           }
         },
         {
-          "type": "pdp-checkout"
-        },
-        {
           "type": "reviews",
           "variant": "standard"
         },
