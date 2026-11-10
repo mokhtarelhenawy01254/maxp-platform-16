@@ -1358,13 +1358,16 @@ router.post('/', async (req, res) => {
           : Number.isFinite(productUnitPrice)
             ? productUnitPrice
             : 0;
+      // 🔒 The quantity-offer discount is derived from the unit price actually being sold
+      // (variant/affiliate price), so the customer is charged exactly the advertised offer
+      // price even when the variant price differs from the product's base price.
       const variantVolumeDiscounts = getVolumeDiscountsFromMetadata(
         selectedVariant?.metadata,
-        { activeOnly: true, basePrice: parseFloat(selectedVariant?.price) || 0 },
+        { activeOnly: true, basePrice: trustedUnitPrice },
       );
       const productVolumeDiscounts = getVolumeDiscountsFromMetadata(product?.metadata, {
         activeOnly: true,
-        basePrice: parseFloat(product?.price) || 0,
+        basePrice: trustedUnitPrice,
       });
       const volumeDiscounts =
         variantVolumeDiscounts.length > 0 ? variantVolumeDiscounts : productVolumeDiscounts;
@@ -1467,17 +1470,19 @@ router.post('/', async (req, res) => {
           return groups;
         }
 
-        if (!groups.has(quantityOffer.groupId)) {
-          const productMeta = parseMetadataObject(item._dbProduct?.metadata);
-          const dbOffers = Array.isArray(productMeta?.quantityOffers) ? productMeta.quantityOffers : [];
-          const matchedDbOffer = dbOffers.find(
-            (o) => String(o.id) === String(quantityOffer.offerId) || Number(o.quantity) === Number(quantityOffer.offerQuantity),
-          );
-          const isFreeShippingTrusted = Boolean(matchedDbOffer?.enableFreeShipping);
-          if (item.quantityOffer) {
-            item.quantityOffer.freeShipping = isFreeShippingTrusted;
-          }
+        // 🔒 Trust freeShipping from the stored offer definition only — for EVERY line in the
+        // group, not just the first, so a forged client flag can never grant free shipping.
+        const productMeta = parseMetadataObject(item._dbProduct?.metadata);
+        const dbOffers = Array.isArray(productMeta?.quantityOffers) ? productMeta.quantityOffers : [];
+        const matchedDbOffer = dbOffers.find(
+          (o) => String(o.id) === String(quantityOffer.offerId) || Number(o.quantity) === Number(quantityOffer.offerQuantity),
+        );
+        const isFreeShippingTrusted = Boolean(matchedDbOffer?.enableFreeShipping);
+        if (item.quantityOffer) {
+          item.quantityOffer.freeShipping = isFreeShippingTrusted;
+        }
 
+        if (!groups.has(quantityOffer.groupId)) {
           groups.set(quantityOffer.groupId, {
             groupId: quantityOffer.groupId,
             offerId: quantityOffer.offerId || null,
@@ -1721,7 +1726,7 @@ router.post('/', async (req, res) => {
       // Track affiliate referral if code exists
       if (affiliateCode) {
         try {
-          const prisma = getSharedPrismaClient();
+          const prisma = await getPrisma();
           const affiliate = await prisma.affiliate.findFirst({
             where: {
               affiliateCode,
@@ -2145,6 +2150,16 @@ router.post('/', async (req, res) => {
           label: promoLabel
         };
       }
+
+      let companyCheckoutSettings = {};
+      try {
+        companyCheckoutSettings = typeof company?.settings === 'string'
+          ? JSON.parse(company.settings || '{}')
+          : (company?.settings || {});
+      } catch (_) {}
+      const requireDiscountApproval = companyCheckoutSettings.requireDiscountApproval !== undefined
+        ? Boolean(companyCheckoutSettings.requireDiscountApproval)
+        : true; // same default as routes/orderSettings.js
 
       if (discountAmount > 0) {
         orderMetadata.discountReason = buildCompositeDiscountReason({
