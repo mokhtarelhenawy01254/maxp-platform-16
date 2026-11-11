@@ -881,113 +881,42 @@
       "title": "اتصل بنا",
       "sections": [
         {
-          "type": "hero-banner",
-          "variant": "centered",
+          "type": "info-content",
+          "variant": "split-form-cards",
           "settings": {
-            "title": "Talk to us easily",
-            "subtitle": "Hotline 24/7, WhatsApp or email - support answers before you order.",
-            "ctaText": "Start shopping",
-            "ctaLink": "/shop",
-            "heroHeight": "compact"
-          }
-        },
-        {
-          "type": "contact-form",
-          "variant": "standard",
-          "settings": {
-            "title": "تواصل معنا",
-            "subtitle": "فريق الدعم بيرد على استفساراتك من السبت للخميس، ١٠ص – ٦م.",
-            "whatsapp": "201000000000",
-            "email": "support@example.com",
-            "submitText": "إرسال الرسالة",
-            "successText": "تم تجهيز رسالتك — كمّل الإرسال من واتساب أو البريد.",
-            "infoItems": [
+            "title": "Contact Us for Any Questions",
+            "helpTitle": "Need a Help?",
+            "phone": "(208) 555-0112",
+            "messenger": "Messenger",
+            "telegram": "Telegram",
+            "email": "contact@avenue-market.com",
+            "subscribeText": "Subscribe us",
+            "submitText": "Send message",
+            "sidebarLinks": [
               {
-                "icon": "pin",
-                "title": "العنوان",
-                "value": "القاهرة، مصر — المقر الرئيسي"
+                "title": "Track Your Order",
+                "link": "/track-order"
               },
               {
-                "icon": "phone",
-                "title": "الخط الساخن",
-                "value": "01000 000 000",
-                "href": "tel:01000000000"
+                "title": "About Us",
+                "link": "/about"
               },
               {
-                "icon": "mail",
-                "title": "البريد الإلكتروني",
-                "value": "support@example.com",
-                "href": "mailto:support@example.com"
+                "title": "FAQs",
+                "link": "/faq"
               },
               {
-                "icon": "clock",
-                "title": "مواعيد العمل",
-                "value": "السبت – الخميس · ١٠ص – ٦م"
-              }
-            ],
-            "i18n": {
-              "en": {
-                "title": "Talk to us",
-                "subtitle": "Our support team answers Saturday to Thursday, 10am – 6pm.",
-                "submitText": "Send message",
-                "successText": "Your message is ready — finish sending it on WhatsApp or email.",
-                "infoItems": [
-                  {
-                    "icon": "pin",
-                    "title": "Address",
-                    "value": "Cairo, Egypt — head office"
-                  },
-                  {
-                    "icon": "phone",
-                    "title": "Hotline",
-                    "value": "01000 000 000"
-                  },
-                  {
-                    "icon": "mail",
-                    "title": "Email",
-                    "value": "support@example.com"
-                  },
-                  {
-                    "icon": "clock",
-                    "title": "Working hours",
-                    "value": "Sat – Thu · 10am – 6pm"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "type": "features-bar",
-          "variant": "service-clarity",
-          "settings": {
-            "title": "",
-            "subtitle": "",
-            "items": [
-              {
-                "icon": "grid",
-                "title": "Fast Free Shipping",
-                "description": "Nationwide coverage"
+                "title": "Our Partners",
+                "link": "/partners"
               },
               {
-                "icon": "clipboard",
-                "title": "Next-day dispatch",
-                "description": "Order before 3 PM"
+                "title": "Work With Us",
+                "link": "/careers"
               },
               {
-                "icon": "target",
-                "title": "14-day easy returns",
-                "description": "On all eligible items"
-              },
-              {
-                "icon": "search",
-                "title": "Expert Support",
-                "description": "Live chat or hotline 24/7"
-              },
-              {
-                "icon": "shield",
-                "title": "Verified sellers",
-                "description": "Verified quality selection"
+                "title": "Contact Us",
+                "link": "/contact",
+                "active": true
               }
             ]
           }

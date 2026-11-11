@@ -3544,6 +3544,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
     variants: [
       { value: "standard", label: "قياسي" },
       { value: "marketplace-simple", label: "نص بعمود واحد + اقرأ المزيد" },
+      { value: "split-form-cards", label: "اتصل بنا — نموذج مقسّم وبطاقات معلومات" },
     ],
     fields: [
       {

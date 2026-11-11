@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { buildStorefrontPath } from '../utils/paths';
 import { resolveSectionContentAlign } from '../utils/contentAlignment';
+import { MarketplaceContactSplit } from './info-content/MarketplaceContactSplit';
 
 type DetailItem = {
   label?: string;
@@ -10,7 +11,13 @@ type DetailItem = {
 };
 
 interface InfoContentSectionProps {
+  section?: {
+    type?: string;
+    variant?: string;
+    settings?: Record<string, unknown>;
+  };
   settings?: {
+    variant?: string;
     badge?: string;
     title?: string;
     subtitle?: string;
@@ -20,6 +27,14 @@ interface InfoContentSectionProps {
     ctaText?: string;
     ctaLink?: string;
     contentAlign?: string;
+    helpTitle?: string;
+    phone?: string;
+    messenger?: string;
+    telegram?: string;
+    email?: string;
+    subscribeText?: string;
+    submitText?: string;
+    sidebarLinks?: Array<{ title: string; link: string; active?: boolean }>;
     [key: string]: unknown;
   };
 }
@@ -141,10 +156,30 @@ const resolveSmartBazaarQuickFacts = (
   return ['معلومات أوضح', 'رسائل مختصرة', 'قرار أسهل'];
 };
 
-const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => {
+const InfoContentSection: React.FC<InfoContentSectionProps> = ({ section, settings }) => {
   const { theme } = useStorefrontTheme();
   const location = useLocation();
   const isSmartBazaar = theme.id === 'smart-bazaar';
+
+  const rawVariant = String(section?.variant || settings?.variant || '').trim().toLowerCase();
+  const isSplitFormCards = rawVariant === 'split-form-cards';
+
+  if (isSplitFormCards) {
+    return (
+      <MarketplaceContactSplit
+        title={typeof settings?.title === 'string' ? settings.title : undefined}
+        helpTitle={typeof settings?.helpTitle === 'string' ? settings.helpTitle : undefined}
+        phone={typeof settings?.phone === 'string' ? settings.phone : undefined}
+        messenger={typeof settings?.messenger === 'string' ? settings.messenger : undefined}
+        telegram={typeof settings?.telegram === 'string' ? settings.telegram : undefined}
+        email={typeof settings?.email === 'string' ? settings.email : undefined}
+        subscribeText={typeof settings?.subscribeText === 'string' ? settings.subscribeText : undefined}
+        submitText={typeof settings?.submitText === 'string' ? settings.submitText : undefined}
+        sidebarLinks={Array.isArray(settings?.sidebarLinks) ? (settings.sidebarLinks as any) : undefined}
+      />
+    );
+  }
+
   const badge =
     typeof settings?.badge === 'string' && settings.badge.trim()
       ? settings.badge.trim()
@@ -188,7 +223,7 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
     ? 'rounded-[2rem] border border-primary/10 bg-white/90 p-6 shadow-[0_28px_90px_-58px_hsl(var(--primary)/0.28)] backdrop-blur md:p-8'
     : 'rounded-[1.75rem] border border-border bg-card p-6 md:p-8';
 
-  const isMarketplaceSimple = String(settings?.variant || '').trim().toLowerCase() === 'marketplace-simple';
+  const isMarketplaceSimple = rawVariant === 'marketplace-simple';
   const [expanded, setExpanded] = useState(false);
   const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false;
 
