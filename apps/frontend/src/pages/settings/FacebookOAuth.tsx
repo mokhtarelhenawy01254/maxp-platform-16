@@ -10,6 +10,7 @@ import {
   FacebookOAuthPagesToolbar,
   FacebookOAuthPagesList,
   FacebookOAuthConnectCard,
+  FacebookSystemUserTokenCard,
 } from "./facebook-oauth";
 
 const FacebookOAuth: React.FC = () => {
@@ -140,6 +141,9 @@ const FacebookOAuth: React.FC = () => {
           onConnect={handleConnectFacebook}
         />
       )}
+
+      {/* 5. System User Token (advanced, collapsed by default) */}
+      <FacebookSystemUserTokenCard companyId={user?.companyId} userRole={user?.role} />
     </div>
   );
 };

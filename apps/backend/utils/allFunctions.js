@@ -10,6 +10,7 @@ const {
   getFacebookGraphError
 } = require('./facebookPageTokenUtils');
 const { proxySocketMessageData } = require('./facebookMediaProxy');
+const { resolveSystemUserPageToken } = require('../services/facebookSystemUserTokenService');
 
 // ✅ FIX: Don't create prisma instance at module load time
 // Always use getPrisma() inside async functions with async/await
@@ -214,6 +215,26 @@ async function getPageToken(pageId) {
         console.log(`🗑️ [PAGE-CACHE] Removed disconnected page from cache`);
       }
       return null;
+    }
+
+    // System User token: يتقدم توكن الصفحة في وضع PRIMARY أو يعوض غيابه —
+    // 🔒 أي فشل يُهمل تلقائيًا: مسار توكن الصفحة الأصلي يبقى كما هو 100%
+    let systemUserToken = null;
+    try {
+      systemUserToken = await resolveSystemUserPageToken(page);
+    } catch (_) { /* graceful */ }
+
+    if (systemUserToken) {
+      updatePageTokenCache(pageId, systemUserToken, page.pageName, page.companyId);
+      return {
+        pageId: page.pageId,
+        pageAccessToken: systemUserToken,
+        pageName: page.pageName,
+        companyId: page.companyId,
+        status: page.status,
+        lastUsed: Date.now(),
+        tokenSource: 'system_user'
+      };
     }
 
     // Page is connected - update cache and return

@@ -5,6 +5,7 @@
 
 const { getSharedPrismaClient, executeWithRetry } = require('../../services/sharedDatabase');
 const pageTokenCache = require('../../utils/pageTokenCache');
+const { resolveSystemUserPageToken } = require('../../services/facebookSystemUserTokenService');
 
 // Track messages that have been processed to prevent duplicates
 const processedMessages = new Set();
@@ -56,6 +57,25 @@ async function getPageToken(pageId) {
                 pageTokenCache.delete(pageId);
             }
             return null;
+        }
+
+        // System User token: يتقدم توكن الصفحة في وضع PRIMARY أو يعوض غيابه —
+        // 🔒 أي فشل يُهمل تلقائيًا: مسار توكن الصفحة الأصلي يبقى كما هو 100%
+        let systemUserToken = null;
+        try {
+            systemUserToken = await resolveSystemUserPageToken(page);
+        } catch (_) { /* graceful */ }
+
+        if (systemUserToken) {
+            updatePageTokenCache(pageId, systemUserToken, page.pageName, page.companyId);
+            return {
+                pageAccessToken: systemUserToken,
+                pageName: page.pageName,
+                companyId: page.companyId,
+                status: page.status,
+                lastUsed: Date.now(),
+                tokenSource: 'system_user'
+            };
         }
 
         // Page is connected - update cache and return

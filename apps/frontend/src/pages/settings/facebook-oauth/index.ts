@@ -7,3 +7,4 @@ export * from "./FacebookOAuthPagesToolbar";
 export * from "./FacebookOAuthPageCard";
 export * from "./FacebookOAuthPagesList";
 export * from "./FacebookOAuthConnectCard";
+export * from "./FacebookSystemUserTokenCard";

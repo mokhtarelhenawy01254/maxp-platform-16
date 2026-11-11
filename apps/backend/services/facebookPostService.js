@@ -7,6 +7,7 @@ const {
   refreshFacebookPageAccessToken,
   buildFacebookPageTokenFailureMessage,
 } = require('../utils/facebookPageTokenUtils');
+const { resolveSystemUserPageToken } = require('./facebookSystemUserTokenService');
 
 async function syncPagePosts(pageId, companyId) {
   const prisma = getSharedPrismaClient();
@@ -17,28 +18,39 @@ async function syncPagePosts(pageId, companyId) {
     throw new Error(`Page "${page.pageName}" is disconnected. Please reconnect it.`);
   }
 
-  const pageToken = await getPageToken(pageId);
-  if (!pageToken) {
-    throw new Error(`Unable to retrieve token for page "${page.pageName}". Please reconnect.`);
-  }
-
-  const tokenState = await ensureValidFacebookPageAccessToken({
-    companyId: pageToken.companyId || companyId,
-    pageId,
-    pageAccessToken: pageToken.pageAccessToken,
-    allowRefresh: true,
-  });
-
-  if (!tokenState.ok) {
-    const errorMsg = buildFacebookPageTokenFailureMessage(tokenState, pageId);
-    console.error(`[FB-POST] Token validation failed for ${pageId}: ${errorMsg}`);
-    throw new Error(errorMsg);
-  }
+  // System User token: عند وضع PRIMARY أو غياب توكن الصفحة — يتجاوز ماكينة التحقق/التحديث كليًا
+  // (توكن السيستم يوزر دائم ولا يُصادق عبر /me كتوكن صفحة — المقارنة كانت ستفشل ظلمًا)
+  const systemUserToken = await resolveSystemUserPageToken(page).catch(() => null);
 
   const apiVer = getMetaGraphApiVersion();
   let allPosts = [];
 
-  let validToken = tokenState.pageAccessToken;
+  let pageToken = null;
+  let validToken;
+
+  if (systemUserToken) {
+    validToken = systemUserToken;
+  } else {
+    pageToken = await getPageToken(pageId);
+    if (!pageToken) {
+      throw new Error(`Unable to retrieve token for page "${page.pageName}". Please reconnect.`);
+    }
+
+    const tokenState = await ensureValidFacebookPageAccessToken({
+      companyId: pageToken.companyId || companyId,
+      pageId,
+      pageAccessToken: pageToken.pageAccessToken,
+      allowRefresh: true,
+    });
+
+    if (!tokenState.ok) {
+      const errorMsg = buildFacebookPageTokenFailureMessage(tokenState, pageId);
+      console.error(`[FB-POST] Token validation failed for ${pageId}: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
+    validToken = tokenState.pageAccessToken;
+  }
   let url = `https://graph.facebook.com/${apiVer}/${pageId}/posts?fields=id,message,full_picture,permalink_url,created_time&limit=100&access_token=${validToken}`;
   let refreshAttempted = false;
 
@@ -53,10 +65,16 @@ async function syncPagePosts(pageId, companyId) {
         (graphError.code === 10 || graphError.code === 100) &&
         /pages_read_engagement/i.test(graphError.message || '');
 
+      if (isPermissionError && systemUserToken) {
+        throw new Error(
+          `تعذرت مزامنة المنشورات: الصفحة غير مخصصة لتوكن السيستم يوزر النشط (أو ينقصه إذن pages_read_engagement). راجع تخصيص الأصول في Business Manager.`
+        );
+      }
+
       if (isPermissionError && !refreshAttempted) {
         refreshAttempted = true;
         const refreshResult = await refreshFacebookPageAccessToken({
-          companyId: pageToken.companyId || companyId,
+          companyId: pageToken?.companyId || companyId,
           pageId,
         });
         if (refreshResult.success) {

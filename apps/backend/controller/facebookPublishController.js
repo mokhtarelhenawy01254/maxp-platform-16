@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
+const { resolveSystemUserPageToken } = require('../services/facebookSystemUserTokenService');
 
 const createPost = async (req, res) => {
     try {
@@ -37,7 +38,9 @@ const createPost = async (req, res) => {
 
         for (const page of pages) {
             try {
-                const pageAccessToken = page.pageAccessToken;
+                // System User token: يتقدم توكن الصفحة في وضع PRIMARY أو يعوض غيابه
+                const systemUserToken = await resolveSystemUserPageToken(page).catch(() => null);
+                const pageAccessToken = systemUserToken || page.pageAccessToken;
                 let payload = { access_token: pageAccessToken };
 
                 if (scheduledTime) {
