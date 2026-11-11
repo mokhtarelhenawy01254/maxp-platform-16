@@ -17,7 +17,6 @@ import VariantSelector from '../../../components/VariantSelector';
 import QuantitySelector from '../../../components/QuantitySelector';
 import Accordion from '../components/Accordion';
 import ProductDescription from '../components/ProductDescription';
-import Button from '../../../components/Button';
 import { ProductInfoShareRow } from '../ProductInfoShareActions';
 import { useWishlistStore } from '../../../store/useWishlistStore';
 import {
@@ -115,13 +114,26 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
 
   // 3. Short description
   const cleanPreview = safeDescription
-    ? safeDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220)
+    ? safeDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 260)
     : '';
+  const isGenericPreviewPlaceholder =
+    !descriptionPreviewText ||
+    descriptionPreviewText.includes('لا يوجد وصف') ||
+    descriptionPreviewText.includes('No product description');
+
   const shortDesc =
     (product as any)?.shortDescription ||
     ctrlShortDescription ||
-    descriptionPreviewText ||
-    cleanPreview;
+    (!isGenericPreviewPlaceholder ? descriptionPreviewText : '') ||
+    (cleanPreview && cleanPreview.length > 20 && !cleanPreview.includes('لا يوجد وصف') ? cleanPreview : (
+      prefersArabicCopy
+        ? (product.name
+            ? `${product.name} — تصميم عملي عالي الجودة يلبي احتياجاتك اليومية بأعلى معايير الكفاءة والمتانة.`
+            : 'منتج متميز وعالي الجودة يلبي احتياجاتك اليومية بأعلى معايير الكفاءة والمتانة.')
+        : (product.name
+            ? `Discover the exceptional quality and sleek design of ${product.name}. Built for everyday reliability and top performance.`
+            : 'Exceptional quality product built for everyday reliability and top performance.')
+    ));
 
   // 4. Shipping methods & guarantees for the shipping rail
   const rawShippingMethods = Array.isArray(sectionSettings.shippingMethods) && sectionSettings.shippingMethods.length > 0
@@ -155,11 +167,6 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
   const shippingRailTitle = prefersArabicCopy ? 'الشحن والتوصيل' : 'Shipping & Delivery';
   const moreDetailsLabel = prefersArabicCopy ? 'تفاصيل أكثر' : 'More details';
 
-  const woodmartAddToCartClass =
-    'flex-1 w-full bg-[#eb485b] hover:bg-[#d93a4d] text-white font-bold rounded-full py-3.5 px-6 shadow-sm transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border-0';
-  const woodmartBuyNowClass =
-    'flex-1 w-full bg-[#fdeef0] hover:bg-[#fbdde1] text-[#eb485b] font-bold rounded-full py-3.5 px-6 border border-[#fbdde1] transition-all text-sm flex items-center justify-center gap-2 cursor-pointer';
-
   return (
     <div className="lg:contents flex flex-col gap-[30px]">
       {/* ========================================================
@@ -169,7 +176,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
       <section className="min-w-0 w-full space-y-5 selection:bg-primary selection:text-primary-foreground">
         {/* 1. Delivery Banner (WoodMart amber pill) */}
         {isDeliveryBannerEnabled ? (
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-1.5 text-white shadow-sm font-bold max-w-fit">
+          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#f97316] to-[#f59e0b] px-4 py-1.5 text-white shadow-sm font-bold max-w-fit">
             <Truck className="h-4 w-4 shrink-0 text-white" />
             <span className="text-xs sm:text-sm">
               {deliveryBannerText}
@@ -285,17 +292,19 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
                 className="rounded-full h-12 bg-card border border-border shrink-0"
               />
               <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  size="lg"
-                  className={woodmartAddToCartClass}
+                <button
+                  type="button"
                   onClick={handleAddToCart}
+                  disabled={ctrl.isStrictlyOutOfStock}
+                  className="flex-1 w-full !bg-[#eb485b] hover:!bg-[#d93a4d] disabled:opacity-50 !text-white font-bold rounded-full py-3.5 px-6 shadow-sm transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border-0"
                 >
                   {addToCartText}
-                </Button>
+                </button>
                 <button
                   type="button"
                   onClick={handleBuyNow}
-                  className={woodmartBuyNowClass}
+                  disabled={ctrl.isStrictlyOutOfStock}
+                  className="flex-1 w-full !bg-[#fdeef0] hover:!bg-[#fbdde1] disabled:opacity-50 !text-[#eb485b] font-bold rounded-full py-3.5 px-6 border border-[#fbdde1] transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {buyNowText}
                 </button>
