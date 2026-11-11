@@ -7,6 +7,7 @@ export interface StorefrontLocaleState {
   locale: StorefrontLocale;
   direction: TextDirection;
   isRtl: boolean;
+  isRTL: boolean;
 }
 
 /**
@@ -42,5 +43,6 @@ export const useStorefrontLocale = (defaultLocale?: StorefrontLocale): Storefron
     locale,
     direction: getLocaleDirection(locale),
     isRtl: locale === "ar",
+    isRTL: locale === "ar",
   };
 };

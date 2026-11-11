@@ -312,7 +312,7 @@ const CartDrawer: React.FC = () => {
   const getItemName = (item: { name?: string; productId?: string; id?: string }) =>
     isBiteRush ? localizeBiteRushName(item.name, item.productId, item.id) : String(item.name || '').trim();
   const getAttributeEntries = (attributes?: Record<string, string>) => {
-    const entries = getDisplayAttributes(attributes, theme.direction === 'rtl');
+    const entries = getDisplayAttributes(attributes, isRTL);
     return isBiteRush ? localizeBiteRushAttributeEntries(entries) : entries;
   };
   const drawerQuickAddProductId = items[0]?.productId || '';
@@ -829,7 +829,7 @@ const CartDrawer: React.FC = () => {
               disabled={minimumOrder.blocked}
             >
               {minimumOrder.blocked
-                ? `${theme.direction === 'rtl' ? 'متبقي' : 'Remaining'} ${formatStorefrontCurrency(minimumOrder.remaining, currency)}`
+                ? `${isRTL ? 'متبقي' : 'Remaining'} ${formatStorefrontCurrency(minimumOrder.remaining, currency)}`
                 : `${checkoutLabel} — ${formatStorefrontCurrency(Math.max(0, subtotal - storePromotionDiscount), currency)}`}
             </Button>
             <button

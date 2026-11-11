@@ -202,15 +202,15 @@
     "description": "Marketplace Avenue - appliances, electronics and gaming in one multi-department store.",
     "phoneText": "01000 000 000",
     "emailText": "care@marketplace-avenue.com",
-    "addressText": "القاهرة، مصر",
+    "addressText": "Cairo, Egypt",
     "contactRows": [
       {
-        "label": "الخط الساخن",
+        "label": "Hotline",
         "value": "01000 000 000",
         "href": "tel:01000000000"
       },
       {
-        "label": "البريد",
+        "label": "Email",
         "value": "care@marketplace-avenue.com",
         "href": "mailto:care@marketplace-avenue.com"
       }
@@ -305,7 +305,7 @@
   },
   "pages": {
     "home": {
-      "title": "الرئيسية",
+      "title": "Home",
       "sections": [
         {
           "type": "hero-banner",
@@ -711,7 +711,7 @@
       ]
     },
     "pdp": {
-      "title": "المنتج",
+      "title": "Product",
       "sections": [
         {
           "type": "product-gallery",
@@ -729,43 +729,23 @@
             "returnsText": "Free returns within 60 days of delivery.",
             "deliveryBanner": {
               "enabled": true,
-              "text": "توصيل سريع خلال 72 ساعة",
-              "subtext": "شحن مؤمَّن لكل المحافظات",
-              "i18n": {
-                "en": {
-                  "text": "Fast delivery within 72 Hours",
-                  "subtext": "Insured shipping nationwide"
-                }
-              }
+              "text": "Fast delivery within 72 Hours",
+              "subtext": "Insured shipping nationwide"
             },
             "shippingMethods": [
               {
-                "label": "توصيل عادي",
-                "meta": "2-3 أيام",
-                "note": "شحن مجاني فوق 500 ج.م",
-                "i18n": {
-                  "en": {
-                    "label": "Courier delivery",
-                    "meta": "2-3 Days",
-                    "note": "Free over 500 EGP"
-                  }
-                }
+                "label": "Standard Delivery",
+                "meta": "2-3 Days",
+                "note": "Free over 500 EGP"
               },
               {
-                "label": "توصيل سريع",
-                "meta": "1-3 أيام",
-                "note": "رسوم إضافية حسب المحافظة",
-                "i18n": {
-                  "en": {
-                    "label": "Express delivery",
-                    "meta": "1-3 Days",
-                    "note": "Extra fee by governorate"
-                  }
-                }
+                "label": "Express Delivery",
+                "meta": "1-3 Days",
+                "note": "Extra fee by governorate"
               }
             ],
-            "shippingWarranty": "ضمان سنة على المنتج",
-            "shippingReturns": "إرجاع مجاني خلال 30 يوم"
+            "shippingWarranty": "1 year official product warranty",
+            "shippingReturns": "Free 30-day easy returns"
           }
         },
         {
@@ -819,80 +799,80 @@
       ]
     },
     "collections": {
-      "title": "الأقسام",
+      "title": "Categories",
       "sections": [
         {
           "type": "featured-collections",
           "variant": "retail-category-tiles",
           "settings": {
-            "title": "",
-            "subtitle": "",
+            "title": "Store Departments",
+            "subtitle": "Browse all departments and product categories available in the store.",
             "hideBadge": true,
             "hideSubtitle": true,
             "hideCta": true,
             "limit": 12,
-            "ctaText": "كل الأقسام",
+            "ctaText": "All Categories",
             "ctaLink": "/collections",
             "preferRuntimeCategories": true,
             "collections": [
               {
-                "title": "أجهزة منزلية",
+                "title": "Home Appliances",
                 "image": "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "كراسي",
-                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "title": "Refrigerators",
+                "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "مكياج",
-                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "title": "Smart TVs",
+                "image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "جيمنج",
+                "title": "Gaming Consoles",
                 "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "جاكيتات",
-                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
-                "link": "/collections"
-              },
-              {
-                "title": "لابتوبات",
-                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
-                "link": "/shop"
-              },
-              {
-                "title": "غسيل",
+                "title": "Washing Machines",
                 "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "كمبيوترات",
-                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "title": "Laptops & PCs",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "موبايلات",
+                "title": "Mobiles & Tablets",
                 "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "تصفيف شعر",
-                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "title": "Kitchen Appliances",
+                "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "طاولات",
-                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "title": "Audio & Headphones",
+                "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "Vacuums & Cleaning",
+                "image": "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "ألعاب أطفال",
-                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "title": "Air Conditioners",
+                "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "Personal Care",
+                "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               }
             ]
@@ -901,20 +881,20 @@
       ]
     },
     "contact": {
-      "title": "اتصل بنا",
+      "title": "Contact Us",
       "sections": [
         {
           "type": "info-content",
           "variant": "split-form-cards",
           "settings": {
             "title": "Contact Us for Any Questions",
-            "helpTitle": "Need a Help?",
-            "phone": "(208) 555-0112",
+            "helpTitle": "Need Help?",
+            "phone": "01003465663",
             "messenger": "Messenger",
             "telegram": "Telegram",
-            "email": "contact@avenue-market.com",
-            "subscribeText": "Subscribe us",
-            "submitText": "Send message",
+            "email": "btoo3e3lanat1@gmail.com",
+            "subscribeText": "Follow Us",
+            "submitText": "Send Message",
             "sidebarLinks": [
               {
                 "title": "Track Your Order",
@@ -950,6 +930,6 @@
   "preview": {
     "imageUrl": "/assets/themes/marketplace-avenue/preview.png",
     "accent": "#ad7d61",
-    "summary": "متجر أقسام متعددة يقلّد تركيب ماركت بليس: سلايدر + عرض جانبي + أقسام ساخنة + رف أفضل الاختيارات."
+    "summary": "Multi-department store template: slider + side offer + hot categories + best picks shelf."
   }
 }
