@@ -51,7 +51,7 @@ const styles = `
 `;
 
 const v2Styles = `
-  .hero h1{max-width:11ch;font-size:clamp(34px,3.8vw,54px);font-weight:700;line-height:1.25}
+  .hero h1{max-width:16ch;font-size:clamp(34px,3.8vw,54px);font-weight:700;line-height:1.25}
   .hero p{line-height:1.9}
   .btn,.cart{border-radius:22px}
   .hero-visual,.level,.course,.banner,.filters,.toolbar,.gallery,.gallery-card,.review-card{border-radius:24px}
@@ -78,7 +78,7 @@ const v2Styles = `
   .search-copy{order:1;min-width:0;text-align:right}
   .search-icon{order:2;flex:0 0 auto;color:#60717d}
   @media(max-width:700px){
-    .hero h1{max-width:11ch;font-size:34px;font-weight:700;line-height:1.25}
+    .hero h1{max-width:14ch;font-size:34px;font-weight:700;line-height:1.25}
     .hero-visual{min-height:300px}
     .journey{gap:6px;margin:14px 0 12px;padding-left:58px}
     .journey-step{grid-template-columns:34px 1fr;gap:8px;min-height:43px}
@@ -204,6 +204,14 @@ try {
         heading: document.querySelector("main h1")?.textContent?.trim() || "",
       }));
       if (!pageCheck.heading) throw new Error(`${pageKey} did not render its primary heading`);
+      if (pageKey === "home") {
+        const titleLines = await page.locator("main h1").evaluate((heading) => {
+          const range = document.createRange();
+          range.selectNodeContents(heading);
+          return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+        });
+        if (titleLines !== 2) throw new Error(`home title should wrap to two lines at ${viewport.width}px; found ${titleLines}`);
+      }
       if (pageCheck.documentWidth > pageCheck.viewportWidth) {
         throw new Error(`${pageKey} overflows horizontally at ${viewport.width}px (${pageCheck.documentWidth}px)`);
       }
