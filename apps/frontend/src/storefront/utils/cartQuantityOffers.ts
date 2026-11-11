@@ -6,6 +6,7 @@ export interface CartItemPricingSummary {
   effectiveUnitPrice: number;
   baseUnitPrice: number;
   lineSubtotal: number;
+  baseSubtotal?: number;
   totalDiscount: number;
 }
 
@@ -49,7 +50,7 @@ export const getCartItemPricing = (item: CartItem, allItems: CartItem[] = []): C
     effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
   } else if (item.quantityOffer?.offerQuantity) {
     effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
-  } else if (allItems.length > 0) {
+  } else if (allItems.length > 0 && item.productId) {
     const totalProductUnits = allItems
       .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
       .reduce((sum, other) => sum + other.quantity, 0);
@@ -60,15 +61,26 @@ export const getCartItemPricing = (item: CartItem, allItems: CartItem[] = []): C
 
   const basePricing = calculateVolumeDiscountPricing({
     unitPrice: item.basePrice ?? item.price,
-    quantity: effectiveQuantity,
+    quantity: item.quantity,
+    applicableQuantity: effectiveQuantity,
     discounts: item.volumeDiscounts,
   });
 
   const baseUnitPrice = basePricing.baseUnitPrice;
-  const effectiveUnitPrice = Math.min(
-    basePricing.effectiveUnitPrice,
-    typeof item.price === "number" && item.price > 0 ? item.price : basePricing.effectiveUnitPrice,
-  );
+  const hasDynamicVolumeDiscounts =
+    !item.quantityOffer?.groupId &&
+    Array.isArray(item.volumeDiscounts) &&
+    item.volumeDiscounts.length > 0 &&
+    typeof item.basePrice === "number" &&
+    item.basePrice > 0;
+  const effectiveUnitPrice = hasDynamicVolumeDiscounts
+    ? basePricing.effectiveUnitPrice
+    : Math.min(
+        basePricing.effectiveUnitPrice,
+        typeof item.price === "number" && item.price > 0
+          ? item.price
+          : basePricing.effectiveUnitPrice,
+      );
 
   const lineSubtotal = Number((effectiveUnitPrice * item.quantity).toFixed(2));
   const baseSubtotal = Number((baseUnitPrice * item.quantity).toFixed(2));

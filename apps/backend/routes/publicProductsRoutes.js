@@ -7,7 +7,11 @@ const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
 } = require('../utils/volumeDiscountUtils');
-const { buildProductSearchFilter } = require('../utils/arabicSearchUtils');
+const {
+  buildProductSearchFilter,
+  containsArabicText,
+  matchesNormalizedProduct,
+} = require('../utils/arabicSearchUtils');
 const {
   extractSubdomainMiddleware,
   requireCompany,
@@ -1846,15 +1850,6 @@ router.get('/', async (req, res) => {
       where.categoryId = category;
     }
 
-    if (search) {
-      const searchFilter = buildProductSearchFilter(search);
-      if (searchFilter?.OR) {
-        where.OR = searchFilter.OR;
-      } else if (searchFilter?.AND) {
-        where.AND = searchFilter.AND;
-      }
-    }
-
     if (minPrice || maxPrice) {
       const parsedMin = parseFloat(minPrice);
       const parsedMax = parseFloat(maxPrice);
@@ -1868,6 +1863,51 @@ router.get('/', async (req, res) => {
     }
 
     const prisma = await getPrisma();
+
+    if (search) {
+      const baseSearchWhere = { ...where };
+      let resolvedViaNormalizedScan = false;
+
+      if (containsArabicText(String(search))) {
+        try {
+          const scopedCount = await prisma.product.count({ where: baseSearchWhere });
+          if (scopedCount > 0 && scopedCount <= 500) {
+            const candidates = await prisma.product.findMany({
+              where: baseSearchWhere,
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                tags: true,
+                sku: true,
+                slug: true,
+                category: { select: { name: true, slug: true } },
+                productVariants: {
+                  where: { isActive: true },
+                  select: { name: true, sku: true },
+                },
+              },
+            });
+            const matchedIds = candidates
+              .filter((candidate) => matchesNormalizedProduct(candidate, String(search)))
+              .map((candidate) => candidate.id);
+            where.id = { in: matchedIds };
+            resolvedViaNormalizedScan = true;
+          }
+        } catch (normSearchErr) {
+          console.warn('⚠️ [PUBLIC-PRODUCTS] Normalized Arabic scan fallback to Prisma filter:', normSearchErr?.message);
+        }
+      }
+
+      if (!resolvedViaNormalizedScan) {
+        const searchFilter = buildProductSearchFilter(search);
+        if (searchFilter?.OR) {
+          where.OR = searchFilter.OR;
+        } else if (searchFilter?.AND) {
+          where.AND = searchFilter.AND;
+        }
+      }
+    }
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,

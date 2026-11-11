@@ -3,7 +3,8 @@ import StorefrontProductImage from "../../components/StorefrontProductImage";
 import QuantitySelector from "../../components/QuantitySelector";
 import { formatStorefrontCurrency } from "../../utils/currency";
 import { getCartItemImageCandidates } from "../../utils/productImages";
-import { calculateVolumeDiscountPricing } from "../../utils/volumeDiscounts";
+import { getCartItemPricing } from "../../utils/cartQuantityOffers";
+import type { CartItem as StoreCartItem } from "../../store/useCartStore";
 
 export interface CartItem {
   id: string;
@@ -79,11 +80,10 @@ export const OrderSummaryLineItems: React.FC<OrderSummaryLineItemsProps> = ({
       ) : null}
       <div className="space-y-3">
         {items.map((item) => {
-          const pricing = calculateVolumeDiscountPricing({
-            unitPrice: item.basePrice ?? item.price,
-            quantity: item.quantity,
-            discounts: item.volumeDiscounts,
-          });
+          const pricing = getCartItemPricing(
+            item as unknown as StoreCartItem,
+            items as unknown as StoreCartItem[],
+          );
           const attributeSummary = Object.entries(item.attributes || {})
             .map(([key, value]) => `${key}: ${value}`)
             .join(" • ");

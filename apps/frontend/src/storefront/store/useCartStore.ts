@@ -1,9 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import {
-  calculateVolumeDiscountPricing,
-  type VolumeDiscountTier,
-} from "../utils/volumeDiscounts";
+import type { VolumeDiscountTier } from "../utils/volumeDiscounts";
+import { getCartItemPricing } from "../utils/cartQuantityOffers";
 
 export const DEFAULT_STOREFRONT_CART_STORAGE_NAME = "sf-cart-storage";
 export const getStorefrontPreviewCartStorageName = (previewThemeId: string) =>
@@ -223,35 +221,10 @@ export const useCartStore = create<CartState>()(
 
       getSubtotal: () => {
         const items = get().items;
-        const subtotal = items.reduce((total, item) => {
-          let effectiveQuantity = item.quantity;
-          if (item.quantityOffer?.groupId) {
-            const groupUnits = items
-              .filter((other) => other.quantityOffer?.groupId === item.quantityOffer?.groupId)
-              .reduce((sum, other) => sum + other.quantity, 0);
-            effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
-          } else if (item.quantityOffer?.offerQuantity) {
-            effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
-          } else {
-            const totalProductUnits = items
-              .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
-              .reduce((sum, other) => sum + other.quantity, 0);
-            if (totalProductUnits > item.quantity) {
-              effectiveQuantity = totalProductUnits;
-            }
-          }
-
-          const pricing = calculateVolumeDiscountPricing({
-            unitPrice: item.basePrice ?? item.price,
-            quantity: effectiveQuantity,
-            discounts: item.volumeDiscounts,
-          });
-          const effectiveUnitPrice = Math.min(
-            pricing.effectiveUnitPrice,
-            typeof item.price === "number" && item.price > 0 ? item.price : pricing.effectiveUnitPrice,
-          );
-          return total + (effectiveUnitPrice * item.quantity);
-        }, 0);
+        const subtotal = items.reduce(
+          (total, item) => total + getCartItemPricing(item, items).lineSubtotal,
+          0,
+        );
         return Number(subtotal.toFixed(2));
       },
 

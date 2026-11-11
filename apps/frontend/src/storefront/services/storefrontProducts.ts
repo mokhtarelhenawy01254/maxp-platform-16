@@ -68,11 +68,27 @@ type StorefrontProductVariantPayload = ProductVariant & {
 };
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    typeof value === 'boolean'
+  ) {
+    return fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 const toOptionalFiniteNumber = (value: unknown) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    typeof value === 'boolean'
+  ) {
+    return undefined;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 };

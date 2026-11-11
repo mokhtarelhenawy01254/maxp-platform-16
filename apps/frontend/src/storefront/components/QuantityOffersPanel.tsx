@@ -9,7 +9,10 @@ import {
 import type { Product, ProductVariant } from "../hooks/useProducts";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { getVariantAttributes } from "../utils/variants";
-import { getProductVolumeDiscounts } from "../utils/volumeDiscounts";
+import {
+  calculateVolumeDiscountPricing,
+  getProductVolumeDiscounts,
+} from "../utils/volumeDiscounts";
 import VariantSelector from "./VariantSelector";
 import { useCartStore } from "../store/useCartStore";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
@@ -151,20 +154,15 @@ const buildFallbackQuantityOffers = (product: Product | null | undefined) => {
     return [];
   }
 
-  return getProductVolumeDiscounts(product)
+  return getProductVolumeDiscounts(product, referenceUnitPrice)
     .map((discount, index): QuantityOffer | null => {
       const quantity = Math.max(1, discount.minQuantity);
-      const rawDiscountPerUnit =
-        discount.discountType === "percentage"
-          ? (referenceUnitPrice * discount.discountValue) / 100
-          : discount.discountValue;
-      const normalizedDiscountPerUnit = Math.min(
-        referenceUnitPrice,
-        Math.max(0, rawDiscountPerUnit),
-      );
-      const unitPrice = Number(
-        Math.max(0, referenceUnitPrice - normalizedDiscountPerUnit).toFixed(2),
-      );
+      const pricing = calculateVolumeDiscountPricing({
+        unitPrice: referenceUnitPrice,
+        quantity,
+        discounts: [discount],
+      });
+      const unitPrice = pricing.effectiveUnitPrice;
 
       if (unitPrice <= 0) {
         return null;
@@ -199,19 +197,53 @@ const getSelectionRailOfferTitle = (offer: QuantityOffer) => {
   return `${offer.quantity} قطع`;
 };
 
+const escapeRegexToken = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const containsExactNumericToken = (text: string, token: string): boolean =>
+  new RegExp(`(?:^|[^\\d])${escapeRegexToken(token)}(?:$|[^\\d])`).test(text);
+
+const matchesOfferAmountInText = (text: string, amount: number): boolean => {
+  const rounded = Number(amount.toFixed(2));
+  const rawToken = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  const formattedToken = rounded.toLocaleString("en-US", {
+    minimumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  return (
+    containsExactNumericToken(text, rawToken) ||
+    containsExactNumericToken(text, formattedToken)
+  );
+};
+
 const resolveOfferBuyText = (
   offer: QuantityOffer,
   totals: { offerTotal: number; originalTotal: number },
   currency: string,
 ): string => {
-  // Requirement 5: «بدل» must be computed from current price * quantity (totals.originalTotal)
-  if (!offer.buyText || !offer.buyText.trim() || offer.buyText.includes("بدل")) {
+  const trimmed = offer.buyText ? offer.buyText.trim() : "";
+  const hasMatchingOfferTotal =
+    Boolean(trimmed) && matchesOfferAmountInText(trimmed, totals.offerTotal);
+  const hasMatchingOriginalTotal =
+    totals.originalTotal <= totals.offerTotal ||
+    !trimmed.includes("بدل") ||
+    matchesOfferAmountInText(trimmed, totals.originalTotal);
+
+  if (trimmed && hasMatchingOfferTotal && hasMatchingOriginalTotal) {
+    return trimmed;
+  }
+
+  if (totals.originalTotal > totals.offerTotal) {
     return `اشتري ${offer.quantity} بـ${formatStorefrontCurrency(
       totals.offerTotal,
       currency,
     )} بدل ${formatStorefrontCurrency(totals.originalTotal, currency)}`;
   }
-  return offer.buyText;
+
+  return `اشتري ${offer.quantity} بـ${formatStorefrontCurrency(
+    totals.offerTotal,
+    currency,
+  )}`;
 };
 
 const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
@@ -231,8 +263,13 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
   );
   const offers = React.useMemo(() => {
     const explicitOffers = getActiveQuantityOffers(product?.metadata);
-    const baseOffers =
-      explicitOffers.length > 0 ? explicitOffers : buildFallbackQuantityOffers(product);
+    const hasMultiUnitExplicitOffers = explicitOffers.some((offer) => offer.quantity > 1);
+    const baseOffers = hasMultiUnitExplicitOffers
+      ? explicitOffers
+      : (() => {
+          const fallback = buildFallbackQuantityOffers(product);
+          return fallback.length > 0 ? fallback : explicitOffers;
+        })();
     if (baseOffers.length === 0) {
       return [];
     }
@@ -435,12 +472,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
         activeSelections.every((selection) =>
           Boolean(resolveVariantFromAttributes(variants, selection || {})),
         );
-    const offerLabel =
-      activeOffer.buyText ||
-      `اشتري ${activeOffer.quantity} قطعة بـ${formatStorefrontCurrency(
-        activeTotals.offerTotal,
-        currency,
-      )}`;
+    const offerLabel = resolveOfferBuyText(activeOffer, activeTotals, currency);
 
     syncQuantityOfferSelection({
       productId: String(product.id),
@@ -645,9 +677,11 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
         ? getOfferTrackingMetadata({
             product,
             offer: activeOffer,
-            offerLabel:
-              activeOffer.buyText ||
-              `اشتري ${activeOffer.quantity} قطعة`,
+            offerLabel: resolveOfferBuyText(
+              activeOffer,
+              getOfferTotals(activeOffer),
+              currency,
+            ),
             offerTotal: getOfferTotals(activeOffer).offerTotal,
             savings: getOfferTotals(activeOffer).savings,
             hasVariants,
@@ -691,7 +725,9 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
             ).size > 1;
           const totals = getOfferTotals(offer);
           const buyText = isSelectionRail
-            ? (offer.buyText || getSelectionRailOfferTitle(offer))
+            ? (offer.buyText?.trim()
+                ? resolveOfferBuyText(offer, totals, currency)
+                : getSelectionRailOfferTitle(offer))
             : resolveOfferBuyText(offer, totals, currency);
           const isBestValue = totals.savings > 0 && totals.savings === bestSavings;
           const isMostPopular =

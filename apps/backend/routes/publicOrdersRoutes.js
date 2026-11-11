@@ -1317,8 +1317,20 @@ router.post('/', async (req, res) => {
       shippingClassCounts[itemShippingClass] = (shippingClassCounts[itemShippingClass] || 0) + classQuantity;
 
       // Always trust backend prices (product/variant), never client-provided price.
-      const productUnitPrice = Number(product.price);
-      const variantUnitPrice = selectedVariant ? Number(selectedVariant.price) : NaN;
+      const productUnitPrice =
+        product.price !== null &&
+        product.price !== undefined &&
+        String(product.price).trim() !== ''
+          ? Number(product.price)
+          : NaN;
+      const variantUnitPrice =
+        selectedVariant &&
+        selectedVariant.price !== null &&
+        selectedVariant.price !== undefined &&
+        String(selectedVariant.price).trim() !== '' &&
+        Number(selectedVariant.price) > 0
+          ? Number(selectedVariant.price)
+          : NaN;
       let affiliateUnitPrice = NaN;
       let affiliatePricingSnapshot = null;
 
@@ -1381,7 +1393,8 @@ router.post('/', async (req, res) => {
 
       const volumePricing = applyVolumeDiscount({
         unitPrice: trustedUnitPrice,
-        quantity: applicableQuantity,
+        quantity: item.quantity,
+        applicableQuantity,
         discounts: volumeDiscounts,
       });
 
@@ -1404,7 +1417,7 @@ router.post('/', async (req, res) => {
             }
           : null;
       item._dbProduct = product;
-      const itemLineTotal = Number((volumePricing.effectiveUnitPrice * item.quantity).toFixed(2));
+      const itemLineTotal = volumePricing.lineSubtotal;
       cartTotal += itemLineTotal;
     }
 

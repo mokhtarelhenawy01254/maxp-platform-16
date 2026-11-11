@@ -22,11 +22,27 @@ const isRecord = (value: unknown): value is JsonRecord =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "boolean"
+  ) {
+    return fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 const toOptionalFiniteNumber = (value: unknown) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "boolean"
+  ) {
+    return null;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
@@ -76,8 +92,25 @@ export const normalizeQuantityOffer = (
     return null;
   }
 
-  const quantity = Math.max(1, Math.floor(toFiniteNumber(rawOffer.quantity, 0)));
-  const unitPrice = Math.max(0, toFiniteNumber(rawOffer.unitPrice, 0));
+  const quantity = Math.max(
+    1,
+    Math.floor(toFiniteNumber(rawOffer["quantity"] ?? rawOffer["minQuantity"], 0)),
+  );
+  const directUnitPrice =
+    toOptionalFiniteNumber(rawOffer["unitPrice"]) ??
+    toOptionalFiniteNumber(rawOffer["price"]) ??
+    toOptionalFiniteNumber(rawOffer["offerUnitPrice"]);
+  const offerTotalPrice =
+    toOptionalFiniteNumber(rawOffer["totalPrice"]) ??
+    toOptionalFiniteNumber(rawOffer["offerTotal"]);
+  const unitPrice = Math.max(
+    0,
+    directUnitPrice !== null
+      ? directUnitPrice
+      : offerTotalPrice !== null
+        ? Number((offerTotalPrice / quantity).toFixed(2))
+        : 0,
+  );
 
   if (quantity <= 0 || unitPrice < 0) {
     return null;

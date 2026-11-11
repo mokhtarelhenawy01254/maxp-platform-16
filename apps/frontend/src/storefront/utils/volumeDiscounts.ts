@@ -11,8 +11,21 @@ const isRecord = (value: unknown): value is Record<string, any> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const toFiniteNumber = (value: unknown, fallback = 0) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    typeof value === "boolean"
+  ) {
+    return fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toOptionalFiniteNumber = (value: unknown) => {
+  const parsed = toFiniteNumber(value, Number.NaN);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const parseMetadataObject = (value: unknown): Record<string, any> => {
@@ -42,13 +55,13 @@ const normalizeDiscount = (
 
   const minQuantity = Math.max(
     1,
-    Math.floor(toFiniteNumber(rawDiscount.minQuantity, 0)),
+    Math.floor(toFiniteNumber(rawDiscount["minQuantity"], 0)),
   );
   if (minQuantity <= 0) {
     return null;
   }
 
-  const rawMaxQuantity = rawDiscount.maxQuantity;
+  const rawMaxQuantity = rawDiscount["maxQuantity"];
   const maxQuantity =
     rawMaxQuantity === null ||
     rawMaxQuantity === undefined ||
@@ -60,10 +73,10 @@ const normalizeDiscount = (
         );
 
   const discountType =
-    String(rawDiscount.discountType || "").trim().toLowerCase() === "fixed"
+    String(rawDiscount["discountType"] || "").trim().toLowerCase() === "fixed"
       ? "fixed"
       : "percentage";
-  const discountValue = Math.max(0, toFiniteNumber(rawDiscount.discountValue, 0));
+  const discountValue = Math.max(0, toFiniteNumber(rawDiscount["discountValue"], 0));
 
   if (discountValue <= 0) {
     return null;
@@ -71,15 +84,15 @@ const normalizeDiscount = (
 
   return {
     id:
-      typeof rawDiscount.id === "string" && rawDiscount.id.trim()
-        ? rawDiscount.id.trim()
+      typeof rawDiscount["id"] === "string" && rawDiscount["id"].trim()
+        ? rawDiscount["id"].trim()
         : `volume-discount-${index + 1}`,
     minQuantity,
     maxQuantity,
     discountType,
     discountValue:
       discountType === "percentage" ? Math.min(discountValue, 100) : discountValue,
-    isActive: rawDiscount.isActive !== false,
+    isActive: rawDiscount["isActive"] !== false,
   };
 };
 
@@ -88,58 +101,109 @@ const quantityOfferToVolumeDiscount = (
   basePrice = 0,
 ): VolumeDiscountTier | null => {
   if (!isRecord(offer)) return null;
-  const quantity = Math.max(1, Math.floor(toFiniteNumber(offer.quantity, 0)));
+  const quantity = Math.floor(
+    toFiniteNumber((offer as any).quantity ?? (offer as any).minQuantity, 0),
+  );
   if (quantity <= 0) return null;
-  const unitPrice = toFiniteNumber((offer as any).unitPrice, 0);
+
+  const id =
+    typeof (offer as any).id === "string" && (offer as any).id.trim()
+      ? (offer as any).id.trim()
+      : `volume-discount-${quantity}`;
+  const isActive = (offer as any).isActive !== false;
+
+  const pctCandidate =
+    toOptionalFiniteNumber((offer as any).discountPercent) ??
+    toOptionalFiniteNumber((offer as any).discountPercentage);
+  if (
+    pctCandidate !== null ||
+    String((offer as any).discountType || "").trim().toLowerCase() === "percentage"
+  ) {
+    const pctValue = pctCandidate ?? toFiniteNumber((offer as any).discountValue, 0);
+    return {
+      id,
+      minQuantity: quantity,
+      maxQuantity: null,
+      discountType: "percentage",
+      discountValue: Math.min(100, Math.max(0, pctValue)),
+      isActive,
+    };
+  }
+
+  const directUnitPrice =
+    toOptionalFiniteNumber((offer as any).unitPrice) ??
+    toOptionalFiniteNumber((offer as any).price) ??
+    toOptionalFiniteNumber((offer as any).offerUnitPrice);
+  const totalPrice =
+    toOptionalFiniteNumber((offer as any).totalPrice) ??
+    toOptionalFiniteNumber((offer as any).offerTotal);
+  const resolvedUnitPrice =
+    directUnitPrice !== null
+      ? directUnitPrice
+      : totalPrice !== null
+        ? totalPrice / quantity
+        : null;
+
+  const numericBasePrice = toFiniteNumber(basePrice, 0);
   const discountValue =
-    basePrice > 0
-      ? Math.max(0, basePrice - unitPrice)
+    numericBasePrice > 0 && resolvedUnitPrice !== null
+      ? Number(Math.max(0, numericBasePrice - resolvedUnitPrice).toFixed(2))
       : Math.max(0, toFiniteNumber((offer as any).discountValue, 0));
+
   return {
-    id:
-      typeof (offer as any).id === "string" && (offer as any).id.trim()
-        ? (offer as any).id.trim()
-        : `volume-discount-${quantity}`,
+    id,
     minQuantity: quantity,
     maxQuantity: null,
     discountType: "fixed",
     discountValue,
-    isActive: (offer as any).isActive !== false,
+    isActive,
   };
 };
+
+const normalizeAndSort = (rawList: unknown[]): VolumeDiscountTier[] =>
+  rawList
+    .map((discount, index) => normalizeDiscount(discount, index))
+    .filter((discount): discount is VolumeDiscountTier => Boolean(discount))
+    .filter((discount) => discount.isActive !== false)
+    .sort((left, right) => left.minQuantity - right.minQuantity);
 
 export const normalizeVolumeDiscounts = (
   value: unknown,
   basePrice = 0,
 ): VolumeDiscountTier[] => {
-  const rawDiscounts = Array.isArray(value)
-    ? value
-    : (() => {
-        const metadata = parseMetadataObject(value);
-        // Single Source of Truth: if quantityOffers exists and has items, use it!
-        if (Array.isArray(metadata.quantityOffers) && metadata.quantityOffers.length > 0) {
-          return metadata.quantityOffers
-            .filter((offer: unknown) => isRecord(offer) && toFiniteNumber((offer as any).quantity, 0) > 1)
-            .map((offer: unknown) => quantityOfferToVolumeDiscount(offer, basePrice))
-            .filter(Boolean);
-        }
+  if (Array.isArray(value)) {
+    return normalizeAndSort(value);
+  }
 
-        if (Array.isArray(metadata.volumeDiscounts) && metadata.volumeDiscounts.length > 0) {
-          return metadata.volumeDiscounts;
-        }
+  const metadata = parseMetadataObject(value);
+  const rawQuantityOffers = metadata["quantityOffers"];
+  if (Array.isArray(rawQuantityOffers) && rawQuantityOffers.length > 0) {
+    const offerDiscounts = normalizeAndSort(
+      rawQuantityOffers
+        .filter(
+          (offer: unknown) =>
+            isRecord(offer) &&
+            toFiniteNumber(offer["quantity"] ?? offer["minQuantity"], 0) > 1,
+        )
+        .map((offer: unknown) => quantityOfferToVolumeDiscount(offer, basePrice))
+        .filter(Boolean),
+    );
+    if (offerDiscounts.length > 0) {
+      return offerDiscounts;
+    }
+  }
 
-        if (Array.isArray(metadata.bulkSavings)) {
-          return metadata.bulkSavings;
-        }
+  const rawVolumeDiscounts = metadata["volumeDiscounts"];
+  if (Array.isArray(rawVolumeDiscounts) && rawVolumeDiscounts.length > 0) {
+    return normalizeAndSort(rawVolumeDiscounts);
+  }
 
-        return [];
-      })();
+  const rawBulkSavings = metadata["bulkSavings"];
+  if (Array.isArray(rawBulkSavings) && rawBulkSavings.length > 0) {
+    return normalizeAndSort(rawBulkSavings);
+  }
 
-  return rawDiscounts
-    .map((discount, index) => normalizeDiscount(discount, index))
-    .filter((discount): discount is VolumeDiscountTier => Boolean(discount))
-    .filter((discount) => discount.isActive !== false)
-    .sort((left, right) => left.minQuantity - right.minQuantity);
+  return [];
 };
 
 export const getProductVolumeDiscounts = (
@@ -149,10 +213,10 @@ export const getProductVolumeDiscounts = (
   const effectiveBasePrice =
     basePrice !== undefined && basePrice > 0
       ? basePrice
-      : Number(product?.price || 0);
+      : Number(product?.["price"] || 0);
 
   return normalizeVolumeDiscounts(
-    product?.metadata || product?.volumeDiscounts,
+    product?.["metadata"] || product?.["volumeDiscounts"],
     effectiveBasePrice,
   );
 };
@@ -177,22 +241,55 @@ export const getApplicableVolumeDiscount = (
 export const calculateVolumeDiscountPricing = ({
   unitPrice,
   quantity,
+  applicableQuantity,
   discounts,
+  metadata,
+  product,
+  variant,
 }: {
   unitPrice: number;
   quantity: number;
+  applicableQuantity?: number;
   discounts?: VolumeDiscountTier[];
+  metadata?: unknown;
+  product?: Record<string, any> | null;
+  variant?: Record<string, any> | null;
 }) => {
   const normalizedUnitPrice = Math.max(0, toFiniteNumber(unitPrice, 0));
   const normalizedQuantity = Math.max(1, Math.floor(toFiniteNumber(quantity, 1)));
-  const normalizedDiscounts = normalizeVolumeDiscounts(discounts || []);
+  const tierQuantity =
+    applicableQuantity !== undefined && applicableQuantity !== null
+      ? Math.max(
+          normalizedQuantity,
+          Math.floor(toFiniteNumber(applicableQuantity, normalizedQuantity)),
+        )
+      : normalizedQuantity;
+
+  let normalizedDiscounts: VolumeDiscountTier[];
+  if (Array.isArray(discounts)) {
+    normalizedDiscounts = normalizeVolumeDiscounts(discounts, normalizedUnitPrice);
+  } else {
+    const variantDiscounts = variant
+      ? getProductVolumeDiscounts(variant, normalizedUnitPrice)
+      : [];
+    if (variantDiscounts.length > 0) {
+      normalizedDiscounts = variantDiscounts;
+    } else if (product) {
+      normalizedDiscounts = getProductVolumeDiscounts(product, normalizedUnitPrice);
+    } else if (metadata !== undefined) {
+      normalizedDiscounts = normalizeVolumeDiscounts(metadata, normalizedUnitPrice);
+    } else {
+      normalizedDiscounts = [];
+    }
+  }
+
   const appliedDiscount = getApplicableVolumeDiscount(
     normalizedDiscounts,
-    normalizedQuantity,
+    tierQuantity,
   );
   const baseSubtotal = Number((normalizedUnitPrice * normalizedQuantity).toFixed(2));
 
-  if (!appliedDiscount) {
+  if (!appliedDiscount || normalizedUnitPrice <= 0) {
     return {
       appliedDiscount: null,
       baseUnitPrice: normalizedUnitPrice,
@@ -221,3 +318,5 @@ export const calculateVolumeDiscountPricing = ({
     totalDiscount,
   };
 };
+
+export const applyVolumeDiscount = calculateVolumeDiscountPricing;

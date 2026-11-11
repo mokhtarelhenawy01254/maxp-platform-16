@@ -141,12 +141,12 @@ export const useQuickOrderPricing = ({
       {
         productId: product.id,
         quantity,
-        price: pricing.unitPrice,
-        comparePrice: pricing.comparePrice,
+        price: pricing.effectiveUnitPrice,
+        comparePrice: product.comparePrice,
       },
     ];
     return calculateStorePromotionDiscount(currentItems, storePromotion);
-  }, [activeQuantityOffer, storePromotion, product.id, quantity, pricing.unitPrice, pricing.comparePrice]);
+  }, [activeQuantityOffer, storePromotion, product.id, quantity, pricing.effectiveUnitPrice, product.comparePrice]);
 
   const storePromoDiscount = storePromoDiscountResult.discount;
   const storePromoTier = storePromoDiscountResult.tier;

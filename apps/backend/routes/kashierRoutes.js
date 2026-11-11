@@ -7,6 +7,11 @@ const { resolvePublicShippingQuote } = require('../controller/shippingZoneContro
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
 const { resolveCheckoutPricing, safeParseJson } = require('../utils/orderDiscountUtils');
+const { parseProductMetadata } = require('../utils/productMetadataUtils');
+const {
+  applyVolumeDiscount,
+  getVolumeDiscountsFromMetadata,
+} = require('../utils/volumeDiscountUtils');
 
 const router = express.Router();
 const getPrisma = () => getSharedPrismaClient();
@@ -106,13 +111,31 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     // ─── Server-side pricing: the database is the single source of truth ────
     // Items with unknown/inactive product ids are dropped — client-provided
     // prices are never trusted.
+    const groupTotalUnitsMap = new Map();
+    const productTotalUnitsMap = new Map();
+    for (const rawItem of items || []) {
+      if (!rawItem || !rawItem.productId) continue;
+      const q = Math.min(Math.max(1, Math.floor(Number(rawItem.quantity) || 1)), 999);
+      const pid = String(rawItem.productId);
+      productTotalUnitsMap.set(pid, (productTotalUnitsMap.get(pid) || 0) + q);
+      const qo =
+        rawItem.quantityOffer && typeof rawItem.quantityOffer === 'object'
+          ? rawItem.quantityOffer
+          : rawItem.metadata?.quantityOffer && typeof rawItem.metadata.quantityOffer === 'object'
+            ? rawItem.metadata.quantityOffer
+            : null;
+      if (qo?.groupId) {
+        groupTotalUnitsMap.set(qo.groupId, (groupTotalUnitsMap.get(qo.groupId) || 0) + q);
+      }
+    }
+
     const orderItemsData = [];
     for (const item of items || []) {
       if (!item || !item.productId) continue;
 
       const product = await prisma.product.findFirst({
         where: { id: item.productId, companyId, isActive: true },
-        select: { id: true, name: true, price: true },
+        select: { id: true, name: true, price: true, metadata: true },
       }).catch(() => null);
       if (!product) continue;
 
@@ -121,16 +144,88 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
       if (item.variantId) {
         variant = await prisma.productVariant.findFirst({
           where: { id: item.variantId, productId: product.id },
-          select: { id: true, price: true },
+          select: { id: true, price: true, metadata: true },
         }).catch(() => null);
         if (variant) {
           validVariantId = variant.id;
         }
       }
 
-      const unitPrice = variant && variant.price != null ? Number(variant.price) : (Number(product.price) || 0);
+      const baseUnitPrice =
+        variant &&
+        variant.price !== null &&
+        variant.price !== undefined &&
+        String(variant.price).trim() !== '' &&
+        Number(variant.price) > 0
+          ? Number(variant.price)
+          : (Number(product.price) || 0);
       const quantity = Math.min(Math.max(1, Math.floor(Number(item.quantity) || 1)), 999);
+      const itemQuantityOffer =
+        item.quantityOffer && typeof item.quantityOffer === 'object'
+          ? item.quantityOffer
+          : item.metadata?.quantityOffer && typeof item.metadata.quantityOffer === 'object'
+            ? item.metadata.quantityOffer
+            : null;
+      let applicableQuantity = quantity;
+      if (itemQuantityOffer?.groupId && groupTotalUnitsMap.has(itemQuantityOffer.groupId)) {
+        applicableQuantity = Math.max(applicableQuantity, groupTotalUnitsMap.get(itemQuantityOffer.groupId));
+      } else if (productTotalUnitsMap.has(String(product.id))) {
+        applicableQuantity = Math.max(applicableQuantity, productTotalUnitsMap.get(String(product.id)));
+      }
+
+      const variantDiscounts = getVolumeDiscountsFromMetadata(variant?.metadata, {
+        activeOnly: true,
+        basePrice: baseUnitPrice,
+      });
+      const productDiscounts = getVolumeDiscountsFromMetadata(product?.metadata, {
+        activeOnly: true,
+        basePrice: baseUnitPrice,
+      });
+      const discounts = variantDiscounts.length > 0 ? variantDiscounts : productDiscounts;
+      const volumePricing = applyVolumeDiscount({
+        unitPrice: baseUnitPrice,
+        quantity,
+        applicableQuantity,
+        discounts,
+      });
+
+      const unitPrice = volumePricing.effectiveUnitPrice;
       const image = item.image || item.productImage || null;
+      const itemMeta = {
+        attributes: item.attributes || {},
+        image,
+      };
+      if (itemQuantityOffer) {
+        // 🔒 Trust freeShipping only from stored DB offer definitions, never client payload.
+        const variantMeta = parseProductMetadata(variant?.metadata);
+        const productMeta = parseProductMetadata(product?.metadata);
+        const dbOffers = [
+          ...(Array.isArray(variantMeta?.quantityOffers) ? variantMeta.quantityOffers : []),
+          ...(Array.isArray(productMeta?.quantityOffers) ? productMeta.quantityOffers : []),
+        ];
+        const matchedDbOffer = dbOffers.find(
+          (offer) =>
+            offer &&
+            typeof offer === 'object' &&
+            ((itemQuantityOffer.offerId &&
+              String(offer.id) === String(itemQuantityOffer.offerId)) ||
+              Number(offer.quantity ?? offer.minQuantity) ===
+                Number(itemQuantityOffer.offerQuantity ?? quantity)),
+        );
+        itemMeta.quantityOffer = {
+          ...itemQuantityOffer,
+          freeShipping: Boolean(matchedDbOffer?.enableFreeShipping),
+        };
+      }
+      if (volumePricing.appliedDiscount && volumePricing.totalDiscount > 0) {
+        itemMeta.basePrice = baseUnitPrice;
+        itemMeta.volumeDiscount = {
+          ...volumePricing.appliedDiscount,
+          totalDiscount: volumePricing.totalDiscount,
+          effectiveUnitPrice: volumePricing.effectiveUnitPrice,
+          baseUnitPrice: volumePricing.baseUnitPrice,
+        };
+      }
 
       orderItemsData.push({
         productId: product.id,
@@ -139,14 +234,11 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         productImage: image,
         price: unitPrice,
         quantity,
-        total: Math.round(unitPrice * quantity * 100) / 100,
+        total: volumePricing.lineSubtotal,
         productSku: item.sku || null,
         productColor: item.color ? String(item.color) : (item.attributes?.color ? String(item.attributes.color) : (item.attributes?.Colour ? String(item.attributes.Colour) : null)),
         productSize: item.size != null ? String(item.size) : (item.attributes?.size != null ? String(item.attributes.size) : null),
-        metadata: JSON.stringify({
-          attributes: item.attributes || {},
-          image,
-        }),
+        metadata: JSON.stringify(itemMeta),
       });
     }
 

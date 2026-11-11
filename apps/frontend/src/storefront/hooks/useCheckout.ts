@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { buildCartItemId, CartItem, useCartStore } from '../store/useCartStore';
-import { calculateVolumeDiscountPricing } from '../utils/volumeDiscounts';
+import { getCartItemPricing } from '../utils/cartQuantityOffers';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 import { storefrontApi, getCompanyId, getCartId } from '../../utils/storefrontApi';
 import { useMinimumOrderSettings } from './useMinimumOrderSettings';
@@ -211,33 +211,7 @@ export const buildCheckoutOrderPayload = (
         }
       }
 
-      let effectiveQuantity = item.quantity;
-      if (item.quantityOffer?.groupId) {
-        const groupUnits = items
-          .filter((other) => other.quantityOffer?.groupId === item.quantityOffer?.groupId)
-          .reduce((sum, other) => sum + other.quantity, 0);
-        effectiveQuantity = Math.max(effectiveQuantity, groupUnits, item.quantityOffer.offerQuantity || 0);
-      } else if (item.quantityOffer?.offerQuantity) {
-        effectiveQuantity = Math.max(item.quantity, item.quantityOffer.offerQuantity);
-      } else {
-        const totalProductUnits = items
-          .filter((other) => other.productId === item.productId && !other.quantityOffer?.groupId)
-          .reduce((sum, other) => sum + other.quantity, 0);
-        if (totalProductUnits > item.quantity) {
-          effectiveQuantity = totalProductUnits;
-        }
-      }
-
-      const pricing = calculateVolumeDiscountPricing({
-        unitPrice: item.basePrice ?? item.price,
-        quantity: effectiveQuantity,
-        discounts: item.volumeDiscounts,
-      });
-
-      const effectiveUnitPrice = Math.min(
-        pricing.effectiveUnitPrice,
-        typeof item.price === "number" && item.price > 0 ? item.price : pricing.effectiveUnitPrice,
-      );
+      const { effectiveUnitPrice } = getCartItemPricing(item, items);
 
       return {
         productId: item.productId,
@@ -317,7 +291,7 @@ export const useCheckout = () => {
             productId: item.productId,
             variantId: item.variantId || undefined,
             name: item.name,
-            price: item.price,
+            price: getCartItemPricing(item, items).effectiveUnitPrice,
             quantity: item.quantity,
             attributes: item.attributes || {},
           })),
@@ -354,7 +328,7 @@ export const useCheckout = () => {
                 variantId: item.variantId || undefined,
                 name: item.name,
                 quantity: item.quantity,
-                price: item.price,
+                price: getCartItemPricing(item, items).effectiveUnitPrice,
                 imageUrl: item.imageUrl,
                 attributes: item.attributes || {},
                 quantityOffer: item.quantityOffer || undefined,

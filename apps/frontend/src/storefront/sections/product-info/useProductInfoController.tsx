@@ -42,6 +42,7 @@ import {
   STOREFRONT_BUYBOX_ID,
   PDP_CHECKOUT_SECTION_ID,
   STOREFRONT_PDP_CHECKOUT_OPEN_EVENT,
+  calculateVolumeDiscountPricing,
   getProductVolumeDiscounts,
 } from './productInfoHelpers';
 import {
@@ -353,9 +354,11 @@ export const useProductInfoController = ({
   }, [product?.productVariants, selectedAttributes]);
 
   const activePrice =
-    typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
+    typeof selectedVariant?.price === 'number' &&
+    Number.isFinite(selectedVariant.price) &&
+    selectedVariant.price > 0
       ? selectedVariant.price
-      : typeof product?.price === 'number'
+      : typeof product?.price === 'number' && Number.isFinite(product.price)
         ? product.price
         : 0;
 
@@ -476,7 +479,11 @@ export const useProductInfoController = ({
     }
 
     const selectedVolumeDiscounts =
-      selectedVariant ? getProductVolumeDiscounts(selectedVariant) : [];
+      selectedVariant ? getProductVolumeDiscounts(selectedVariant, activePrice) : [];
+    const activeVolumeDiscounts =
+      selectedVolumeDiscounts.length > 0
+        ? selectedVolumeDiscounts
+        : getProductVolumeDiscounts(product, activePrice);
 
     syncPdpSelection({
       productId: product.id,
@@ -487,10 +494,7 @@ export const useProductInfoController = ({
       unitPrice: activePrice,
       basePrice: activePrice,
       attributes: selectedAttributes,
-      volumeDiscounts:
-        selectedVolumeDiscounts.length > 0
-          ? selectedVolumeDiscounts
-          : getProductVolumeDiscounts(product),
+      volumeDiscounts: activeVolumeDiscounts,
       requiresVariantSelection: Boolean(product.productVariants?.length),
       isSelectionReady: !product.productVariants?.length || Boolean(selectedVariant),
       stock: activeStock,
@@ -546,6 +550,18 @@ export const useProductInfoController = ({
       ? `${product.id}-${selectedVariant.id}`
       : `${product.id}-${JSON.stringify(selectedAttributes)}`;
 
+    const selectedVolumeDiscounts =
+      selectedVariant ? getProductVolumeDiscounts(selectedVariant, activePrice) : [];
+    const activeVolumeDiscounts =
+      selectedVolumeDiscounts.length > 0
+        ? selectedVolumeDiscounts
+        : getProductVolumeDiscounts(product, activePrice);
+    const quantityPricing = calculateVolumeDiscountPricing({
+      unitPrice: activePrice,
+      quantity,
+      discounts: activeVolumeDiscounts,
+    });
+
     addItem({
       id: cartItemId,
       productId: product.id,
@@ -556,13 +572,13 @@ export const useProductInfoController = ({
       quantity,
       image: product.images?.[0] || '',
       attributes: selectedAttributes,
-      volumeDiscounts: getProductVolumeDiscounts(product, activePrice),
+      volumeDiscounts: activeVolumeDiscounts,
     });
 
     trackAddToCartEvent({
       productId: product.id,
       name: product.name,
-      price: activePrice,
+      price: quantityPricing.effectiveUnitPrice,
       quantity,
       currency,
     });

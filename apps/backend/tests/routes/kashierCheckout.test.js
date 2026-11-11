@@ -366,4 +366,56 @@ describe('POST /api/v1/payment/kashier/checkout', () => {
     expect(res.body.success).toBe(false);
     expect(mockPrisma.order.create).not.toHaveBeenCalled();
   });
+
+  test('applies product volume discount / quantity offer (swan-sneaker-11 x2 = 552)', async () => {
+    mockPrisma.customer.findFirst.mockResolvedValue({ id: 'cust-1', phone: '01012345678' });
+    mockPrisma.product.findFirst.mockResolvedValue({
+      id: 'swan-sneaker-11',
+      name: 'Swan Sneaker 11',
+      price: 300,
+      metadata: JSON.stringify({
+        quantityOffers: [{ id: 'qo-2', quantity: 2, unitPrice: 276, enableFreeShipping: false, isActive: true }],
+      }),
+    });
+    mockPrisma.productVariant.findFirst.mockResolvedValue({
+      id: 'var-42',
+      price: null,
+      metadata: null,
+    });
+    resolvePublicShippingQuote.mockResolvedValue({ price: 60, zone: null });
+    KashierService.createPaymentSession.mockResolvedValue({
+      success: true, sessionId: 's-vol', sessionUrl: 'https://payments.kashier.io/s-vol', mode: 'live',
+    });
+    mockPrisma.order.create.mockResolvedValue({
+      id: 'o-vol', orderNumber: 'ORD-TEST-12345', total: 612,
+    });
+    mockPrisma.product.update.mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/api/v1/payment/kashier/checkout')
+      .send({
+        guestName: 'Sara',
+        guestPhone: '01012345678',
+        shippingAddress: { address: 'X', city: 'Cairo', governorate: 'Cairo' },
+        items: [{
+          productId: 'swan-sneaker-11',
+          variantId: 'var-42',
+          price: 300,
+          quantity: 2,
+          // Forged freeShipping flag must be scrubbed against DB enableFreeShipping: false
+          quantityOffer: { offerId: 'qo-2', offerQuantity: 2, freeShipping: true },
+        }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ subtotal: 552, shipping: 60, total: 612 }),
+      }),
+    );
+    expect(KashierService.createPaymentSession).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 612 }),
+      expect.any(String),
+    );
+  });
 });
