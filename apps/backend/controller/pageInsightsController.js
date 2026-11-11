@@ -17,13 +17,17 @@ const LOG_PREFIX = '[PAGE-INSIGHTS]';
 const GRAPH_TIMEOUT_MS = 30000;
 const GRAPH_INFO_TIMEOUT_MS = 12000;
 
+// Graph v23 deprecates several legacy Page metrics (page_impressions, page_engaged_users,
+// page_fans are rejected with code 100). Verified live 2026-11-11 against a connected Page:
+// valid = page_media_view, page_impressions_unique, page_post_engagements, page_views_total,
+// page_video_views, page_follows.
 const PAGE_INSIGHT_METRICS = [
-  'page_impressions',
+  'page_media_view',
   'page_impressions_unique',
-  'page_engaged_users',
-  'page_fans',
   'page_post_engagements',
-  'page_views_total'
+  'page_views_total',
+  'page_video_views',
+  'page_follows'
 ];
 
 const POST_INSIGHT_METRICS = [
@@ -35,7 +39,7 @@ const POST_INSIGHT_METRICS = [
 
 // aggregate: 'sum' للمقاييس التراكمية، 'last' للمقاييس اللحظية (gauge)
 const METRIC_CATALOG = {
-  page_impressions: {
+  page_media_view: {
     title: 'مرات الظهور',
     description: 'عدد المرات التي ظهرت فيها منشورات الصفحة على الشاشة',
     aggregate: 'sum'
@@ -45,14 +49,14 @@ const METRIC_CATALOG = {
     description: 'عدد الأشخاص الذين شاهدوا محتوى الصفحة',
     aggregate: 'sum'
   },
-  page_engaged_users: {
-    title: 'المستخدمون المتفاعلون',
-    description: 'عدد الأشخاص الذين تفاعلوا مع الصفحة',
+  page_video_views: {
+    title: 'مشاهدات الفيديو',
+    description: 'عدد مرات مشاهدة فيديوهات الصفحة',
     aggregate: 'sum'
   },
-  page_fans: {
-    title: 'إجمالي المعجبين',
-    description: 'عدد المعجبين بالصفحة (Likes) في نهاية الفترة',
+  page_follows: {
+    title: 'إجمالي المتابعين',
+    description: 'عدد المتابعين للصفحة (Follows) في نهاية الفترة',
     aggregate: 'last'
   },
   page_post_engagements: {
@@ -83,8 +87,8 @@ const ALLOWED_PERIODS = ['day', 'week', 'days_28'];
  */
 const METRIC_FALLBACK_SETS = [
   PAGE_INSIGHT_METRICS,
-  ['page_impressions', 'page_engaged_users', 'page_post_engagements', 'page_fans'],
-  ['page_impressions']
+  ['page_media_view', 'page_impressions_unique', 'page_post_engagements'],
+  ['page_media_view']
 ];
 
 const graphBase = () => `https://graph.facebook.com/${getMetaGraphApiVersion()}`;

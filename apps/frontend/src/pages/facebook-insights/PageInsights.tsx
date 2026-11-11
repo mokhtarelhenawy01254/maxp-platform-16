@@ -51,10 +51,10 @@ const PERIOD_OPTIONS = [
 ];
 
 const KPI_DEFS = [
-  { name: "page_impressions", label: "مرات الظهور" },
+  { name: "page_media_view", label: "مرات الظهور" },
   { name: "page_impressions_unique", label: "ظهور فريد" },
-  { name: "page_engaged_users", label: "مستخدمون متفاعلون" },
-  { name: "page_fans", label: "إجمالي المعجبين" },
+  { name: "page_video_views", label: "مشاهدات الفيديو" },
+  { name: "page_follows", label: "إجمالي المتابعين" },
   { name: "page_post_engagements", label: "تفاعلات المنشورات" },
   { name: "page_views_total", label: "مشاهدات الصفحة" },
 ];
@@ -216,12 +216,12 @@ export default function PageInsights() {
       label: titles.get(def.name) || def.label,
       value: insights ? totals[def.name] ?? null : null,
       hint:
-        def.name === "page_fans"
+        def.name === "page_follows"
           ? "آخر قيمة في الفترة"
           : insights
             ? "إجمالي الفترة"
             : undefined,
-      tone: def.name === "page_impressions" ? ("accent" as const) : ("default" as const),
+      tone: def.name === "page_media_view" ? ("accent" as const) : ("default" as const),
     }));
   }, [insights]);
 
@@ -229,7 +229,7 @@ export default function PageInsights() {
     const metrics = insights?.metrics ?? [];
     if (!metrics.length) return null;
     return (
-      metrics.find((m) => m.name === "page_impressions" && m.values.length) ||
+      metrics.find((m) => m.name === "page_media_view" && m.values.length) ||
       metrics.find((m) => m.values.length) ||
       metrics[0]
     );
