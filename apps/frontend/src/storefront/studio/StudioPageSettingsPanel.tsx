@@ -372,6 +372,10 @@ export const StudioPageSettingsPanel: React.FC<StudioPageSettingsPanelProps> = (
   React.useEffect(() => {
     if (isOpen && defaultTab) {
       setActiveTab(defaultTab);
+      const timer = setTimeout(() => {
+        scrollToSection(`panel-section-${defaultTab}`);
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, defaultTab]);
   const [prepublishRan, setPrepublishRan] = useState(false);

@@ -91,6 +91,7 @@ export const StudioLeftRail: React.FC<StudioLeftRailProps> = ({
             onClick={() => handleClick(item.id)}
             title={item.label}
             aria-pressed={isActive}
+            aria-haspopup={item.id === "seo" ? "dialog" : undefined}
             className={`group relative flex h-10 w-10 flex-col items-center justify-center rounded-xl transition-all ${
               isActive
                 ? "bg-[#2b6cf6] text-white shadow-[0_4px_14px_rgba(43,108,246,0.35)]"

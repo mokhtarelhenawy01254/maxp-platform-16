@@ -209,6 +209,7 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
                       }}
                       className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-[#60a5fa] transition-colors"
                       title="إعدادات SEO الصفحة"
+                      aria-label="إعدادات SEO الصفحة"
                     >
                       <GlobeAltIcon className="h-3.5 w-3.5" />
                     </button>
@@ -421,6 +422,7 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
                           }}
                           className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-[#60a5fa] transition-colors"
                           title="إعدادات SEO الصفحة"
+                          aria-label="إعدادات SEO الصفحة"
                         >
                           <GlobeAltIcon className="h-3.5 w-3.5" />
                         </button>
