@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const { getMarketplaceCatalogDbDiff } = require("../../services/catalog/marketplaceCatalogDiffService");
+const { closeSharedDatabase } = require("../../services/sharedDatabase");
 
 function parseArgs(argv) {
   const args = {
@@ -92,7 +93,18 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("[catalog:diff] Failed:", error.message);
-  process.exit(2);
-});
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error("[catalog:diff] Failed:", error.message);
+      process.exitCode = 2;
+    })
+    .finally(async () => {
+      await closeSharedDatabase().catch(() => {});
+      // sharedDatabase keeps handles open (ep_poll idle), so CLI process
+      // must exit explicitly to avoid wedging deploy scripts.
+      process.exit(process.exitCode || 0);
+    });
+}
+
+module.exports = { main, parseArgs };
