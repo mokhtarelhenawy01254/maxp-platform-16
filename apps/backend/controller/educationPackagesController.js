@@ -3,9 +3,21 @@ const { logEducationEvent } = require('../services/educationAuditService');
 
 const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 
+const resolveCompanyId = (req) => {
+  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
+  const userRole = String(req.user?.role || '').toUpperCase();
+  if (headerCid) {
+    if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
+    if (req.user?.companyId === headerCid) return String(headerCid).trim();
+    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === headerCid || uc.company?.id === headerCid);
+    if (hasCompany) return String(headerCid).trim();
+  }
+  return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
+};
+
 const getAll = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { subjectId } = req.query;
@@ -26,7 +38,7 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     let { subjectId, name, description, hoursCount, sessionDuration, price, levelNumber, ageFrom, ageTo } = req.body;
@@ -52,6 +64,14 @@ const create = async (req, res) => {
         });
       }
       subjectId = defaultSubject.id;
+    } else {
+      // Validate that the provided subjectId belongs strictly to this company
+      const validSubject = await prisma.educationSubject.findFirst({
+        where: { id: subjectId, companyId }
+      });
+      if (!validSubject) {
+        return res.status(400).json({ success: false, error: 'المادة المحددة غير صالحة أو غير تابعة لهذه الشركة' });
+      }
     }
 
     const data = await prisma.educationPackage.create({
@@ -82,7 +102,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -90,6 +110,15 @@ const update = async (req, res) => {
 
     const existing = await getSharedPrismaClient().educationPackage.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الباقة غير موجودة' });
+
+    if (subjectId) {
+      const validSubject = await getSharedPrismaClient().educationSubject.findFirst({
+        where: { id: subjectId, companyId }
+      });
+      if (!validSubject) {
+        return res.status(400).json({ success: false, error: 'المادة المحددة غير صالحة أو غير تابعة لهذه الشركة' });
+      }
+    }
 
     const data = await getSharedPrismaClient().educationPackage.update({
       where: { id },
@@ -126,7 +155,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;
@@ -156,7 +185,7 @@ const remove = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id } = req.params;

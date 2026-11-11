@@ -160,5 +160,57 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(updatedSubjectsTab.visible, true);
   });
 
+  await t.test('multi-tenant isolation: modifying settings for Company A does not affect Company B', async () => {
+    const companies = {
+      'comp-A': { id: 'comp-A', settings: JSON.stringify({ educationSettings: { educationMode: 'COURSES', enableSubjects: false } }) },
+      'comp-B': { id: 'comp-B', settings: JSON.stringify({ educationSettings: { educationMode: 'ACADEMIC', enableSubjects: true } }) }
+    };
+
+    mockPrisma.company.findUnique = async ({ where }) => companies[where.id] ? { ...companies[where.id] } : null;
+    mockPrisma.company.update = async ({ where, data }) => {
+      companies[where.id].settings = data.settings;
+      return { ...companies[where.id] };
+    };
+
+    // User switches Company A to ACADEMIC mode
+    const reqA = {
+      user: { id: 'u1', role: 'OWNER', companyId: 'comp-A' },
+      body: { educationMode: 'ACADEMIC', enableSubjects: true }
+    };
+    const resA = createMockRes();
+    await controller.updateSettings(reqA, resA);
+    assert.strictEqual(resA.getData().success, true);
+
+    // Verify Company A is updated
+    const savedA = JSON.parse(companies['comp-A'].settings);
+    assert.strictEqual(savedA.educationSettings.educationMode, 'ACADEMIC');
+    assert.strictEqual(savedA.educationSettings.enableSubjects, true);
+
+    // Now update Company B to COURSES mode
+    const reqB = {
+      user: { id: 'u2', role: 'OWNER', companyId: 'comp-B' },
+      body: { educationMode: 'COURSES', enableSubjects: false }
+    };
+    const resB = createMockRes();
+    await controller.updateSettings(reqB, resB);
+    assert.strictEqual(resB.getData().success, true);
+
+    // Verify Company B is COURSES and Company A remains ACADEMIC!
+    const finalA = JSON.parse(companies['comp-A'].settings);
+    const finalB = JSON.parse(companies['comp-B'].settings);
+    assert.strictEqual(finalA.educationSettings.educationMode, 'ACADEMIC');
+    assert.strictEqual(finalB.educationSettings.educationMode, 'COURSES');
+    assert.notStrictEqual(finalA.educationSettings.educationMode, finalB.educationSettings.educationMode);
+
+    // Also test header x-company-id resolution for multi-company owner / super admin
+    const reqMulti = {
+      user: { id: 'u3', role: 'SUPER_ADMIN', companyId: 'comp-A' },
+      headers: { 'x-company-id': 'comp-B' }
+    };
+    const resMulti = createMockRes();
+    await controller.getSettings(reqMulti, resMulti);
+    assert.strictEqual(resMulti.getData().data.educationMode, 'COURSES'); // read from comp-B via header!
+  });
+
   sharedDb.getSharedPrismaClient = originalGetSharedPrisma;
 });

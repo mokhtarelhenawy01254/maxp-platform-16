@@ -176,9 +176,21 @@ const sanitize = (str) => {
   return str.replace(/<[^>]*>?/gm, '').trim();
 };
 
+const resolveCompanyId = (req) => {
+  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
+  const userRole = String(req.user?.role || '').toUpperCase();
+  if (headerCid) {
+    if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
+    if (req.user?.companyId === headerCid) return String(headerCid).trim();
+    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === headerCid || uc.company?.id === headerCid);
+    if (hasCompany) return String(headerCid).trim();
+  }
+  return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
+};
+
 const getSettings = async (req, res) => {
   try {
-    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const prisma = sharedDatabase.getSharedPrismaClient();
@@ -291,7 +303,7 @@ const updateSettings = async (req, res) => {
       });
     }
 
-    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
     const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects } = req.body || {};
