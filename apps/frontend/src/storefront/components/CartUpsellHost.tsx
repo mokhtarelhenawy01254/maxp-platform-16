@@ -16,6 +16,7 @@ import { getProductImageCandidates, getPrimaryProductImage } from "../utils/prod
 import { trackStorefrontAppUsage } from "../utils/appUsageTracking";
 import { getProductVolumeDiscounts } from "../utils/volumeDiscounts";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
+import { useStorefrontLocale } from "../i18n";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
 import { isKhemetLuxeTheme } from "../utils/navigationGuards";
 
@@ -360,7 +361,8 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
   const sourceProductId = items[0]?.productId || null;
   const currency =
     settings?.storefront?.settings?.currency || settings?.company?.currency || "EGP";
-  const prefersArabicCopy = theme.direction === "rtl";
+  const { isRTL } = useStorefrontLocale();
+  const prefersArabicCopy = isRTL;
   const isBiteRush = theme.id === "restaurant-demo";
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isInline = layout === "inline";

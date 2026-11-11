@@ -75,23 +75,25 @@
     ],
     "dropdowns": [
       {
-        "label": "Mobiles & Tech",
+        "label": "Electronics",
         "items": [
           {
-            "label": "Mobiles & Tech",
-            "to": "/collections"
+            "label": "Mobiles"
           },
           {
-            "label": "Computers",
-            "to": "/collections"
+            "label": "Laptops"
           },
           {
-            "label": "Phones",
-            "to": "/collections"
+            "label": "Televisions"
           },
           {
-            "label": "Gaming",
-            "to": "/collections"
+            "label": "Headphones"
+          },
+          {
+            "label": "Smart Watches"
+          },
+          {
+            "label": "Tablets"
           }
         ]
       },
@@ -99,120 +101,201 @@
         "label": "Home Appliances",
         "items": [
           {
-            "label": "Home Appliances",
-            "to": "/collections"
+            "label": "Washing Machines"
           },
           {
-            "label": "Laundry",
-            "to": "/collections"
+            "label": "Refrigerators"
           },
           {
-            "label": "Kitchen",
-            "to": "/collections"
+            "label": "Air Conditioners"
+          },
+          {
+            "label": "Vacuum Cleaners"
+          },
+          {
+            "label": "Microwaves"
+          },
+          {
+            "label": "Water Heaters"
           }
         ]
       },
       {
-        "label": "Home & Living",
+        "label": "Home & Kitchen",
         "items": [
           {
-            "label": "Home & Living",
-            "to": "/collections"
+            "label": "Blenders"
           },
           {
-            "label": "Chairs",
-            "to": "/collections"
+            "label": "Cookware"
           },
           {
-            "label": "Tables",
-            "to": "/collections"
+            "label": "Pressure Cookers"
+          },
+          {
+            "label": "Dinnerware"
+          },
+          {
+            "label": "Coffee Makers"
+          },
+          {
+            "label": "Kitchen Tools"
           }
         ]
       },
       {
-        "label": "Kids & Baby",
+        "label": "Tools & Home",
         "items": [
           {
-            "label": "Kids & Baby",
-            "to": "/collections"
+            "label": "Power Tools"
           },
           {
-            "label": "Toys",
-            "to": "/collections"
+            "label": "Hand Tools"
           },
           {
-            "label": "Jumpers",
-            "to": "/collections"
+            "label": "Lighting"
+          },
+          {
+            "label": "Plumbing"
+          },
+          {
+            "label": "Industrial & Scientific"
           }
         ]
       },
       {
-        "label": "Beauty & Health",
+        "label": "Personal Care",
         "items": [
           {
-            "label": "Beauty & Health",
-            "to": "/collections"
+            "label": "Hair Dryers"
           },
           {
-            "label": "Face",
-            "to": "/collections"
+            "label": "Shavers"
           },
           {
-            "label": "Styling",
-            "to": "/collections"
+            "label": "Skincare"
+          },
+          {
+            "label": "Perfumes"
+          }
+        ]
+      },
+      {
+        "label": "Health & Household",
+        "items": [
+          {
+            "label": "Supplements"
+          },
+          {
+            "label": "Medical Devices"
+          }
+        ]
+      },
+      {
+        "label": "Sports & Fitness",
+        "items": [
+          {
+            "label": "Home Fitness"
+          },
+          {
+            "label": "Sports Gear"
+          }
+        ]
+      },
+      {
+        "label": "Garden & Outdoor",
+        "items": [
+          {
+            "label": "Garden Tools"
+          },
+          {
+            "label": "Planters"
+          },
+          {
+            "label": "Outdoor Furniture"
+          }
+        ]
+      },
+      {
+        "label": "Fashion",
+        "items": [
+          {
+            "label": "Men's Shoes"
+          },
+          {
+            "label": "Bags"
+          },
+          {
+            "label": "Women's Clothing"
+          },
+          {
+            "label": "Accessories"
+          }
+        ]
+      },
+      {
+        "label": "Baby & Toys",
+        "items": [
+          {
+            "label": "Toys"
+          },
+          {
+            "label": "Baby Essentials"
+          }
+        ]
+      },
+      {
+        "label": "Automotive",
+        "items": [
+          {
+            "label": "Car Accessories"
           }
         ]
       }
     ],
     "actions": [
       {
-        "label": "Our Story",
-        "to": "/contact",
-        "style": "link"
+        "label": "About Us",
+        "to": "/about"
       },
       {
-        "label": "Partner Brands",
-        "to": "/contact",
-        "style": "link"
+        "label": "Our Partners",
+        "to": "/partners"
       },
       {
-        "label": "Sell With Us",
-        "to": "/contact",
-        "style": "link"
+        "label": "Careers",
+        "to": "/careers"
       },
       {
-        "label": "Order Tracking",
-        "to": "/contact",
-        "style": "link"
+        "label": "Track Your Order",
+        "to": "/track-order"
       },
       {
-        "label": "Talk To Us",
-        "to": "/contact",
-        "style": "link"
+        "label": "Contact Us",
+        "to": "/contact"
       },
       {
-        "label": "Help Center",
-        "to": "/contact",
-        "style": "link"
+        "label": "FAQs",
+        "to": "/faq"
       }
     ]
   },
   "footer": {
     "variant": "retail-direct",
-    "description": "Marketplace Avenue - appliances, electronics and gaming in one multi-department store.",
-    "phoneText": "01000 000 000",
-    "emailText": "care@marketplace-avenue.com",
+    "description": "Bto3 e3lanat — your premier destination for the latest home appliances, electronics, gaming consoles and home essentials at unbeatable prices with fast nationwide shipping across Egypt.",
+    "phoneText": "01003465663",
+    "emailText": "btoo3e3lanat1@gmail.com",
     "addressText": "Cairo, Egypt",
     "contactRows": [
       {
         "label": "Hotline",
-        "value": "01000 000 000",
-        "href": "tel:01000000000"
+        "value": "01003465663",
+        "href": "tel:01003465663"
       },
       {
         "label": "Email",
-        "value": "care@marketplace-avenue.com",
-        "href": "mailto:care@marketplace-avenue.com"
+        "value": "btoo3e3lanat1@gmail.com",
+        "href": "mailto:btoo3e3lanat1@gmail.com"
       }
     ],
     "socialLinks": {
@@ -223,27 +306,10 @@
     },
     "navigation": [
       {
-        "title": "Get to Know Us",
-        "links": [
-          {
-            "label": "Our Story",
-            "to": "/contact"
-          },
-          {
-            "label": "Partner Brands",
-            "to": "/contact"
-          },
-          {
-            "label": "Sell With Us",
-            "to": "/contact"
-          }
-        ]
-      },
-      {
         "title": "Shop",
         "links": [
           {
-            "label": "All products",
+            "label": "All Products",
             "to": "/shop"
           },
           {
@@ -255,50 +321,60 @@
             "to": "/sale"
           },
           {
-            "label": "Top sellers",
+            "label": "Top Sellers",
             "to": "/shop?sort=popular"
           }
         ]
       },
       {
-        "title": "Useful Links",
+        "title": "Customer Service",
         "links": [
           {
-            "label": "Shipping",
+            "label": "Shipping & Delivery",
             "to": "/shipping"
           },
           {
-            "label": "Returns",
+            "label": "Returns & Exchanges",
             "to": "/returns"
           },
           {
-            "label": "Talk To Us",
+            "label": "Contact Us",
             "to": "/contact"
           },
           {
-            "label": "Help Center",
+            "label": "FAQs",
             "to": "/contact"
           }
         ]
       },
       {
-        "title": "Subscribe Newsletter",
+        "title": "About Us",
         "links": [
           {
-            "label": "Safety Payments",
+            "label": "About Us",
+            "to": "/contact"
+          },
+          {
+            "label": "Our Partners",
+            "to": "/contact"
+          },
+          {
+            "label": "Privacy Policy",
             "to": "/privacy"
+          },
+          {
+            "label": "Terms & Conditions",
+            "to": "/terms"
           }
         ]
       }
     ],
     "legalLinks": [
       {
-        "label": "Privacy Policy",
-        "to": "/privacy"
+        "label": "Privacy Policy"
       },
       {
-        "label": "Terms & Conditions",
-        "to": "/terms"
+        "label": "Terms & Conditions"
       }
     ],
     "copyrightText": "(c) 2026 Marketplace Avenue. All rights reserved."
@@ -790,11 +866,6 @@
             "totalLabel": "Total",
             "showCouponField": false
           }
-        },
-        {
-          "type": "order-summary",
-          "variant": "market-summary",
-          "settings": {}
         }
       ]
     },

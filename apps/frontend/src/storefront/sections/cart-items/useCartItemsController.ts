@@ -54,7 +54,7 @@ export const useCartItemsController = ({ section, settings }: CartItemsProps) =>
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isWardrobeKhemet = isKhemetLuxe && variant === 'wardrobe-cart';
   const hasServiceCartTone = isCommandCart || isMarketCart || isNatureCart || isButcherCart;
-  const title = settings?.title || 'سلة التسوق';
+  const title = settings?.title || (prefersArabicCopy ? 'سلة التسوق' : 'Shopping Cart');
   const subtitle =
     settings?.subtitle ||
     (isSproutRoom

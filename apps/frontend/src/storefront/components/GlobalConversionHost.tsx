@@ -20,6 +20,7 @@ import {
 import { formatCountdownParts, formatCountdownText } from "../utils/countdown";
 import { isPharmacyThemeId } from "../utils/pharmacyThemes";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
+import { useStorefrontLocale } from "../i18n";
 import { STOREFRONT_PDP_CHECKOUT_VISIBILITY_EVENT } from "../utils/pdpCheckout";
 import { isMarketplaceThemePreview } from "../preview/previewContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -117,7 +118,8 @@ const GlobalConversionHost: React.FC = () => {
   const location = useLocation();
   const { settings } = useStorefrontSettings();
   const { theme } = useStorefrontTheme();
-  const prefersArabicCopy = theme.direction === "rtl";
+  const { isRTL } = useStorefrontLocale();
+  const prefersArabicCopy = isRTL;
   const isSoleaFemme = theme.id === "solea-femme";
   const isBiteRush = theme.id === "restaurant-demo";
   const isCafeDemo = theme.id === "cafe-demo";
@@ -341,7 +343,7 @@ const GlobalConversionHost: React.FC = () => {
       ? prefersArabicCopy
         ? "طلب قهوة الآن"
         : "Coffee Order"
-    : theme.direction === "rtl"
+    : isRTL
       ? "طلب مباشر الآن"
       : "Live Sale";
 
@@ -624,7 +626,7 @@ const GlobalConversionHost: React.FC = () => {
                   isCompactMarketplacePreviewChrome ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]"
                 }`}
               >
-                {theme.direction === 'rtl' ? 'الآن' : 'Hot'}
+                {isRTL ? 'الآن' : 'Hot'}
               </span>
               <div>
                 <p className="font-semibold text-foreground">
@@ -655,9 +657,9 @@ const GlobalConversionHost: React.FC = () => {
         <AnimatePresence>
           {showSalePopup && activeSaleProduct && (
             <motion.div
-              initial={{ x: theme.direction === 'rtl' ? 100 : -100, opacity: 0 }}
+              initial={{ x: isRTL ? 100 : -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: theme.direction === 'rtl' ? 100 : -100, opacity: 0 }}
+              exit={{ x: isRTL ? 100 : -100, opacity: 0 }}
               className={`fixed ${salePopupPositionClass} z-[75] w-[calc(100vw-2rem)] max-w-sm pointer-events-none`}
             >
               <Link
@@ -702,12 +704,12 @@ const GlobalConversionHost: React.FC = () => {
                     {salePopupBadgeLabel}
                   </span>
                   <p className="mt-1 line-clamp-2 text-xs font-black text-foreground">
-                    {theme.direction === 'rtl' 
+                    {isRTL 
                       ? `${activeSaleName} من ${activeSaleCity} اشترى ${activeSaleProduct.name}`
                       : `${activeSaleName} from ${activeSaleCity} purchased ${activeSaleProduct.name}`}
                   </p>
                   <p className="mt-1 text-[10px] text-muted-foreground font-medium opacity-60">
-                    {theme.direction === 'rtl' 
+                    {isRTL 
                       ? `منذ ${activeSaleMinutesAgo} دقائق`
                       : `${activeSaleMinutesAgo} minutes ago`}
                   </p>
