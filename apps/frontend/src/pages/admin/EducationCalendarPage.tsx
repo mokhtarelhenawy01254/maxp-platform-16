@@ -46,7 +46,7 @@ const getDays = (isEn: boolean) => isEn
 const MONTHS_AR = getMonths(false);
 const DAYS_AR = getDays(false);
 
-const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string }> = {
+const getStatusConfig = (isEn: boolean): Record<string, { label: string; badge: string; dot: string }> => ({
   SCHEDULED: {
     label: isEn ? "Scheduled" : "مجدولة",
     badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
@@ -67,7 +67,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string 
     badge: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
     dot: "bg-red-500",
   },
-};
+});
 
 type ViewMode = "month" | "week" | "agenda";
 
@@ -90,6 +90,7 @@ const toLocalTimeStr = (d: Date | string): string => {
 const EducationCalendarPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(isEn), [isEn]);
   const months = useMemo(() => getMonths(isEn), [isEn]);
   const days = useMemo(() => getDays(isEn), [isEn]);
   const [sessions, setSessions] = useState<EducationSession[]>([]);
