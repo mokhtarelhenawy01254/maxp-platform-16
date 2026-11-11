@@ -4,6 +4,7 @@ import { Truck, Check } from "lucide-react";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useCartStore } from "../store/useCartStore";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
+import { useStorefrontLocale } from "../i18n";
 import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
@@ -42,7 +43,8 @@ export const FreeShippingBar: React.FC = () => {
   const location = useLocation();
   const { settings } = useStorefrontSettings();
   const { theme } = useStorefrontTheme();
-  const prefersArabicCopy = theme.direction === "rtl";
+  const { isRTL } = useStorefrontLocale();
+  const prefersArabicCopy = isRTL;
 
   const isBiteRush = theme.id === "restaurant-demo";
   const isCafeDemo = theme.id === "cafe-demo";

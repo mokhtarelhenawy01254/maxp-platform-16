@@ -82,6 +82,7 @@ export const localizeThemeShell = (
 
   return {
     ...theme,
+    direction: locale === "en" ? "ltr" : "rtl",
     header: headerOverrides
       ? mergeLocaleOverrides(theme.header as StorefrontHeaderConfig, headerOverrides)
       : theme.header,

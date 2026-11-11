@@ -253,16 +253,6 @@ export const StandardProductCard: React.FC<{ ctrl: ProductCardController }> = ({
           </div>
         ) : null}
 
-        <div dir="ltr" className="flex items-center gap-2 font-sans">
-          <p className={`text-sm font-bold ${isZenOrganic ? 'text-[#1a3328]' : 'text-primary'}`}>
-            {formattedPrice}
-          </p>
-          {formattedComparePrice ? (
-            <p className="text-xs text-muted-foreground line-through decoration-1">
-              {formattedComparePrice}
-            </p>
-          ) : null}
-        </div>
         {isAirlume ? (
           <p className="text-xs leading-6 text-muted-foreground">
             {hasDiscount
@@ -283,32 +273,58 @@ export const StandardProductCard: React.FC<{ ctrl: ProductCardController }> = ({
 
         <div className="mt-auto pt-2">
           {features.gridAddToCartIcon ? (
-            <button
-              onClick={handleAddToCart}
-              className="absolute bottom-4 end-4 z-10 rounded-full bg-primary p-3 text-primary-foreground shadow-md transition-all duration-300 translate-y-0 opacity-100 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
-              title={actionLabel}
-            >
-              <Plus size={20} />
-            </button>
-          ) : (
-            <div className="relative z-10 flex items-center w-full mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div dir="ltr" className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-sans min-w-0">
+                <p className={`text-sm font-bold ${isZenOrganic ? 'text-[#1a3328]' : 'text-primary'}`}>
+                  {formattedPrice}
+                </p>
+                {formattedComparePrice ? (
+                  <p className="text-xs text-muted-foreground line-through decoration-1">
+                    {formattedComparePrice}
+                  </p>
+                ) : null}
+              </div>
               <button
                 onClick={handleAddToCart}
-                className="flex flex-1 w-full items-center justify-center gap-1.5 rounded-[var(--button-radius,0.375rem)] py-2 px-3 text-xs font-bold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                className="z-10 rounded-full bg-primary p-2.5 sm:p-3 text-primary-foreground shadow-md transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
                 title={actionLabel}
+                aria-label={actionLabel}
               >
-                <ShoppingCart size={14} />
-                <span>
-                  {hasVariantChoices
-                    ? isRtl
-                      ? 'اختيار المقاس والطلب'
-                      : 'Select Size & Order'
-                    : isRtl
-                    ? 'أضف للسلة'
-                    : 'Add to Cart'}
-                </span>
+                <Plus size={18} />
               </button>
             </div>
+          ) : (
+            <>
+              <div dir="ltr" className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-sans mb-2 ${isRtl ? 'justify-end' : ''}`}>
+                <p className={`text-sm font-bold ${isZenOrganic ? 'text-[#1a3328]' : 'text-primary'}`}>
+                  {formattedPrice}
+                </p>
+                {formattedComparePrice ? (
+                  <p className="text-xs text-muted-foreground line-through decoration-1">
+                    {formattedComparePrice}
+                  </p>
+                ) : null}
+              </div>
+              <div className="relative z-10 flex items-center w-full mt-1">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex flex-1 w-full items-center justify-center gap-1.5 rounded-[var(--button-radius,0.375rem)] py-2 px-3 text-xs font-bold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                  title={actionLabel}
+                  aria-label={actionLabel}
+                >
+                  <ShoppingCart size={14} />
+                  <span>
+                    {hasVariantChoices
+                      ? isRtl
+                        ? 'اختيار المقاس والطلب'
+                        : 'Select Size & Order'
+                      : isRtl
+                      ? 'أضف للسلة'
+                      : 'Add to Cart'}
+                  </span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
