@@ -50,6 +50,33 @@ FETCH_TIMEOUT = 120
 PUSH_TIMEOUT = 300
 
 HOOK_MARK = "# cross-agent coordination guard (installed by scripts/agent-coord/coord.py)"
+FORBIDDEN_PUSH_PATTERNS = [
+    "apps/backend/tests/services/whatsappMetaParamGuard.test.js",
+    "scripts/local_dns_proxy.py",
+    "apps/frontend/src/cs3.db-shm",
+    "apps/frontend/src/cs3.db-wal",
+]
+
+
+def check_outgoing_commits_safety(root: Path, branch: str):
+    """
+    Inspects commits ready to be pushed to ensure they do not contain
+    files owned by other sessions or sensitive secrets.
+    """
+    diff_p = run_git(root, ["diff", "--name-only", f"origin/{branch}..HEAD"])
+    if diff_p.returncode != 0:
+        return []
+    changed_files = [line.strip().replace("\\", "/") for line in diff_p.stdout.splitlines() if line.strip()]
+    violations = []
+    for f in changed_files:
+        for pattern in FORBIDDEN_PUSH_PATTERNS:
+            if f == pattern or f.endswith("/" + pattern):
+                violations.append(f"Foreign session file: {f}")
+        basename = Path(f).name
+        if basename == ".env" or basename.startswith(".env."):
+            if not basename.endswith(".example"):
+                violations.append(f"Environment secret file: {f}")
+    return violations
 
 
 # --------------------------------------------------------------------------- #
@@ -343,6 +370,21 @@ def cmd_guard(args):
         if ahead == 0:
             print("GUARD OK: nothing to push (HEAD is in sync with origin).")
             return 0
+
+        # Safety audit: ensure outgoing commits do not contain foreign session files or secrets
+        violations = check_outgoing_commits_safety(root, branch)
+        if violations:
+            print("GUARD REFUSED: Outgoing commits contain forbidden / foreign files:")
+            for v in violations:
+                print(f"  ❌ {v}")
+            print("Aborting push to protect foreign session files and workspace integrity.")
+            return 4
+
+        st = run_git(root, ["status", "--porcelain"])
+        untracked = [l[3:].strip() for l in st.stdout.splitlines() if l.startswith("?? ")]
+        if untracked:
+            print(f"[guard] Working tree check: {len(untracked)} untracked file(s) safely preserved outside commits.")
+
         if not args.push:
             print(f"GUARD OK: {ahead} commit(s) ready, remote in sync. Push with: "
                   f"git push origin HEAD:{branch}  (or re-run guard with --push)")
@@ -374,6 +416,14 @@ def cmd_hook_check(args):
             f"(task: {lk.get('task')!r}). Another agent is working — coordinate first.\n"
             f"[coord] Status:  python scripts/agent-coord/coord.py status\n")
         return 1
+
+    violations = check_outgoing_commits_safety(root, "main")
+    if violations:
+        sys.stderr.write("[coord] BLOCKED pre-push: Outgoing commits contain forbidden / foreign files:\n")
+        for v in violations:
+            sys.stderr.write(f"  ❌ {v}\n")
+        return 1
+
     return 0
 
 

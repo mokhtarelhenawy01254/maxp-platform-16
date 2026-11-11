@@ -12,6 +12,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -49,12 +50,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "chart-bar",
+    "icon": "📊",
     "logo": null,
     "coverImage": null,
+    "mainRoute": "/analytics/orders/orders",
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-13T00:00:00Z",
-    "updatedAt": "2026-08-13T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.082Z"
   },
   {
     "id": "cat-app-instagram-business",
@@ -69,6 +72,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "facebook-pages-connect"
@@ -108,17 +112,19 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "instagram",
+    "icon": "📸",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-11T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-telegram-business",
     "slug": "telegram-business",
-    "name": "تكامل Telegram",
+    "name": "تليجرام بزنس",
     "nameEn": "Telegram for Business",
     "description": "إدارة مجموعات وقنوات تليجرام، الرد الآلي، الجدولة، الحملات، والبوتات المتقدمة — كل قنوات التواصل في مكان واحد.",
     "descriptionEn": "Manage Telegram channels and groups, auto-reply, scheduling, campaigns, and advanced bots - all communication channels in one place.",
@@ -128,7 +134,8 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "فرق المبيعات والدعم التي تدير قنوات وجروبات تليجرام للتواصل مع العملاء.",
@@ -165,12 +172,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "telegram",
+    "icon": "✈️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-11T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-tiktok-integrations",
@@ -185,6 +194,7 @@
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -231,9 +241,11 @@
     "icon": "zap",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-13T00:00:00Z",
-    "updatedAt": "2026-08-13T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-facebook-ads-pro",
@@ -241,13 +253,15 @@
     "name": "إعلانات فيسبوك وانستجرام",
     "nameEn": "Facebook Ads Pro",
     "description": "إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 199,
-    "yearlyPrice": 2999,
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "facebook-pages-connect"
     ],
@@ -274,12 +288,14 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": true,
-    "icon": "megaphone",
+    "icon": "📢",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-03-06T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-facebook-pages-connect",
@@ -287,12 +303,14 @@
     "name": "ربط صفحات فيسبوك",
     "nameEn": "Facebook Pages Connect",
     "description": "ربط صفحات فيسبوك وإدارة الصفحات الأساسية والمحتوى.",
-    "category": "COMMUNICATION",
+    "descriptionEn": null,
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -330,25 +348,29 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "facebook",
+    "icon": "📄",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-facebook-pixel-capi",
     "slug": "facebook-pixel-capi",
-    "name": "Pixel وتحليلات التحويل",
+    "name": "بكسل فيسبوك وتحليلات التحويل",
     "nameEn": "Facebook Pixel & CAPI",
     "description": "تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة.",
-    "category": "COMMUNICATION",
+    "descriptionEn": null,
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "facebook-pages-connect"
@@ -382,12 +404,14 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": false,
-    "icon": "activity",
+    "icon": "📊",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-facebook-catalog-shop",
@@ -395,16 +419,16 @@
     "name": "كتالوج ومتجر فيسبوك",
     "nameEn": "Facebook Catalog & Shop",
     "description": "مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop، إدارة المخزون، وإعلانات Dynamic Ads.",
-    "category": "COMMUNICATION",
+    "descriptionEn": null,
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [
-      "facebook-pages-connect"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تبيع عبر فيسبوك وانستجرام وتحتاج مزامنة المنتجات والمخزون.",
       "surface": "داخل إعدادات الكتالوجات ومتجر فيسبوك ومتابعة المخزون.",
@@ -440,25 +464,29 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "shopping-bag",
+    "icon": "🛍️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-whatsapp-business",
     "slug": "whatsapp-business",
-    "name": "WhatsApp Business API",
+    "name": "واتساب للأعمال (API)",
     "nameEn": "WhatsApp Business API",
     "description": "تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.",
+    "descriptionEn": null,
     "category": "COMMUNICATION",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 350,
     "yearlyPrice": 3500,
-    "unitPrice": null,
+    "unitPrice": 0,
     "unitName": null,
+    "ppuBillingMethod": "PER_ORDER",
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -496,12 +524,14 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": true,
-    "icon": "whatsapp",
+    "icon": "💬",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-09-27T08:13:07.046Z"
+    "updatedAt": "2026-11-11T13:13:20.085Z"
   },
   {
     "id": "cat-app-bot-automation",
@@ -516,6 +546,7 @@
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -580,22 +611,26 @@
     "icon": "bot",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-14T00:00:00Z",
-    "updatedAt": "2026-08-14T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-analytics-basic",
     "slug": "analytics-basic",
-    "name": "Analytics Basic",
+    "name": "التحليلات الأساسية",
     "nameEn": "Analytics Basic",
-    "description": "Store analytics dashboard for revenue, orders, and trend monitoring.",
+    "description": "لوحة تحليلات للمتجر: الإيرادات والطلبات ومراقبة الاتجاهات.",
+    "descriptionEn": null,
     "category": "ANALYTICS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 249,
-    "yearlyPrice": 2499,
+    "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -621,25 +656,29 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": true,
-    "icon": "chart-bar",
+    "icon": "📈",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-03-06T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-ai-chat-basic",
     "slug": "ai-chat-basic",
-    "name": "AI Chat Basic",
+    "name": "محادثات AI الأساسية",
     "nameEn": "AI Chat Basic",
-    "description": "AI assistant for support and sales conversations with pay-per-use pricing.",
+    "description": "مساعد ذكي لمحادثات الدعم والمبيعات بتسعير حسب الاستهلاك.",
+    "descriptionEn": null,
     "category": "AI",
     "pricingModel": "PAY_PER_USE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": 0.5,
-    "unitName": "message",
+    "unitName": "محادثة",
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -663,27 +702,31 @@
     },
     "isActive": true,
     "isPublic": true,
-    "isFeatured": false,
+    "isFeatured": true,
     "isPopular": true,
-    "icon": "bot",
+    "icon": "🤖",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-09-10T20:50:02.650Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-store",
     "slug": "store",
-    "name": "المتجر",
+    "name": "المتجر (حسب الاستهلاك)",
     "nameEn": "Store",
     "description": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.",
+    "descriptionEn": null,
     "category": "ECOMMERCE",
     "pricingModel": "PAY_PER_USE",
     "monthlyPrice": 699,
     "yearlyPrice": 7689,
     "unitPrice": 1,
     "unitName": "طلب",
+    "ppuBillingMethod": "PER_ORDER",
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -739,26 +782,29 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": true,
-    "icon": "store",
+    "icon": "🛒",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-09-27T08:13:07.044Z",
-    "ppuBillingMethod": "PER_ORDER"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-crm-lite",
     "slug": "crm-lite",
-    "name": "CRM Lite",
+    "name": "CRM الخفيف",
     "nameEn": "CRM Lite",
-    "description": "Customer pipeline and basic segmentation for small teams.",
+    "description": "مسار متابعة العملاء وتقسيم بسيط يناسب الفرق الصغيرة.",
+    "descriptionEn": null,
     "category": "CRM",
     "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -787,22 +833,26 @@
     "icon": "users",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-03-06T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-conversion-suite",
     "slug": "conversion-suite",
     "name": "أدوات رفع التحويل",
     "nameEn": "Conversion Suite",
-    "description": "Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.",
-    "category": "ECOMMERCE",
+    "description": "أشرطة إلحاح وعناصر رفع التحويل ونوافذ منبثقة جاهزة لمتجرك.",
+    "descriptionEn": null,
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 0,
-    "yearlyPrice": 0,
+    "monthlyPrice": 349,
+    "yearlyPrice": 3499,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -839,9 +889,11 @@
     "icon": "sparkles",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-04-01T00:00:00Z",
-    "updatedAt": "2026-04-01T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-quantity-offers-pro",
@@ -849,12 +901,14 @@
     "name": "عروض الكميات",
     "nameEn": "Quantity Offers Pro",
     "description": "أنشئ عروض كميات متعددة القطع مع اختيار مقاس أو لون مختلف لكل قطعة مباشرة على صفحة المنتج.",
+    "descriptionEn": null,
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
-    "yearlyPrice": 1490,
+    "yearlyPrice": 1499,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -891,23 +945,27 @@
     "icon": "shopping-cart",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-04-05T00:00:00Z",
-    "updatedAt": "2026-04-05T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-ugc-reviews-pro",
     "slug": "ugc-reviews-pro",
     "name": "تقييمات العملاء",
     "nameEn": "UGC Reviews Pro",
-    "description": "Photo and video review blocks designed for product pages and trust-building templates.",
+    "description": "بلوكات تقييمات بالصور والفيديو لصفحات المنتجات وبناء الثقة.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1999,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -943,9 +1001,11 @@
     "icon": "camera",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-04-01T00:00:00Z",
-    "updatedAt": "2026-04-01T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-commerce-advanced",
@@ -953,12 +1013,14 @@
     "name": "المبيعات المتقدمة",
     "nameEn": "Commerce Advanced",
     "description": "تحكم متقدم في المبيعات: الطلب المسبق، إشارات المخزون، ومسارات التنفيذ الخاصة.",
+    "descriptionEn": null,
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 179,
-    "yearlyPrice": 1790,
+    "yearlyPrice": 1799,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -995,9 +1057,11 @@
     "icon": "package-open",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-04-01T00:00:00Z",
-    "updatedAt": "2026-04-01T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-procurement-pro",
@@ -1005,13 +1069,15 @@
     "name": "المشتريات وإدارة الموردين",
     "nameEn": "Procurement & Suppliers Pro",
     "description": "إدارة الموردين، أوامر الشراء، فواتير المشتريات، ومدفوعات وحسابات الموردين مع الربط التلقائي بالمخزون.",
+    "descriptionEn": null,
     "category": "PROCUREMENT",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [],
     "positioning": {
       "audience": "فرق التشغيل التي تدير موردين ومشتريات بشكل يومي.",
@@ -1051,23 +1117,27 @@
     "icon": "clipboard-list",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-09-10T19:49:53.278Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-affiliate-pro",
     "slug": "affiliate-pro",
-    "name": "Affiliate Pro",
+    "name": "الأفلييت برو",
     "nameEn": "Affiliate Pro",
-    "description": "Affiliate management, affiliate marketplace, product sharing, and commission workflows.",
+    "description": "إدارة الأفلييت وسوق المسوقين ومشاركة المنتجات وعمولات تلقائية.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 249,
     "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -1109,14 +1179,16 @@
     "icon": "users",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-05-01T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-amazon-affiliate-pro",
     "slug": "amazon-affiliate-pro",
-    "name": "Amazon Affiliate",
+    "name": "أفلييت أمازون",
     "nameEn": "Amazon Affiliate",
     "description": "استيراد منتجات أمازون إلى متجرك وربطها بحساب Amazon Associates لكسب العمولات — استيراد بالرابط أو ASIN أو CSV، مزامنة الأسعار والمخزون تلقائيًا، زر الشراء من أمازون، وتوجيه الزائر لسوق بلده.",
     "descriptionEn": "Import Amazon products into your store, link them to your Amazon Associates account and earn commissions — import by URL, ASIN or CSV, automatic price & stock sync, Buy-on-Amazon button, and visitor-country geotargeting.",
@@ -1126,6 +1198,7 @@
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [
       "store"
@@ -1168,9 +1241,11 @@
     "icon": "globe",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-28T00:00:00Z",
-    "updatedAt": "2026-08-28T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-blog-pro",
@@ -1178,12 +1253,14 @@
     "name": "نظام المدونة والـ SEO",
     "nameEn": "Blog & SEO",
     "description": "مدونة احترافية مع إدارة مقالات، Affiliate Amazon، FAQ & TOC تلقائي، و SEO متكامل (Article/Breadcrumb/FAQ Schema + sitemap). مثالي لمواقع مثل MensGroomingPro.",
-    "category": "CONTENT",
+    "descriptionEn": null,
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1218,23 +1295,27 @@
     "icon": "pen-line",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-28T00:00:00Z",
-    "updatedAt": "2026-08-28T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-order-source-tracking",
     "slug": "order-source-tracking",
-    "name": "Order Source Tracking",
+    "name": "تتبع مصادر الطلبات",
     "nameEn": "Order Source Tracking",
-    "description": "Track the operational source of each order, including manual, storefront, import, API, and conversation sources.",
+    "description": "تتبع مصدر كل طلب: يدوي أو متجر أو استيراد أو API أو محادثات.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -1264,23 +1345,27 @@
     "icon": "route",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-campaign-attribution",
     "slug": "campaign-attribution",
-    "name": "Campaign Attribution",
+    "name": "إسناد الحملات",
     "nameEn": "Campaign Attribution",
-    "description": "Campaign and ad attribution data for orders, including platform, campaign, ad, UTM, and click identifiers.",
+    "description": "إسناد الطلبات لحملاتك وإعلاناتك: المنصة والحملة والـUTM ومصدر النقرة.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -1310,23 +1395,27 @@
     "icon": "megaphone",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-05-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-order-confirmation-distribution",
     "slug": "order-confirmation-distribution",
-    "name": "Order Confirmation & Distribution",
+    "name": "تأكيد وتوزيع الطلبات",
     "nameEn": "Order Confirmation & Distribution",
-    "description": "Confirmation and internal assignment details for order operations teams.",
+    "description": "تأكيد الطلبات وإسنادها الداخلي لفرق التشغيل.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -1356,22 +1445,26 @@
     "icon": "clipboard-check",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-04T00:00:00Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.086Z"
   },
   {
     "id": "cat-app-unified-inbox",
     "slug": "unified-inbox",
-    "name": "Unified Inbox",
+    "name": "الصندوق الموحد",
     "nameEn": "Unified Inbox",
     "description": "صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.",
-    "category": "PRODUCTIVITY",
+    "descriptionEn": null,
+    "category": "COMMUNICATION",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2999,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -1409,26 +1502,30 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": true,
-    "icon": "inbox",
+    "icon": "📬",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-19T00:00:00Z",
-    "updatedAt": "2026-06-19T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-notification-automation",
     "slug": "notification-automation",
-    "name": "Notification Automation",
+    "name": "أتمتة الإشعارات",
     "nameEn": "Notification Automation",
-    "description": "Notification center, reminders, alert rules, and operational notification settings.",
+    "description": "مركز إشعارات وتذكيرات وقواعد تنبيه وإعدادات إشعارات التشغيل.",
+    "descriptionEn": null,
     "category": "PRODUCTIVITY",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
     "requiredApps": [],
     "positioning": {
       "audience": "الفرق التي تحتاج تذكيرات وتنبيهات تشغيلية بدون متابعة يدوية.",
@@ -1468,9 +1565,11 @@
     "icon": "bell",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-05-01T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-booking-app",
@@ -1478,12 +1577,14 @@
     "name": "حجوزات المواعيد",
     "nameEn": "Appointment Booking",
     "description": "نظام حجز وإدارة المواعيد مع جدولة المواعيد المتاحة وإدارة الحالات.",
+    "descriptionEn": null,
     "category": "PRODUCTIVITY",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1512,9 +1613,11 @@
     "icon": "calendar",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00Z",
-    "updatedAt": "2026-06-26T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-medical-system",
@@ -1522,12 +1625,14 @@
     "name": "النظام الطبي",
     "nameEn": "Medical System",
     "description": "نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد والتقويم.",
+    "descriptionEn": null,
     "category": "MEDICAL",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 249,
     "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1586,9 +1691,11 @@
     "icon": "heart",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00Z",
-    "updatedAt": "2026-06-26T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-lab-app",
@@ -1596,12 +1703,14 @@
     "name": "نظام المعمل",
     "nameEn": "Lab System",
     "description": "نظام متكامل لإدارة المعامل — كتالوج الاختبارات، الاستقبال، النتائج، والتقارير.",
+    "descriptionEn": null,
     "category": "MEDICAL",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1639,12 +1748,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "flask-conical",
+    "icon": "🧪",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-08T00:00:00Z",
-    "updatedAt": "2026-08-08T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-radiology-app",
@@ -1652,12 +1763,14 @@
     "name": "نظام الأشعة",
     "nameEn": "Radiology System",
     "description": "نظام متكامل لإدارة مراكز الأشعة — الدراسات، قارئ صور DICOM، التقارير، والفوترة.",
+    "descriptionEn": null,
     "category": "MEDICAL",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 249,
     "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1695,12 +1808,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "radiation",
+    "icon": "🩻",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00Z",
-    "updatedAt": "2026-08-10T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-dental-lab-app",
@@ -1708,12 +1823,14 @@
     "name": "نظام معمل الأسنان",
     "nameEn": "Dental Lab System",
     "description": "نظام متكامل لإدارة معامل الأسنان — حالات التركيبات، مراحل الإنتاج، تعيين الفنيين، رفع الملفات، فواتير الدكاترة، وبوابة للدكتور.",
+    "descriptionEn": null,
     "category": "MEDICAL",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1772,9 +1889,11 @@
     "icon": "stethoscope",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-27T00:00:00Z",
-    "updatedAt": "2026-08-27T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-dental-materials-pro",
@@ -1789,6 +1908,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "dental-lab-app"
@@ -1831,9 +1951,11 @@
     "icon": "Package",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-12T00:00:00Z",
-    "updatedAt": "2026-09-12T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-academy-app",
@@ -1848,6 +1970,7 @@
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -1888,9 +2011,11 @@
     "icon": "academic-cap",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-09T00:00:00Z",
-    "updatedAt": "2026-09-09T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.087Z"
   },
   {
     "id": "cat-app-inventory-pro",
@@ -1898,12 +2023,14 @@
     "name": "المخزون والمستودعات الشامل",
     "nameEn": "Inventory & Multi-Warehouse Pro",
     "description": "نظام متكامل لإدارة المخزون والمستودعات المتعددة، تتبع الكميات، التحويلات بين المخازن، الجرد الدوري، ونقاط إعادة الطلب والتنبيهات الذكية.",
+    "descriptionEn": null,
     "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -1946,13 +2073,15 @@
     "isActive": true,
     "isPublic": true,
     "isFeatured": false,
-    "isPopular": true,
-    "icon": "package",
+    "isPopular": false,
+    "icon": "📦",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:24:53.047Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-shipping-turbo",
@@ -1960,12 +2089,14 @@
     "name": "بوابة وشركات الشحن الذكي",
     "nameEn": "Multi-Carrier Smart Shipping",
     "description": "إدارة والربط الآلي مع كافة شركات الشحن (كيو بي إكسبريس QP Express، بوسطة Bosta، تربو Turbo، أرامكس، والمناديب): إصدار بوالص الشحن، التتبع اللحظي، وإدارة التسويات المالية.",
+    "descriptionEn": null,
     "category": "SHIPPING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -2003,12 +2134,14 @@
     "isPublic": true,
     "isFeatured": true,
     "isPopular": true,
-    "icon": "truck",
+    "icon": "🚚",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-internal-courier-fleet",
@@ -2023,6 +2156,7 @@
     "yearlyPrice": 1290,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -2063,9 +2197,11 @@
     "icon": "truck",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-23T00:00:00.000Z",
-    "updatedAt": "2026-09-23T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-invoicing",
@@ -2073,12 +2209,14 @@
     "name": "الفواتير",
     "nameEn": "Invoicing",
     "description": "تصميم وإصدار فواتير احترافية للطلبات، تقارير الضرائب، وإحصائيات المبيعات المالية.",
+    "descriptionEn": null,
     "category": "ACCOUNTING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 129,
     "yearlyPrice": 1290,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -2110,12 +2248,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "file-text",
+    "icon": "🧾",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-wholesale-pro",
@@ -2123,12 +2263,14 @@
     "name": "البيع بالجملة",
     "nameEn": "Wholesale Pro",
     "description": "نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.",
+    "descriptionEn": null,
     "category": "WHOLESALE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -2175,9 +2317,11 @@
     "icon": "percent",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-30T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-product-presentations",
@@ -2192,6 +2336,7 @@
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -2232,22 +2377,26 @@
     "icon": "photo",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-20T00:00:00.000Z",
-    "updatedAt": "2026-07-20T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-cod-deposit",
     "slug": "cod-deposit",
-    "name": "COD Deposit",
+    "name": "عربون الدفع عند الاستلام",
     "nameEn": "COD Deposit",
     "description": "طلب دفعة مقدمة على طلبات COD لتقليل المرتجعات — مع دعم الدفع أونلاين (Kashier) والتحويلات اليدوية.",
+    "descriptionEn": null,
     "category": "PAYMENTS",
     "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -2288,9 +2437,11 @@
     "icon": "banknotes",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-agent-workspace",
@@ -2298,12 +2449,14 @@
     "name": "مركز التأكيد والمتابعة",
     "nameEn": "Confirmation & Follow-up Center",
     "description": "مساحة عمل موحدة لفريق التأكيد — إدارة اتصالات العملاء، تأكيد الطلبات، جدولة المتابعات، وتحديث الحالات.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2340,9 +2493,11 @@
     "icon": "user-circle",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-29T00:00:00.000Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-preparation-hold",
@@ -2357,10 +2512,9 @@
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
-    "mainRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
-    "adminRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
     "positioning": {
       "audience": "فرق التجهيز والمستودعات والعمليات المسؤولة عن معالجة الطلبات المعلقة.",
       "surface": "داخل صفحة تجهيز الطلبات المعلقة مباشرة.",
@@ -2387,9 +2541,11 @@
     "icon": "clock",
     "logo": null,
     "coverImage": null,
+    "mainRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
+    "adminRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
     "engineCompatibility": null,
     "createdAt": "2026-09-09T00:00:00.000Z",
-    "updatedAt": "2026-09-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-pos-pro",
@@ -2397,16 +2553,16 @@
     "name": "نظام POS",
     "nameEn": "POS System",
     "description": "نقطة بيع متكاملة: كاشير، فواتير بيع مباشر، سلة بيع سريعة، وطباعة فواتير بيع فورية.",
+    "descriptionEn": null,
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
-    "mainRoute": "/pos",
-    "adminRoute": "/pos",
     "positioning": {
       "audience": "المتاجر ومحلات التجزئة ونقاط البيع التي تبيع بشكل مباشر للعملاء.",
       "surface": "داخل صفحة كاشير نقطة البيع (POS) لإتمام البيع الفوري.",
@@ -2439,9 +2595,11 @@
     "icon": "monitor",
     "logo": null,
     "coverImage": null,
+    "mainRoute": "/pos",
+    "adminRoute": "/pos",
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-10-01T12:30:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-coupons-pro",
@@ -2449,12 +2607,14 @@
     "name": "الكوبونات والعروض",
     "nameEn": "Coupons & Promotions",
     "description": "إنشاء كوبونات خصم وعروض ترويجية — نسب/مبالغ خصم، حد أدنى للطلب، وتتبع أداء الكوبونات.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2488,25 +2648,29 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "percent",
+    "icon": "🎟️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-woocommerce-pro",
     "slug": "woocommerce-pro",
-    "name": "تكامل WooCommerce",
+    "name": "?????????? WooCommerce",
     "nameEn": "WooCommerce Integration",
-    "description": "مزامنة المنتجات والطلبات والمخزون بين منصة MaxP ومتجر WooCommerce — استيراد وتصدير تلقائي.",
+    "description": "?????? ?????????? ???????????????????? ???? ?????????????? ???? ???????? MaxP ???????????? ?????????????? ?????????????????? ???????????????? ???????????? ??????????.",
+    "descriptionEn": null,
     "category": "INTEGRATION",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 79,
-    "yearlyPrice": 790,
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2540,12 +2704,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "globe",
+    "icon": "🛒",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-multi-warehouse-pro",
@@ -2553,12 +2719,14 @@
     "name": "المخزون المتعدد",
     "nameEn": "Multi-Warehouse Inventory",
     "description": "إدارة المستودعات المتعددة والتحويلات — مدمج الآن بالكامل ضمن تطبيق المخزون والمستودعات الشامل (Inventory Pro).",
+    "descriptionEn": null,
     "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "inventory-pro"
@@ -2588,16 +2756,18 @@
         "access": "PAID"
       }
     },
-    "isActive": false,
-    "isPublic": false,
+    "isActive": true,
+    "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "warehouse",
+    "icon": "🏬",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:18:23.311Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-accounting-sources",
@@ -2605,12 +2775,14 @@
     "name": "مصادر الطلبات والمحاسبة",
     "nameEn": "Order Sources & Accounting",
     "description": "تتبع مصدر كل طلب (متجر، يدوي، فيسبوك، واتساب، تليجرام، استيراد) مع محاسبة وإيرادات منفصلة لكل مصدر.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2644,12 +2816,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "git-branch",
+    "icon": "🔀",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-manual-orders-pro",
@@ -2657,12 +2831,14 @@
     "name": "الطلب اليدوي",
     "nameEn": "Manual Orders",
     "description": "إنشاء طلبات يدوية من صفحة مخصصة: اختيار المنتج والمتغيرات، إضافة العميل، وتحديد طريقة الدفع والشحن.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2696,12 +2872,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "square-pen",
+    "icon": "✍️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-automation",
@@ -2709,12 +2887,14 @@
     "name": "أتمتة الحالات",
     "nameEn": "Order Status Automation",
     "description": "غيّر حالة الطلبات تلقائياً بعد مرور وقت محدد أو عند حدوث حدث معين — أتمتة كاملة لمعالجة الطلبات بدون تدخل يدوي.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2742,12 +2922,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "zap",
+    "icon": "⚡",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-bulk-search",
@@ -2755,14 +2937,18 @@
     "name": "البحث المجمع",
     "nameEn": "Bulk Search",
     "description": "بحث مجمع عن الطلبات بالرقم أو رقم التليفون دفعة واحدة — استرجاع عدة طلبات ومراجعتها بسرعة.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "فرق خدمة العملاء والمتابعة التي تحتاج فحص عدة طلبات في نفس الوقت.",
       "surface": "داخل صفحة البحث المجمع في إدارة الطلبات.",
@@ -2786,12 +2972,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "search",
+    "icon": "🔍",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-customer-blocks",
@@ -2799,14 +2987,18 @@
     "name": "حظر العملاء",
     "nameEn": "Customer Blocks",
     "description": "إدارة قائمة حظر العملاء — منع العملاء غير المرغوب فيهم من إتمام الطلبات مع توثيق سبب الحظر.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "المتاجر التي تواجه عملاء مرتجعين أو مزعجين وتريد منعهم من الطلب.",
       "surface": "داخل إعدادات حظر العملاء في إدارة الطلبات.",
@@ -2830,12 +3022,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "shield-alert",
+    "icon": "🛡️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-bulk-orders",
@@ -2843,12 +3037,14 @@
     "name": "الطلبات الجماعية",
     "nameEn": "Bulk Orders",
     "description": "تنفيذ عمليات جماعية على الطلبات — تغيير الحالة، الحذف، والطباعة لعدد كبير من الطلبات دفعة واحدة.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2876,12 +3072,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "list-ordered",
+    "icon": "📋",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-quick-status",
@@ -2889,14 +3087,18 @@
     "name": "التغيير السريع للحالة",
     "nameEn": "Quick Status Change",
     "description": "تغيير حالة الطلبات بسرعة بدون فتح كل طلب — تحديث مباشر من قائمة الطلبات.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "فرق الشحن والمعالجة التي تريد تسريع تغيير الحالات اليومي.",
       "surface": "داخل صفحة التغيير السريع للحالة في إدارة الطلبات.",
@@ -2914,12 +3116,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "refresh-ccw",
+    "icon": "🔁",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.655Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-status-summary",
@@ -2927,12 +3131,14 @@
     "name": "ملخص حالات الطلبات",
     "nameEn": "Order Status Summary",
     "description": "ملخص فوري لتوزيع حالات الطلبات — معرفة عدد الطلبات في كل حالة ونسب التوزيع في أي لحظة.",
+    "descriptionEn": null,
     "category": "ANALYTICS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "store"
@@ -2954,12 +3160,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "file-bar-chart",
+    "icon": "📊",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-returns-settings",
@@ -2967,14 +3175,18 @@
     "name": "إعدادات المرتجعات",
     "nameEn": "Returns Settings",
     "description": "إعدادات نظام المرتجعات — أسباب الإرجاع، الشروط، والسياسات الخاصة بمراجعة المرتجعات.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "فرق المرتجعات التي تريد توحيد أسباب الإرجاع وسياسات القبول.",
       "surface": "داخل إعدادات المرتجعات في إدارة الطلبات.",
@@ -2992,12 +3204,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "cog",
+    "icon": "⚙️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.656Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-order-workflow",
@@ -3005,14 +3219,18 @@
     "name": "مسار الطلبات",
     "nameEn": "Order Workflow",
     "description": "تخصيص مسار الطلبات — ترتيب الحالات وتسلسل معالجة الطلب من الاستلام حتى التسليم.",
+    "descriptionEn": null,
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "المتاجر التي تريد تخصيص تسلسل معالجة طلباتها ليتناسب مع عمليتها.",
       "surface": "داخل إعدادات مسار الطلبات في إدارة الطلبات.",
@@ -3030,12 +3248,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "arrow-left-right",
+    "icon": "🔀",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.656Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-facebook-post",
@@ -3043,12 +3263,14 @@
     "name": "إنشاء منشور فيسبوك",
     "nameEn": "Facebook Create Post",
     "description": "إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "facebook-pages-connect"
@@ -3076,12 +3298,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "square-pen",
+    "icon": "📝",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-google-tag-manager",
@@ -3089,14 +3313,18 @@
     "name": "Google Tag Manager",
     "nameEn": "Google Tag Manager",
     "description": "إعداد Google Tag Manager — ربط حاوية GTM وأكواد التتبع مع متجرك وإعلاناتك.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
-    "requiredApps": [],
+    "requiredApps": [
+      "store"
+    ],
     "positioning": {
       "audience": "المتاجر التي تستخدم GTM لإدارة أكواد التتبع والتحويلات.",
       "surface": "داخل إعدادات Google Tag Manager في التسويق.",
@@ -3114,12 +3342,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "chart-bar",
+    "icon": "🏷️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-09-10T20:50:02.656Z"
+    "updatedAt": "2026-11-11T13:13:20.088Z"
   },
   {
     "id": "cat-app-broadcast-pro",
@@ -3127,13 +3357,15 @@
     "name": "نظام البث المتقدم",
     "nameEn": "Broadcast Pro",
     "description": "نظام إرسال رسائل جماعية متقدم مع تصنيف العملاء وجدولة الإرسال.",
-    "category": "MARKETING",
+    "descriptionEn": null,
+    "category": "COMMUNICATION",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 99,
-    "yearlyPrice": 990,
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "فرق التسويق والتواصل التي تريد إرسال حملات للعملاء بشكل جماعي.",
@@ -3164,12 +3396,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "volume-2",
+    "icon": "📢",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-break-even",
@@ -3177,12 +3411,14 @@
     "name": "حاسبة المشاريع — نقطة التعادل",
     "nameEn": "Project Break-Even Calculator",
     "description": "احسب عدد الطلبات والإيرادات المطلوبة لتحقيق نقطة التعادل لمتجرك.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3217,9 +3453,11 @@
     "icon": "calculator",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-product-break-even",
@@ -3271,12 +3509,14 @@
     "name": "استراتيجية التسعير",
     "nameEn": "Pricing Strategy",
     "description": "حدد السعر الأمثل لمنتجاتك مع محاكاة ما-لو وما تحقيقه من هامش ربح.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3305,9 +3545,11 @@
     "icon": "tag",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-profitability-engine",
@@ -3315,12 +3557,14 @@
     "name": "محرك الربحية",
     "nameEn": "Profitability Engine",
     "description": "محرك متكامل لحساب صافي الربح وهامش المساهمة ونقطة التعادل التشغيلية.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3349,9 +3593,11 @@
     "icon": "trending-up",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-campaign-calculator",
@@ -3447,12 +3693,14 @@
     "name": "حاسبة أثر الخصم",
     "nameEn": "Discount Impact Calculator",
     "description": "اعرف أثر أي خصم على أرباحك وعدد الطلبات الإضافية المطلوبة لتعويضه.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3481,9 +3729,11 @@
     "icon": "percent",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-shipping-optimizer",
@@ -3491,12 +3741,14 @@
     "name": "محسن الشحن",
     "nameEn": "Shipping Optimizer",
     "description": "حسّن تكاليف الشحن والمدد واختر أفضل شركات الشحن لمتجرك.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3519,9 +3771,11 @@
     "icon": "truck",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.106Z"
   },
   {
     "id": "cat-app-monthly-pnl",
@@ -3573,12 +3827,14 @@
     "name": "حاسبة القيمة الدائمة للعميل (CLV)",
     "nameEn": "CLV Calculator",
     "description": "احسب القيمة الدائمة للعميل واعرف كم تستطيع أن تنفق على اكتسابه.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3607,9 +3863,11 @@
     "icon": "users",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-upsell-planner",
@@ -3661,12 +3919,14 @@
     "name": "حاسبة معدل المرتجعات",
     "nameEn": "Refund & Return Rate",
     "description": "احسب معدل المرتجعات وتأثيره على أرباحك وتكاليف التشغيل.",
+    "descriptionEn": null,
     "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 7,
     "requiredApps": [],
     "positioning": {
@@ -3689,9 +3949,11 @@
     "icon": "refresh-ccw",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00.000Z",
-    "updatedAt": "2026-08-10T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-executable-mindmap",
@@ -3700,12 +3962,13 @@
     "nameEn": "Executable Mindmaps & Workflows",
     "description": "لوحة خرائط ذهنية ثلاثية الأغراض: تخطيط استراتيجي وعصف ذهني، وضع الشرح والتدريب التفاعلي، وأتمتة تنفيذية للمهام والرسائل مثل n8n — متصلة بكافة أدوات MaxP.",
     "descriptionEn": "Triple-purpose canvas: visual mind mapping and brainstorming, interactive training and presentation mode, and n8n-style workflow execution for tasks and messaging.",
-    "category": "AUTOMATION",
+    "category": "PRODUCTIVITY",
     "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -3746,9 +4009,11 @@
     "icon": "git-branch",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-hr-core",
@@ -3763,7 +4028,8 @@
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "الشركات والمتاجر التي تريد تنظيم بيانات موظفيها وهيكلها الإداري في مكان واحد.",
@@ -3798,14 +4064,16 @@
     },
     "isActive": true,
     "isPublic": true,
-    "isFeatured": true,
+    "isFeatured": false,
     "isPopular": true,
-    "icon": "users",
+    "icon": "👥",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-hr-attendance-pro",
@@ -3820,10 +4088,9 @@
     "yearlyPrice": 790,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
-    "requiredApps": [
-      "hr-core"
-    ],
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
     "positioning": {
       "audience": "الشركات والمتاجر التي تحتاج ضبط أوقات دوام الموظفين والورديات الميدانية بدقة.",
       "surface": "داخل قسم الحضور والورديات والإجازات، وبوابة الحضور الذاتية للموظف.",
@@ -3858,13 +4125,15 @@
     "isActive": true,
     "isPublic": true,
     "isFeatured": false,
-    "isPopular": true,
-    "icon": "clock",
+    "isPopular": false,
+    "icon": "⏰",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-hr-payroll",
@@ -3879,9 +4148,10 @@
     "yearlyPrice": 150,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
     "requiredApps": [
-      "hr-core"
+      "hr-basic"
     ],
     "positioning": {
       "audience": "أصحاب الأعمال والمحاسبون الذين يريدون حساب الرواتب والخصومات بدقة وبدون أخطاء يدوية.",
@@ -3916,14 +4186,16 @@
     },
     "isActive": true,
     "isPublic": true,
-    "isFeatured": true,
+    "isFeatured": false,
     "isPopular": false,
-    "icon": "banknote",
+    "icon": "💰",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-27T08:13:07.046Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-hr-recruitment",
@@ -3938,10 +4210,9 @@
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
-    "requiredApps": [
-      "hr-core"
-    ],
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
     "positioning": {
       "audience": "الشركات التي توظف بانتظام وتريد إدارة المتقدمين واستبيانات العمل باحترافية.",
       "surface": "داخل قسم التوظيف واستبيانات العمل، وروابط التقديم العامة.",
@@ -3977,12 +4248,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "briefcase",
+    "icon": "🎯",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-27T08:13:07.046Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-hr-assets",
@@ -3997,10 +4270,9 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
-    "requiredApps": [
-      "hr-core"
-    ],
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
     "positioning": {
       "audience": "الشركات التي توفر أجهزة ومعدات لموظفيها وتهتم بمتابعة الأداء الوظيفي والعهد.",
       "surface": "داخل قسم العهد والأصول وتقييم الأداء والمكافآت.",
@@ -4036,12 +4308,14 @@
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
-    "icon": "monitor",
+    "icon": "🖥️",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-marketing-agency-pro",
@@ -4056,6 +4330,7 @@
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -4096,9 +4371,11 @@
     "icon": "briefcase",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-treasury-expenses",
@@ -4109,10 +4386,11 @@
     "descriptionEn": "Manage company expenses and cash outflows, multi-vault cash reserves, bank accounts, capital injections, and real-time ledger with overdraft protection.",
     "category": "FINANCE",
     "pricingModel": "FREE",
-    "monthlyPrice": null,
-    "yearlyPrice": null,
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -4159,9 +4437,11 @@
     "icon": "landmark",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-20T00:00:00Z",
-    "updatedAt": "2026-09-20T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-cafe-restaurant-pro",
@@ -4176,6 +4456,7 @@
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "pos-pro",
@@ -4219,9 +4500,11 @@
     "icon": "coffee",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-22T00:00:00Z",
-    "updatedAt": "2026-09-22T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-accounting",
@@ -4236,6 +4519,7 @@
     "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -4275,16 +4559,18 @@
         "access": "PAID"
       }
     },
-    "isActive": false,
-    "isPublic": false,
+    "isActive": true,
+    "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
     "icon": "book-open",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-10-14T00:00:00Z",
-    "updatedAt": "2026-10-14T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-manufacturing",
@@ -4295,10 +4581,11 @@
     "descriptionEn": "Manufacturing Execution System (MES): multi-variant Bill of Materials (BOM), production orders, stages, material issues, finished goods receipt, and unit costing. (Placeholder pricing - unapproved).",
     "category": "ORDER_OPS",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 249,
-    "yearlyPrice": 2490,
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -4338,23 +4625,25 @@
         "access": "PAID"
       }
     },
-    "isActive": false,
-    "isPublic": false,
+    "isActive": true,
+    "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
     "icon": "factory",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-10-15T00:00:00Z",
-    "updatedAt": "2026-10-15T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-returns-reasons-analytics",
     "slug": "returns-reasons-analytics",
     "name": "أسباب المرتجعات",
     "nameEn": "Returns Reasons Analytics",
-    "description": "تحليل أسباب إرجاع الطلبات: المقاس، الجودة، التوصيل، وخطأ الطلب — بمقارنة بين الفترات وحسب المنتج.",
+    "description": "تحليلات أسباب المرتجعات: الأسباب الأكثر شيوعاً وتوزيعها لتحسين جودة المنتجات والتوصيل.",
     "descriptionEn": "Order return reasons analysis: size, quality, delivery, and order error — with period comparisons and per-product breakdown.",
     "category": "ANALYTICS",
     "pricingModel": "SUBSCRIPTION",
@@ -4362,6 +4651,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "returns-settings"
@@ -4398,16 +4688,18 @@
     "icon": "arrow-path-rounded-square",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-10-24T00:00:00Z",
-    "updatedAt": "2026-10-24T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-profit-analytics",
     "slug": "profit-analytics",
     "name": "تحليلات الأرباح",
     "nameEn": "Profit Analytics",
-    "description": "صافي الربح الحقيقي: إيراد − تكلفة المنتج − الشحن − الإعلان — على مستوى الأوردر والمنتج مع هوامش الربحية.",
+    "description": "تحليلات الأرباح: صافي الربح، هامش الربح، التكاليف، ومقارنة الأرباح عبر الفترات.",
     "descriptionEn": "True net profit calculation: revenue minus product cost, shipping, and ad spend — at the order and product level with profit margins.",
     "category": "ANALYTICS",
     "pricingModel": "SUBSCRIPTION",
@@ -4415,6 +4707,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "orders-analytics"
@@ -4451,23 +4744,26 @@
     "icon": "banknotes",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-10-24T00:00:00Z",
-    "updatedAt": "2026-10-24T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-campaign-attribution-analytics",
     "slug": "campaign-attribution-analytics",
     "name": "بيانات الحملة",
     "nameEn": "Campaign Data",
-    "description": "ربط كل أوردر بالحملة والإعلان الذي جلبه — لمعرفة أي حملة تحقق مبيعات فعلية وأيها تستهلك الميزانية دون جدوى.",
+    "description": "تحليلات إسناد الطلبات للحملات التسويقية: معرفة الحملات الأكثر تحقيقاً للطلبات والمبيعات.",
     "descriptionEn": "Order attribution analytics: linking every order to its marketing campaign and ad — discover which ads drive real revenue and which waste budget.",
     "category": "ANALYTICS",
-    "pricingModel": "FREE",
+    "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 14,
     "requiredApps": [
       "campaign-attribution"
@@ -4504,9 +4800,11 @@
     "icon": "megaphone",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-10-24T00:00:00Z",
-    "updatedAt": "2026-10-24T00:00:00Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
   },
   {
     "id": "cat-app-agent-reports",
@@ -4521,6 +4819,7 @@
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
+    "ppuBillingMethod": null,
     "trialDays": 0,
     "requiredApps": [],
     "positioning": {
@@ -4543,8 +4842,2973 @@
     "icon": "file-text",
     "logo": null,
     "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
     "engineCompatibility": null,
     "createdAt": "2026-11-03T00:00:00.000Z",
-    "updatedAt": "2026-11-03T00:00:00.000Z"
+    "updatedAt": "2026-11-11T13:13:20.109Z"
+  },
+  {
+    "id": "cmw72qbit000fjuduh4vg28y3",
+    "slug": "ai-video-studio",
+    "name": "استوديو الفيديو AI",
+    "nameEn": null,
+    "description": "توليد فيديوهات وصور إعلانية بالذكاء الاصطناعي (Higgsfield): نص→فيديو، صورة→فيديو، قصص متعددة المشاهد بتثبيت شخصيات. بمفتاحك الخاص أو برصيد المحفظة.",
+    "descriptionEn": null,
+    "category": "AI",
+    "pricingModel": "PAY_PER_USE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": "توليد",
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/advertising/video-studio",
+      "outcome": "توليد فيديوهات وصور إعلانية بالذكاء الاصطناعي (Higgsfield): نص→فيديو، صورة→في..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "نص→فيديو",
+        "description": "نص→فيديو",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "صورة→فيديو",
+        "description": "صورة→فيديو",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "نقل حركة Genjutsu",
+        "description": "نقل حركة Genjutsu",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "قصص بتثبيت شخصيات",
+        "description": "قصص بتثبيت شخصيات",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "مكتبة شخصيات",
+        "description": "مكتبة شخصيات",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "مفتاحك الخاص أو رصيد المحفظة",
+        "description": "مفتاحك الخاص أو رصيد المحفظة",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "🎬",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/advertising/video-studio",
+    "adminRoute": "/advertising/video-studio",
+    "engineCompatibility": null,
+    "createdAt": "2026-11-08T00:08:15.317Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjug000njuodv2zb68hh",
+    "slug": "turbo-analytics",
+    "name": "التحليلات الاحترافية الشاملة",
+    "nameEn": null,
+    "description": "تحليلات فورية Real-time مع AI Insights والتنبؤات المستقبلية.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 399,
+    "yearlyPrice": 3990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تحليلات فورية Real-time مع AI Insights والتنبؤات المستقبلية."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "Real-time Analytics",
+        "description": "Real-time Analytics",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "AI Insights",
+        "description": "AI Insights",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "Predictive Analytics",
+        "description": "Predictive Analytics",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "Custom Dashboards",
+        "description": "Custom Dashboards",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "Alerts and Notifications",
+        "description": "Alerts and Notifications",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "API Access",
+        "description": "API Access",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "⚡",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.464Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmr58xi4t0017ju1416hooj4m",
+    "slug": "education-app",
+    "name": "نظام إدارة المراكز التعليمية",
+    "nameEn": null,
+    "description": "نظام شامل لإدارة المراكز التعليمية: المواد، الباقات، الطلاب، المدرسين، الحصص، والتسجيلات. مع ربط ولي الأمر كعميل في CRM.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام شامل لإدارة المراكز التعليمية: المواد، الباقات، الطلاب، المدرسين، الحصص،..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة المواد الدراسية",
+        "description": "إدارة المواد الدراسية",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "باقات الساعات والجلسات",
+        "description": "باقات الساعات والجلسات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تسجيل الطلاب",
+        "description": "تسجيل الطلاب",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "إدارة المدرسين وأسعار الساعة",
+        "description": "إدارة المدرسين وأسعار الساعة",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "جدولة الحصص",
+        "description": "جدولة الحصص",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تأكيد الحصص وخصم الساعات",
+        "description": "تأكيد الحصص وخصم الساعات",
+        "access": "PAID"
+      },
+      "feat_7": {
+        "enabled": true,
+        "name": "ربط ولي الأمر CRM",
+        "description": "ربط ولي الأمر CRM",
+        "access": "PAID"
+      },
+      "feat_8": {
+        "enabled": true,
+        "name": "تقارير الأداء",
+        "description": "تقارير الأداء",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "🎓",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-03T18:07:44.142Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmla3xacv0006jula27wcrd11",
+    "slug": "ai-chat-pro",
+    "name": "محادثات AI المتقدمة",
+    "nameEn": null,
+    "description": "محادثات AI متقدمة مع RAG وتعلم Few-Shot ودعم متعدد اللغات. 2000 محادثة شهرياً.",
+    "descriptionEn": null,
+    "category": "AI",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 799,
+    "yearlyPrice": 7990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "ai-chat-basic"
+    ],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "محادثات AI متقدمة مع RAG وتعلم Few-Shot ودعم متعدد اللغات. 2000 محادثة شهرياً."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "2000 محادثة شهرياً",
+        "description": "2000 محادثة شهرياً",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "RAG (قاعدة معرفة)",
+        "description": "RAG (قاعدة معرفة)",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "Few-Shot Learning",
+        "description": "Few-Shot Learning",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "دعم متعدد اللغات",
+        "description": "دعم متعدد اللغات",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تحليلات متقدمة",
+        "description": "تحليلات متقدمة",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "🧠",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.847Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjtt000ijuodfop9vseu",
+    "slug": "crm-loyalty",
+    "name": "CRM + نظام الولاء",
+    "nameEn": null,
+    "description": "CRM متقدم مع نظام نقاط الولاء، المكافآت، والهدايا للعملاء.",
+    "descriptionEn": null,
+    "category": "CRM",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 299,
+    "yearlyPrice": 2990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "CRM متقدم مع نظام نقاط الولاء، المكافآت، والهدايا للعملاء."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "عملاء غير محدودين",
+        "description": "عملاء غير محدودين",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "نقاط الولاء",
+        "description": "نقاط الولاء",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "برنامج المكافآت",
+        "description": "برنامج المكافآت",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "بطاقات VIP",
+        "description": "بطاقات VIP",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "الهدايا والخصومات",
+        "description": "الهدايا والخصومات",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تقارير الولاء",
+        "description": "تقارير الولاء",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "💎",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.442Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmvz57ss20009juna1gsyj858",
+    "slug": "store-pro",
+    "name": "متجر ماكس",
+    "nameEn": null,
+    "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
+    "descriptionEn": null,
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 499,
+    "yearlyPrice": 4990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية لل..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "منتجات غير محدودة",
+        "description": "منتجات غير محدودة",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "مخازن متعددة",
+        "description": "مخازن متعددة",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تتبع المخزون Real-time",
+        "description": "تتبع المخزون Real-time",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تقارير متقدمة",
+        "description": "تقارير متقدمة",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تكامل مع WooCommerce",
+        "description": "تكامل مع WooCommerce",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "إدارة الموردين",
+        "description": "إدارة الموردين",
+        "access": "PAID"
+      },
+      "feat_7": {
+        "enabled": true,
+        "name": "طلبات الشراء",
+        "description": "طلبات الشراء",
+        "access": "PAID"
+      },
+      "feat_8": {
+        "enabled": true,
+        "name": "إشعارات نفاد المخزون",
+        "description": "إشعارات نفاد المخزون",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "🏪",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-11-02T10:55:40.659Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmla3xacg0002jula4fn9fqzx",
+    "slug": "hr-basic",
+    "name": "إدارة الموارد البشرية الأساسية",
+    "nameEn": null,
+    "description": "نظام شامل لإدارة بيانات الموظفين والأقسام والمناصب. يتم الدفع حسب عدد الموظفين النشطين.",
+    "descriptionEn": null,
+    "category": "HR",
+    "pricingModel": "PAY_PER_USE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": 5,
+    "unitName": "موظف",
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام شامل لإدارة بيانات الموظفين والأقسام والمناصب. يتم الدفع حسب عدد الموظفي..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة بيانات الموظفين",
+        "description": "إدارة بيانات الموظفين",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "الأقسام والمناصب",
+        "description": "الأقسام والمناصب",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "الهيكل التنظيمي",
+        "description": "الهيكل التنظيمي",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تقارير الموظفين",
+        "description": "تقارير الموظفين",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "ملفات الموظفين",
+        "description": "ملفات الموظفين",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "👥",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.832Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmla3xad30009jula5gtymljp",
+    "slug": "crm-basic",
+    "name": "CRM الأساسي",
+    "nameEn": null,
+    "description": "إدارة العملاء والمحادثات والملاحظات. حتى 1000 عميل.",
+    "descriptionEn": null,
+    "category": "CRM",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إدارة العملاء والمحادثات والملاحظات. حتى 1000 عميل."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة العملاء (1000)",
+        "description": "إدارة العملاء (1000)",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "المحادثات",
+        "description": "المحادثات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "الملاحظات",
+        "description": "الملاحظات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تقارير أساسية",
+        "description": "تقارير أساسية",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "📊",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.856Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjte000ejuod3aplyseh",
+    "slug": "woocommerce-sync",
+    "name": "مزامنة WooCommerce",
+    "nameEn": null,
+    "description": "مزامنة كاملة مع WooCommerce: استيراد/تصدير المنتجات والطلبات.",
+    "descriptionEn": null,
+    "category": "INTEGRATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "مزامنة كاملة مع WooCommerce: استيراد/تصدير المنتجات والطلبات."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "مزامنة المنتجات",
+        "description": "مزامنة المنتجات",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "مزامنة الطلبات",
+        "description": "مزامنة الطلبات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "استيراد العملاء",
+        "description": "استيراد العملاء",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحديث آلي",
+        "description": "تحديث آلي",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "Webhook Support",
+        "description": "Webhook Support",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "Mapper مخصص",
+        "description": "Mapper مخصص",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "🔄",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.426Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjs40003juodupq3np81",
+    "slug": "ai-image-studio",
+    "name": "استوديو الصور بالذكاء الاصطناعي",
+    "nameEn": null,
+    "description": "توليد صور احترافية للمنتجات والتسويق باستخدام AI. 200 صورة شهرياً.",
+    "descriptionEn": null,
+    "category": "AI",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "توليد صور احترافية للمنتجات والتسويق باستخدام AI. 200 صورة شهرياً."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "200 صورة/شهر",
+        "description": "200 صورة/شهر",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "توليد صور المنتجات",
+        "description": "توليد صور المنتجات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تعديل الخلفيات",
+        "description": "تعديل الخلفيات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحسين الصور",
+        "description": "تحسين الصور",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تصميمات تسويقية",
+        "description": "تصميمات تسويقية",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "Export HD",
+        "description": "Export HD",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "🎨",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.380Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnju5000ljuodd8m8s3tq",
+    "slug": "wallet-system",
+    "name": "نظام المحفظة الإلكترونية",
+    "nameEn": null,
+    "description": "محفظة إلكترونية للعملاء والشركات مع شحن وسحب وتحويل.",
+    "descriptionEn": null,
+    "category": "FINANCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "محفظة إلكترونية للعملاء والشركات مع شحن وسحب وتحويل."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "محفظة إلكترونية",
+        "description": "محفظة إلكترونية",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "شحن الرصيد",
+        "description": "شحن الرصيد",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "سحب الأموال",
+        "description": "سحب الأموال",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحويل داخلي",
+        "description": "تحويل داخلي",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "سجل المعاملات",
+        "description": "سجل المعاملات",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تكامل Fawry/Vodafone Cash",
+        "description": "تكامل Fawry/Vodafone Cash",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "💳",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.453Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlljcxkd0011juijr4xum157",
+    "slug": "order-core",
+    "name": "إدارة الطلبات - المستوى الأساسي",
+    "nameEn": null,
+    "description": "نظام متكامل لمعالجة الطلبات، تتبع الحالات، وطباعة الفواتير. يشمل التكامل مع سلة التسوق.",
+    "descriptionEn": null,
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام متكامل لمعالجة الطلبات، تتبع الحالات، وطباعة الفواتير. يشمل التكامل مع س..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "تتبع حالات الطلبات",
+        "description": "تتبع حالات الطلبات",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "تعديل الطلبات",
+        "description": "تعديل الطلبات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تحديث الحالات آلياً",
+        "description": "تحديث الحالات آلياً",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "داشبورد الطلبات اليومية",
+        "description": "داشبورد الطلبات اليومية",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "سجل تغييرات الحالات",
+        "description": "سجل تغييرات الحالات",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "إدارة المرتجعات الأساسية",
+        "description": "إدارة المرتجعات الأساسية",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "📝",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-13T23:45:44.942Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmqc96wmy0007junbbrziqpal",
+    "slug": "competitor-analysis",
+    "name": "تحليل المنافسين",
+    "nameEn": null,
+    "description": "تحليل السوق والمنافسين وتقارير المقارنة",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تحليل السوق والمنافسين وتقارير المقارنة"
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "تحليل المنافسين",
+        "description": "تحليل المنافسين",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "تقارير السوق",
+        "description": "تقارير السوق",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-13T11:09:43.739Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmla3xack0003jula9shzsui8",
+    "slug": "hr-attendance",
+    "name": "نظام الحضور والانصراف",
+    "nameEn": null,
+    "description": "تتبع حضور وانصراف الموظفين مع Geofencing والتأخير التلقائي. 10 جنيه لكل موظف شهرياً.",
+    "descriptionEn": null,
+    "category": "HR",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 10,
+    "yearlyPrice": 100,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "hr-basic"
+    ],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تتبع حضور وانصراف الموظفين مع Geofencing والتأخير التلقائي. 10 جنيه لكل موظف ..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "تسجيل حضور/انصراف",
+        "description": "تسجيل حضور/انصراف",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "Geofencing",
+        "description": "Geofencing",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تتبع التأخير",
+        "description": "تتبع التأخير",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تقارير الحضور",
+        "description": "تقارير الحضور",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "إشعارات تلقائية",
+        "description": "إشعارات تلقائية",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "⏰",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.836Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84ouu002rjudlelv2r5ob",
+    "slug": "payment-methods-analytics",
+    "name": "طرق الدفع",
+    "nameEn": null,
+    "description": "تحليلات طرق الدفع: توزيع الطلبات حسب طريقة الدفع، نسب الدفع عند الاستلام والدفع المسبق والتحويل.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/payments",
+      "outcome": "تحليلات طرق الدفع: توزيع الطلبات حسب طريقة الدفع، نسب الدفع عند الاستلام والد..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/payments",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.567Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmqc96wmt0006junbrbkqr19y",
+    "slug": "business-tools",
+    "name": "المهام والمواعيد",
+    "nameEn": null,
+    "description": "إدارة المهام والمواعيد وجدولة الأعمال",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إدارة المهام والمواعيد وجدولة الأعمال"
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة المهام",
+        "description": "إدارة المهام",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "المواعيد",
+        "description": "المواعيد",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-13T11:09:43.733Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84p5y002vjudl1feqgiw5",
+    "slug": "today-ops-analytics",
+    "name": "عمليات اليوم",
+    "nameEn": null,
+    "description": "متابعة عمليات اليوم لحظة بلحظة: الطلبات الجديدة، قيد التنفيذ، والمطلوب تجهيزه اليوم.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/today-ops",
+      "outcome": "متابعة عمليات اليوم لحظة بلحظة: الطلبات الجديدة، قيد التنفيذ، والمطلوب تجهيزه..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/today-ops",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.966Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84p8q002wjudlsyi3m270",
+    "slug": "cancellation-analytics",
+    "name": "تحليل الإلغاءات",
+    "nameEn": null,
+    "description": "تحليلات أسباب إلغاء الطلبات: نسب الإلغاء حسب السبب، والتوصيات لتقليل الإلغاءات.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/cancellations",
+      "outcome": "تحليلات أسباب إلغاء الطلبات: نسب الإلغاء حسب السبب، والتوصيات لتقليل الإلغاءات."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/cancellations",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.066Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84pbi002xjudl96fay2mm",
+    "slug": "delivery-rate-analytics",
+    "name": "معدل التوصيل",
+    "nameEn": null,
+    "description": "تحليلات معدلات التوصيل الناجح: نسب التوصيل، حالات الرفض، وتحليل أداء التوصيل.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/delivery-rate",
+      "outcome": "تحليلات معدلات التوصيل الناجح: نسب التوصيل، حالات الرفض، وتحليل أداء التوصيل."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/delivery-rate",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.167Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmqc96wn50009junbiytj6361",
+    "slug": "partner-program",
+    "name": "برنامج الشركاء",
+    "nameEn": null,
+    "description": "برنامج شركاء المنصة و نظام العمولات",
+    "descriptionEn": null,
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "برنامج شركاء المنصة و نظام العمولات"
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "برنامج الشركاء",
+        "description": "برنامج الشركاء",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "العمولات",
+        "description": "العمولات",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-13T11:09:43.745Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlljcxkl0013juijspemgbst",
+    "slug": "order-shipping-reports",
+    "name": "تقارير وتحليلات الشحن",
+    "nameEn": null,
+    "description": "تقارير ذكية لتحليل تكاليف الشحن، مقارنة سعر العميل بالسعر الفعلي، وإحصائيات أداء الشحن.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تقارير ذكية لتحليل تكاليف الشحن، مقارنة سعر العميل بالسعر الفعلي، وإحصائيات أ..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "مقارنة التكلفة الفعلية بسعر العميل",
+        "description": "مقارنة التكلفة الفعلية بسعر العميل",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "إحصائيات الشحن الشهرية",
+        "description": "إحصائيات الشحن الشهرية",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تحليل فروق أسعار الشحن",
+        "description": "تحليل فروق أسعار الشحن",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تتبع أرباح/خسائر الشحن",
+        "description": "تتبع أرباح/خسائر الشحن",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تقارير أداء شركات الشحن",
+        "description": "تقارير أداء شركات الشحن",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تصدير البيانات بصيغة CSV",
+        "description": "تصدير البيانات بصيغة CSV",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📊",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-13T23:45:44.949Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjuq000pjuodymt19o6f",
+    "slug": "opportunities-pipeline",
+    "name": "إدارة الفرص والمبيعات",
+    "nameEn": null,
+    "description": "إدارة فرص المبيعات، الـ Pipeline، والتوقعات المالية.",
+    "descriptionEn": null,
+    "category": "CRM",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إدارة فرص المبيعات، الـ Pipeline، والتوقعات المالية."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "Sales Pipeline",
+        "description": "Sales Pipeline",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "توقعات المبيعات",
+        "description": "توقعات المبيعات",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "مراحل الصفقات",
+        "description": "مراحل الصفقات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "Tasks and Reminders",
+        "description": "Tasks and Reminders",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تقارير الأداء",
+        "description": "تقارير الأداء",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "Dashboard تفاعلي",
+        "description": "Dashboard تفاعلي",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📈",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.475Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnju1000kjuodcqajjxh9",
+    "slug": "webhooks-pro",
+    "name": "الويب هوكس وربط API",
+    "nameEn": null,
+    "description": "تكاملات API متقدمة مع Webhooks، Zapier، وأتمتة العمليات.",
+    "descriptionEn": null,
+    "category": "INTEGRATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تكاملات API متقدمة مع Webhooks، Zapier، وأتمتة العمليات."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "Custom Webhooks",
+        "description": "Custom Webhooks",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "API Access",
+        "description": "API Access",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "Zapier Integration",
+        "description": "Zapier Integration",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "Workflow Automation",
+        "description": "Workflow Automation",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "Data Sync",
+        "description": "Data Sync",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "Security Logs",
+        "description": "Security Logs",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "🔌",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.449Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjtm000gjuodj8tkvbsn",
+    "slug": "invoicing-pro",
+    "name": "نظام الفواتير الاحترافي",
+    "nameEn": null,
+    "description": "إنشاء وإرسال الفواتير، متابعة المدفوعات، وتقارير الضرائب.",
+    "descriptionEn": null,
+    "category": "FINANCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إنشاء وإرسال الفواتير، متابعة المدفوعات، وتقارير الضرائب."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "فواتير مخصصة",
+        "description": "فواتير مخصصة",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "إرسال PDF/Email",
+        "description": "إرسال PDF/Email",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "متابعة المدفوعات",
+        "description": "متابعة المدفوعات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تذكيرات التحصيل",
+        "description": "تذكيرات التحصيل",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تقارير الضرائب",
+        "description": "تقارير الضرائب",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تكامل مع البنوك",
+        "description": "تكامل مع البنوك",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📝",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.434Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84oem002ljudl7j4lhkeu",
+    "slug": "product-analytics",
+    "name": "تحليلات المنتجات",
+    "nameEn": null,
+    "description": "تحليلات أداء المنتجات: الأكثر مبيعاً، الإيرادات حسب المنتج، معدلات الطلب، ومقارنة أداء المنتجات معاً.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/products",
+      "outcome": "تحليلات أداء المنتجات: الأكثر مبيعاً، الإيرادات حسب المنتج، معدلات الطلب، ومق..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/products",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:15.983Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84ohc002mjudlw0jtimwn",
+    "slug": "variation-analytics",
+    "name": "تحليلات الاختلافات",
+    "nameEn": null,
+    "description": "تحليلات خيارات واختلافات المنتجات: المبيعات والإيرادات لكل خيار، والألوان والمقاسات الأكثر طلباً.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/variations",
+      "outcome": "تحليلات خيارات واختلافات المنتجات: المبيعات والإيرادات لكل خيار، والألوان وال..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/variations",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.081Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmlbmnjuu000qjuodfmh9jbir",
+    "slug": "kudos-recognition",
+    "name": "نظام Kudos (تقدير الموظفين)",
+    "nameEn": null,
+    "description": "نظام تقدير الموظفين والثناء بين أعضاء الفريق.",
+    "descriptionEn": null,
+    "category": "GAMIFICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 79,
+    "yearlyPrice": 790,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام تقدير الموظفين والثناء بين أعضاء الفريق."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إرسال Kudos",
+        "description": "إرسال Kudos",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "نقاط التقدير",
+        "description": "نقاط التقدير",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "Leaderboard",
+        "description": "Leaderboard",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "شارات الإنجاز",
+        "description": "شارات الإنجاز",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تكامل مع HR",
+        "description": "تكامل مع HR",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تقارير التقدير",
+        "description": "تقارير التقدير",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "🏆",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.478Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84ok1002njudlnkhefl6l",
+    "slug": "category-analytics",
+    "name": "تحليلات التصنيفات",
+    "nameEn": null,
+    "description": "تحليلات الأداء حسب تصنيفات المنتجات: المبيعات والإيرادات والنمو لكل تصنيف.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/categories",
+      "outcome": "تحليلات الأداء حسب تصنيفات المنتجات: المبيعات والإيرادات والنمو لكل تصنيف."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/categories",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.178Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84omr002ojudlbtto9goy",
+    "slug": "coupon-analytics",
+    "name": "تحليلات الكوبونات",
+    "nameEn": null,
+    "description": "تحليلات استخدام الكوبونات: عدد مرات الاستخدام، الخصومات الممنوحة، وتأثير الكوبونات على المبيعات.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/coupons",
+      "outcome": "تحليلات استخدام الكوبونات: عدد مرات الاستخدام، الخصومات الممنوحة، وتأثير الكو..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/coupons",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.276Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84ps10033judlpf205uke",
+    "slug": "conversion-funnel-analytics",
+    "name": "قمع التحويل",
+    "nameEn": null,
+    "description": "تحليلات قمع التحويل: تتبع رحلة الطلب من الإنشاء حتى التسليم الناجح وتحديد نقاط التسرب.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/funnel",
+      "outcome": "تحليلات قمع التحويل: تتبع رحلة الطلب من الإنشاء حتى التسليم الناجح وتحديد نقا..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/funnel",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.761Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84p39002ujudlp9jz3vpa",
+    "slug": "cod-performance-analytics",
+    "name": "أداء الدفع عند الاستلام",
+    "nameEn": null,
+    "description": "تحليلات أداء الدفع عند الاستلام COD: نسب القبول والرفض، وتحليل أداء شركات الشحن.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/cod-performance",
+      "outcome": "تحليلات أداء الدفع عند الاستلام COD: نسب القبول والرفض، وتحليل أداء شركات الشحن."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/cod-performance",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.869Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84pf2002yjudlz5qa64e2",
+    "slug": "product-fulfillment-analytics",
+    "name": "أداء تنفيذ المنتجات",
+    "nameEn": null,
+    "description": "تحليلات أداء تنفيذ وتجهيز الطلبات: زمن التجهيز، الطلبات الجاهزة، والمتأخرة في التنفيذ.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/fulfillment",
+      "outcome": "تحليلات أداء تنفيذ وتجهيز الطلبات: زمن التجهيز، الطلبات الجاهزة، والمتأخرة في..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/fulfillment",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.295Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84pka0030judln6p2ku1k",
+    "slug": "region-analytics",
+    "name": "تحليلات المناطق",
+    "nameEn": null,
+    "description": "تحليلات الطلبات حسب المناطق والمحافظات: توزيع المبيعات والإيرادات جغرافياً.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/regions",
+      "outcome": "تحليلات الطلبات حسب المناطق والمحافظات: توزيع المبيعات والإيرادات جغرافياً."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/regions",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.482Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84pms0031judljn5gp0ov",
+    "slug": "returns-analytics",
+    "name": "تحليلات المرتجعات",
+    "nameEn": null,
+    "description": "تحليلات الطلبات المرتجعة: نسب المرتجعات، تكلفتها، وتأثيرها على الأرباح.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/returns",
+      "outcome": "تحليلات الطلبات المرتجعة: نسب المرتجعات، تكلفتها، وتأثيرها على الأرباح."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/returns",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.572Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmsu84phm002zjudlpiqttsfg",
+    "slug": "delivery-returns-analytics",
+    "name": "أداء التسليم والمرتجعات",
+    "nameEn": null,
+    "description": "تحليلات أداء التسليم والمرتجعات: نسب التسليم الناجح، المرتجعات، وأسباب الفشل في التسليم.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/delivery-returns",
+      "outcome": "تحليلات أداء التسليم والمرتجعات: نسب التسليم الناجح، المرتجعات، وأسباب الفشل ..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/delivery-returns",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.386Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmr58xi4x0018ju14k985z8ql",
+    "slug": "forms-app",
+    "name": "نماذج التسجيل الذكية",
+    "nameEn": null,
+    "description": "بناء نماذج تسجيل احترافية مع ربط Facebook Pixel. تحويل الزوار إلى عملاء Leads مباشرة في CRM مع تحليلات الزوار ونسبة التحويل.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "بناء نماذج تسجيل احترافية مع ربط Facebook Pixel. تحويل الزوار إلى عملاء Leads..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "بناء نماذج مخصصة (سحب وإفلات)",
+        "description": "بناء نماذج مخصصة (سحب وإفلات)",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "ربط Facebook Pixel",
+        "description": "ربط Facebook Pixel",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "رابط عام للتسجيل",
+        "description": "رابط عام للتسجيل",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحويل تلقائي إلى عميل Lead",
+        "description": "تحويل تلقائي إلى عميل Lead",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تحليلات الزوار ونسبة التحويل",
+        "description": "تحليلات الزوار ونسبة التحويل",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "إدارة الردود والتسجيلات",
+        "description": "إدارة الردود والتسجيلات",
+        "access": "PAID"
+      },
+      "feat_7": {
+        "enabled": true,
+        "name": "تصدير البيانات",
+        "description": "تصدير البيانات",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📋",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-03T18:07:44.145Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmrkj4tbf0019julaf3xbjwwa",
+    "slug": "hotel-app",
+    "name": "نظام إدارة الفنادق",
+    "nameEn": null,
+    "description": "نظام شامل لإدارة الفنادق: إدارة الغرف وأنواعها، الحجوزات والإقامات، تسجيل الوصول والمغادرة، الخدمات الإضافية (Folio)، الأسعار الموسمية، مع ربط CRM وإشعارات واتساب.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام شامل لإدارة الفنادق: إدارة الغرف وأنواعها، الحجوزات والإقامات، تسجيل الو..."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة الفنادق (فروع/عقارات)",
+        "description": "إدارة الفنادق (فروع/عقارات)",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "أنواع الغرف والسعة",
+        "description": "أنواع الغرف والسعة",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "إدارة الغرف الفردية والحالة",
+        "description": "إدارة الغرف الفردية والحالة",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "حجوزات متعددة الغرف",
+        "description": "حجوزات متعددة الغرف",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "جدول الأسعار الموسمية",
+        "description": "جدول الأسعار الموسمية",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تسجيل الوصول والمغادرة",
+        "description": "تسجيل الوصول والمغادرة",
+        "access": "PAID"
+      },
+      "feat_7": {
+        "enabled": true,
+        "name": "الخدمات الإضافية (Folio)",
+        "description": "الخدمات الإضافية (Folio)",
+        "access": "PAID"
+      },
+      "feat_8": {
+        "enabled": true,
+        "name": "التحقق من توفر الغرف",
+        "description": "التحقق من توفر الغرف",
+        "access": "PAID"
+      },
+      "feat_9": {
+        "enabled": true,
+        "name": "ربط CRM وإشعارات واتساب",
+        "description": "ربط CRM وإشعارات واتساب",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "🏨",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-14T10:49:54.027Z",
+    "updatedAt": "2026-11-11T13:13:20.110Z"
+  },
+  {
+    "id": "cmre7yamr0018ju7gmyfpkd4g",
+    "slug": "service-request-app",
+    "name": "نظام طلبات الخدمات",
+    "nameEn": null,
+    "description": "نظام لإدارة طلبات الخدمات الإبداعية: إنتاج أغاني، تصميم جرافيك، مونتاج فيديو. مع رفع ملفات (صوت/صورة/فيديو) وإدارة الطلبات والموافقات.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام لإدارة طلبات الخدمات الإبداعية: إنتاج أغاني، تصميم جرافيك، مونتاج فيديو...."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة الخدمات (إضافة/تعديل/حذف)",
+        "description": "إدارة الخدمات (إضافة/تعديل/حذف)",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "نموذج طلب خدمة عام",
+        "description": "نموذج طلب خدمة عام",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "رفع ملفات صوت/صورة/فيديو",
+        "description": "رفع ملفات صوت/صورة/فيديو",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "إدارة الطلبات والحالات",
+        "description": "إدارة الطلبات والحالات",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تغيير حالة الطلب (جديد/قيد التنفيذ/مكتمل/ملغي)",
+        "description": "تغيير حالة الطلب (جديد/قيد التنفيذ/مكتمل/ملغي)",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "عرض الملفات المرفقة",
+        "description": "عرض الملفات المرفقة",
+        "access": "PAID"
+      },
+      "feat_7": {
+        "enabled": true,
+        "name": "متوافق مع جميع المجالات",
+        "description": "متوافق مع جميع المجالات",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "🎯",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-07-10T00:50:17.043Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84puy0034judl6u2mgffu",
+    "slug": "conversion-rate-analytics",
+    "name": "معدل التحويل",
+    "nameEn": null,
+    "description": "تحليلات معدلات التحويل: من الطلب إلى التسليم، ومن زيارة المتجر إلى الشراء.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/conversion",
+      "outcome": "تحليلات معدلات التحويل: من الطلب إلى التسليم، ومن زيارة المتجر إلى الشراء."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/conversion",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.867Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84q2z0037judlv9c7t8tc",
+    "slug": "profit-loss-report",
+    "name": "تقرير الأرباح والخسائر",
+    "nameEn": null,
+    "description": "تقرير شامل للأرباح والخسائر: الإيرادات والتكاليف وصافي الربح مع تفصيل كامل بالفترات.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/reports/profit-loss",
+      "outcome": "تقرير شامل للأرباح والخسائر: الإيرادات والتكاليف وصافي الربح مع تفصيل كامل با..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/reports/profit-loss",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:18.155Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmt0ztvjb0000junmpe0ca42s",
+    "slug": "product-consolidator",
+    "name": "تجميع المنتجات",
+    "nameEn": null,
+    "description": "دمج المنتجات المكررة في منتج واحد جديد مع الاحتفاظ بـ SKU لكل منتج كمتغير مستقل — مع نقل الطلبات والمخزون والعروض التقديمية بأمان.",
+    "descriptionEn": null,
+    "category": "ECOMMERCE",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "دمج المنتجات المكررة في منتج واحد جديد مع الاحتفاظ بـ SKU لكل منتج كمتغير مست..."
+    },
+    "features": {
+      "mergeWizard": {
+        "enabled": true,
+        "name": "معالج الدمج",
+        "description": "اختيار المنتجات وتحديد الاسم والتفاصيل الجديدة واختيار المتغيرات قبل التنفيذ.",
+        "access": "PAID"
+      },
+      "variantSkus": {
+        "enabled": true,
+        "name": "الاحتفاظ بالـ SKU لكل متغير",
+        "description": "كل منتج مدمج يصبح متغيراً مستقلاً ببياناته وسعره ومخزونه وصوره و SKU الخاص به.",
+        "access": "PAID"
+      },
+      "safeMigration": {
+        "enabled": true,
+        "name": "نقل آمن للبيانات",
+        "description": "نقل الطلبات والمخزون والعروض التقديمية والإحصائيات قبل أي حذف أو إخفاء للأصل.",
+        "access": "PAID"
+      },
+      "duplicateDetection": {
+        "enabled": true,
+        "name": "كشف المجموعات المكررة",
+        "description": "عرض تلقائي للمنتجات المكررة مجمعة حسب الاسم مع عدد النسخ لكل مجموعة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "git-merge",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-20T04:01:18.312Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84pxq0035judli98w4uo1",
+    "slug": "team-performance-analytics",
+    "name": "أداء الفريق",
+    "nameEn": null,
+    "description": "تحليلات أداء الفريق: إنتاجية المندوبين وفريق التشغيل، ومتابعة إنجاز المهام.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/team-performance",
+      "outcome": "تحليلات أداء الفريق: إنتاجية المندوبين وفريق التشغيل، ومتابعة إنجاز المهام."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/team-performance",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:17.966Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84q0f0036judl500mydt2",
+    "slug": "abandoned-cart-analytics",
+    "name": "السلال المهجورة",
+    "nameEn": null,
+    "description": "تحليلات السلال المهجورة: الطلبات غير المكتملة، قيمتها، والتوصيات لاستعادتها.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/abandoned-cart",
+      "outcome": "تحليلات السلال المهجورة: الطلبات غير المكتملة، قيمتها، والتوصيات لاستعادتها."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/abandoned-cart",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:18.063Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84q8f0039judly4396e77",
+    "slug": "status-movement-analytics",
+    "name": "حركة الحالات",
+    "nameEn": null,
+    "description": "تحليلات حركة وتحولات حالات الطلبات: تتبع انتقال الطلبات بين الحالات وزمن البقاء في كل حالة.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/status-movement",
+      "outcome": "تحليلات حركة وتحولات حالات الطلبات: تتبع انتقال الطلبات بين الحالات وزمن البق..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/status-movement",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:18.351Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmlbmnjum000ojuodx0fptuka",
+    "slug": "appointments-pro",
+    "name": "نظام المواعيد والحجوزات",
+    "nameEn": null,
+    "description": "نظام حجوزات متكامل مع Calendar، تذكيرات، وتكامل مع Google Calendar.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام حجوزات متكامل مع Calendar، تذكيرات، وتكامل مع Google Calendar."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "Calendar متكامل",
+        "description": "Calendar متكامل",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "حجوزات أونلاين",
+        "description": "حجوزات أونلاين",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تذكيرات تلقائية",
+        "description": "تذكيرات تلقائية",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "Google Calendar Sync",
+        "description": "Google Calendar Sync",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "إدارة الموظفين",
+        "description": "إدارة الموظفين",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تقارير الحجوزات",
+        "description": "تقارير الحجوزات",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📅",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.470Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84q5q0038judl4ped9pu5",
+    "slug": "status-analysis-analytics",
+    "name": "تحليل الحالات",
+    "nameEn": null,
+    "description": "تحليلات توزيع حالات الطلبات: عدد الطلبات في كل حالة ونسب التوزيع مع المقارنات الزمنية.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/status-analysis",
+      "outcome": "تحليلات توزيع حالات الطلبات: عدد الطلبات في كل حالة ونسب التوزيع مع المقارنات..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/status-analysis",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:18.254Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmla3xad7000ajula3iexy6bi",
+    "slug": "analytics-advanced",
+    "name": "التحليلات المتقدمة",
+    "nameEn": null,
+    "description": "تحليلات متقدمة مع تقارير مخصصة وتصدير البيانات وتتبع الأهداف.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "تحليلات متقدمة مع تقارير مخصصة وتصدير البيانات وتتبع الأهداف."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "تحليلات متقدمة",
+        "description": "تحليلات متقدمة",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "تقارير مخصصة",
+        "description": "تقارير مخصصة",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "تصدير البيانات",
+        "description": "تصدير البيانات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تتبع الأهداف",
+        "description": "تتبع الأهداف",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "Predictive Analytics",
+        "description": "Predictive Analytics",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📈",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.859Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmlbmnjuy000rjuodayvevkh0",
+    "slug": "gamification-pro",
+    "name": "التحفيز والمكافآت",
+    "nameEn": null,
+    "description": "نظام تحفيز متكامل مع نقاط، شارات، مستويات، ومكافآت.",
+    "descriptionEn": null,
+    "category": "GAMIFICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "نظام تحفيز متكامل مع نقاط، شارات، مستويات، ومكافآت."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "نقاط التحفيز",
+        "description": "نقاط التحفيز",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "شارات الإنجاز",
+        "description": "شارات الإنجاز",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "مستويات التقدم",
+        "description": "مستويات التقدم",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحديات أسبوعية",
+        "description": "تحديات أسبوعية",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "مكافآت تلقائية",
+        "description": "مكافآت تلقائية",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تقارير التفاعل",
+        "description": "تقارير التفاعل",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "🎮",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.482Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmla3xad10008julakrj5jqb1",
+    "slug": "telegram-integration",
+    "name": "تكامل Telegram",
+    "nameEn": null,
+    "description": "إدارة مجموعات وقنوات تليجرام، الرد الآلي، والبوتات المتقدمة.",
+    "descriptionEn": null,
+    "category": "COMMUNICATION",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إدارة مجموعات وقنوات تليجرام، الرد الآلي، والبوتات المتقدمة."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "إدارة القنوات والمجموعات",
+        "description": "إدارة القنوات والمجموعات",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "بوتات الرد الآلي",
+        "description": "بوتات الرد الآلي",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "جدولة الرسائل",
+        "description": "جدولة الرسائل",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحليلات التفاعل",
+        "description": "تحليلات التفاعل",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "✈️",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-05T23:48:12.853Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmlbmnjtx000jjuodlvx13wcl",
+    "slug": "smart-scheduler",
+    "name": "الجدولة الذكية للمهام",
+    "nameEn": null,
+    "description": "جدولة مهام ذكية مع تذكيرات، أتمتة، وربط مع الأهداف.",
+    "descriptionEn": null,
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "جدولة مهام ذكية مع تذكيرات، أتمتة، وربط مع الأهداف."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "جدولة المهام",
+        "description": "جدولة المهام",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "تذكيرات ذكية",
+        "description": "تذكيرات ذكية",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "أتمتة العمليات",
+        "description": "أتمتة العمليات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "ربط الأهداف",
+        "description": "ربط الأهداف",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "تتبع الوقت",
+        "description": "تتبع الوقت",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تقارير الإنتاجية",
+        "description": "تقارير الإنتاجية",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "⏰",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.446Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmlbmnjsp0008juodika2pvjb",
+    "slug": "ai-rag-knowledge",
+    "name": "قاعدة المعرفة الذكية",
+    "nameEn": null,
+    "description": "إدارة قاعدة معرفة ذكية للشركة مع Vector Embeddings والبحث الذكي.",
+    "descriptionEn": null,
+    "category": "AI",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "لوحة التحكم وقسم التطبيقات.",
+      "outcome": "إدارة قاعدة معرفة ذكية للشركة مع Vector Embeddings والبحث الذكي."
+    },
+    "features": {
+      "feat_1": {
+        "enabled": true,
+        "name": "Vector Embeddings",
+        "description": "Vector Embeddings",
+        "access": "PAID"
+      },
+      "feat_2": {
+        "enabled": true,
+        "name": "بحث ذكي",
+        "description": "بحث ذكي",
+        "access": "PAID"
+      },
+      "feat_3": {
+        "enabled": true,
+        "name": "استيراد المستندات",
+        "description": "استيراد المستندات",
+        "access": "PAID"
+      },
+      "feat_4": {
+        "enabled": true,
+        "name": "تحديث تلقائي",
+        "description": "تحديث تلقائي",
+        "access": "PAID"
+      },
+      "feat_5": {
+        "enabled": true,
+        "name": "ربط مع AI Chat",
+        "description": "ربط مع AI Chat",
+        "access": "PAID"
+      },
+      "feat_6": {
+        "enabled": true,
+        "name": "تحليل الاستخدام",
+        "description": "تحليل الاستخدام",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "📚",
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": null,
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-02-07T01:20:17.401Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84opf002pjudlbet61ke2",
+    "slug": "stock-analytics",
+    "name": "تحليلات المخزون",
+    "nameEn": null,
+    "description": "تحليلات مستويات المخزون: الكميات المتاحة، المنتجات التي أوشكت على النفاد، وحركة المخزون.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/stock",
+      "outcome": "تحليلات مستويات المخزون: الكميات المتاحة، المنتجات التي أوشكت على النفاد، وحر..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/stock",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.371Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84obz002kjudl0mpnw9ql",
+    "slug": "revenue-analytics",
+    "name": "تحليلات الإيرادات",
+    "nameEn": null,
+    "description": "تحليلات شاملة للإيرادات: إجمالي المبيعات، صافي الإيرادات، الاتجاهات اليومية والأسبوعية والشهرية، والمقارنات الزمنية مع رسوم بيانية تفاعلية.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/revenue",
+      "outcome": "تحليلات شاملة للإيرادات: إجمالي المبيعات، صافي الإيرادات، الاتجاهات اليومية و..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/revenue",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:15.887Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
+  },
+  {
+    "id": "cmsu84os5002qjudlr7uos6s8",
+    "slug": "customer-analytics",
+    "name": "تحليلات العملاء",
+    "nameEn": null,
+    "description": "تحليلات العملاء: أفضل العملاء، تكرار الشراء، القيمة الدائمة للعميل، وتوزيع العملاء حسب المنطقة.",
+    "descriptionEn": null,
+    "category": "ANALYTICS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "ppuBillingMethod": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر وفرق العمل في المنصة.",
+      "surface": "/analytics/orders/customers",
+      "outcome": "تحليلات العملاء: أفضل العملاء، تكرار الشراء، القيمة الدائمة للعميل، وتوزيع ال..."
+    },
+    "features": {},
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": null,
+    "logo": null,
+    "coverImage": null,
+    "mainRoute": "/analytics/orders/customers",
+    "adminRoute": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-15T10:19:16.469Z",
+    "updatedAt": "2026-11-11T13:13:20.111Z"
   }
 ]

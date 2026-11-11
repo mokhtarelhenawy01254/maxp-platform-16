@@ -71,10 +71,22 @@ async function main() {
 
     if (changedAppsCount > 0 || changedBundlesCount > 0 || missingAppsCount > 0 || missingBundlesCount > 0) {
       console.error(`[catalog:diff] ❌ CI Gate Failed: Specification drift detected!`);
-      if (changedAppsCount > 0) console.error(`  - Changed apps: ${changedAppsCount}`);
-      if (changedBundlesCount > 0) console.error(`  - Changed bundles: ${changedBundlesCount}`);
-      if (missingAppsCount > 0) console.error(`  - Missing apps in DB: ${missingAppsCount}`);
-      if (missingBundlesCount > 0) console.error(`  - Missing bundles in DB: ${missingBundlesCount}`);
+      if (changedAppsCount > 0) {
+        console.error(`  - Changed apps: ${changedAppsCount}`);
+        summary.apps.changed.forEach((entry) => {
+          const fieldList = (entry.changes || []).map((c) => `${c.field} (cat: ${JSON.stringify(c.catalog)} ➔ db: ${JSON.stringify(c.db)})`).join(", ");
+          console.error(`    • ${entry.slug}: ${fieldList}`);
+        });
+      }
+      if (changedBundlesCount > 0) {
+        console.error(`  - Changed bundles: ${changedBundlesCount}`);
+        summary.bundles.changed.forEach((entry) => {
+          const fieldList = (entry.changes || []).map((c) => `${c.field} (cat: ${JSON.stringify(c.catalog)} ➔ db: ${JSON.stringify(c.db)})`).join(", ");
+          console.error(`    • ${entry.slug}: ${fieldList}`);
+        });
+      }
+      if (missingAppsCount > 0) console.error(`  - Missing apps in DB: ${missingAppsCount} (${summary.apps.missingInDb.join(", ")})`);
+      if (missingBundlesCount > 0) console.error(`  - Missing bundles in DB: ${missingBundlesCount} (${summary.bundles.missingInDb.join(", ")})`);
       process.exit(1);
     }
   }

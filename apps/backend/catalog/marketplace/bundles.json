@@ -1,86 +1,25 @@
 [
   {
-    "id": "cat-bundle-messaging",
-    "slug": "messaging-bundle",
-    "name": "باقة المراسلة",
-    "nameEn": "Messaging Bundle",
-    "description": "كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent",
-    "monthlyPrice": 999,
-    "yearlyPrice": 9990,
-    "discount": 69,
-    "trialDays": 7,
+    "id": "cat-bundle-financial-pricing-suite",
+    "slug": "financial-pricing-suite",
+    "name": "حزمة التحليل والتسعير المالي",
+    "nameEn": "Financial & Pricing Suite",
+    "description": "الحزمة المالية المتكاملة للتجار والشركات: حاسبات التعادل، محرك الربحية، استراتيجيات التسعير، تخطيط ميزانية الإعلانات، القوائم المالية، ومحسن الشحن في باقة واحدة شاملة بتوفير 86%.",
+    "descriptionEn": null,
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "discount": 86,
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
-      "crm-lite",
-      "unified-inbox",
-      "ai-chat-basic"
-    ],
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-03-06T00:00:00.000Z"
-  },
-  {
-    "id": "cat-bundle-ai-inbox",
-    "slug": "ai-inbox-bundle",
-    "name": "AI + Inbox Bundle",
-    "nameEn": "AI + Inbox Bundle",
-    "description": "باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.",
-    "monthlyPrice": 999,
-    "yearlyPrice": null,
-    "discount": 0,
-    "trialDays": 7,
-    "isActive": true,
-    "isFeatured": true,
-    "appSlugs": [
-      "unified-inbox",
-      "ai-chat-basic",
-      "whatsapp-business"
-    ],
-    "createdAt": "2026-06-17T00:00:00.000Z",
-    "updatedAt": "2026-06-17T00:00:00.000Z"
-  },
-  {
-    "id": "cat-bundle-facebook-complete",
-    "slug": "facebook-complete-bundle",
-    "name": "باقة فيسبوك الشاملة",
-    "nameEn": "Facebook Complete Bundle",
-    "description": "كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.",
-    "monthlyPrice": 399,
-    "yearlyPrice": 3990,
-    "discount": 27,
-    "trialDays": 7,
-    "isActive": true,
-    "isFeatured": true,
-    "appSlugs": [
-      "facebook-pages-connect",
-      "facebook-ads-pro",
-      "facebook-pixel-capi",
-      "facebook-catalog-shop",
-      "facebook-post"
-    ],
-    "createdAt": "2026-08-11T00:00:00.000Z",
-    "updatedAt": "2026-08-11T00:00:00.000Z"
-  },
-  {
-    "id": "cat-bundle-medical",
-    "slug": "medical-bundle",
-    "name": "الباقة الطبية الشاملة",
-    "nameEn": "Medical Bundle",
-    "description": "النظام الطبي المتكامل + واتساب بزنس + ٥ وكلاء ذكاء اصطناعي بشخصيات بشرية — كل ما تحتاجه لإدارة عياداتك ومراكزك الطبية في باقة واحدة.",
-    "monthlyPrice": 999,
-    "yearlyPrice": null,
-    "discount": 37,
-    "trialDays": 7,
-    "isActive": true,
-    "isFeatured": true,
-    "appSlugs": [
-      "medical-system",
-      "unified-inbox",
-      "ai-chat-basic",
-      "dental-lab-app"
-    ],
-    "createdAt": "2026-07-21T00:00:00.000Z",
-    "updatedAt": "2026-07-21T00:00:00.000Z"
+      "break-even",
+      "clv-calculator",
+      "discount-impact",
+      "pricing-strategy",
+      "profitability-engine",
+      "refund-rate",
+      "shipping-optimizer"
+    ]
   },
   {
     "id": "cat-bundle-hr-complete",
@@ -88,50 +27,37 @@
     "name": "باقة الموارد البشرية المتكاملة",
     "nameEn": "HR Complete Bundle",
     "description": "المنظومة الشاملة لإدارة فريق العمل: الأساسيات + الحضور والورديات بالـ GPS + مسير الرواتب والسلف + التوظيف واستبيانات العمل + إدارة العهد وتقييم الأداء بتوفير 26%.",
+    "descriptionEn": null,
     "monthlyPrice": 299,
     "yearlyPrice": 2990,
     "discount": 26,
-    "trialDays": 7,
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
-      "hr-core",
+      "hr-assets",
       "hr-attendance-pro",
+      "hr-core",
       "hr-payroll",
-      "hr-recruitment",
-      "hr-assets"
-    ],
-    "createdAt": "2026-09-04T00:00:00.000Z",
-    "updatedAt": "2026-09-04T00:00:00.000Z"
+      "hr-recruitment"
+    ]
   },
   {
-    "id": "cat-bundle-financial-pricing-suite",
-    "slug": "financial-pricing-suite",
-    "name": "حزمة التحليل والتسعير المالي",
-    "nameEn": "Financial & Pricing Suite",
-    "description": "الحزمة المالية المتكاملة للتجار والشركات: حاسبات التعادل، محرك الربحية، استراتيجيات التسعير، تخطيط ميزانية الإعلانات، القوائم المالية، ومحسن الشحن في باقة واحدة شاملة بتوفير 86%.",
-    "monthlyPrice": 249,
-    "yearlyPrice": 2490,
-    "discount": 86,
-    "trialDays": 7,
+    "id": "cat-bundle-messaging",
+    "slug": "messaging-bundle",
+    "name": "باقة المراسلة",
+    "nameEn": "Messaging Bundle",
+    "description": "كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent",
+    "descriptionEn": null,
+    "monthlyPrice": 999,
+    "yearlyPrice": 9990,
+    "discount": 69,
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
-      "break-even",
-      "product-break-even",
-      "pricing-strategy",
-      "profitability-engine",
-      "campaign-calculator",
-      "ad-budget-planner",
-      "discount-impact",
-      "shipping-optimizer",
-      "monthly-pnl",
-      "clv-calculator",
-      "upsell-planner",
-      "refund-rate"
-    ],
-    "createdAt": "2026-09-10T00:00:00.000Z",
-    "updatedAt": "2026-09-10T00:00:00.000Z"
+      "crm-basic",
+      "telegram-business",
+      "whatsapp-business"
+    ]
   },
   {
     "id": "cat-bundle-cafe-complete",
@@ -139,20 +65,18 @@
     "name": "باقة الكافيه والمطعم المتكاملة",
     "nameEn": "Cafe & Restaurant Complete Suite",
     "description": "المنظومة الكاملة لإدارة الكافيه والمطعم: الرسيبي وتفكيك الخامات + المخازن والتنبيهات + المشتريات والموردين + كاشير POS والورديات بتوفير شامل.",
+    "descriptionEn": null,
     "monthlyPrice": 399,
     "yearlyPrice": 3990,
     "discount": 40,
-    "trialDays": 7,
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
       "cafe-restaurant-pro",
       "inventory-pro",
-      "procurement-pro",
-      "pos-pro"
-    ],
-    "createdAt": "2026-09-22T00:00:00.000Z",
-    "updatedAt": "2026-09-22T00:00:00.000Z"
+      "pos-pro",
+      "procurement-pro"
+    ]
   },
   {
     "id": "cat-bundle-store-complete",
@@ -160,32 +84,85 @@
     "name": "باقة المتجر الكاملة",
     "nameEn": "Complete Store Bundle",
     "description": "17 أداة في باقة واحدة: المتجر + مسار الطلبات + واتساب لتأكيد الأوردر + أتمتة المحادثات + الشحن الذكي + المخزون + المرتجعات وأسبابها + التحليلات + Campaign Attribution — بـ999 ج.م/شهر بدل 2,936 منفردة (أقل بـ66%).",
-    "monthlyPrice": 5,
+    "descriptionEn": null,
+    "monthlyPrice": 999,
     "yearlyPrice": null,
-    "discount": 0,
-    "trialDays": 7,
+    "discount": 66,
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
-      "store",
-      "order-workflow",
-      "whatsapp-business",
       "bot-automation",
       "bulk-orders",
-      "order-preparation-hold",
-      "order-shipping-turbo",
-      "inventory-pro",
-      "returns-settings",
-      "returns-reasons-analytics",
-      "orders-analytics",
-      "profit-analytics",
       "campaign-attribution",
       "campaign-attribution-analytics",
       "facebook-ads-pro",
       "facebook-pages-connect",
+      "inventory-pro",
+      "order-preparation-hold",
+      "order-shipping-turbo",
+      "order-workflow",
+      "orders-analytics",
+      "profit-analytics",
+      "returns-reasons-analytics",
+      "returns-settings",
+      "store",
+      "unified-inbox",
+      "whatsapp-business"
+    ]
+  },
+  {
+    "id": "cat-bundle-facebook-complete",
+    "slug": "facebook-complete-bundle",
+    "name": "باقة فيسبوك الشاملة",
+    "nameEn": "Facebook Complete Bundle",
+    "description": "كل أدوات فيسبوك: ربط الصفحات + إعلانات + Pixel + كتالوج متجر + نشر المنشورات في باقة واحدة بتوفير.",
+    "descriptionEn": null,
+    "monthlyPrice": 399,
+    "yearlyPrice": 3990,
+    "discount": 27,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "facebook-ads-pro",
+      "facebook-catalog-shop",
+      "facebook-pages-connect",
+      "facebook-pixel-capi",
+      "facebook-post"
+    ]
+  },
+  {
+    "id": "cat-bundle-ai-inbox",
+    "slug": "ai-inbox-bundle",
+    "name": "AI + Inbox Bundle",
+    "nameEn": "AI + Inbox Bundle",
+    "description": "باقة متكاملة تجمع الذكاء الاصطناعي للمحادثات مع صندوق وارد موحد لكل المنصات — AI Agent يرد على العملاء وينشئ طلبات وحجوزات بشكل تلقائي.",
+    "descriptionEn": null,
+    "monthlyPrice": 999,
+    "yearlyPrice": null,
+    "discount": 0,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "ai-chat-basic",
       "unified-inbox"
-    ],
-    "createdAt": "2026-10-06T13:00:44.094Z",
-    "updatedAt": "2026-10-24T10:09:51.991Z"
+    ]
+  },
+  {
+    "id": "cat-bundle-medical",
+    "slug": "medical-bundle",
+    "name": "الباقة الطبية الشاملة",
+    "nameEn": "Medical Bundle",
+    "description": "النظام الطبي المتكامل + واتساب بزنس + ٥ وكلاء ذكاء اصطناعي بشخصيات بشرية — كل ما تحتاجه لإدارة عياداتك ومراكزك الطبية في باقة واحدة.",
+    "descriptionEn": null,
+    "monthlyPrice": 999,
+    "yearlyPrice": null,
+    "discount": 37,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "ai-chat-basic",
+      "medical-system",
+      "unified-inbox"
+    ]
   }
 ]

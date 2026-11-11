@@ -175,8 +175,12 @@ function validateAppShape(app, index, errors, warnings) {
     pushError(errors, `${basePath}.updatedAt`, "updatedAt must be an ISO date string");
   }
 
-  if (app.pricingModel === "PAY_PER_USE" && !(app.unitPrice > 0)) {
-    pushError(errors, `${basePath}.unitPrice`, "unitPrice must be > 0 for PAY_PER_USE apps");
+  if (app.pricingModel === "PAY_PER_USE") {
+    if (app.unitPrice !== null && app.unitPrice !== undefined && !(app.unitPrice > 0)) {
+      pushError(errors, `${basePath}.unitPrice`, "unitPrice must be > 0 for PAY_PER_USE apps");
+    } else if (app.unitPrice === null || app.unitPrice === undefined) {
+      pushWarning(warnings, `${basePath}.unitPrice`, "PAY_PER_USE app has dynamic/wallet-based unitPrice (null)");
+    }
   }
 
   if (app.pricingModel === "FREE") {
