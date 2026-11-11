@@ -22,6 +22,7 @@ import {
   PhoneIcon,
   UserIcon,
   ArrowPathIcon,
+  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_PAGES, type StudioPageDefinition } from "./StudioTypes";
 import { useStudioBridge } from "./hooks/useStorefrontStudioState";
@@ -36,6 +37,7 @@ interface StudioPagesPanelProps {
   onDeletePage?: (pageKey: string) => void;
   onDuplicatePage?: (pageKey: string) => void;
   onRenamePage?: (pageKey: string, newTitle: string, newSlug?: string) => void;
+  onOpenPageSeo?: (pageKey: string) => void;
   existingSlugs?: string[];
 }
 
@@ -67,6 +69,7 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
   onDeletePage,
   onDuplicatePage,
   onRenamePage,
+  onOpenPageSeo,
   existingSlugs = [],
 }) => {
   const bridge = useStudioBridge();
@@ -196,6 +199,20 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
                 </button>
 
                 <div className="flex items-center gap-1 shrink-0 self-center">
+                  {onOpenPageSeo && (
+                    <button
+                      type="button"
+                      data-testid={`seo-page-${page.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenPageSeo(page.id);
+                      }}
+                      className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-[#60a5fa] transition-colors"
+                      title="إعدادات SEO الصفحة"
+                    >
+                      <GlobeAltIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     data-testid={`duplicate-page-${page.id}`}
@@ -392,8 +409,22 @@ export const StudioPagesPanel: React.FC<StudioPagesPanelProps> = ({
                       </div>
                     </button>
 
-                    {/* Actions for custom pages: Duplicate, Rename, Delete */}
+                    {/* Actions for custom pages: SEO, Duplicate, Rename, Delete */}
                     <div className="flex items-center gap-0.5 shrink-0 self-center">
+                      {onOpenPageSeo && (
+                        <button
+                          type="button"
+                          data-testid={`seo-page-${page.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenPageSeo(page.id);
+                          }}
+                          className="p-1 rounded-md text-[#8a8f96] hover:bg-[#343840] hover:text-[#60a5fa] transition-colors"
+                          title="إعدادات SEO الصفحة"
+                        >
+                          <GlobeAltIcon className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         data-testid={`duplicate-page-${page.id}`}

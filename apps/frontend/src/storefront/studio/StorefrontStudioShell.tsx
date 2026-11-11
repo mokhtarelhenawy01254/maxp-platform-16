@@ -193,6 +193,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showCatalogModal, setShowCatalogModal] = useState<boolean>(false);
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [isPageSettingsOpen, setIsPageSettingsOpen] = useState<boolean>(false);
+  const [pageSettingsDefaultTab, setPageSettingsDefaultTab] = useState<"status" | "seo" | "prepublish">("status");
   const [imagePickerTargetField, setImagePickerTargetField] = useState<string>("image");
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<StudioSelectedElement | null>(null);
@@ -1512,7 +1513,10 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         isHistoryOpen={isHistoryOpen}
         onToggleHistory={() => setIsHistoryOpen((prev) => !prev)}
         pageStatus={(activePageConfig?.status as StorefrontPageStatus) || "published"}
-        onOpenPageSettings={() => setIsPageSettingsOpen(true)}
+        onOpenPageSettings={() => {
+          setPageSettingsDefaultTab("status");
+          setIsPageSettingsOpen(true);
+        }}
       />
 
       {/* 1.1 Viewer Mode Banner (PERM-1) */}
@@ -1580,6 +1584,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                   setInspectorTab("interactions");
                   setIsInspectorOpen(true);
                 }
+                return;
+              }
+              if (tab === "seo") {
+                setPageSettingsDefaultTab("seo");
+                setIsPageSettingsOpen(true);
                 return;
               }
               if (tab === "settings") {
@@ -1684,6 +1693,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                     onDeletePage={handleStudioDeletePage}
                     onDuplicatePage={handleDuplicatePage}
                     onRenamePage={handleStudioRenamePage}
+                    onOpenPageSeo={(pageKey) => {
+                      setActivePageKey(pageKey);
+                      setPageSettingsDefaultTab("seo");
+                      setIsPageSettingsOpen(true);
+                    }}
                     existingSlugs={existingSlugs}
                   />
                 )}
@@ -2378,6 +2392,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       <StudioPageSettingsPanel
         isOpen={isPageSettingsOpen}
         onClose={() => setIsPageSettingsOpen(false)}
+        defaultTab={pageSettingsDefaultTab}
         pageKey={activePageKey}
         pageTitle={activePageConfig?.title || activePageConfig?.label || activePageKey}
         storeName={storeName}

@@ -344,6 +344,7 @@ export interface StudioPageSettingsPanelProps {
   status?: StorefrontPageStatus;
   sections?: any[];
   availablePages?: string[];
+  defaultTab?: "status" | "seo" | "prepublish";
   onUpdateSeo: (seo: Partial<StorefrontPageSEOConfig>) => void;
   onUpdateStatus: (status: StorefrontPageStatus) => void;
   onOpenImagePicker?: () => void;
@@ -360,12 +361,19 @@ export const StudioPageSettingsPanel: React.FC<StudioPageSettingsPanelProps> = (
   status = "published",
   sections = [],
   availablePages = [],
+  defaultTab = "status",
   onUpdateSeo,
   onUpdateStatus,
   onOpenImagePicker,
   onSelectSection,
 }) => {
-  const [activeTab, setActiveTab] = useState<"status" | "seo" | "prepublish">("status");
+  const [activeTab, setActiveTab] = useState<"status" | "seo" | "prepublish">(defaultTab);
+
+  React.useEffect(() => {
+    if (isOpen && defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [isOpen, defaultTab]);
   const [prepublishRan, setPrepublishRan] = useState(false);
   const [auditFilter, setAuditFilter] = useState<"all" | "fail" | "warn" | "pass">("all");
 
