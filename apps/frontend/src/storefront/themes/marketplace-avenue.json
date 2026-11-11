@@ -778,14 +778,37 @@
       ]
     },
     "cart": {
-      "title": "السلة",
+      "title": "Shopping Cart",
+      "layoutHint": "sidebar-right",
       "sections": [
         {
           "type": "cart-items",
           "variant": "compact",
           "settings": {
-            "title": "Review your order",
-            "subtitle": "A clear review step for quantity and price before checkout."
+            "title": "Shopping Cart",
+            "subtitle": "Review your order before proceeding to checkout.",
+            "productLabel": "Product",
+            "priceLabel": "Price",
+            "quantityLabel": "Quantity",
+            "totalLabel": "Subtotal",
+            "removeLabel": "Remove",
+            "continueShoppingText": "Continue Shopping",
+            "couponPlaceholder": "Coupon code",
+            "couponButtonText": "Apply coupon"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "standard",
+          "settings": {
+            "title": "Cart totals",
+            "subtitle": "Order summary and checkout details.",
+            "checkoutButtonText": "Proceed to checkout",
+            "subtotalLabel": "Subtotal",
+            "shippingLabel": "Shipping",
+            "shippingValueText": "Calculated at checkout",
+            "totalLabel": "Total",
+            "showCouponField": false
           }
         },
         {

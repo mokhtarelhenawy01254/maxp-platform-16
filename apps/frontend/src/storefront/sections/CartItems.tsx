@@ -112,6 +112,11 @@ export const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
         updateQuantity={ctrl.updateQuantity}
         removeItem={ctrl.removeItem}
         removeQuantityOfferGroup={ctrl.removeQuantityOfferGroup}
+        cartTotal={ctrl.cartTotal}
+        shopPath={ctrl.shopPath}
+        couponPlaceholder={ctrl.couponPlaceholder}
+        couponButtonText={ctrl.couponButtonText}
+        continueShoppingText={ctrl.continueShoppingText}
       />
 
       {ctrl.showUpsell ? <CartUpsellHost open={ctrl.items.length > 0} layout="inline" /> : null}

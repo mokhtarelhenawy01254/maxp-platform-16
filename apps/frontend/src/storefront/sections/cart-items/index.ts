@@ -7,4 +7,5 @@ export * from './CartItemsHeader';
 export * from './CartItemSingleRow';
 export * from './CartItemOfferGroupRow';
 export * from './CartItemsList';
+export * from './CartCouponRow';
 export * from './useCartItemsController';

@@ -2,6 +2,7 @@ import React from 'react';
 import type { getCartDisplayEntries } from '../../utils/cartQuantityOffers';
 import { CartItemSingleRow } from './CartItemSingleRow';
 import { CartItemOfferGroupRow } from './CartItemOfferGroupRow';
+import { CartCouponRow } from './CartCouponRow';
 
 export interface CartItemsListProps {
   listWrapperClassName: string;
@@ -31,6 +32,11 @@ export interface CartItemsListProps {
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   removeQuantityOfferGroup: (groupId: string) => void;
+  cartTotal?: number;
+  shopPath?: string;
+  couponPlaceholder?: string;
+  couponButtonText?: string;
+  continueShoppingText?: string;
 }
 
 export const CartItemsList: React.FC<CartItemsListProps> = ({
@@ -61,6 +67,11 @@ export const CartItemsList: React.FC<CartItemsListProps> = ({
   updateQuantity,
   removeItem,
   removeQuantityOfferGroup,
+  cartTotal,
+  shopPath,
+  couponPlaceholder,
+  couponButtonText,
+  continueShoppingText,
 }) => {
   return (
     <div className={listWrapperClassName}>
@@ -123,6 +134,17 @@ export const CartItemsList: React.FC<CartItemsListProps> = ({
             removeQuantityOfferGroup={removeQuantityOfferGroup}
           />
         ),
+      )}
+
+      {cartTotal !== undefined && shopPath && (
+        <CartCouponRow
+          cartTotal={cartTotal}
+          currency={currency}
+          shopPath={shopPath}
+          couponPlaceholder={couponPlaceholder}
+          couponButtonText={couponButtonText}
+          continueShoppingText={continueShoppingText}
+        />
       )}
     </div>
   );

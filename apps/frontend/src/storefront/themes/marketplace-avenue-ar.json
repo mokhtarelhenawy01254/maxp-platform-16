@@ -1451,18 +1451,60 @@
       ]
     },
     "cart": {
-      "title": "السلة",
+      "title": "سلة التسوق",
+      "layoutHint": "sidebar-right",
       "sections": [
         {
           "type": "cart-items",
           "variant": "compact",
           "settings": {
-            "title": "راجع طلبك قبل الدفع",
-            "subtitle": "خطوة مراجعة سريعة وواضحة للكمية والسعر قبل إتمام الشراء.",
+            "title": "سلة التسوق",
+            "subtitle": "راجع طلبك قبل الانتقال لإتمام الدفع.",
+            "productLabel": "المنتج",
+            "priceLabel": "السعر",
+            "quantityLabel": "الكمية",
+            "totalLabel": "المجموع",
+            "removeLabel": "إزالة",
+            "continueShoppingText": "متابعة التسوق",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق الكوبون",
             "i18n": {
               "en": {
-                "title": "Review your order",
-                "subtitle": "A clear review step for quantity and price before checkout."
+                "title": "Shopping Cart",
+                "subtitle": "Review your order before proceeding to checkout.",
+                "productLabel": "Product",
+                "priceLabel": "Price",
+                "quantityLabel": "Quantity",
+                "totalLabel": "Subtotal",
+                "removeLabel": "Remove",
+                "continueShoppingText": "Continue Shopping",
+                "couponPlaceholder": "Coupon code",
+                "couponButtonText": "Apply coupon"
+              }
+            }
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "standard",
+          "settings": {
+            "title": "إجمالي السلة",
+            "subtitle": "ملخص الطلب وخطوة الدفع.",
+            "checkoutButtonText": "التقدم لإتمام الطلب",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "shippingValueText": "يتم احتسابه عند إتمام الدفع",
+            "totalLabel": "الإجمالي",
+            "showCouponField": false,
+            "i18n": {
+              "en": {
+                "title": "Cart totals",
+                "subtitle": "Order summary and checkout details.",
+                "checkoutButtonText": "Proceed to checkout",
+                "subtotalLabel": "Subtotal",
+                "shippingLabel": "Shipping",
+                "shippingValueText": "Calculated at checkout",
+                "totalLabel": "Total"
               }
             }
           }

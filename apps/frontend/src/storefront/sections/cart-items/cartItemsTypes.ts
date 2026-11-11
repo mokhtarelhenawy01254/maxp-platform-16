@@ -19,6 +19,8 @@ export interface CartItemsProps {
     serviceNoteLabel?: string;
     serviceNote?: string;
     showUpsell?: string | boolean;
+    couponPlaceholder?: string;
+    couponButtonText?: string;
     [key: string]: unknown;
   };
 }

@@ -71,6 +71,8 @@ export const useCartItemsController = ({ section, settings }: CartItemsProps) =>
   const quantityLabel = settings?.quantityLabel || 'الكمية';
   const totalLabel = settings?.totalLabel || 'الإجمالي';
   const removeLabel = settings?.removeLabel || 'إزالة المنتج';
+  const couponPlaceholder = settings?.couponPlaceholder;
+  const couponButtonText = settings?.couponButtonText;
   const headerBadge =
     settings?.headerBadge ||
     (isSproutRoom
@@ -263,6 +265,8 @@ export const useCartItemsController = ({ section, settings }: CartItemsProps) =>
     quantityLabel,
     totalLabel,
     removeLabel,
+    couponPlaceholder,
+    couponButtonText,
     headerBadge,
     serviceHighlights,
     serviceNoteLabel,

@@ -182,4 +182,40 @@ describe('CartItems Modular Architecture', () => {
     expect(screen.getByText(/حجز المخزون والمراجعة محفوظ لك لمدة:/i)).toBeInTheDocument();
     expect(screen.getByText('تم تفعيل الشحن المحمي')).toBeInTheDocument();
   });
+
+  it('renders coupon row below items list with coupon input and apply button', () => {
+    const singleItem: CartItem = {
+      id: 'cart-item-coupon-test',
+      productId: 'prod-1',
+      name: 'منتج تجريبي',
+      price: 250,
+      quantity: 1,
+    };
+
+    mockUseCartStore.mockReturnValue({
+      items: [singleItem],
+      updateQuantity: mockUpdateQuantity,
+      removeItem: mockRemoveItem,
+      removeQuantityOfferGroup: mockRemoveQuantityOfferGroup,
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <CartItems
+            section={{ variant: 'compact' }}
+            settings={{
+              couponPlaceholder: 'أدخل كود الخصم',
+              couponButtonText: 'تطبيق الخصم',
+              continueShoppingText: 'العودة للتسوق',
+            }}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByPlaceholderText('أدخل كود الخصم')).toBeInTheDocument();
+    expect(screen.getByText('تطبيق الخصم')).toBeInTheDocument();
+    expect(screen.getByText('العودة للتسوق')).toBeInTheDocument();
+  });
 });
