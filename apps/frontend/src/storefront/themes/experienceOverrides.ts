@@ -8449,9 +8449,7 @@ const buildCommerceFlowOverrides = (theme: StorefrontTheme): ThemePageOverrides 
   const flowFamily = resolveCommerceFlowFamily(theme.id);
   const thankYouFamily = resolveThankYouFamily(theme.id);
   const pdpFamily = resolvePdpFamily(theme.id);
-  // district-market ships honest COD-first guarantee copy. Without this the
-  // generic product-info defaults advertise Tabby/Tamara and card payments
-  // even for stores that only accept cash on delivery.
+  // district-market ships honest COD-first guarantee copy.
   const isDistrictMarket = theme.id === 'district-market';
   const overrides: ThemePageOverrides = {};
 

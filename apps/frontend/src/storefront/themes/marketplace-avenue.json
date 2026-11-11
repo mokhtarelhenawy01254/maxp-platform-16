@@ -44,8 +44,8 @@
   },
   "header": {
     "variant": "marketplace-bazaar",
-    "brandName": "Marketplace",
-    "tagline": "Electronics / Appliances / Games",
+    "brandName": "Bto3 e3lanat",
+    "tagline": "Home Appliances · Electronics · Gaming",
     "announcementText": "",
     "announcementLinkText": "",
     "announcementLinkTo": "/contact",
@@ -312,45 +312,45 @@
           "variant": "marketplace-slider",
           "settings": {
             "variant": "marketplace-slider",
-            "eyebrow": "Marketplace Avenue",
-            "title": "Every department in one store",
+            "eyebrow": "Exclusive Electronics & Appliances Deals",
+            "title": "All Electronics & Appliances in One Store",
             "subtitle": "",
-            "ctaText": "Shop now",
+            "ctaText": "Shop Now",
             "ctaLink": "/shop",
             "slides": [
               {
-                "eyebrow": "Slim build, big screen",
-                "title": "Foldable Flagship Series",
+                "eyebrow": "Innovative Foldable Display",
+                "title": "Samsung Galaxy Flip5",
                 "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
                 "ctaText": "Buy Now",
                 "ctaLink": "/shop"
               },
               {
-                "eyebrow": "Comfort-first living",
-                "title": "Scandi Lounge Collection",
-                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "eyebrow": "Ultra HD Cinematic Experience",
+                "title": "Smart 4K Ultra HD TVs",
+                "image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80",
                 "ctaText": "Buy Now",
                 "ctaLink": "/collections"
               },
               {
-                "eyebrow": "Weekly price drops",
-                "title": "Redmi Buds 3",
+                "eyebrow": "Midweek Exclusive Discounts!",
+                "title": "Redmi Buds 3 Wireless",
                 "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
                 "countdownEndAt": "2026-12-31T23:59:59+02:00",
-                "ctaText": "To Shop",
+                "ctaText": "Shop Deals",
                 "ctaLink": "/sale"
               }
             ],
             "offerCard": {
-              "eyebrow": "Bundle Deal",
-              "title": "Washing Machine",
-              "price": "$799",
-              "note": "Bundle Deal",
+              "eyebrow": "Special Offer",
+              "title": "Automatic Washing Machine 8kg",
+              "price": "7,999 EGP",
+              "note": "Special Offer",
               "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
               "link": "/sale"
             },
             "miniCategories": {
-              "title": "Shop by department",
+              "title": "Hot Categories",
               "link": "/collections",
               "items": [
                 {
@@ -374,8 +374,8 @@
                   "link": "/shop"
                 },
                 {
-                  "label": "Irons",
-                  "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                  "label": "Washing Machines",
+                  "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
                   "link": "/collections"
                 },
                 {
@@ -389,43 +389,43 @@
                   "link": "/shop"
                 },
                 {
-                  "label": "TVs",
+                  "label": "Smart TVs",
                   "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
                   "link": "/collections"
                 }
               ]
             },
             "bestPicks": {
-              "title": "Editors' picks",
-              "linkLabel": "Browse all deals",
+              "title": "Best Picks of the Week",
+              "linkLabel": "Shop More",
               "link": "/shop?sort=popular",
               "items": [
                 {
                   "title": "Oculus Quest 2",
                   "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
-                  "price": "4,490 ج",
-                  "comparePrice": "4,990 ج",
+                  "price": "4,490 EGP",
+                  "comparePrice": "4,990 EGP",
                   "rating": "4.5",
                   "link": "/shop"
                 },
                 {
                   "title": "PlayStation 5",
                   "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
-                  "price": "8,000 ج",
+                  "price": "8,000 EGP",
                   "rating": "5",
                   "link": "/shop"
                 },
                 {
                   "title": "Fossil Gen 6",
                   "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80",
-                  "price": "4,400 ج",
+                  "price": "4,400 EGP",
                   "rating": "4.5",
                   "link": "/shop"
                 },
                 {
                   "title": "Apple MacBook Air M1",
                   "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
-                  "price": "8,800 ج",
+                  "price": "8,800 EGP",
                   "rating": "5",
                   "link": "/shop"
                 }
@@ -518,13 +518,13 @@
           "type": "featured-collections",
           "variant": "marketplace-tiles",
           "settings": {
-            "title": "Shop by categories",
+            "title": "Shop by Department",
             "subtitle": "",
             "hideBadge": true,
             "hideSubtitle": true,
             "hideCta": true,
             "limit": 12,
-            "ctaText": "كل الأقسام",
+            "ctaText": "All Departments",
             "ctaLink": "/collections",
             "preferRuntimeCategories": true,
             "collections": [
@@ -534,58 +534,58 @@
                 "link": "/collections"
               },
               {
-                "title": "Chairs",
-                "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80",
+                "title": "Refrigerators",
+                "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "Face",
-                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                "title": "Smart TVs",
+                "image": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "Gaming",
+                "title": "Gaming Consoles",
                 "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "Jumpers",
-                "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=80",
-                "link": "/collections"
-              },
-              {
-                "title": "Laptops",
-                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
-                "link": "/shop"
-              },
-              {
-                "title": "Laundry",
+                "title": "Washing Machines",
                 "image": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "PCs",
-                "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80",
+                "title": "Laptops & PCs",
+                "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "Phones",
+                "title": "Mobiles & Tablets",
                 "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               },
               {
-                "title": "Styling",
-                "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                "title": "Kitchen Appliances",
+                "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "Tables",
-                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+                "title": "Audio & Headphones",
+                "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80",
+                "link": "/shop"
+              },
+              {
+                "title": "Vacuums & Cleaning",
+                "image": "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1200&q=80",
                 "link": "/collections"
               },
               {
-                "title": "Toys",
-                "image": "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1200&q=80",
+                "title": "Air Conditioners",
+                "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1200&q=80",
+                "link": "/collections"
+              },
+              {
+                "title": "Personal Care",
+                "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80",
                 "link": "/shop"
               }
             ],
@@ -597,27 +597,27 @@
           "variant": "marketplace-trio",
           "settings": {
             "variant": "marketplace-trio",
-            "heading": "Top picks & quick offers",
-            "description": "Three curated cards opening the fastest shopping routes across departments.",
+            "heading": "Quick Deals & Picks",
+            "description": "Fast tracks to top deals and new arrivals across departments.",
             "cards": [
               {
-                "title": "Next level adventure",
-                "description": "A magical new way to use your watch without touching the screen.",
-                "ctaText": "Shop now",
+                "title": "Smart Watches & Wearables",
+                "description": "Accurate health tracking and instant smart controls.",
+                "ctaText": "Shop Now",
                 "link": "/shop",
                 "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1200&q=80"
               },
               {
-                "title": "Hearth loft series",
-                "description": "The expansive proportions of the seating's surface, with soft, curved arms.",
-                "ctaText": "Shop now",
+                "title": "Modern Kitchen Appliances",
+                "description": "Blenders and air fryers with verified official warranty.",
+                "ctaText": "Shop Now",
                 "link": "/collections",
-                "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80"
+                "image": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80"
               },
               {
-                "title": "Hair dryer blue blush",
-                "description": "Finished in Blue Blush, cushioned with soft fabric and a removable lid.",
-                "ctaText": "Shop now",
+                "title": "Personal Care & Grooming",
+                "description": "Hair dryers and shavers for everyday styling.",
+                "ctaText": "Shop Now",
                 "link": "/shop",
                 "image": "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80"
               }

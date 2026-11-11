@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useCartStore } from '../../store/useCartStore';
 import { useStorefrontSettings } from '../../hooks/useStorefrontSettings';
 import { useStorefrontTheme } from '../../engine/ThemeProvider';
+import { useStorefrontLocale } from '../../i18n';
 import { buildStorefrontPath } from '../../utils/paths';
 import { getCartDisplayEntries, getDisplayAttributes } from '../../utils/cartQuantityOffers';
 import { localizeBiteRushAttributeEntries, localizeBiteRushName } from '../../utils/biteRushCopy';
@@ -21,6 +22,8 @@ export const useCartItemsController = ({ section, settings }: CartItemsProps) =>
   const { items, updateQuantity, removeItem, removeQuantityOfferGroup } = useCartStore();
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { theme } = useStorefrontTheme();
+  const { isRTL } = useStorefrontLocale();
+  const prefersArabicCopy = isRTL;
   const isNovaMobile = theme.id === 'nova-mobile';
   const isBiteRush = theme.id === 'restaurant-demo';
   const isPharmacy = isPharmacyThemeId(theme.id);
@@ -63,14 +66,14 @@ export const useCartItemsController = ({ section, settings }: CartItemsProps) =>
           : isCommandCart
             ? 'راجع الأجهزة والإضافات، ولو محتاج فاتورة أو تأكيد توافق سجّل ملاحظتك قبل اعتماد الطلب.'
             : 'راجع المنتجات اللي اخترتها، عدّل الكميات، وأكمل عملية الشراء لما تكون جاهز.');
-  const emptyTitle = settings?.emptyTitle || 'السلة فاضية';
-  const emptyText = settings?.emptyText || 'يبدو إنك لسه ما ضفت أي منتج للسلة.';
-  const continueShoppingText = settings?.continueShoppingText || 'كمّل تسوق';
-  const productLabel = settings?.productLabel || 'المنتج';
-  const priceLabel = settings?.priceLabel || 'السعر';
-  const quantityLabel = settings?.quantityLabel || 'الكمية';
-  const totalLabel = settings?.totalLabel || 'الإجمالي';
-  const removeLabel = settings?.removeLabel || 'إزالة المنتج';
+  const emptyTitle = settings?.emptyTitle || (prefersArabicCopy ? 'السلة فاضية' : 'Your cart is empty');
+  const emptyText = settings?.emptyText || (prefersArabicCopy ? 'يبدو إنك لسه ما ضفت أي منتج للسلة.' : 'You have not added any items to your cart yet.');
+  const continueShoppingText = settings?.continueShoppingText || (prefersArabicCopy ? 'كمّل تسوق' : 'Continue Shopping');
+  const productLabel = settings?.productLabel || (prefersArabicCopy ? 'المنتج' : 'Product');
+  const priceLabel = settings?.priceLabel || (prefersArabicCopy ? 'السعر' : 'Price');
+  const quantityLabel = settings?.quantityLabel || (prefersArabicCopy ? 'الكمية' : 'Quantity');
+  const totalLabel = settings?.totalLabel || (prefersArabicCopy ? 'الإجمالي' : 'Subtotal');
+  const removeLabel = settings?.removeLabel || (prefersArabicCopy ? 'إزالة المنتج' : 'Remove');
   const couponPlaceholder = settings?.couponPlaceholder;
   const couponButtonText = settings?.couponButtonText;
   const headerBadge =

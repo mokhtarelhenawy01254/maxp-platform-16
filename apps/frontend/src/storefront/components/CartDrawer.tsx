@@ -31,6 +31,7 @@ import {
 import { isPharmacyThemeId } from '../utils/pharmacyThemes';
 import { createStorefrontThemeTextReplacer } from '../utils/runtimeBrandText';
 import { isKhemetLuxeTheme } from '../utils/navigationGuards';
+import { useStorefrontLocale } from '../i18n';
 
 const LazyCartUpsellHost = React.lazy(() => import('./CartUpsellHost'));
 
@@ -197,47 +198,55 @@ const CartDrawer: React.FC = () => {
     isThemePreview,
   });
   
+  const { isRTL } = useStorefrontLocale();
+  const isWomenFashion = Boolean(
+    theme.id?.includes('women-fashion') ||
+    theme.id?.includes('atelier') ||
+    theme.id?.includes('chic') ||
+    theme.id?.includes('femme')
+  );
+
   const cartSettings = theme.pages.cart?.settings;
   const getCartText = (...values: Array<string | undefined>): string =>
     replaceThemeBrandText(values.find((value) => value?.trim()) || '');
   const cartTitle = getCartText(
     cartSettings?.['title'] as string,
-    theme.direction === 'rtl' ? 'سلة التسوق' : 'Cart',
+    isRTL ? 'سلة التسوق' : 'Shopping Cart',
   );
   const emptyCartText = getCartText(
     cartSettings?.['emptyText'] as string,
     cartSettings?.['emptyTitle'] as string,
-    theme.direction === 'rtl' ? 'سلتك فارغة' : 'Your cart is empty',
+    isRTL ? 'سلتك فارغة' : 'Your cart is empty',
   );
   const subtotalLabel = getCartText(
     cartSettings?.['subtotalLabel'] as string,
-    theme.direction === 'rtl' ? 'المجموع الفرعي' : 'Subtotal',
+    isRTL ? 'المجموع الفرعي' : 'Subtotal',
   );
   const checkoutLabel = getCartText(
     cartSettings?.['checkoutLabel'] as string,
-    theme.direction === 'rtl' ? 'إتمام الطلب' : 'Checkout',
+    isRTL ? 'إتمام الطلب' : 'Checkout',
   );
   const continueLabel = getCartText(
     cartSettings?.['continueShoppingText'] as string,
     cartSettings?.['continueLabel'] as string,
-    theme.direction === 'rtl' ? 'تسوّق الآن' : 'Continue Shopping',
+    isRTL ? 'تسوّق الآن' : 'Continue Shopping',
   );
   const removeLabel = getCartText(
     cartSettings?.['removeLabel'] as string,
-    theme.direction === 'rtl' ? 'حذف' : 'Remove',
+    isRTL ? 'حذف' : 'Remove',
   );
   const closeCartLabel = getCartText(
     cartSettings?.['closeCartLabel'] as string,
-    theme.direction === 'rtl' ? 'إغلاق السلة' : 'Close cart',
+    isRTL ? 'إغلاق السلة' : 'Close cart',
   );
   const cartDialogLabel =
     getCartText(
       cartSettings?.['dialogLabel'] as string,
-      theme.direction === 'rtl' ? 'سلة التسوق' : 'Shopping Cart',
+      isRTL ? 'سلة التسوق' : 'Shopping Cart',
     );
   const saveLabel = getCartText(
     cartSettings?.['saveLabel'] as string,
-    theme.direction === 'rtl' ? 'وفرت ' : 'Save ',
+    isRTL ? 'وفرت ' : 'Save ',
   );
   const drawerPanelClassName = isBiteRush
     ? 'bg-[linear-gradient(180deg,#fff9f3_0%,#fff1e5_100%)] shadow-[0_40px_120px_-46px_rgba(17,17,17,0.5)]'
@@ -436,12 +445,12 @@ const CartDrawer: React.FC = () => {
                   </svg>
                   <span>
                     {freeShippingRemaining > 0
-                      ? theme.direction === 'rtl'
-                        ? isRedlineAuto
-                          ? `أضف ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
-                          : `أضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
+                      ? isRTL
+                        ? isWomenFashion
+                          ? `أضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
+                          : `أضف ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
                         : `Add ${formatStorefrontCurrency(freeShippingRemaining, currency)} for free shipping`
-                      : theme.direction === 'rtl'
+                      : isRTL
                         ? 'مبروك! شحن مجاني مفعّل لطلبك 🎉'
                         : 'Congratulations! Free shipping unlocked 🎉'}
                   </span>

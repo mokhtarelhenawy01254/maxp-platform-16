@@ -33,14 +33,12 @@ type TrustedBadgeItemInput =
 
 const DEFAULT_ITEMS_AR = [
   "دفع آمن 100%",
-  "تابي وتمارا تقسيط",
   "الدفع عند الاستلام",
   "استرجاع سهل وسريع",
 ];
 
 const DEFAULT_ITEMS_EN = [
   "100% Secure Checkout",
-  "Tabby & Tamara BNPL",
   "Cash on Delivery",
   "Fast & Free Returns",
 ];
@@ -81,6 +79,16 @@ const getTrustedBadgeLabel = (item: TrustedBadgeItemInput): string => {
     .find(Boolean) || "";
 };
 
+const isTabbyOrTamara = (text: string) => {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("tabby") ||
+    lower.includes("تابي") ||
+    lower.includes("tamara") ||
+    lower.includes("تمارا")
+  );
+};
+
 const normalizeBadgeItems = (
   items: TrustedBadgeItemInput[] | undefined,
   isRTL: boolean,
@@ -92,7 +100,7 @@ const normalizeBadgeItems = (
 
   const normalized = items
     .map(getTrustedBadgeLabel)
-    .filter(Boolean)
+    .filter((label) => Boolean(label) && !isTabbyOrTamara(label))
     .slice(0, 8);
 
   return normalized.length > 0 ? normalized : defaults;

@@ -31,8 +31,11 @@ const resolveDirectionalCopy = ({
 }) => {
   if (typeof value === "string" && value.trim()) {
     const trimmedValue = value.trim();
-    if (prefersArabicCopy && trimmedValue === englishFallback) {
+    if (prefersArabicCopy && (trimmedValue === englishFallback || !/[\u0600-\u06FF]/.test(trimmedValue))) {
       return arabicFallback;
+    }
+    if (!prefersArabicCopy && (trimmedValue === arabicFallback || /[\u0600-\u06FF]/.test(trimmedValue))) {
+      return englishFallback;
     }
     return trimmedValue;
   }
