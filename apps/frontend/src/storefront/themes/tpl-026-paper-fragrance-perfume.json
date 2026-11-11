@@ -143,64 +143,65 @@
       "pageGoal": "discovery",
       "sections": [
         {
-          "type": "promo-strip",
-          "variant": "benefit-ribbon",
-          "settings": {
-            "badge": "كل يوم",
-            "message": "عيّنة 1.5 مل على كل أوردر · تغليف هدية ببلاش",
-            "saleLabel": "خصم 10% على أول أوردر",
-            "shippingLabel": "شحن 48 ساعة"
-          }
-        },
-        {
           "type": "hero-banner",
-          "variant": "graceful-banner",
+          "variant": "scent-portrait",
           "settings": {
             "eyebrow": "خريف 2026",
             "title": "عطر بيتكتب مش بيتقال",
             "subtitle": "أربع تركيبات جديدة، كل واحدة بذكريات ونوتات مكتوبة بالتفصيل قبل ما تشمّها.",
             "ctaText": "اقرا واتسوق",
             "ctaLink": "/shop",
-            "backgroundImage": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=2000"
+            "secondaryCtaText": "افتح دفتر العطور",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "chips",
+          "settings": {
+            "title": "رتّب اختياراتك على ذوقك",
+            "subtitle": "3 مراحل: المزاج ← الفصل ← درجة الدفء"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "eyebrow": "دفتر التركيبات",
+            "title": "كل زجاجة ليها صفحة مكتوبة",
+            "subtitle": "بنسجّل قصة المكونات ونسبة الزيوت قبل التعتيق على الورق."
           }
         },
         {
           "type": "featured-collections",
-          "variant": "editorial-categories",
+          "variant": "occasion-ribbon",
           "settings": {
             "title": "حسب المزاج",
             "subtitle": "صباحي · مسائي · مكتب · مناسبة"
           }
         },
         {
-          "type": "featured-products",
+          "type": "product-grid",
           "settings": {
-            "title": "مختار هذا الأسبوع",
-            "subtitle": "قطعة واحدة لكل مزاج"
+            "title": "مختار هذا الأسبوع"
           }
         },
         {
-          "type": "offer-bento",
-          "variant": "boutique-duo",
+          "type": "reviews",
+          "variant": "voice-notes",
           "settings": {
-            "title": "باقة العيّنات",
-            "subtitle": "4 عينات 2 مل بسعر زجاجة واحدة"
-          }
-        },
-        {
-          "type": "journal-strip",
-          "variant": "editorial-cards",
-          "settings": {
-            "title": "دفتر العطور"
+            "title": "انطباعات القراء والعملاء"
           }
         },
         {
           "type": "features-bar",
-          "variant": "service-clarity"
+          "variant": "system-assurance"
         },
         {
           "type": "newsletter",
-          "variant": "split-panel",
+          "variant": "editorial-strip",
           "settings": {
             "title": "رسالة الشهر",
             "subtitle": "قصة عطر واحد + كوبون 10% على أول أوردر."
@@ -217,7 +218,7 @@
         },
         {
           "type": "shop-command-bar",
-          "variant": "minimal-toolbar"
+          "variant": "boutique-discovery"
         },
         {
           "type": "filters-sidebar"
@@ -227,7 +228,7 @@
         },
         {
           "type": "shop-promo-rail",
-          "variant": "stylist-rail"
+          "variant": "campaign-rail"
         }
       ]
     },
@@ -237,11 +238,11 @@
       "sections": [
         {
           "type": "product-gallery",
-          "variant": "atelier-editorial-stage"
+          "variant": "boutique-portrait-stage"
         },
         {
           "type": "product-info",
-          "variant": "accordion"
+          "variant": "bento-specs"
         },
         {
           "type": "delivery-proof"
@@ -251,15 +252,15 @@
         },
         {
           "type": "reviews",
-          "variant": "standard"
+          "variant": "voice-notes"
         },
         {
           "type": "bought-together",
-          "variant": "editorial"
+          "variant": "pairing-rail"
         },
         {
           "type": "related-products",
-          "variant": "editorial"
+          "variant": "scent-circle"
         }
       ]
     },
@@ -268,17 +269,17 @@
       "sections": [
         {
           "type": "cart-items",
-          "variant": "compact",
+          "variant": "standard",
           "settings": {
-            "title": "سلة الطلب",
-            "subtitle": "راجع القطع قبل الدفع.",
-            "emptyText": "لسه ما اخترتش حاجة.",
-            "continueLabel": "كمّل تسوّق"
+            "title": "سلة المشتريات",
+            "subtitle": "اتأكد من العطور وتغليف الهدية قبل الإتمام.",
+            "emptyText": "لسه ما ضفتش أي عطر للسلة.",
+            "continueLabel": "تصفّح باقي العطور"
           }
         },
         {
           "type": "order-summary",
-          "variant": "highlighted"
+          "variant": "boutique-summary"
         }
       ]
     },
@@ -287,14 +288,14 @@
       "sections": [
         {
           "type": "collection-tab",
-          "variant": "pills"
+          "variant": "split"
         },
         {
           "type": "product-grid"
         },
         {
           "type": "shop-promo-rail",
-          "variant": "stylist-rail"
+          "variant": "campaign-rail"
         }
       ]
     },
