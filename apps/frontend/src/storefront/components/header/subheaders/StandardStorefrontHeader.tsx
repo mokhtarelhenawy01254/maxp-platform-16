@@ -64,7 +64,10 @@ export const StandardStorefrontHeader: React.FC<StandardStorefrontHeaderProps> =
   // Department-store chrome for the marketplace-avenue theme: quick-link strip plus the popular
   // search tags row the source demo keeps under its search field. Scoped to the theme id so no
   // other storefront changes shape.
-  const isMarketplaceAvenueHeader = theme.id === 'marketplace-avenue';
+  const isMarketplaceAvenueHeader =
+    theme.id === 'marketplace-avenue' ||
+    theme.id === 'marketplace-avenue-ar' ||
+    Boolean(theme.id?.startsWith('marketplace-avenue'));
   const marketplaceQuickLinks = (
     theme.header?.actions && Array.isArray(theme.header.actions) ? theme.header.actions : []
   ).slice(0, 6);
@@ -285,14 +288,18 @@ export const StandardStorefrontHeader: React.FC<StandardStorefrontHeaderProps> =
                 ))}
               </div>
               <div className="flex items-center gap-3">
-                <span className="uppercase tracking-[0.14em] text-[#a3a3a3]">خط ساخن 24/7</span>
+                <span className="uppercase tracking-[0.14em] text-[#a3a3a3]">
+                  {theme.direction === 'rtl' ? 'خط ساخن 24/7' : 'Hotline 24/7'}
+                </span>
                 <span className="text-[12px] font-semibold text-[#333333]">
                   {(theme.footer && (theme.footer as { phoneText?: string }).phoneText) || '01000 000 000'}
                 </span>
               </div>
             </div>
             <div className="container flex h-8 items-center gap-3 border-t border-[#f1f1f1] px-4 text-[11px] md:px-6">
-              <span className="text-[#a3a3a3]">الأكثر بحثًا:</span>
+              <span className="text-[#a3a3a3]">
+                {theme.direction === 'rtl' ? 'الأكثر بحثًا:' : 'Popular Searches:'}
+              </span>
               {marketplaceSearchTags.map((tag) => (
                 <Link
                   key={tag}

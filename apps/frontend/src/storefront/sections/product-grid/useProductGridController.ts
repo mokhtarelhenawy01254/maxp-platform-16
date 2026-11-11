@@ -161,7 +161,10 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
   const isVelaFashion = theme.id === 'vela-fashion-eg';
   const isFastlyTheme = theme.id === 'fastly-eg';
   const isGracefulTheme = theme.id === 'soft-graceful';
-  const isMarketplaceAvenue = theme.id === 'marketplace-avenue';
+  const isMarketplaceAvenue =
+    theme.id === 'marketplace-avenue' ||
+    theme.id === 'marketplace-avenue-ar' ||
+    Boolean(theme.id?.startsWith('marketplace-avenue'));
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
 
   const hasCustomShopStudio =
@@ -555,6 +558,8 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
     isLoading,
     error,
     buildPageUrl,
+    categories,
+    activeCategory,
 
     // Titles & Texts
     heading,

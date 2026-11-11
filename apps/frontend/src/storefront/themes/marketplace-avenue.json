@@ -78,179 +78,231 @@
         "label": "Electronics",
         "items": [
           {
-            "label": "Mobiles"
+            "label": "Mobiles",
+            "to": "/shop?category=mobiles"
           },
           {
-            "label": "Laptops"
+            "label": "Laptops",
+            "to": "/shop?category=laptops"
           },
           {
-            "label": "Televisions"
+            "label": "Televisions",
+            "to": "/shop?category=televisions"
           },
           {
-            "label": "Headphones"
+            "label": "Headphones",
+            "to": "/shop?category=headphones"
           },
           {
-            "label": "Smart Watches"
+            "label": "Smart Watches",
+            "to": "/shop?category=smart-watches"
           },
           {
-            "label": "Tablets"
+            "label": "Tablets",
+            "to": "/shop?category=tablets"
           }
-        ]
+        ],
+        "to": "/shop?category=electronics"
       },
       {
         "label": "Home Appliances",
         "items": [
           {
-            "label": "Washing Machines"
+            "label": "Washing Machines",
+            "to": "/shop?category=washing-machines"
           },
           {
-            "label": "Refrigerators"
+            "label": "Refrigerators",
+            "to": "/shop?category=refrigerators"
           },
           {
-            "label": "Air Conditioners"
+            "label": "Air Conditioners",
+            "to": "/shop?category=air-conditioners"
           },
           {
-            "label": "Vacuum Cleaners"
+            "label": "Vacuum Cleaners",
+            "to": "/shop?category=vacuum-cleaners"
           },
           {
-            "label": "Microwaves"
+            "label": "Microwaves",
+            "to": "/shop?category=microwaves"
           },
           {
-            "label": "Water Heaters"
+            "label": "Water Heaters",
+            "to": "/shop?category=water-heaters"
           }
-        ]
+        ],
+        "to": "/shop?category=appliances"
       },
       {
         "label": "Home & Kitchen",
         "items": [
           {
-            "label": "Blenders"
+            "label": "Blenders",
+            "to": "/shop?category=blenders"
           },
           {
-            "label": "Cookware"
+            "label": "Cookware",
+            "to": "/shop?category=cookware"
           },
           {
-            "label": "Pressure Cookers"
+            "label": "Pressure Cookers",
+            "to": "/shop?category=pressure-cookers"
           },
           {
-            "label": "Dinnerware"
+            "label": "Dinnerware",
+            "to": "/shop?category=dinnerware"
           },
           {
-            "label": "Coffee Makers"
+            "label": "Coffee Makers",
+            "to": "/shop?category=coffee-makers"
           },
           {
-            "label": "Kitchen Tools"
+            "label": "Kitchen Tools",
+            "to": "/shop?category=kitchen-tools"
           }
-        ]
+        ],
+        "to": "/shop?category=home-kitchen"
       },
       {
         "label": "Tools & Home",
         "items": [
           {
-            "label": "Power Tools"
+            "label": "Power Tools",
+            "to": "/shop?category=power-tools"
           },
           {
-            "label": "Hand Tools"
+            "label": "Hand Tools",
+            "to": "/shop?category=hand-tools"
           },
           {
-            "label": "Lighting"
+            "label": "Lighting",
+            "to": "/shop?category=lighting"
           },
           {
-            "label": "Plumbing"
+            "label": "Plumbing",
+            "to": "/shop?category=plumbing"
           },
           {
-            "label": "Industrial & Scientific"
+            "label": "Industrial & Scientific",
+            "to": "/shop?category=industrial-scientific"
           }
-        ]
+        ],
+        "to": "/shop?category=tools-improvement"
       },
       {
         "label": "Personal Care",
         "items": [
           {
-            "label": "Hair Dryers"
+            "label": "Hair Dryers",
+            "to": "/shop?category=hair-dryers"
           },
           {
-            "label": "Shavers"
+            "label": "Shavers",
+            "to": "/shop?category=shavers"
           },
           {
-            "label": "Skincare"
+            "label": "Skincare",
+            "to": "/shop?category=skincare"
           },
           {
-            "label": "Perfumes"
+            "label": "Perfumes",
+            "to": "/shop?category=perfumes"
           }
-        ]
+        ],
+        "to": "/shop?category=beauty-care"
       },
       {
         "label": "Health & Household",
         "items": [
           {
-            "label": "Supplements"
+            "label": "Supplements",
+            "to": "/shop?category=supplements"
           },
           {
-            "label": "Medical Devices"
+            "label": "Medical Devices",
+            "to": "/shop?category=medical-devices"
           }
-        ]
+        ],
+        "to": "/shop?category=health-home"
       },
       {
         "label": "Sports & Fitness",
         "items": [
           {
-            "label": "Home Fitness"
+            "label": "Home Fitness",
+            "to": "/shop?category=fitness-equipment"
           },
           {
-            "label": "Sports Gear"
+            "label": "Sports Gear",
+            "to": "/shop?category=sports-gear"
           }
-        ]
+        ],
+        "to": "/shop?category=sports"
       },
       {
         "label": "Garden & Outdoor",
         "items": [
           {
-            "label": "Garden Tools"
+            "label": "Garden Tools",
+            "to": "/shop?category=garden-tools"
           },
           {
-            "label": "Planters"
+            "label": "Planters",
+            "to": "/shop?category=planters"
           },
           {
-            "label": "Outdoor Furniture"
+            "label": "Outdoor Furniture",
+            "to": "/shop?category=outdoor-furniture"
           }
-        ]
+        ],
+        "to": "/shop?category=garden"
       },
       {
         "label": "Fashion",
         "items": [
           {
-            "label": "Men's Shoes"
+            "label": "Men's Shoes",
+            "to": "/shop?category=men-shoes"
           },
           {
-            "label": "Bags"
+            "label": "Bags",
+            "to": "/shop?category=bags"
           },
           {
-            "label": "Women's Clothing"
+            "label": "Women's Clothing",
+            "to": "/shop?category=women-clothing"
           },
           {
-            "label": "Accessories"
+            "label": "Accessories",
+            "to": "/shop?category=accessories"
           }
-        ]
+        ],
+        "to": "/shop?category=fashion"
       },
       {
         "label": "Baby & Toys",
         "items": [
           {
-            "label": "Toys"
+            "label": "Toys",
+            "to": "/shop?category=toys"
           },
           {
-            "label": "Baby Essentials"
+            "label": "Baby Essentials",
+            "to": "/shop?category=baby-essentials"
           }
-        ]
+        ],
+        "to": "/shop?category=baby-toys"
       },
       {
         "label": "Automotive",
         "items": [
           {
-            "label": "Car Accessories"
+            "label": "Car Accessories",
+            "to": "/shop?category=car-accessories"
           }
-        ]
+        ],
+        "to": "/shop?category=automotive"
       }
     ],
     "actions": [

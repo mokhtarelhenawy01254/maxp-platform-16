@@ -54,6 +54,10 @@ export const FreeShippingBar: React.FC = () => {
   const isPharmacy = isPharmacyThemeId(theme.id);
   const isRedlineAuto = theme.id === "redline-auto";
   const isKhemetLuxe = theme.id === "khemet-luxe-eg" || theme.id === "khemet-luxe-v2";
+  const isMarketplaceAvenue =
+    theme.id === "marketplace-avenue" ||
+    theme.id === "marketplace-avenue-ar" ||
+    Boolean(theme.id?.startsWith("marketplace-avenue"));
 
   const subtotal = useCartStore((state) =>
     state.items.reduce((total, item) => total + item.price * item.quantity, 0),
@@ -118,6 +122,7 @@ export const FreeShippingBar: React.FC = () => {
     !hasCheckoutLikePath(location.pathname) &&
     !(isRedlineAuto && isProductPage && subtotal === 0) &&
     !isKhemetLuxe &&
+    !isMarketplaceAvenue &&
     !(isMarketplacePreview && isMobilePreviewViewport);
 
   const remainingToFreeShipping = Math.max(thresholdAmount - subtotal, 0);

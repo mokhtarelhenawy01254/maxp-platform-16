@@ -260,11 +260,28 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                   (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
                 );
                 const label = dropdown.label || items[0]?.label || "";
+                const currentCategory = new URLSearchParams(location?.search || "").get("category");
+                const getCatParam = (url?: string) => {
+                  if (!url || typeof url !== 'string') return '';
+                  try {
+                    const q = url.includes('?') ? url.split('?')[1] : url;
+                    return new URLSearchParams(q || '').get('category') || '';
+                  } catch { return ''; }
+                };
+                const isCatActive = Boolean(
+                  currentCategory &&
+                  (getCatParam(dropdown.to).toLowerCase() === currentCategory.toLowerCase() ||
+                   items.some((item) => getCatParam(item?.to).toLowerCase() === currentCategory.toLowerCase()))
+                );
                 return (
                   <div key={label} className="group relative shrink-0">
                     <Link
                       to={dropdown.to || items[0]?.to || "/collections"}
-                      className="flex items-center gap-1 whitespace-nowrap text-white/95 transition-colors hover:text-white"
+                      className={`flex items-center gap-1 whitespace-nowrap transition-colors ${
+                        isCatActive
+                          ? "text-white font-bold underline decoration-2 underline-offset-8"
+                          : "text-white/95 hover:text-white"
+                      }`}
                     >
                       {label}
                       {items.length ? (
@@ -345,7 +362,8 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                   </div>
                 ) : null}
               </div>
-              {navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
+              {/* When categories exist (WoodMart Marketplace 2 style), the red bar focuses purely on categories and keeps nav in the more dropdown/drawer */}
+              {categories.length === 0 && navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
                 <Link
                   key={link.to + link.label}
                   to={link.to}

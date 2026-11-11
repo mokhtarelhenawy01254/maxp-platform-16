@@ -132,7 +132,10 @@ export const useFiltersSidebarController = ({ settings }: FiltersSidebarProps) =
   const isDistrictMarket = theme.id === 'district-market';
   const isPcHub = theme.id === 'pc-hub-eg';
   const isRoseBoutique = theme.id === 'rose-boutique-eg';
-  const isMarketplaceAvenue = theme.id === 'marketplace-avenue';
+  const isMarketplaceAvenue =
+    theme.id === 'marketplace-avenue' ||
+    theme.id === 'marketplace-avenue-ar' ||
+    Boolean(theme.id?.startsWith('marketplace-avenue'));
 
   const sidebarTitle =
     settings?.title ||
