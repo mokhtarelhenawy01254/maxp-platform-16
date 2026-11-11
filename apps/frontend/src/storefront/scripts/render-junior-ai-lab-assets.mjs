@@ -50,6 +50,46 @@ const styles = `
   @media(max-width:700px){.top{height:66px;padding:0 18px}.brand{font-size:14px}.mark{width:32px;height:32px}.nav{display:none}.search{display:none}.cart{padding:10px 12px}.hero{padding:38px 22px 28px;grid-template-columns:1fr;gap:23px;min-height:unset}.hero h1{font-size:34px;max-width:14ch;margin:15px 0 9px}.hero p{font-size:13px}.hero-visual{min-height:265px;padding:16px}.orbit{height:150px;margin:14px 0 8px}.orbit:before{width:140px;height:140px}.orbit:after{width:94px;height:94px}.core{width:57px;height:57px;border-radius:15px}.node{font-size:9px;padding:7px 9px}.node.one{top:4px;right:0}.node.two{bottom:7px;left:0}.node.three{bottom:5px;right:2px}.visual-foot{font-size:9px}.trust{padding:14px 20px;grid-template-columns:1fr;gap:11px}.trust div{font-size:11px}.section{padding:34px 20px}.section-head{display:block;margin-bottom:17px}.section h2{font-size:21px}.section-head p{font-size:11px}.levels{grid-template-columns:repeat(2,1fr);gap:8px}.level{min-height:150px;padding:14px}.level h3{font-size:14px;margin:12px 0 6px}.level p{font-size:10px}.projects{grid-template-columns:1fr 1fr;gap:8px}.project{min-height:150px;padding:14px}.project:first-child{grid-column:1/-1;min-height:170px}.project h3{font-size:14px}.project p{font-size:10px}.course-list{grid-template-columns:1fr 1fr;gap:8px}.course-visual{height:100px}.course-body{padding:12px}.course h3{font-size:13px}.course p{font-size:10px}.course-meta,.course-link{font-size:9px}.banner{margin:0 20px 30px;padding:20px;display:block}.banner h2{font-size:17px}.banner p{font-size:11px;margin-bottom:14px}.newsletter{padding:24px 20px;display:block}.newsletter h2{font-size:17px}.newsletter p{font-size:11px;margin-bottom:13px}.email{width:100%}.footer{padding:23px 20px;display:block;line-height:1.8}.shop-head{padding:32px 20px 24px}.shop-head h1{font-size:27px}.shop-head p{font-size:11px}.shop-body{padding:20px;display:block}.filters{display:none}.toolbar{padding:9px;margin-bottom:10px}.toolbar .search{display:flex;font-size:10px}.toolbar small{font-size:9px}.shop-grid{grid-template-columns:repeat(2,1fr);gap:8px}.shop-grid .course-visual{height:100px}.shop-grid .course-body{padding:11px}.pd{padding:22px 20px 38px}.pd-main{grid-template-columns:1fr;gap:21px}.gallery{min-height:270px}.gallery:before{width:230px;height:230px}.gallery:after{width:150px;height:150px}.gallery-card{width:62%;min-height:160px;padding:16px}.pd-info h1{font-size:25px}.pd-info>p{font-size:12px}.details div{font-size:11px}.pd-actions{flex-direction:column;align-items:stretch}.pd-actions .btn{width:100%}.mobile{display:block}}
 `;
 
+const v2Styles = `
+  .hero h1{max-width:11ch;font-size:clamp(34px,3.8vw,54px);font-weight:700;line-height:1.25}
+  .hero p{line-height:1.9}
+  .btn,.cart{border-radius:22px}
+  .hero-visual,.level,.course,.banner,.filters,.toolbar,.gallery,.gallery-card,.review-card{border-radius:24px}
+  .search,.email span,.email b{border-radius:20px}
+  .trust{background:#e8f7fc}
+  .levels-section{background:#fff8ed}
+  .projects-section{background:#e9f7fc}
+  .courses-section{background:#f4efff}
+  .reviews{background:#f1ecfb}
+  .newsletter{background:#eaf7fc}
+  .level:after{border-color:#cfeaf1;box-shadow:0 0 0 12px #f1fbfd}
+  .journey{position:relative;display:grid;gap:8px;max-width:420px;margin:20px auto 16px;padding-left:76px;direction:rtl}
+  .journey:before{content:"";position:absolute;right:19px;top:19px;bottom:19px;width:2px;background:linear-gradient(#9ce9cf,#ffc56d)}
+  .journey-step{position:relative;z-index:1;display:grid;grid-template-columns:40px 1fr;align-items:center;gap:11px;min-height:51px;color:#f3f7fa}
+  .step-number{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(156,233,207,.58);border-radius:14px;background:#1c354f;color:#a9efd7;font-size:11px;font-weight:900}
+  .journey-step:nth-child(4) .step-number{border-color:rgba(255,197,109,.7);color:#ffd18c}
+  .journey-step strong,.journey-step small{display:block;text-align:right}
+  .journey-step strong{font-size:13px}
+  .journey-step small{margin-top:3px;color:#b7c7d3;font-size:10px}
+  .mascot{position:absolute;left:22px;top:56px;width:64px;height:70px}
+  .visual-foot{gap:12px}
+  .pill{border-radius:20px}
+  .toolbar .search{direction:rtl;text-align:right;justify-content:space-between;gap:10px}
+  .search-copy{order:1;min-width:0;text-align:right}
+  .search-icon{order:2;flex:0 0 auto;color:#60717d}
+  @media(max-width:700px){
+    .hero h1{max-width:11ch;font-size:34px;font-weight:700;line-height:1.25}
+    .hero-visual{min-height:300px}
+    .journey{gap:6px;margin:14px 0 12px;padding-left:58px}
+    .journey-step{grid-template-columns:34px 1fr;gap:8px;min-height:43px}
+    .step-number{width:32px;height:32px;border-radius:12px;font-size:10px}
+    .journey:before{right:15px;top:16px;bottom:16px}
+    .journey-step strong{font-size:11px}
+    .journey-step small{font-size:9px}
+    .mascot{width:48px;height:54px;left:12px;top:48px}
+  }
+`;
+
 const header = (active) => `<header class="top"><div class="brand"><span class="mark">م ذ</span><span>${esc(theme.header.brandName)}</span></div><nav class="nav">${nav}</nav><div class="tools"><span class="search">ابحث عن مسار تعلّم</span><span class="cart">السلة</span></div></header>`;
 const footer = `<footer class="footer"><div><strong>${esc(theme.header.brandName)}</strong><br>${esc(theme.footer.description)}</div><span>مسارات تعليمية واضحة للأسرة</span></footer>`;
 const courseCard = (title, meta, tone = "") => `<article class="course"><div class="course-visual ${tone}"></div><div class="course-body"><div class="course-meta">${esc(meta)}</div><h3>${esc(title)}</h3><p>تفاصيل المحتوى والعمر المناسب تظهر في صفحة المسار.</p><a class="course-link" href="/shop">عرض التفاصيل ←</a></div></article>`;
@@ -94,6 +134,49 @@ const pageHtml = (pageKey) => {
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(theme.name)}</title><style>:root{--primary:hsl(${colors.primary});--accent:hsl(${colors.accent});--background:hsl(${colors.background});--foreground:hsl(${colors.foreground})}${styles}</style></head><body><div class="shell">${content}</div></body></html>`;
 };
 
+const renderPageHtml = (pageKey) => {
+  let html = pageHtml(pageKey).replace("</style>", `${v2Styles}</style>`);
+  if (pageKey === "home") {
+    const visualStart = html.indexOf('<div class="hero-visual">');
+    const visualEnd = html.indexOf("</div></section>", visualStart);
+    if (visualStart < 0 || visualEnd < 0) throw new Error("Could not locate the home hero visual");
+    const heroVisual = `<div class="hero-visual">
+      <div class="visual-head"><span>مسار التعلّم</span><span>من الفكرة للتطبيق</span></div>
+      <svg class="mascot" viewBox="0 0 72 78" role="img" aria-label="روبوت صغير مرسوم للتعلّم">
+        <path d="M36 5v9" stroke="#ffc56d" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="36" cy="5" r="4" fill="#ffc56d"/>
+        <rect x="10" y="17" width="52" height="45" rx="16" fill="#9ce9cf"/>
+        <rect x="18" y="26" width="36" height="22" rx="9" fill="#17304a"/>
+        <circle cx="29" cy="37" r="3" fill="#fff"/><circle cx="43" cy="37" r="3" fill="#fff"/>
+        <path d="M29 55h14" stroke="#17304a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M10 34H4m64 0h-6" stroke="#ffc56d" stroke-width="4" stroke-linecap="round"/>
+        <rect x="20" y="64" width="10" height="8" rx="4" fill="#ffc56d"/><rect x="42" y="64" width="10" height="8" rx="4" fill="#ffc56d"/>
+      </svg>
+      <div class="journey" aria-label="منطق ثم Scratch ثم Python ثم مشروع AI">
+        <div class="journey-step"><span class="step-number">٠١</span><span><strong>منطق</strong><small>ترتيب الأفكار</small></span></div>
+        <div class="journey-step"><span class="step-number">٠٢</span><span><strong>Scratch</strong><small>بناء قصة أو لعبة</small></span></div>
+        <div class="journey-step"><span class="step-number">٠٣</span><span><strong>Python</strong><small>كتابة أول برنامج</small></span></div>
+        <div class="journey-step"><span class="step-number">٠٤</span><span><strong>مشروع AI</strong><small>تطبيق فكرة ذكية</small></span></div>
+      </div>
+      <div class="visual-foot"><span>كل خطوة تمهّد للي بعدها</span><span class="pill">٤ محطات</span></div>
+    </div>`;
+    html = `${html.slice(0, visualStart)}${heroVisual}${html.slice(visualEnd + "</div>".length)}`;
+    html = html.replace('<section class="section">', '<section class="section levels-section">');
+    html = html.replace('<section class="section" style="padding-top:18px">', '<section class="section projects-section" style="padding-top:18px">');
+    html = html.replace('<section class="section" style="padding-top:18px">', '<section class="section courses-section" style="padding-top:18px">');
+  }
+  if (pageKey === "shop") {
+    const toolbarStart = html.indexOf('<div class="toolbar">');
+    const searchStart = html.indexOf('<span class="search">', toolbarStart);
+    const searchEnd = html.indexOf("</span>", searchStart);
+    if (toolbarStart < 0 || searchStart < 0 || searchEnd < 0) throw new Error("Could not locate the shop search field");
+    const searchText = html.slice(searchStart + '<span class="search">'.length, searchEnd);
+    const rtlSearch = `<span class="search"><span class="search-copy">${searchText}</span><svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.4 15.4 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>`;
+    html = `${html.slice(0, searchStart)}${rtlSearch}${html.slice(searchEnd + "</span>".length)}`;
+  }
+  return html;
+};
+
 const executablePath = findChromiumExecutable();
 const browser = await chromium.launch({
   headless: true,
@@ -101,7 +184,7 @@ const browser = await chromium.launch({
 });
 try {
   const previewPage = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
-  await previewPage.setContent(pageHtml("home"), { waitUntil: "load" });
+  await previewPage.setContent(renderPageHtml("home"), { waitUntil: "load" });
   await previewPage.screenshot({ path: path.join(assetsDir, "preview.png"), type: "png" });
   const previewBytes = fs.statSync(path.join(assetsDir, "preview.png")).size;
   if (previewBytes > 400 * 1024) throw new Error(`preview.png exceeds 400 KB: ${previewBytes} bytes`);
@@ -114,7 +197,7 @@ try {
         if (message.type() === "error") browserErrors.push(message.text());
       });
       page.on("pageerror", (error) => browserErrors.push(error.message));
-      await page.setContent(pageHtml(pageKey), { waitUntil: "load" });
+      await page.setContent(renderPageHtml(pageKey), { waitUntil: "load" });
       const pageCheck = await page.evaluate(() => ({
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
@@ -123,6 +206,16 @@ try {
       if (!pageCheck.heading) throw new Error(`${pageKey} did not render its primary heading`);
       if (pageCheck.documentWidth > pageCheck.viewportWidth) {
         throw new Error(`${pageKey} overflows horizontally at ${viewport.width}px (${pageCheck.documentWidth}px)`);
+      }
+      if (pageKey === "shop") {
+        const searchCheck = await page.locator(".toolbar .search").evaluate((element) => {
+          const copy = element.querySelector(".search-copy").getBoundingClientRect();
+          const icon = element.querySelector(".search-icon").getBoundingClientRect();
+          return { direction: getComputedStyle(element).direction, copyRight: copy.right, iconLeft: icon.left };
+        });
+        if (searchCheck.direction !== "rtl" || searchCheck.copyRight <= searchCheck.iconLeft) {
+          throw new Error(`shop search RTL alignment failed at ${viewport.width}px: ${JSON.stringify(searchCheck)}`);
+        }
       }
       if (browserErrors.length > 0) {
         throw new Error(`${pageKey} browser errors: ${browserErrors.join("; ")}`);

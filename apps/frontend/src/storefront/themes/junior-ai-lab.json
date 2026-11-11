@@ -7,13 +7,13 @@
     "colors": {
       "primary": "161 74% 38%",
       "primaryForeground": "0 0% 100%",
-      "secondary": "214 30% 94%",
+      "secondary": "196 88% 94%",
       "secondaryForeground": "222 38% 17%",
       "accent": "39 92% 56%",
       "accentForeground": "222 38% 17%",
       "background": "42 36% 97%",
       "foreground": "222 38% 15%",
-      "muted": "210 25% 94%",
+      "muted": "258 72% 96%",
       "mutedForeground": "218 13% 42%",
       "border": "216 20% 86%",
       "card": "0 0% 100%",
@@ -27,15 +27,15 @@
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "1.125rem",
-      "buttonRadius": "0.75rem"
+      "borderRadius": "1.5rem",
+      "buttonRadius": "1.375rem"
     },
     "productCard": {
-      "borderRadius": "1rem",
+      "borderRadius": "1.5rem",
       "boxShadow": "0 18px 44px -34px rgba(17, 34, 57, 0.26)",
       "hoverShadow": "0 22px 50px -32px rgba(17, 34, 57, 0.34)",
-      "badgeRadius": "0.5rem",
-      "buttonRadius": "0.75rem",
+      "badgeRadius": "1.25rem",
+      "buttonRadius": "1.375rem",
       "surfaceOpacity": "1"
     }
   },
@@ -78,7 +78,7 @@
     "description": "مسار تعلّم واضح للأطفال من ٧ إلى ١٤ سنة: برمجة ومشاريع ذكاء اصطناعي ومتابعة أسبوعية للوالدين."
   },
   "preview": {
-    "colors": ["161 74% 38%", "214 30% 94%", "39 92% 56%"],
+    "colors": ["161 74% 38%", "196 88% 94%", "258 72% 96%"],
     "imageUrl": "/assets/themes/junior-ai-lab/preview.png"
   },
   "pages": {
@@ -89,12 +89,16 @@
           "variant": "split-panel",
           "settings": {
             "eyebrow": "برمجة وذكاء اصطناعي · من ٧ إلى ١٤ سنة",
-            "title": "مسار واضح من أول سطر كود لأول مشروع ذكاء اصطناعي",
+            "title": "من أول فكرة إلى مشروع ذكي",
             "subtitle": "يتعلم طفلك خطوة بخطوة، ويعرف ولي الأمر ما الذي سيبنيه في كل مستوى.",
             "ctaText": "اكتشف المسارات",
             "ctaLink": "/collections",
             "secondaryCtaText": "اسألنا عن البداية",
-            "secondaryCtaLink": "/contact"
+            "secondaryCtaLink": "/contact",
+            "panelImage": "/assets/themes/junior-ai-lab/learning-path.svg",
+            "panelEyebrow": "من الفكرة للتطبيق",
+            "panelTitle": "خطوات واضحة للأسرة",
+            "panelSubtitle": "يتدرج الطفل من التفكير المنطقي إلى مشروع يفهمه ويعرضه."
           }
         },
         {
@@ -109,7 +113,7 @@
           "type": "services-grid",
           "variant": "standard",
           "settings": {
-            "title": "أربع محطات تبني مهارة حقيقية",
+            "title": "مهارات تتحول إلى مشاريع",
             "subtitle": "كل مستوى يضيف أداة ومشروعًا جديدًا، من التفكير المنطقي إلى تطبيقات الذكاء الاصطناعي.",
             "columns": 4,
             "items": [
