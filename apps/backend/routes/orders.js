@@ -3524,6 +3524,19 @@ const resolveUserTargetCompanies = async (req, merchant = null) => {
 
 // الحصول على الطلبات البسيطة
 // الحصول على الطلبات البسيطة (مع Pagination & Filtering)
+/**
+ * تنفيذ استعلامات الطلبات على أكثر من شركة:
+ * الـPrisma tenant extension بيحقن companyId واحدة من الـcontext، فالقوائم
+ * المتعددة لازم تتشغّل في context متجاوز مع where صريح (companyId in [...]).
+ */
+const runWithCompanyScope = (companyIds, operation) => {
+  const list = Array.isArray(companyIds) ? companyIds : [];
+  if (list.length > 1) {
+    return require('../services/tenantContext').bypass(operation);
+  }
+  return operation();
+};
+
 router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     // الحصول على companyId من المستخدم المصادق عليه
@@ -3700,7 +3713,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
     // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
     const includeHeldOrders = req.query.includeHeld === 'true';
-    const companyHasBillingHold = !includeHeldOrders && await companyHasActiveBillingHold(companyWhere?.companyId || companyId);
+    const companyHasBillingHold = !includeHeldOrders && await runWithCompanyScope(targetCompanyIds, () => companyHasActiveBillingHold(companyWhere?.companyId || companyId));
     if (!includeHeldOrders) {
       whereClause.billingHoldAt = null;
     }
@@ -4283,7 +4296,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    const [regularOrders, guestOrders, totalRegular, totalGuest] = await Promise.all([
+    const [regularOrders, guestOrders, totalRegular, totalGuest] = await runWithCompanyScope(targetCompanyIds, () => Promise.all([
       // Fetch Regular Orders
       getSharedPrismaClient().order.findMany({
         where: whereClause,
@@ -4370,7 +4383,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
-    ]);
+    ]));
 
     // ── Guest↔Regular reconciliation ─────────────────────────────────────
     // A converted/confirmed guest keeps its guest_orders row with a STALE
@@ -4468,7 +4481,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     };
 
     if (totalGuest > 0) {
-      const filteredGuestOrderNumberRows = await getSharedPrismaClient().guestOrder.findMany({
+      const filteredGuestOrderNumberRows = await runWithCompanyScope(targetCompanyIds, () => getSharedPrismaClient().guestOrder.findMany({
         where: guestWhereClause,
         distinct: ['orderNumber'],
         select: {
@@ -4479,7 +4492,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           turboReturnReason: true,
           turboDelayReason: true
         }
-      });
+      }));
 
       const filteredGuestOrderNumbers = filteredGuestOrderNumberRows
         .map((order) => (typeof order.orderNumber === 'string' ? order.orderNumber.trim() : ''))
@@ -4491,7 +4504,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
 
       if (filteredGuestOrderNumbers.length > 0) {
-        const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
+        const matchingRegularOrderNumbers = await runWithCompanyScope(targetCompanyIds, () => getSharedPrismaClient().order.findMany({
           where: {
             ...companyWhere,
             // mode insensitive عشان يمسك نفس الرقم بصيغ مختلفة (حروف كبيرة/صغيرة)
@@ -4504,7 +4517,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             customStatusCode: true,
             metadata: true
           }
-        });
+        }));
 
         const regularNormalizedKeys = new Set(
           matchingRegularOrderNumbers.map((order) => normalizeOrderKey(order.orderNumber))
@@ -4541,7 +4554,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         reconciledSurvivorGuestCount = survivorGuestNumbers;
 
         if (shadowedGuestOrderNumberSet.size > 0) {
-          shadowedGuestTotal = await getSharedPrismaClient().guestOrder.count({
+          shadowedGuestTotal = await runWithCompanyScope(targetCompanyIds, () => getSharedPrismaClient().guestOrder.count({
             where: {
               AND: [
                 guestWhereClause,
@@ -4553,19 +4566,19 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
                 }
               ]
             }
-          });
+          }));
         }
       }
     }
 
     const guestShippingZones =
       guestOrders.length > 0 && guestOrders.some((order) => toSafeOrderAmount(order.shippingCost) <= 0)
-        ? await getSharedPrismaClient().shippingZone.findMany({
+        ? await runWithCompanyScope(targetCompanyIds, () => getSharedPrismaClient().shippingZone.findMany({
             where: {
               ...companyWhere,
               isActive: true
             }
-          })
+          }))
         : [];
 
     console.log(`📦 [ORDERS] Found ${regularOrders.length} regular, ${guestOrders.length} guest (Top ${fetchLimit})`);

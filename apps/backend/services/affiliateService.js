@@ -1,5 +1,12 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const tenantContext = require('./tenantContext');
 const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibility');
+
+// استعلامات أكثر من شركة لازم تشتغل خارج حقن الـtenant (الـwhere الصريح بيحدد النطاق)
+const runWithCompanyScope = (companyIds, operation) => {
+  const list = Array.isArray(companyIds) ? companyIds.filter(Boolean) : [];
+  return list.length > 1 ? tenantContext.bypass(operation) : operation();
+};
 const {
   mergeAffiliateMarketers,
   summarizeAffiliateStores,
@@ -1628,7 +1635,7 @@ class AffiliateService {
         ...(affiliateWhere ? { id: affiliateWhere.affiliateId } : {}),
       };
 
-      const [companyStats, activeMarketerStats] = await Promise.all([
+      const [companyStats, activeMarketerStats] = await runWithCompanyScope(companyIds, () => Promise.all([
         prisma.order.groupBy({
           by: ['companyId'],
           where: orderWhere,
@@ -1639,7 +1646,7 @@ class AffiliateService {
           where: affiliateFilterWhere,
           _count: { _all: true },
         }),
-      ]);
+      ]));
 
       const relatedCompanyIds = Array.from(
         new Set(

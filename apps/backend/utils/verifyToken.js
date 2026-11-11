@@ -727,7 +727,15 @@ const requireCompanyAccess = async (req, res, next) => {
 
     // Determine the target company ID to validate
     // Priority: URL param > Request body > Query param > User's current context
-    const targetCompanyId = paramCompanyId || req.body?.companyId || req.query?.companyId || user.companyId;
+    // 🏪 Multi-store: a comma-separated companyId/companyIds list is not a single
+    // tenant context — fall back to the user's own company here; the route itself
+    // intersects the list with the user's memberships and scopes every query.
+    const rawQueryCompanyId = req.query?.companyIds || req.query?.companyId;
+    const queryCompanyId =
+      typeof rawQueryCompanyId === 'string' && rawQueryCompanyId.includes(',')
+        ? null
+        : rawQueryCompanyId;
+    const targetCompanyId = paramCompanyId || req.body?.companyId || queryCompanyId || user.companyId;
 
     if (!targetCompanyId) {
       return res.status(400).json({ success: false, message: 'معرف الشركة مطلوب' });
