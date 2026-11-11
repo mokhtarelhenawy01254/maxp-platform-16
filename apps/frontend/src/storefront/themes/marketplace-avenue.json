@@ -518,7 +518,7 @@
           "type": "featured-collections",
           "variant": "marketplace-tiles",
           "settings": {
-            "title": "",
+            "title": "Shop by categories",
             "subtitle": "",
             "hideBadge": true,
             "hideSubtitle": true,
@@ -589,7 +589,7 @@
                 "link": "/shop"
               }
             ],
-            "hideTitle": true
+            "hideTitle": false
           }
         },
         {
@@ -597,8 +597,8 @@
           "variant": "marketplace-trio",
           "settings": {
             "variant": "marketplace-trio",
-            "heading": "عروض واختيارات سريعة",
-            "description": "ثلاث بطاقات تفتح مسارات الشراء الأسرع داخل المتجر.",
+            "heading": "Top picks & quick offers",
+            "description": "Three curated cards opening the fastest shopping routes across departments.",
             "cards": [
               {
                 "title": "Next level adventure",
@@ -630,7 +630,7 @@
           "settings": {
             "title": "More recommended products",
             "limit": 12,
-            "ctaText": "تسوّق المزيد",
+            "ctaText": "Browse more",
             "ctaLink": "/shop"
           }
         },
@@ -639,13 +639,13 @@
           "variant": "marketplace-simple",
           "settings": {
             "variant": "marketplace-simple",
-            "badge": "عن المتجر",
+            "badge": "About Our Store",
             "title": "Online store of household appliances and electronics",
             "subtitle": "",
             "body": "A multi-department store for the home: appliances, electronics, gaming and care essentials in one place, with clear pricing and live stock before checkout.",
             "detailsTitle": "Why shop with us",
             "details": "Fast delivery nationwide, official warranty on appliances, 60-day returns, and a support team that answers before you pay.",
-            "ctaText": "",
+            "ctaText": "View shipping policy",
             "ctaLink": "/shipping"
           }
         }

@@ -151,7 +151,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
           <div className="flex flex-col gap-4">
             <a
               href={scoped(banner.link)}
-              className="group relative block h-[240px] overflow-hidden bg-[#f2efec] lg:h-[610px]"
+              className="group relative block h-[240px] overflow-hidden rounded-[20px] bg-[#f2efec] lg:h-[610px]"
             >
               {banner.image ? (
                 <img
@@ -169,7 +169,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                 <span className="font-heading text-[20px] font-semibold leading-tight text-white lg:text-[26px]">
                   {banner.title}
                 </span>
-                <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/90">
+                <span className="mt-2 inline-flex h-[36px] items-center justify-center rounded-[35px] bg-white px-5 text-[12px] font-semibold text-[#333333] transition-colors hover:bg-[#333333] hover:text-white">
                   {isRtl ? 'تسوّق الآن' : 'Shop Now'}
                 </span>
               </span>
@@ -198,7 +198,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                         ) : null}
                       </span>
                       <span className="min-w-0">
-                        <span className="line-clamp-2 block text-[15px] font-semibold leading-[1.45] text-[#333333] group-hover:text-[#ad7d61]">
+                        <span className="line-clamp-2 block text-[15px] font-semibold leading-[1.45] text-[#333333] group-hover:text-[#e14a5c]">
                           {article.title}
                         </span>
                         {article.date ? (
@@ -248,7 +248,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                       onClick={() => setActiveTab(tab.key)}
                       className={`px-3 py-1 text-[12px] font-semibold transition-colors ${
                         activeTab === tab.key
-                          ? 'text-[#ad7d61] underline decoration-2 underline-offset-8'
+                          ? 'text-[#e14a5c] underline decoration-2 underline-offset-8'
                           : 'text-[#8a8a8a] hover:text-[#333333]'
                       }`}
                     >
@@ -279,7 +279,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
 
             <a
               href={scoped(settings?.promoLink || '/sale')}
-              className="group relative flex min-h-[220px] items-center overflow-hidden bg-[#1f1f1f] px-6 py-6 text-white lg:min-h-[260px]"
+              className="group relative flex min-h-[220px] items-center overflow-hidden rounded-[20px] bg-[#1f1f1f] px-6 py-6 text-white lg:min-h-[260px]"
             >
               {settings?.promoImage ? (
                 <img
@@ -297,7 +297,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                   {settings?.promoTitle || (isRtl ? 'خصم على ألعاب PS5' : 'Special Deals & Gaming')}
                 </span>
                 <span className="max-w-md text-[12px] leading-6 text-white/75">{settings?.promoText}</span>
-                <span className="mt-2 inline-flex h-[36px] items-center justify-center rounded-full bg-white px-5 text-[12px] font-semibold text-[#333333]">
+                <span className="mt-2 inline-flex h-[36px] items-center justify-center rounded-[35px] bg-white px-5 text-[12px] font-semibold text-[#333333] transition-colors hover:bg-[#333333] hover:text-white">
                   {isRtl ? 'اشترِ الآن' : 'Buy Now'}
                 </span>
               </span>
@@ -308,7 +308,7 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
                 <h2 className="font-heading text-[18px] font-semibold text-[#333333] md:text-[22px]">
                   {settings?.appliancesTitle || (isRtl ? 'أفضل الأجهزة المنزلية' : 'Top Home Appliances')}
                 </h2>
-                <a href={scoped('/shop')} className="text-[12px] font-semibold text-[#ad7d61] hover:underline">
+                <a href={scoped('/shop')} className="text-[12px] font-semibold text-[#e14a5c] hover:underline">
                   {isRtl ? 'تسوّق المزيد' : 'Shop More'}
                 </a>
               </div>

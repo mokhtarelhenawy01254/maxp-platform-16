@@ -190,6 +190,7 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
 
   const isMarketplaceSimple = String(settings?.variant || '').trim().toLowerCase() === 'marketplace-simple';
   const [expanded, setExpanded] = useState(false);
+  const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false;
 
   if (isMarketplaceSimple) {
     return (
@@ -212,13 +213,13 @@ const InfoContentSection: React.FC<InfoContentSectionProps> = ({ settings }) => 
                 <button
                   type="button"
                   onClick={() => setExpanded((value) => !value)}
-                  className="inline-flex h-[42px] items-center justify-center rounded-[35px] bg-[#333333] px-6 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#ad7d61]"
+                  className="inline-flex h-[42px] items-center justify-center rounded-[35px] bg-[#333333] px-6 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#e14a5c]"
                 >
-                  {expanded ? 'إخفاء التفاصيل' : 'اقرأ المزيد'}
+                  {isRtl ? (expanded ? 'إخفاء التفاصيل' : 'اقرأ المزيد') : (expanded ? 'Show less' : 'Read more')}
                 </button>
               ) : null}
               {ctaText && resolvedCtaLink ? (
-                <Link to={resolvedCtaLink} className="text-[13px] font-semibold text-[#ad7d61] underline-offset-4 hover:underline">
+                <Link to={resolvedCtaLink} className="text-[13px] font-semibold text-[#e14a5c] underline-offset-4 hover:underline">
                   {ctaText}
                 </Link>
               ) : null}

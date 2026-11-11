@@ -40,7 +40,7 @@ export const MarketplaceCategoryTiles: React.FC<{ ctrl: ReturnType<typeof useFea
                   />
                 ) : null}
               </span>
-              <span className="text-[15px] font-semibold leading-tight text-[#333333] group-hover:text-[#ad7d61]">
+              <span className="text-[15px] font-semibold leading-tight text-[#333333] group-hover:text-[#e14a5c]">
                 {cardTitle(card)}
               </span>
             </Link>

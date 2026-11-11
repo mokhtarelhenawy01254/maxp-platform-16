@@ -1072,7 +1072,7 @@
           "type": "featured-collections",
           "variant": "marketplace-tiles",
           "settings": {
-            "title": "",
+            "title": "تسوّق حسب الفئات",
             "subtitle": "",
             "hideBadge": true,
             "hideSubtitle": true,
@@ -1182,9 +1182,11 @@
                   {
                     "title": "Toys"
                   }
-                ]
+                ],
+                "title": "Shop by categories"
               }
-            }
+            },
+            "hideTitle": false
           }
         },
         {
@@ -1235,7 +1237,9 @@
                     "description": "Finished in Blue Blush, cushioned with soft fabric and a removable lid.",
                     "ctaText": "Shop now"
                   }
-                ]
+                ],
+                "heading": "Top picks & quick offers",
+                "description": "Three curated cards opening the fastest shopping routes across departments."
               }
             }
           }
@@ -1244,13 +1248,14 @@
           "type": "product-grid",
           "variant": "marketplace-rail",
           "settings": {
-            "title": "منتجات مقترحة أخرى",
+            "title": "المزيد من المنتجات المقترحة",
             "limit": 12,
             "ctaText": "تسوّق المزيد",
             "ctaLink": "/shop",
             "i18n": {
               "en": {
-                "title": "More recommended products"
+                "title": "More recommended products",
+                "ctaText": "Browse more"
               }
             }
           }

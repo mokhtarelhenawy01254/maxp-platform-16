@@ -32,9 +32,9 @@ export const MarketplaceRailGrid: React.FC<{ controller: ProductGridController }
       <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
         {title ? (
           <div className="mb-4 flex items-center justify-between gap-4">
-            <h2 className="font-heading text-[18px] font-semibold text-[#333333] md:text-[22px]">{title}</h2>
+            <h2 className="font-heading text-[20px] font-semibold text-[#242424] md:text-[24px]">{title}</h2>
             {ctaText && ctaLink ? (
-              <Link to={scoped(ctaLink)} className="text-[12px] font-semibold text-[#ad7d61] underline-offset-4 hover:underline">
+              <Link to={scoped(ctaLink)} className="text-[13px] font-semibold text-[#e14a5c] underline-offset-4 hover:underline">
                 {ctaText}
               </Link>
             ) : null}
