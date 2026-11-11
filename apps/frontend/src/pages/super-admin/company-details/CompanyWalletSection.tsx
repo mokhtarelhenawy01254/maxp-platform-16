@@ -53,7 +53,7 @@ export function CompanyWalletSection({ review, reviewCurrency, openTopUpModal, n
             <p className="text-xs text-muted-foreground">آخر الشحنات أو الخصومات المسجلة على محفظة الشركة.</p>
           </div>
           <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1 text-xs">
-            آخر تحديث {formatDate(review?.wallet?.updatedAt)}
+            تاريخ آخر تحديث: {formatDate(review?.wallet?.updatedAt)}
           </Badge>
         </div>
 
@@ -73,7 +73,7 @@ export function CompanyWalletSection({ review, reviewCurrency, openTopUpModal, n
                   <p className="text-sm text-muted-foreground">{transaction.description || "بدون وصف"}</p>
                 </div>
                 <div className="text-xs text-muted-foreground sm:text-left">
-                  {formatDateTime(transaction.createdAt)}
+                  تاريخ العملية: {formatDateTime(transaction.createdAt)}
                 </div>
               </div>
             ))

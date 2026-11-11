@@ -1,7 +1,24 @@
-import { useMemo, useState } from "react";
-import { Activity, Clock, Search } from "lucide-react";
+import { useMemo, useState, type ElementType } from "react";
+import {
+  Activity,
+  KeyRound,
+  MessageSquare,
+  Package,
+  Search,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+  Users,
+  Wallet,
+} from "lucide-react";
 import type { ActivityEntry } from "./companyDetailsTypes";
-import { formatDateTime, formatActivityTimeline, getStatusMeta } from "./helpers";
+import {
+  formatDateTime,
+  formatActivityTimeline,
+  formatNumber,
+  getStatusMeta,
+  type ActivityTypeKey,
+} from "./helpers";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -11,14 +28,40 @@ const CATEGORY_LABELS: Record<string, string> = {
   AUTH: "المصادقة والدخول",
   CONVERSATIONS: "المحادثات",
   BILLING: "الفوترة والمدفوعات",
+  WALLET: "المحفظة",
+  SUBSCRIPTION: "الاشتراكات",
   SETTINGS: "إعدادات الشركة",
   PRODUCTS: "المنتجات",
   ORDERS: "الطلبات",
   CUSTOMERS: "العملاء",
   SYSTEM: "النظام",
   TEAM: "إدارة الفريق",
+  USERS: "المستخدمون",
   MARKETPLACE: "سوق التطبيقات",
+  SUPPORT: "الدعم الفني",
+  ADMIN: "الإدارة",
+  SECURITY: "الأمان",
+  COMPANY: "بيانات الشركة",
+  WHATSAPP: "واتساب",
+  FACEBOOK: "فيسبوك",
 };
+
+const TYPE_ICONS: Record<ActivityTypeKey, ElementType> = {
+  impersonate: KeyRound,
+  auth: ShieldCheck,
+  billing: Wallet,
+  team: Users,
+  marketplace: Package,
+  settings: Settings,
+  orders: ShoppingBag,
+  support: MessageSquare,
+  system: Activity,
+};
+
+function getCategoryLabel(category?: string | null): string {
+  const key = String(category || "").trim().toUpperCase();
+  return CATEGORY_LABELS[key] || "عام";
+}
 
 const PAGE_SIZE = 15;
 
@@ -35,25 +78,26 @@ export function CompanyRecentActivity({ activities, loading }: {
     () =>
       activities.map((entry) => {
         const timeline = formatActivityTimeline(entry);
+        const categoryLabel = getCategoryLabel(entry.category);
         return {
           entry,
           timeline,
-          categoryLabel: CATEGORY_LABELS[entry.category] || entry.category || "عام",
-          haystack: `${timeline.actionText} ${timeline.detailText || ""} ${CATEGORY_LABELS[entry.category] || entry.category || ""}`.toLowerCase(),
+          categoryLabel,
+          haystack: `${timeline.actionText} ${timeline.detailText || ""} ${timeline.typeLabel} ${categoryLabel}`.toLowerCase(),
         };
       }),
     [activities],
   );
 
   const categories = useMemo(() => {
-    const present = new Set(activities.map((entry) => entry.category).filter(Boolean));
+    const present = new Set(activities.map((entry) => String(entry.category || "").toUpperCase()).filter(Boolean));
     return ["ALL", ...Array.from(present)];
   }, [activities]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return decorated.filter(
-      (row) => (category === "ALL" || row.entry.category === category) && (!q || row.haystack.includes(q)),
+      (row) => (category === "ALL" || String(row.entry.category || "").toUpperCase() === category) && (!q || row.haystack.includes(q)),
     );
   }, [decorated, query, category]);
 
@@ -97,14 +141,14 @@ export function CompanyRecentActivity({ activities, loading }: {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {key === "ALL" ? "الكل" : CATEGORY_LABELS[key] || key}
+              {key === "ALL" ? "الكل" : getCategoryLabel(key)}
             </button>
           ))}
         </div>
       </div>
 
       <p className="text-xs font-medium text-muted-foreground">
-        المعروض: {shown.length} من {filtered.length} حركة
+        المعروض: {formatNumber(shown.length)} من {formatNumber(filtered.length)} حركة
       </p>
 
       {shown.length === 0 ? (
@@ -113,22 +157,28 @@ export function CompanyRecentActivity({ activities, loading }: {
         <div className="space-y-2">
           {shown.map(({ entry, timeline, categoryLabel }) => {
             const severityMeta = getStatusMeta("activity", entry.severity);
+            const TypeIcon = TYPE_ICONS[timeline.typeKey] || Activity;
             return (
               <div
                 key={entry.id}
-                className="flex items-start gap-3.5 rounded-xl border border-border/40 bg-card/60 p-3.5 transition-colors hover:bg-muted/40"
+                className="flex items-start gap-3 rounded-xl border border-border/40 bg-card/60 p-3 transition-colors hover:bg-muted/40"
               >
-                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Clock className="size-3.5" />
+                <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <TypeIcon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-bold text-foreground">
                       {timeline.actionText}
                     </span>
-                    <Badge variant="outline" className={severityMeta.className}>
-                      {severityMeta.label}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="border-border/50 bg-muted/30 px-2 py-0 text-[10px] font-bold">
+                        {timeline.typeLabel}
+                      </Badge>
+                      <Badge variant="outline" className={severityMeta.className}>
+                        {severityMeta.label}
+                      </Badge>
+                    </div>
                   </div>
 
                   {timeline.detailText ? (
@@ -142,7 +192,7 @@ export function CompanyRecentActivity({ activities, loading }: {
                       {categoryLabel}
                     </Badge>
                     <span>•</span>
-                    <span>{formatDateTime(entry.createdAt)}</span>
+                    <span>تاريخ النشاط: {formatDateTime(entry.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -160,7 +210,7 @@ export function CompanyRecentActivity({ activities, loading }: {
             className="rounded-xl text-xs font-bold"
             onClick={() => setVisible((current) => current + PAGE_SIZE)}
           >
-            عرض {Math.min(PAGE_SIZE, filtered.length - shown.length)} حركة أخرى
+            عرض {formatNumber(Math.min(PAGE_SIZE, filtered.length - shown.length))} حركة أخرى
           </Button>
         </div>
       ) : null}

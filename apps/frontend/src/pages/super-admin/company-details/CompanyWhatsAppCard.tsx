@@ -1,8 +1,8 @@
 import type { WhatsAppSummary, WhatsAppSession } from "./companyDetailsTypes";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { MessageSquare, Phone, CheckCircle2, XCircle, Loader2, Inbox, Plus } from "lucide-react";
+import { MessageSquare, Phone, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { formatDate, formatNumber } from "./helpers";
 
 function SessionStatusBadge({ status }: { status: string }) {
   const connected = status === "CONNECTED";
@@ -44,7 +44,7 @@ export function CompanyWhatsAppCard({ summary, sessions, loading }: {
             <h3 className="text-sm font-black text-foreground">واتساب</h3>
           </div>
           <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 text-xs">
-            {summary.connectedSessions}/{summary.sessionsTotal} متصل
+            {formatNumber(summary.connectedSessions)}/{formatNumber(summary.sessionsTotal)} متصل
           </Badge>
         </div>
 
@@ -60,7 +60,7 @@ export function CompanyWhatsAppCard({ summary, sessions, loading }: {
                 </div>
                 {defaultSession.lastConnectedAt && (
                   <p className="text-[11px] text-muted-foreground">
-                    آخر اتصال: {new Date(defaultSession.lastConnectedAt).toLocaleDateString("ar-EG")}
+                    تاريخ آخر اتصال: {formatDate(defaultSession.lastConnectedAt)}
                   </p>
                 )}
               </div>
@@ -74,11 +74,11 @@ export function CompanyWhatsAppCard({ summary, sessions, loading }: {
 
           <div className="flex flex-wrap gap-2">
             <div className="flex-1 min-w-[100px] rounded-xl border border-border/40 bg-muted/20 p-3 text-center">
-              <p className="text-lg font-black text-foreground">{summary.sessionsTotal}</p>
+              <p className="text-lg font-black text-foreground">{formatNumber(summary.sessionsTotal)}</p>
               <p className="text-[11px] text-muted-foreground">الجلسات</p>
             </div>
             <div className="flex-1 min-w-[100px] rounded-xl border border-border/40 bg-muted/20 p-3 text-center">
-              <p className="text-lg font-black text-foreground">{summary.templatesTotal}</p>
+              <p className="text-lg font-black text-foreground">{formatNumber(summary.templatesTotal)}</p>
               <p className="text-[11px] text-muted-foreground">القوالب</p>
             </div>
             <div className="flex-1 min-w-[100px] rounded-xl border border-border/40 bg-muted/20 p-3 text-center">
@@ -91,7 +91,7 @@ export function CompanyWhatsAppCard({ summary, sessions, loading }: {
         {sessions && sessions.length > 1 && (
           <details className="mt-3">
             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-              جميع الأرقام ({sessions.length})
+              جميع الأرقام ({formatNumber(sessions.length)})
             </summary>
             <div className="mt-2 space-y-1.5">
               {sessions.map((session) => (

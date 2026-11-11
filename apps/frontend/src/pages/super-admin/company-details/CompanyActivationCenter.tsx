@@ -30,7 +30,17 @@ interface ActivationItem {
   isComplete?: boolean;
 }
 
-function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall: (app: ActivationItem) => void; action: string }) {
+function AppItemRow({
+  app,
+  onInstall,
+  action,
+  currencyCode,
+}: {
+  app: ActivationItem;
+  onInstall: (app: ActivationItem) => void;
+  action: string;
+  currencyCode: string;
+}) {
   const pricingMeta = getStatusMeta("pricingModel", app.pricingModel);
   return (
     <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between border-b border-border/30 last:border-b-0">
@@ -52,7 +62,13 @@ function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall
           </div>
           {app.description ? <p className="text-xs text-muted-foreground line-clamp-1">{app.description}</p> : null}
           <p className="text-xs font-bold text-foreground/80">
-            {app.monthlyPrice && app.monthlyPrice > 0 ? `${formatCurrency(app.monthlyPrice)} / شهرياً` : "بدون اشتراك شهري ثابت"}
+            {app.monthlyPrice && app.monthlyPrice > 0
+              ? `${formatCurrency(app.monthlyPrice, currencyCode)} / شهرياً`
+              : app.pricingModel === "FREE"
+                ? "مجاني"
+                : app.pricingModel === "PAY_PER_USE"
+                  ? "حسب الاستخدام"
+                  : "السعر غير محدد"}
           </p>
         </div>
       </div>
@@ -124,19 +140,38 @@ export function CompanyActivationCenter({
     const q = query.trim().toLowerCase();
     const haystack = `${item.name || ""} ${item.slug || ""}`.toLowerCase();
     const matchesQuery = !q || haystack.includes(q);
+    const isActiveItem = Boolean(item.isInstalled ?? item.isComplete);
     const matchesStatus =
       statusFilter === "ALL" ||
-      (statusFilter === "ACTIVE" ? Boolean(item.isInstalled) : !item.isInstalled);
+      (statusFilter === "ACTIVE" ? isActiveItem : !isActiveItem);
     return matchesQuery && matchesStatus;
   };
   const filteredApps = orderedCatalogApps.filter(matchesFilters);
   const filteredBundles = resolvedBundles.filter(matchesFilters);
   const isFiltering = Boolean(query.trim()) || statusFilter !== "ALL";
 
-  const totalMonthlyCost = uninstalledApps.reduce((acc, app) => acc + (Number(app.monthlyPrice) || 0), 0);
+  const currencyCode = company?.currency || "EGP";
+  const hasKnownPrice = (app: ActivationItem) =>
+    typeof app.monthlyPrice === "number" && Number.isFinite(app.monthlyPrice) && app.monthlyPrice > 0;
+  const totalMonthlyCost = uninstalledApps.reduce(
+    (acc, app) => acc + (hasKnownPrice(app) ? Number(app.monthlyPrice) : 0),
+    0,
+  );
   const subscriptionAppsCount = uninstalledApps.filter((a) => a.pricingModel === "SUBSCRIPTION" || a.pricingModel === "HYBRID").length;
   const payPerUseCount = uninstalledApps.filter((a) => a.pricingModel === "PAY_PER_USE").length;
   const freeAppsCount = uninstalledApps.filter((a) => a.pricingModel === "FREE").length;
+  const unknownPricePaidAppsCount = uninstalledApps.filter(
+    (a) => a.pricingModel !== "FREE" && a.pricingModel !== "PAY_PER_USE" && !hasKnownPrice(a),
+  ).length;
+
+  const totalPriceSummary =
+    freeAppsCount === uninstalledCount
+      ? `${formatCurrency(0, currencyCode)} (مجاني)`
+      : totalMonthlyCost > 0
+        ? unknownPricePaidAppsCount > 0
+          ? `${formatCurrency(totalMonthlyCost, currencyCode)} / شهرياً (+ ${formatNumber(unknownPricePaidAppsCount)} أداة بسعر غير محدد)`
+          : `${formatCurrency(totalMonthlyCost, currencyCode)} / شهرياً`
+        : "السعر غير محدد";
 
   const handleConfirmAndActivate = () => {
     setConfirmModalOpen(false);
@@ -221,7 +256,7 @@ export function CompanyActivationCenter({
               filteredApps.length ? (
                 <div className="divide-y divide-border/20">
                   {filteredApps.map((app) => (
-                    <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} />
+                    <AppItemRow key={app.slug} app={app} onInstall={handleInstallApp} action={appAction} currencyCode={currencyCode} />
                   ))}
                 </div>
               ) : (
@@ -278,9 +313,9 @@ export function CompanyActivationCenter({
                 <span className="font-bold text-foreground">{formatNumber(uninstalledCount)} أداة</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">إجمالي رسوم الاشتراكات الشهرية:</span>
-                <span className="font-black text-primary text-base">
-                  {totalMonthlyCost > 0 ? `${formatCurrency(totalMonthlyCost, company?.currency || "EGP")} / شهرياً` : "0.00 ج.م (مجاناً)"}
+                <span className="text-muted-foreground font-medium">إجمالي السعر الشهري:</span>
+                <span className="font-black text-primary text-base" data-testid="bulk-activate-total-price">
+                  {totalPriceSummary}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/10 text-xs">
@@ -304,7 +339,13 @@ export function CompanyActivationCenter({
                   <div key={app.slug} className="flex items-center justify-between py-1.5 px-2">
                     <span className="font-medium text-foreground">{app.name}</span>
                     <span className="font-mono text-[11px] text-muted-foreground">
-                      {app.monthlyPrice && app.monthlyPrice > 0 ? formatCurrency(app.monthlyPrice, company?.currency || "EGP") : "مجاني"}
+                      {app.monthlyPrice && app.monthlyPrice > 0
+                        ? formatCurrency(app.monthlyPrice, currencyCode)
+                        : app.pricingModel === "FREE"
+                          ? "مجاني"
+                          : app.pricingModel === "PAY_PER_USE"
+                            ? "حسب الاستخدام"
+                            : "السعر غير محدد"}
                     </span>
                   </div>
                 ))}

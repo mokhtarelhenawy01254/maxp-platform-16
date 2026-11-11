@@ -29,13 +29,13 @@ export function CompanyLimitsSection({ review, limitEntries }: {
         <MiniStat label="الربط البرمجي (API)" value={review?.limits?.features?.apiAccess ? "مفعل" : "غير مفعل"} helper="صلاحية الربط البرمجي" />
       </div>
 
-      <div className="space-y-4 pt-2">
+      <div className="space-y-3 pt-1">
         {(limitEntries || []).map((entry) => {
           const tone = getUsageTone(entry.percentage);
           const meta = getMetricDetails(entry);
           const unlimited = Boolean(entry.isUnlimited) || Number(entry.limit) === -1;
           return (
-            <div key={entry.key} className="rounded-xl border border-border/40 bg-card/60 p-3.5 space-y-2.5">
+            <div key={entry.key} className="rounded-xl border border-border/40 bg-card/60 p-3 space-y-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <div className="flex flex-wrap items-center gap-2">

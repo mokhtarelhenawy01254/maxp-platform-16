@@ -121,7 +121,7 @@ export function CompanyBillingSection({
                         </p>
                       ) : null}
                       <p className="text-xs text-muted-foreground">
-                        إصدار {formatDate(invoice.issueDate)} • استحقاق {formatDate(invoice.dueDate)}
+                        تاريخ الإصدار: {formatDate(invoice.issueDate)} • تاريخ الاستحقاق: {formatDate(invoice.dueDate)}
                       </p>
                     </div>
                     <div className="text-sm font-bold text-foreground">
@@ -173,7 +173,7 @@ export function CompanyBillingSection({
                         {formatCurrency(payment.amount, payment.currency || reviewCurrency)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(payment.paidAt || payment.createdAt)}
+                        {payment.paidAt ? "تاريخ الدفع:" : "تاريخ الإنشاء:"} {formatDate(payment.paidAt || payment.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -226,7 +226,7 @@ export function CompanyBillingSection({
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        قدم في {formatDateTime(receipt.submittedAt)}
+                        تاريخ التقديم: {formatDateTime(receipt.submittedAt)}
                       </p>
                       {getReceiptReferenceLabel(receipt) ? (
                         <p className="text-[11px] text-muted-foreground">
@@ -278,7 +278,7 @@ export function CompanyBillingSection({
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {formatDateTime(entry.createdAt)}
+                      تاريخ الحركة: {formatDateTime(entry.createdAt)}
                     </p>
                   </div>
                   <div className="text-sm font-bold text-foreground">

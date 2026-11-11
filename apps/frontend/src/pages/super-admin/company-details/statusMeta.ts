@@ -48,8 +48,22 @@ const statusMap: Record<string, Record<string, { label: string; severity: string
     OPEN: { label: "مفتوحة", severity: "warning" },
     IN_PROGRESS: { label: "قيد المعالجة", severity: "info" },
     WAITING_FOR_RESPONSE: { label: "بانتظار الرد", severity: "warning" },
+    WAITING_FOR_CUSTOMER: { label: "بانتظار العميل", severity: "warning" },
+    WAITING_FOR_ADMIN: { label: "بانتظار الإدارة", severity: "info" },
+    PENDING: { label: "قيد الانتظار", severity: "warning" },
+    REOPENED: { label: "أعيد فتحها", severity: "warning" },
+    ESCALATED: { label: "مصعّدة", severity: "danger" },
+    ON_HOLD: { label: "معلقة", severity: "neutral" },
     RESOLVED: { label: "تم الحل", severity: "success" },
     CLOSED: { label: "مغلقة", severity: "neutral" },
+  },
+  priority: {
+    LOW: { label: "منخفضة", severity: "neutral" },
+    MEDIUM: { label: "متوسطة", severity: "info" },
+    NORMAL: { label: "عادية", severity: "info" },
+    HIGH: { label: "عالية", severity: "warning" },
+    URGENT: { label: "عاجلة", severity: "danger" },
+    CRITICAL: { label: "حرجة", severity: "danger" },
   },
   user: {
     ACTIVE: { label: "نشط", severity: "success" },
@@ -60,7 +74,9 @@ const statusMap: Record<string, Record<string, { label: string; severity: string
   activity: {
     CRITICAL: { label: "حرج", severity: "danger" },
     HIGH: { label: "مرتفع", severity: "warning" },
+    WARNING: { label: "تحذير", severity: "warning" },
     MEDIUM: { label: "متوسط", severity: "info" },
+    INFO: { label: "معلومة", severity: "info" },
     LOW: { label: "منخفض", severity: "neutral" },
   },
   company: {
@@ -86,7 +102,15 @@ const statusMap: Record<string, Record<string, { label: string; severity: string
   },
   role: {
     OWNER: { label: "مالك الشركة", severity: "info" },
-    SUPER_ADMIN: { label: "مسؤول عام", severity: "blue" },
+    SUPER_ADMIN: { label: "حساب نظام (مسؤول عام)", severity: "blue" },
+    SYSTEM: { label: "حساب نظام", severity: "blue" },
+    BOT: { label: "حساب آلي", severity: "blue" },
+    API: { label: "حساب ربط برمجي", severity: "blue" },
+    SERVICE: { label: "حساب خدمة", severity: "blue" },
+    PROJECT_MANAGER: { label: "حساب نظام (مدير مشروع)", severity: "blue" },
+    TEAM_LEAD: { label: "حساب نظام (قائد فريق)", severity: "blue" },
+    DEVELOPER: { label: "حساب نظام (مطوّر)", severity: "blue" },
+    TESTER: { label: "حساب نظام (مختبر)", severity: "blue" },
     COMPANY_ADMIN: { label: "مدير شركة", severity: "blue" },
     MANAGER: { label: "مدير", severity: "info" },
     AGENT: { label: "موظف", severity: "neutral" },
@@ -98,8 +122,9 @@ export function getStatusMeta(category: string, status?: string): { label: strin
   if (!status) {
     return { label: "غير محدد", className: severityClasses["neutral"] ?? "" };
   }
-  const normalizedKey = String(status).toUpperCase();
-  const entry = statusMap[category]?.[normalizedKey] || statusMap[category]?.[status];
+  const trimmed = String(status).trim();
+  const normalizedKey = trimmed.toUpperCase().replace(/[\s-]+/g, "_");
+  const entry = statusMap[category]?.[normalizedKey] || statusMap[category]?.[trimmed];
   if (entry) {
     return { label: entry.label, className: severityClasses[entry.severity] ?? "" };
   }
@@ -112,5 +137,5 @@ export function getStatusMeta(category: string, status?: string): { label: strin
     }
   }
 
-  return { label: status, className: severityClasses["neutral"] ?? "" };
+  return { label: "غير محدد", className: severityClasses["neutral"] ?? "" };
 }

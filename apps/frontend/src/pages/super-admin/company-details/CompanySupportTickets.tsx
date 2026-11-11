@@ -2,23 +2,11 @@ import { useMemo, useState } from "react";
 import { MessageSquare, Search, Ticket } from "lucide-react";
 import type { TicketListItem } from "./companyDetailsTypes";
 import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
+import { Button, buttonVariants } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { formatDateTime, getStatusMeta } from "./helpers";
+import { cn } from "../../../lib/utils";
+import { formatDateTime, formatNumber, getStatusMeta } from "./helpers";
 import { EmptyState } from "./EmptyState";
-
-const PRIORITY_LABELS: Record<string, string> = {
-  LOW: "منخفضة",
-  MEDIUM: "متوسطة",
-  HIGH: "عالية",
-  CRITICAL: "حرجة",
-};
-
-function priorityLabel(priority?: string | null) {
-  if (!priority) return "—";
-  const key = priority.trim().toUpperCase();
-  return PRIORITY_LABELS[key] ?? "—";
-}
 
 const PAGE_SIZE = 10;
 
@@ -68,7 +56,7 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
       </div>
 
       <p className="text-xs font-medium text-muted-foreground">
-        المعروض: {shown.length} من {filtered.length} تذكرة
+        المعروض: {formatNumber(shown.length)} من {formatNumber(filtered.length)} تذكرة
       </p>
 
       {shown.length === 0 ? (
@@ -77,8 +65,9 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
       <div className="space-y-2">
       {shown.map((ticket) => {
         const statusMeta = getStatusMeta("ticket", ticket.status);
+        const priorityMeta = getStatusMeta("priority", ticket.priority);
         return (
-          <div key={ticket.id} className="flex items-center justify-between rounded-xl border border-border/50 bg-card p-3.5 transition-colors hover:bg-muted/30">
+          <div key={ticket.id} className="flex items-center justify-between rounded-xl border border-border/50 bg-card p-3 transition-colors hover:bg-muted/30">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="truncate text-sm font-bold text-foreground">{ticket.subject}</span>
@@ -89,7 +78,7 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="font-mono text-[11px] font-semibold">{ticket.ticketId}</span>
                 <span>•</span>
-                <span>أولوية {priorityLabel(ticket.priority)}</span>
+                <span>أولوية {priorityMeta.label}</span>
                 {ticket.user ? (
                   <>
                     <span>•</span>
@@ -97,14 +86,19 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
                   </>
                 ) : null}
                 <span>•</span>
-                <span>{formatDateTime(ticket.createdAt)}</span>
+                <span>تاريخ الإنشاء: {formatDateTime(ticket.createdAt)}</span>
               </div>
             </div>
-            <Button type="button" variant="ghost" size="sm" className="mr-2 shrink-0 rounded-lg hover:bg-primary/10 hover:text-primary" asChild>
-              <a href={`/support/admin/tickets/${ticket.id}`} title="فتح التذكرة">
-                <MessageSquare className="size-4" />
-              </a>
-            </Button>
+            <a
+              href={`/support/admin/tickets/${ticket.id}`}
+              title="فتح التذكرة"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "mr-2 shrink-0 rounded-lg hover:bg-primary/10 hover:text-primary",
+              )}
+            >
+              <MessageSquare className="size-4" />
+            </a>
           </div>
         );
       })}
@@ -120,7 +114,7 @@ export function CompanySupportTickets({ tickets, companyId, loading }: {
             className="rounded-xl text-xs font-bold"
             onClick={() => setVisible((current) => current + PAGE_SIZE)}
           >
-            عرض {Math.min(PAGE_SIZE, filtered.length - shown.length)} تذكرة أخرى
+            عرض {formatNumber(Math.min(PAGE_SIZE, filtered.length - shown.length))} تذكرة أخرى
           </Button>
         </div>
       ) : null}

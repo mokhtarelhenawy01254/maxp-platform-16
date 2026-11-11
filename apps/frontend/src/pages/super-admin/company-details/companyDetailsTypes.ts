@@ -38,9 +38,26 @@ export interface CompanyUser {
   phone?: string;
   role: string;
   isActive: boolean;
+  isSystem?: boolean;
   createdAt: string;
   lastLoginAt?: string;
   employee?: { employeeNumber?: string };
+}
+
+export interface WhatsAppSession {
+  id: string;
+  phoneNumber: string;
+  status: string;
+  isDefault?: boolean;
+  lastConnectedAt?: string | null;
+}
+
+export interface WhatsAppSummary {
+  connectedSessions: number;
+  sessionsTotal: number;
+  templatesTotal: number;
+  notificationsEnabled: boolean;
+  defaultSession?: WhatsAppSession | null;
 }
 
 export interface FacebookPage {

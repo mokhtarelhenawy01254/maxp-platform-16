@@ -69,18 +69,18 @@ export function CompanyUsageSection({ review, reviewCurrency }: {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {companyApp.trialEndsAt
-                        ? `نهاية التجربة ${formatDate(companyApp.trialEndsAt)}`
+                        ? `نهاية التجربة: ${formatDate(companyApp.trialEndsAt)}`
                         : companyApp.validUntil
-                          ? `ساري حتى ${formatDate(companyApp.validUntil)}`
+                          ? `ساري حتى: ${formatDate(companyApp.validUntil)}`
                           : companyApp.nextBillingAt
-                            ? `التحصيل القادم ${formatDate(companyApp.nextBillingAt)}`
+                            ? `التحصيل القادم: ${formatDate(companyApp.nextBillingAt)}`
                             : "بدون موعد محدد"}
                     </p>
                   </div>
                   {hasUsage ? (
                     <div className="grid min-w-[180px] gap-2 text-xs text-muted-foreground sm:text-left">
                       <span>شهر حالي: {formatCurrency(companyApp.monthlyUsage?.totalCost, reviewCurrency)}</span>
-                      <span>{companyApp.monthlyUsage?.totalActions || 0} عملية</span>
+                      <span>{formatNumber(companyApp.monthlyUsage?.totalActions || 0)} عملية</span>
                       <span>إجمالي مصروف {formatCurrency(companyApp.totalSpent, reviewCurrency)}</span>
                     </div>
                   ) : (

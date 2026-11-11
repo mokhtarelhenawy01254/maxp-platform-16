@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { formatActivityTimeline, formatNumber, formatCurrency, getStatusMeta, getMetricDetails } from "../helpers";
+import {
+  formatActivityTimeline,
+  formatNumber,
+  formatCurrency,
+  getStatusMeta,
+  getMetricDetails,
+  getUnifiedUsersCount,
+  isSystemAccount,
+  isUserDormant,
+  getCompanyRiskInfo,
+} from "../helpers";
 
 describe("CompanyLimitsSection Dynamic Labeling", () => {
   it("renders dynamic labels according to metric type without repeated 'المستخدم X'", () => {
@@ -13,7 +22,7 @@ describe("CompanyLimitsSection Dynamic Labeling", () => {
       isUnlimited: false,
     };
     const userDetails = getMetricDetails(userEntry);
-    expect(userDetails.detail).toBe("الأعضاء النشطون: 14 عضو من أصل 20");
+    expect(userDetails.detail).toBe("الأعضاء: 14 عضو من أصل 20");
     expect(userDetails.percentageText).toBe("70% من سعة الفريق");
     expect(userDetails.remainingText).toBe("المتبقي: 6 مقعد");
 
@@ -30,6 +39,7 @@ describe("CompanyLimitsSection Dynamic Labeling", () => {
     expect(productDetails.detail).toBe("المنتجات المضافة: 150 منتج من أصل 500");
     expect(productDetails.percentageText).toBe("30% من الحد المسموح");
     expect(productDetails.remainingText).toBe("المتبقي: 350 منتج");
+    expect(productDetails.detail).not.toContain("المستخدم");
 
     const orderEntry = {
       key: "orders",
@@ -59,9 +69,22 @@ describe("CompanyLimitsSection Dynamic Labeling", () => {
     expect(customerDetails.percentageText).toBe("30% من سعة العملاء");
     expect(customerDetails.remainingText).toBe("المتبقي: 700 عميل");
 
+    const storageEntry = {
+      key: "storage",
+      label: "المساحة",
+      current: 250,
+      limit: 1000,
+      percentage: 25,
+      remaining: 750,
+      isUnlimited: false,
+    };
+    const storageDetails = getMetricDetails(storageEntry);
+    expect(storageDetails.detail).toBe("المساحة المستخدمة: 250 من أصل 1,000");
+    expect(storageDetails.percentageText).toBe("25% من المساحة المتاحة");
+
     const unlimitedEntry = {
       key: "storage",
-      label: "التخزين",
+      label: "المساحة",
       current: 10,
       limit: -1,
       percentage: 0,
@@ -69,9 +92,9 @@ describe("CompanyLimitsSection Dynamic Labeling", () => {
       isUnlimited: true,
     };
     const unlimitedDetails = getMetricDetails(unlimitedEntry);
-    expect(unlimitedDetails.detail).toContain("غير محدود");
+    expect(unlimitedDetails.detail).toBe("المساحة المستخدمة: 10");
     expect(unlimitedDetails.percentageText).toBe("بدون حد أقصى");
-    expect(unlimitedDetails.remainingText).toBe("المتبقي: غير محدود");
+    expect(unlimitedDetails.remainingText).toBe("");
   });
 });
 
@@ -82,9 +105,10 @@ describe("Timeline Formatter without /api/", () => {
       description: "Super Admin (ali@test.com) logged in as Company Admin (admin@test.com)",
       metadata: JSON.stringify({ reason: "فحص شكوى دفع" }),
     });
-    expect(result1.actionText).toContain("دخول إداري");
+    expect(result1.actionText).toBe("سوبر أدمن دخل كأدمن الشركة");
     expect(result1.detailText).toContain("السبب: فحص شكوى دفع");
     expect(result1.actionText).not.toContain("/api/");
+    expect(result1.actionText).not.toContain("Super Admin");
 
     const result2 = formatActivityTimeline({
       category: "AUTH",
@@ -93,6 +117,7 @@ describe("Timeline Formatter without /api/", () => {
     expect(result2.actionText).toBe("تسجيل دخول إلى النظام");
     expect(result2.actionText).not.toContain("POST");
     expect(result2.actionText).not.toContain("/api/");
+    expect(result2.detailText).not.toContain("/api/");
 
     const result3 = formatActivityTimeline({
       category: "BILLING",
@@ -104,19 +129,33 @@ describe("Timeline Formatter without /api/", () => {
 
     const result4 = formatActivityTimeline({
       action: "SUSPEND_COMPANY",
-      description: "Company suspended",
+      description: "Company suspended via /api/v1/admin/companies/123",
     });
     expect(result4.actionText).toBe("إيقاف نشاط الشركة");
+    expect(result4.detailText).not.toContain("/api/");
+
+    const result5 = formatActivityTimeline({
+      category: "SYSTEM",
+      action: "CRON",
+      description: "GET /api/v1/webhooks/dispatch AdminCompanyController",
+    });
+    expect(result5.actionText).not.toContain("/api/");
+    expect(result5.actionText).not.toContain("Controller");
   });
 });
 
 describe("StatusMeta Localization", () => {
-  it("translates english statuses into arabic labels", () => {
+  it("translates english statuses and priorities into arabic labels", () => {
     expect(getStatusMeta("subscription", "ACTIVE").label).toBe("نشط");
     expect(getStatusMeta("subscription", "CANCELLED").label).toBe("ملغي");
     expect(getStatusMeta("ticket", "OPEN").label).toBe("مفتوحة");
     expect(getStatusMeta("ticket", "IN_PROGRESS").label).toBe("قيد المعالجة");
+    expect(getStatusMeta("ticket", "in-progress").label).toBe("قيد المعالجة");
+    expect(getStatusMeta("ticket", "CLOSED").label).toBe("مغلقة");
     expect(getStatusMeta("ticket", "RESOLVED").label).toBe("تم الحل");
+    expect(getStatusMeta("priority", "HIGH").label).toBe("عالية");
+    expect(getStatusMeta("priority", "medium").label).toBe("متوسطة");
+    expect(getStatusMeta("priority", "low").label).toBe("منخفضة");
     expect(getStatusMeta("activity", "CRITICAL").label).toBe("حرج");
     expect(getStatusMeta("activity", "HIGH").label).toBe("مرتفع");
     expect(getStatusMeta("activity", "LOW").label).toBe("منخفض");
@@ -127,12 +166,44 @@ describe("StatusMeta Localization", () => {
   });
 });
 
-describe("Numeral Consistency", () => {
-  it("formats numbers and currency with standard digits in arabic locale", () => {
+describe("Team, Health, Risk & Numeral Helpers", () => {
+  it("formats numbers and currency with consistent digits in arabic locale", () => {
     expect(formatNumber(14)).toBe("14");
     expect(formatNumber(1250)).toBe("1,250");
     const formattedCurr = formatCurrency(500, "EGP");
     expect(formattedCurr).toContain("500");
     expect(formattedCurr).toContain("ج.م");
+  });
+
+  it("resolves single unified user count from limits/userStats", () => {
+    const review = {
+      limits: { entries: [{ key: "users", current: 16, limit: 20 }] },
+      userStats: { total: 16, active: 14, inactive: 2 },
+    };
+    expect(getUnifiedUsersCount(review, { _count: { users: 18 } })).toBe(16);
+  });
+
+  it("identifies system accounts and dormant users (>30 days)", () => {
+    expect(isSystemAccount({ role: "SUPER_ADMIN", email: "admin@maxp.online" })).toBe(true);
+    expect(isSystemAccount({ role: "AGENT", email: "system@maxp.online" })).toBe(true);
+    expect(isSystemAccount({ role: "COMPANY_ADMIN", email: "owner@store.com" })).toBe(false);
+
+    const oldDate = new Date(Date.now() - 45 * 86400000).toISOString();
+    const recentDate = new Date(Date.now() - 5 * 86400000).toISOString();
+    expect(isUserDormant({ lastLoginAt: oldDate, createdAt: oldDate }, 30)).toBe(true);
+    expect(isUserDormant({ lastLoginAt: recentDate, createdAt: oldDate }, 30)).toBe(false);
+  });
+
+  it("computes company risk badge accurately", () => {
+    expect(getCompanyRiskInfo({ isActive: false }, null).level).toBe("danger");
+    expect(
+      getCompanyRiskInfo({ isActive: true }, { billing: { stats: { overdueInvoices: 2 } } }).level,
+    ).toBe("danger");
+    expect(
+      getCompanyRiskInfo({ isActive: true }, { wallet: { balance: 10 }, subscription: { monthlyFee: 200 } }).level,
+    ).toBe("warning");
+    expect(
+      getCompanyRiskInfo({ isActive: true }, { wallet: { balance: 500 }, subscription: { monthlyFee: 200 } }).level,
+    ).toBe("ok");
   });
 });
