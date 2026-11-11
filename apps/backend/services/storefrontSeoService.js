@@ -674,11 +674,16 @@ const buildStorefrontSeoMetadata = ({
     companyDescription ||
     `${storeName} — تسوق أونلاين واكتشف أحدث المنتجات والعروض المتاحة الآن.`;
 
+  let themeTitleTemplate = trimToNull(themePresetSeo.titleTemplate);
+  if (themeTitleTemplate && !themeTitleTemplate.includes("{{store}}")) {
+    themeTitleTemplate = themeTitleTemplate.replace(/(\||\-)\s*[^|\-]+$/, "$1 {{store}}");
+  }
+
   const titleTemplate =
     trimToNull(pageSeo.titleTemplate) ||
     trimToNull(rootSeo.titleTemplate) ||
     trimToNull(templateSeo.titleTemplate) ||
-    trimToNull(themePresetSeo.titleTemplate) ||
+    themeTitleTemplate ||
     "%s | {{store}}";
 
   const direction =
@@ -1438,8 +1443,12 @@ const buildStorefrontSeoMetadata = ({
         : `${pageTitle} — تسوق أونلاين من ${storeName} واكتشف أحدث العروض والمنتجات.`;
     }
 
-    title = applyTitleTemplate(titleTemplate, pageTitle, storeName);
-    description = pageDescription;
+    const pageCustomTitle = trimToNull(pageSeo.title);
+    title = pageCustomTitle || applyTitleTemplate(titleTemplate, pageTitle, storeName);
+    description = trimToNull(pageSeo.description) || pageDescription;
+    if (pageSeo.ogImage) {
+      image = resolveAbsoluteUrl(pageSeo.ogImage, currentUrl) || image;
+    }
   }
 
   const h1 = entityName || storeName;
@@ -1453,6 +1462,8 @@ const buildStorefrontSeoMetadata = ({
     imageAlt,
     entityName,
     description,
+    keywords: effectiveKeywords,
+    author: storeName,
     image,
     faviconUrl,
     siteName: storeName,
@@ -1512,6 +1523,20 @@ const injectStorefrontSeoTags = (html, metadata) => {
     "name",
     "twitter:description",
     metadata.ogDescription || metadata.description,
+  );
+
+  // Set store-relevant keywords and author, overriding platform defaults
+  if (metadata.keywords) {
+    nextHtml = setMetaTag(nextHtml, "name", "keywords", metadata.keywords);
+  } else {
+    const defaultStoreKeywords = `${metadata.siteName || "متجر"}, تسوق أونلاين, عروض, منتجات, شحن وتوصيل`;
+    nextHtml = setMetaTag(nextHtml, "name", "keywords", defaultStoreKeywords);
+  }
+  nextHtml = setMetaTag(
+    nextHtml,
+    "name",
+    "author",
+    metadata.author || metadata.siteName || "Storefront",
   );
 
   if (metadata.image) {

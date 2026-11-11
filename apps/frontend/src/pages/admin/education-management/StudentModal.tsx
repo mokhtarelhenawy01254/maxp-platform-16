@@ -23,12 +23,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   onSave,
 }) => {
   const [form, setForm] = useState({
-    code: (student as any)?.code || "",
     firstName: "",
     lastName: "",
     phone: "",
-    phone2: "",
-    address: "",
     grade: "",
     notes: "",
     customerId: "",

@@ -37,6 +37,52 @@ describe("storefrontSeoService", () => {
     expect(metadata.faviconUrl).toBe("https://swan.maxp.online/uploads/brands/swan-logo.png");
   });
 
+  test("uses designTokens.seo and designTokens.pages.home.seo when configured", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/",
+      currentUrl: "https://bto3-e3lanat.maxp.online/",
+      company: {
+        name: "Bto3 e3lanat",
+        logo: null,
+        settings: "{}",
+      },
+      storefrontSettings: {
+        designTokens: {
+          storeName: "Bto3 e3lanat",
+          themeId: "marketplace-avenue-ar",
+          seo: {
+            title: "Bto3 e3lanat | متجر بتوع إعلانات",
+            description: "متجر بتوع إعلانات للأجهزة المنزلية والإلكترونيات.",
+            keywords: "بتوع إعلانات, إلكترونيات",
+            ogImage: "https://bto3-e3lanat.maxp.online/cover.jpg",
+          },
+          pages: {
+            home: {
+              seo: {
+                title: "Bto3 e3lanat | الصفحة الرئيسية للأجهزة والإلكترونيات",
+                description: "تسوق أفضل عروض الإلكترونيات والأجهزة المنزلية.",
+              },
+            },
+          },
+        },
+      },
+      templateContent: {},
+    });
+
+    expect(metadata.title).toBe("Bto3 e3lanat | الصفحة الرئيسية للأجهزة والإلكترونيات");
+    expect(metadata.description).toBe("تسوق أفضل عروض الإلكترونيات والأجهزة المنزلية.");
+    expect(metadata.image).toBe("https://bto3-e3lanat.maxp.online/cover.jpg");
+    expect(metadata.keywords).toBe("بتوع إعلانات, إلكترونيات");
+    expect(metadata.author).toBe("Bto3 e3lanat");
+
+    const html = `<html><head><title>Default</title><meta name="description" content="old"><meta name="keywords" content="platform"><meta name="author" content="Platform"></head><body></body></html>`;
+    const injected = injectStorefrontSeoTags(html, metadata);
+    expect(injected).toContain("<title>Bto3 e3lanat | الصفحة الرئيسية للأجهزة والإلكترونيات</title>");
+    expect(injected).toContain('content="تسوق أفضل عروض الإلكترونيات والأجهزة المنزلية."');
+    expect(injected).toContain('name="keywords" content="بتوع إعلانات, إلكترونيات"');
+    expect(injected).toContain('name="author" content="Bto3 e3lanat"');
+  });
+
   test("prefers product metadata for product routes", () => {
     const metadata = buildStorefrontSeoMetadata({
       pathname: "/product/swan-motion",

@@ -1,5 +1,5 @@
 import React from "react";
-import { Film, Image as ImageIcon, Images } from "lucide-react";
+import { Film, Image as ImageIcon, Layers } from "lucide-react";
 import type { InstagramMediaType } from "./instagramStudioService";
 
 export const INSTAGRAM_MEDIA_TYPES: {
@@ -10,7 +10,7 @@ export const INSTAGRAM_MEDIA_TYPES: {
   { value: "IMAGE", label: "صورة", icon: ImageIcon },
   { value: "REELS", label: "ريلز", icon: Film },
   { value: "VIDEO", label: "فيديو", icon: Film },
-  { value: "CAROUSEL", label: "ألبوم", icon: Images },
+  { value: "CAROUSEL", label: "ألبوم", icon: Layers },
 ];
 
 interface InstagramMediaTypePickerProps {
