@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
 const redisCacheService = require('../services/redisCacheService');
 const {
@@ -2183,11 +2184,12 @@ async function resolveProductAmazonBuyUrl(prisma, companyId, productId) {
   return amazonBuyUrl;
 }
 
-router.get('/:id/:presentationSlug', async (req, res) => {
+router.get('/:id/:presentationSlug', verifyToken.optionalAuth, async (req, res) => {
   try {
     const { id, presentationSlug } = req.params;
     const isPreview =
-      req.query.preview === '1' || req.query.productPreview === '1';
+      Boolean(req.user?.id) &&
+      (req.query.preview === '1' || req.query.productPreview === '1');
     const hasAffiliateOverride = Boolean(
       req.query.ref || req.query.affiliate || req.cookies?.affiliateCode,
     );
@@ -2332,11 +2334,12 @@ router.get('/:id/:presentationSlug', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken.optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const isPreview =
-      req.query.preview === '1' || req.query.productPreview === '1';
+      Boolean(req.user?.id) &&
+      (req.query.preview === '1' || req.query.productPreview === '1');
     const hasAffiliateOverride = Boolean(
       req.query.ref || req.query.affiliate || req.cookies?.affiliateCode,
     );
