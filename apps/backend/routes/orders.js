@@ -3531,8 +3531,12 @@ const resolveUserTargetCompanies = async (req, merchant = null) => {
  */
 const runWithCompanyScope = (companyIds, operation) => {
   const list = Array.isArray(companyIds) ? companyIds : [];
-  if (list.length > 1) {
-    return require('../services/tenantContext').bypass(operation);
+  const tenantContext = require('../services/tenantContext');
+  const ctxCompanyId = tenantContext.getCompanyId();
+  const needsBypass =
+    list.length > 1 || (list.length === 1 && ctxCompanyId && list[0] !== ctxCompanyId);
+  if (needsBypass) {
+    return tenantContext.bypass(operation);
   }
   return operation();
 };
