@@ -287,7 +287,15 @@ export const getStorefrontScope = (
     pathname === "/store" || pathname.startsWith("/store/");
 
   if (!isPathScopedStorefront && hasStableStorefrontHost(hostname)) {
-    return hostname;
+    // Prefer the resolved company id stored from storefront settings. If it is
+    // not available yet, return null so the request omits x-company-id and the
+    // backend resolves the tenant from the subdomain/host.
+    return (
+      getStoredValue("storefront_companyId") ||
+      getStoredValue("currentCompanyId") ||
+      getStoredValue("companyId") ||
+      null
+    );
   }
 
   return (
