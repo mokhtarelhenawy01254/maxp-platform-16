@@ -21,7 +21,7 @@ export interface EducationSubject {
 
 export interface EducationPackage {
   id: string;
-  subjectId: string;
+  subjectId?: string;
   name: string;
   description?: string;
   hoursCount: number;
@@ -192,10 +192,26 @@ export const SESSION_STATUS: Record<string, { label: string; color: string }> = 
     label: "مؤكدة",
     color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   },
+  COMPLETED: {
+    label: "مكتملة",
+    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  },
   CANCELLED: {
     label: "ملغية",
     color: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   },
+};
+
+export const getSessionStatus = (status: string, isEn = false): { label: string; color: string } => {
+  const map: Record<string, { ar: string; en: string; color: string }> = {
+    SCHEDULED: { ar: "مجدولة", en: "Scheduled", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
+    CONFIRMED: { ar: "مؤكدة", en: "Confirmed", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
+    COMPLETED: { ar: "مكتملة", en: "Completed", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
+    CANCELLED: { ar: "ملغية", en: "Cancelled", color: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
+  };
+  const item = map[status];
+  if (!item) return { label: status, color: "bg-muted text-muted-foreground" };
+  return { label: isEn ? item.en : item.ar, color: item.color };
 };
 
 export const MODAL_CLS =

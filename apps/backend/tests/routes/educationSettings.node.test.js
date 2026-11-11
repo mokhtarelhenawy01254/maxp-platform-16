@@ -128,5 +128,37 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(res.getData().success, false);
   });
 
+  await t.test('educationMode defaults to COURSES and hides subjects by default, and enables them in ACADEMIC mode', async () => {
+    // 1. Check default getSettings when empty
+    mockCompany.settings = JSON.stringify({});
+    const reqGet = { user: { id: 'u1', role: 'COMPANY_ADMIN', companyId: 'comp-123' } };
+    const resGet = createMockRes();
+    await controller.getSettings(reqGet, resGet);
+
+    const initialData = resGet.getData().data;
+    assert.strictEqual(initialData.educationMode, 'COURSES');
+    assert.strictEqual(initialData.enableSubjects, false);
+    const subjectsTab = initialData.tabs.find(t => t.id === 'subjects');
+    assert.strictEqual(subjectsTab.visible, false);
+
+    // 2. Switch to ACADEMIC mode
+    const reqUpdate = {
+      user: { id: 'u1', role: 'COMPANY_ADMIN', companyId: 'comp-123' },
+      body: {
+        educationMode: 'ACADEMIC',
+        enableSubjects: true,
+        tabs: initialData.tabs
+      }
+    };
+    const resUpdate = createMockRes();
+    await controller.updateSettings(reqUpdate, resUpdate);
+
+    const updatedData = resUpdate.getData().data;
+    assert.strictEqual(updatedData.educationMode, 'ACADEMIC');
+    assert.strictEqual(updatedData.enableSubjects, true);
+    const updatedSubjectsTab = updatedData.tabs.find(t => t.id === 'subjects');
+    assert.strictEqual(updatedSubjectsTab.visible, true);
+  });
+
   sharedDb.getSharedPrismaClient = originalGetSharedPrisma;
 });

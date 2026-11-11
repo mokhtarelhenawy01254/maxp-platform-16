@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { School, AlertTriangle, Settings, History } from "lucide-react";
 import {
   useEducationManagementController,
@@ -77,7 +78,12 @@ export default function EducationManagementPage() {
     handleCancelSession,
   } = useEducationManagementController();
 
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const [educationSettings, setEducationSettings] = useState<EducationSettingsData | null>(null);
+  const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
+  const enableSubjects = educationSettings?.enableSubjects ?? false;
 
   useEffect(() => {
     let isMounted = true;
@@ -87,16 +93,27 @@ export default function EducationManagementPage() {
           setEducationSettings(data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoadingSettings(false);
+      });
     return () => {
       isMounted = false;
     };
   }, []);
 
+  const systemTitle = isEn
+    ? (educationSettings?.systemTitleEn || educationSettings?.systemTitle || t("education.systemTitle", "Education System"))
+    : (educationSettings?.systemTitle || t("education.systemTitle", "القطاع التعليمي"));
+
+  const systemSubtitle = isEn
+    ? (educationSettings?.systemTitleEn || t("education.systemTitleDefault", "Educational Centers & Academies Management"))
+    : (educationSettings?.systemTitle || t("education.systemTitleDefault", "إدارة المراكز والأكاديميات التعليمية"));
+
   return (
     <div
-      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 rtl font-sans"
-      dir="rtl"
+      className={`w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 font-sans ${isEn ? "ltr" : "rtl"}`}
+      dir={isEn ? "ltr" : "rtl"}
     >
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/80">
@@ -104,17 +121,17 @@ export default function EducationManagementPage() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
               <School className="w-3.5 h-3.5" />
-              {educationSettings?.systemTitle || "القطاع التعليمي"}
+              {systemTitle}
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {stats.totalStudents} طالب مسجل
+              {t("education.totalStudentsCount", { count: stats.totalStudents, defaultValue: isEn ? `${stats.totalStudents} enrolled students` : `${stats.totalStudents} طالب مسجل` })}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            {educationSettings?.systemTitle ? educationSettings.systemTitle : "إدارة المراكز والأكاديميات التعليمية"}
+            {systemSubtitle}
           </h1>
           <p className="text-xs text-muted-foreground">
-            نظام متكامل لإدارة المواد، باقات الحصص، الكوادر التعليمية، والطلاب وجداول الحصص الدورية
+            {t("education.subtitle", isEn ? "Comprehensive system for managing subjects, session packages, instructors, students, and recurring schedules" : "نظام متكامل لإدارة المواد، باقات الحصص، الكوادر التعليمية، والطلاب وجداول الحصص الدورية")}
           </p>
         </div>
 
@@ -122,7 +139,7 @@ export default function EducationManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("logs")}
-            title="سجلات وتدقيق النظام التعليمي"
+            title={t("education.logs", isEn ? "Education System Logs" : "سجلات النظام التعليمي")}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               activeTab === "logs"
                 ? "bg-primary text-primary-foreground border-primary"
@@ -130,12 +147,12 @@ export default function EducationManagementPage() {
             }`}
           >
             <History className="w-3.5 h-3.5" />
-            سجلات النظام التعليمي
+            {t("education.logs", isEn ? "System Logs" : "سجلات النظام التعليمي")}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
-            title="إعدادات وتخصيص سكاشن النظام التعليمي"
+            title={t("education.settings", isEn ? "Customize Sections & Settings" : "إعدادات وتخصيص السكاشن")}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               activeTab === "settings"
                 ? "bg-primary text-primary-foreground border-primary"
@@ -143,7 +160,7 @@ export default function EducationManagementPage() {
             }`}
           >
             <Settings className="w-3.5 h-3.5" />
-            إعدادات وتخصيص السكاشن
+            {t("education.settings", isEn ? "Settings" : "إعدادات وتخصيص السكاشن")}
           </button>
         </div>
       </div>
@@ -162,7 +179,7 @@ export default function EducationManagementPage() {
             <AlertTriangle className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-semibold text-foreground">
-            تعذر تحميل بيانات المركز التعليمي
+            {t("education.errorLoading", isEn ? "Failed to load educational center data" : "تعذر تحميل بيانات المركز التعليمي")}
           </h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">{error}</p>
           <button
@@ -170,14 +187,14 @@ export default function EducationManagementPage() {
             onClick={fetchAll}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90"
           >
-            إعادة المحاولة
+            {t("education.retry", isEn ? "Retry" : "إعادة المحاولة")}
           </button>
         </div>
       ) : loading ? (
         <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-xs font-mono">
-            جاري تحميل البيانات التعليمية...
+            {t("education.loading", isEn ? "Loading educational data..." : "جاري تحميل البيانات التعليمية...")}
           </span>
         </div>
       ) : (
@@ -191,6 +208,7 @@ export default function EducationManagementPage() {
               teachers={teachers}
               subjects={subjects}
               packages={packages}
+              enableSubjects={enableSubjects}
               setActiveTab={setActiveTab}
               studentModal={studentModal}
               setStudentModal={setStudentModal}
@@ -212,21 +230,45 @@ export default function EducationManagementPage() {
             />
           )}
           {activeTab === "subjects" && (
-            <EducationSubjectsTab
-              subjects={subjects}
-              subjectSearch={subjectSearch}
-              setSubjectSearch={setSubjectSearch}
-              subjectModal={subjectModal}
-              setSubjectModal={setSubjectModal}
-              handleSaveSubject={handleSaveSubject}
-              handleToggleSubject={handleToggleSubject}
-              handleDeleteSubject={handleDeleteSubject}
-            />
+            loadingSettings ? (
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-muted-foreground">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-mono">{t("education.loading", isEn ? "Loading settings..." : "جاري تحميل الإعدادات...")}</span>
+              </div>
+            ) : enableSubjects ? (
+              <EducationSubjectsTab
+                subjects={subjects}
+                subjectSearch={subjectSearch}
+                setSubjectSearch={setSubjectSearch}
+                subjectModal={subjectModal}
+                setSubjectModal={setSubjectModal}
+                handleSaveSubject={handleSaveSubject}
+                handleToggleSubject={handleToggleSubject}
+                handleDeleteSubject={handleDeleteSubject}
+              />
+            ) : (
+              <div className="bg-card border border-border/80 rounded-2xl p-10 text-center space-y-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {isEn ? "Subjects section is disabled in current Courses & Packages mode" : "سيكشن المواد الدراسية غير مفعل في نمط الكورسات والباقات الحالي"}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  {isEn ? "You can enable subjects anytime from the Education System settings above" : "يمكنك تفعيل سيكشن المواد في أي وقت من إعدادات وتخصيص السكاشن بالأعلى"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("packages")}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90"
+                >
+                  {isEn ? "Go to Packages & Courses" : "الانتقال إلى الكورسات والباقات"}
+                </button>
+              </div>
+            )
           )}
           {activeTab === "packages" && (
             <EducationPackagesTab
               packages={packages}
               subjects={subjects}
+              enableSubjects={enableSubjects}
               packageSubjectFilter={packageSubjectFilter}
               setPackageSubjectFilter={setPackageSubjectFilter}
               packageModal={packageModal}

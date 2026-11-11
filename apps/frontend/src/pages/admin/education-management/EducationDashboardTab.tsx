@@ -58,6 +58,7 @@ export interface EducationDashboardTabProps {
   teachers?: EducationTeacher[];
   subjects?: EducationSubject[];
   packages?: EducationPackage[];
+  enableSubjects?: boolean;
   setActiveTab: (tab: TabId) => void;
   // Modals
   studentModal?: Partial<EducationStudent> | null;
@@ -103,6 +104,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
   teachers = [],
   subjects = [],
   packages = [],
+  enableSubjects = false,
   setActiveTab,
   studentModal,
   setStudentModal,
@@ -229,7 +231,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
   }, [students, studentSearch]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" dir={isEn ? "ltr" : "rtl"}>
       {/* 1. Quick Command Action Bar */}
       <div className="bg-gradient-to-r from-card via-card to-muted/40 border border-border/80 rounded-2xl p-3.5 sm:p-4 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -323,15 +325,19 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
       </div>
 
       {/* 2. Top Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 sm:gap-3">
+      <div className={`grid grid-cols-2 sm:grid-cols-4 ${enableSubjects ? "lg:grid-cols-4 xl:grid-cols-8" : "lg:grid-cols-3 xl:grid-cols-7"} gap-2.5 sm:gap-3`}>
         {[
-          {
-            label: isEn ? "Subjects" : "المواد الدراسية",
-            value: stats.totalSubjects,
-            icon: BookOpen,
-            color: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20",
-            tab: "subjects" as TabId,
-          },
+          ...(enableSubjects
+            ? [
+                {
+                  label: isEn ? "Subjects" : "المواد الدراسية",
+                  value: stats.totalSubjects,
+                  icon: BookOpen,
+                  color: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20",
+                  tab: "subjects" as TabId,
+                },
+              ]
+            : []),
           {
             label: isEn ? "Packages" : "الباقات المتاحة",
             value: stats.totalPackages,
@@ -386,7 +392,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             key={i}
             type="button"
             onClick={() => setActiveTab(c.tab)}
-            className="bg-card border border-border/80 hover:border-primary/50 transition-colors rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-2 shadow-xs min-w-0 text-right cursor-pointer"
+            className={`bg-card border border-border/80 hover:border-primary/50 transition-colors rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-2 shadow-xs min-w-0 ${isEn ? "text-left" : "text-right"} cursor-pointer`}
           >
             <div className="space-y-0.5 min-w-0 flex-1">
               <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-foreground truncate">
@@ -856,7 +862,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                               id: teacher.id,
                             })
                           }
-                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate text-right block"
+                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate " + (isEn ? "text-left" : "text-right") + " block"
                         >
                           {teacher.name}
                         </button>
@@ -1037,7 +1043,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                               id: student.id,
                             })
                           }
-                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate text-right block"
+                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate " + (isEn ? "text-left" : "text-right") + " block"
                         >
                           {student.firstName} {student.lastName || ""}
                         </button>

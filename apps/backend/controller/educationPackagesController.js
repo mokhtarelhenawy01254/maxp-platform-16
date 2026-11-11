@@ -1,5 +1,7 @@
-const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const sharedDatabase = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+
+const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 
 const getAll = async (req, res) => {
   try {
@@ -27,12 +29,32 @@ const create = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
-    const { subjectId, name, description, hoursCount, sessionDuration, price, levelNumber, ageFrom, ageTo } = req.body;
+    let { subjectId, name, description, hoursCount, sessionDuration, price, levelNumber, ageFrom, ageTo } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ success: false, error: 'اسم الباقة مطلوب' });
-    if (!subjectId) return res.status(400).json({ success: false, error: 'المادة مطلوبة' });
     if (!hoursCount || hoursCount <= 0) return res.status(400).json({ success: false, error: 'عدد الساعات يجب أن يكون أكبر من صفر' });
 
-    const data = await getSharedPrismaClient().educationPackage.create({
+    const prisma = getSharedPrismaClient();
+
+    // In Courses/Packages mode, subjectId might be omitted. Auto-resolve to default company subject.
+    if (!subjectId) {
+      let defaultSubject = await prisma.educationSubject.findFirst({
+        where: { companyId, isActive: true },
+        orderBy: { createdAt: 'asc' }
+      });
+      if (!defaultSubject) {
+        defaultSubject = await prisma.educationSubject.create({
+          data: {
+            companyId,
+            name: 'عام',
+            description: 'تصنيف عام للكورسات والباقات',
+            isActive: true
+          }
+        });
+      }
+      subjectId = defaultSubject.id;
+    }
+
+    const data = await prisma.educationPackage.create({
       data: { companyId, subjectId, name: name.trim(), description, hoursCount, sessionDuration, price,
         levelNumber: levelNumber ? Number(levelNumber) : null,
         ageFrom: ageFrom ? Number(ageFrom) : null,
@@ -72,7 +94,8 @@ const update = async (req, res) => {
     const data = await getSharedPrismaClient().educationPackage.update({
       where: { id },
       data: {
-        subjectId, name, description, hoursCount, sessionDuration, price, isActive,
+        ...(subjectId ? { subjectId } : {}),
+        name, description, hoursCount, sessionDuration, price, isActive,
         ...(levelNumber !== undefined ? { levelNumber: levelNumber === null ? null : Number(levelNumber) } : {}),
         ...(ageFrom !== undefined ? { ageFrom: ageFrom === null ? null : Number(ageFrom) } : {}),
         ...(ageTo !== undefined ? { ageTo: ageTo === null ? null : Number(ageTo) } : {}),

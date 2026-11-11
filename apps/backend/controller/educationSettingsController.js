@@ -223,6 +223,12 @@ const getSettings = async (req, res) => {
     const systemTitle = savedEducation.systemTitle || appCustomName || "النظام التعليمي";
     const systemTitleEn = savedEducation.systemTitleEn || "Education System";
 
+    // Mode: COURSES (Default) vs ACADEMIC
+    const educationMode = savedEducation.educationMode || (savedEducation.enableSubjects ? 'ACADEMIC' : 'COURSES');
+    const enableSubjects = savedEducation.enableSubjects !== undefined
+      ? Boolean(savedEducation.enableSubjects)
+      : (educationMode === 'ACADEMIC');
+
     // Merge saved tabs with default tabs to guarantee all tabs exist
     const savedTabs = Array.isArray(savedEducation.tabs) ? savedEducation.tabs : [];
     const savedTabsMap = new Map();
@@ -234,17 +240,19 @@ const getSettings = async (req, res) => {
 
     const mergedTabs = DEFAULT_EDUCATION_TABS.map((defTab, idx) => {
       const saved = savedTabsMap.get(defTab.id.toLowerCase());
+      const isSubjectsTab = defTab.id.toLowerCase() === 'subjects';
       if (saved) {
         return {
           ...defTab,
           labelAr: typeof saved.labelAr === 'string' && saved.labelAr.trim() ? saved.labelAr.trim() : defTab.labelAr,
           labelEn: typeof saved.labelEn === 'string' && saved.labelEn.trim() ? saved.labelEn.trim() : defTab.labelEn,
-          visible: defTab.locked ? true : (saved.visible !== false),
+          visible: defTab.locked ? true : (isSubjectsTab ? (enableSubjects && saved.visible !== false) : (saved.visible !== false)),
           order: typeof saved.order === 'number' ? saved.order : idx
         };
       }
       return {
         ...defTab,
+        visible: defTab.locked ? true : (isSubjectsTab ? enableSubjects : defTab.visible),
         order: idx
       };
     });
@@ -260,6 +268,8 @@ const getSettings = async (req, res) => {
       data: {
         systemTitle,
         systemTitleEn,
+        educationMode,
+        enableSubjects,
         tabs: mergedTabs
       }
     });
@@ -284,7 +294,7 @@ const updateSettings = async (req, res) => {
     const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
-    const { systemTitle, systemTitleEn, tabs } = req.body || {};
+    const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects } = req.body || {};
 
     let sanitizedTitle = "النظام التعليمي";
     if (systemTitle !== undefined && systemTitle !== null) {
@@ -314,6 +324,32 @@ const updateSettings = async (req, res) => {
       }
     }
 
+    const prisma = sharedDatabase.getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'الشركة غير موجودة' });
+    }
+
+    let currentSettings = {};
+    try {
+      currentSettings = company.settings ? JSON.parse(company.settings) : {};
+    } catch {
+      currentSettings = {};
+    }
+
+    const existingEdu = currentSettings.educationSettings || {};
+    const resolvedMode = educationMode !== undefined
+      ? (educationMode === 'ACADEMIC' ? 'ACADEMIC' : 'COURSES')
+      : (existingEdu.educationMode || (existingEdu.enableSubjects ? 'ACADEMIC' : 'COURSES'));
+
+    const resolvedEnableSubjects = enableSubjects !== undefined
+      ? Boolean(enableSubjects)
+      : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : (resolvedMode === 'ACADEMIC'));
+
     let validatedTabs = [];
     if (Array.isArray(tabs)) {
       for (let i = 0; i < tabs.length; i++) {
@@ -336,7 +372,8 @@ const updateSettings = async (req, res) => {
         const labelEn = sanitize(String(rawLabelEn || defaultLabelEn)).slice(0, 60);
 
         const order = typeof item.order === 'number' && Number.isFinite(item.order) ? item.order : i;
-        const visible = locked ? true : (item.visible !== false);
+        const isSubjectsTab = id.toLowerCase() === 'subjects';
+        const visible = locked ? true : (isSubjectsTab ? resolvedEnableSubjects : (item.visible !== false));
 
         validatedTabs.push({
           id,
@@ -352,15 +389,23 @@ const updateSettings = async (req, res) => {
         });
       }
     } else {
-      validatedTabs = DEFAULT_EDUCATION_TABS;
+      validatedTabs = DEFAULT_EDUCATION_TABS.map((def) => {
+        const isSubjectsTab = def.id.toLowerCase() === 'subjects';
+        return {
+          ...def,
+          visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : def.visible)
+        };
+      });
     }
 
     // Ensure all default tabs are present even if omitted by the frontend
     const existingIds = new Set(validatedTabs.map((t) => t.id.toLowerCase()));
     DEFAULT_EDUCATION_TABS.forEach((def, defIdx) => {
       if (!existingIds.has(def.id.toLowerCase())) {
+        const isSubjectsTab = def.id.toLowerCase() === 'subjects';
         validatedTabs.push({
           ...def,
+          visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : def.visible),
           order: validatedTabs.length + defIdx
         });
       }
@@ -371,27 +416,12 @@ const updateSettings = async (req, res) => {
       t.order = idx;
     });
 
-    const prisma = sharedDatabase.getSharedPrismaClient();
-    const company = await prisma.company.findUnique({
-      where: { id: companyId },
-      select: { settings: true }
-    });
-
-    if (!company) {
-      return res.status(404).json({ success: false, message: 'الشركة غير موجودة' });
-    }
-
-    let currentSettings = {};
-    try {
-      currentSettings = company.settings ? JSON.parse(company.settings) : {};
-    } catch {
-      currentSettings = {};
-    }
-
     // 1. Save educationSettings
     currentSettings.educationSettings = {
       systemTitle: sanitizedTitle,
       systemTitleEn: sanitizedTitleEn,
+      educationMode: resolvedMode,
+      enableSubjects: resolvedEnableSubjects,
       tabs: validatedTabs
     };
 
@@ -466,6 +496,8 @@ const updateSettings = async (req, res) => {
       data: {
         systemTitle: sanitizedTitle,
         systemTitleEn: sanitizedTitleEn,
+        educationMode: resolvedMode,
+        enableSubjects: resolvedEnableSubjects,
         tabs: validatedTabs
       },
       message: 'تم حفظ إعدادات النظام التعليمي بنجاح'

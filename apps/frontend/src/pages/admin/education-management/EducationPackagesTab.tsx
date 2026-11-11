@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import type { EducationPackage, EducationSubject } from "./types";
 import { PackageModal } from "./PackageModal";
@@ -6,6 +7,7 @@ import { PackageModal } from "./PackageModal";
 export interface EducationPackagesTabProps {
   packages: EducationPackage[];
   subjects: EducationSubject[];
+  enableSubjects?: boolean;
   packageSubjectFilter: string;
   setPackageSubjectFilter: (f: string) => void;
   packageModal: Partial<EducationPackage> | null | undefined;
@@ -18,6 +20,7 @@ export interface EducationPackagesTabProps {
 export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
   packages,
   subjects,
+  enableSubjects = false,
   packageSubjectFilter,
   setPackageSubjectFilter,
   packageModal,
@@ -26,38 +29,43 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
   handleTogglePackage,
   handleDeletePackage,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const filtered = packages.filter(
-    (p) => !packageSubjectFilter || p.subjectId === packageSubjectFilter
+    (p) => (!enableSubjects || !packageSubjectFilter ? true : p.subjectId === packageSubjectFilter)
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? "ltr" : "rtl"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">
-          إدارة باقات الحصص
+          {t("education.packages.title", isEn ? "Session Packages Management" : "إدارة باقات الحصص")}
         </h2>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:w-48"
-            value={packageSubjectFilter}
-            onChange={(e) => setPackageSubjectFilter(e.target.value)}
-          >
-            <option value="">كل المواد</option>
-            {subjects
-              .filter((s) => s.isActive)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-          </select>
+          {enableSubjects && (
+            <select
+              className="bg-background border border-input rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary flex-1 sm:w-48"
+              value={packageSubjectFilter}
+              onChange={(e) => setPackageSubjectFilter(e.target.value)}
+            >
+              <option value="">{t("education.packages.allSubjects", isEn ? "All Subjects" : "كل المواد")}</option>
+              {subjects
+                .filter((s) => s.isActive)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
+          )}
           <button
             type="button"
             onClick={() => setPackageModal({})}
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            إضافة باقة
+            {t("education.packages.addPackage", isEn ? "Add Package" : "إضافة باقة")}
           </button>
         </div>
       </div>
@@ -75,9 +83,11 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
                 <h3 className="font-semibold text-sm text-foreground">
                   {p.name}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {p.subject?.name || "—"}
-                </p>
+                {enableSubjects && p.subject?.name && (
+                  <p className="text-xs text-muted-foreground">
+                    {p.subject.name}
+                  </p>
+                )}
               </div>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
@@ -86,19 +96,21 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
                     : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                 }`}
               >
-                {p.isActive ? "نشط" : "معطل"}
+                {p.isActive
+                  ? t("education.statuses.ACTIVE", isEn ? "Active" : "نشط")
+                  : t("education.statuses.INACTIVE", isEn ? "Inactive" : "معطل")}
               </span>
             </div>
 
             <div className="flex flex-wrap gap-1.5 text-xs">
               <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums">
-                {p.hoursCount} ساعة
+                {t("education.packages.hours", { count: p.hoursCount, defaultValue: isEn ? `${p.hoursCount} hours` : `${p.hoursCount} ساعة` })}
               </span>
               <span className="bg-muted/60 text-muted-foreground px-2 py-0.5 rounded-md font-mono tabular-nums">
-                {p.sessionDuration} دقيقة/حصة
+                {t("education.packages.duration", { count: p.sessionDuration, defaultValue: isEn ? `${p.sessionDuration} min/session` : `${p.sessionDuration} دقيقة/حصة` })}
               </span>
               <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums font-semibold">
-                {p.price} ج.م
+                {t("education.packages.priceWithCurrency", { price: p.price, defaultValue: isEn ? `${p.price} EGP` : `${p.price} ج.م` })}
               </span>
             </div>
 
@@ -115,7 +127,7 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
                 className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-muted/60 text-foreground hover:bg-muted text-xs rounded-lg transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
-                تعديل
+                {t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               </button>
               <button
                 type="button"
@@ -126,13 +138,15 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
                     : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                 }`}
               >
-                {p.isActive ? "تعطيل" : "تفعيل"}
+                {p.isActive
+                  ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل")
+                  : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
               </button>
               <button
                 type="button"
                 onClick={() => handleDeletePackage(p.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                title="حذف الباقة"
+                title={t("education.packages.deletePackage", isEn ? "Delete Package" : "حذف الباقة")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -141,7 +155,7 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full text-center py-12 text-xs text-muted-foreground">
-            لا توجد باقات مسجلة
+            {t("education.packages.empty", isEn ? "No registered packages" : "لا توجد باقات مسجلة")}
           </p>
         )}
       </div>
@@ -149,6 +163,7 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
         <PackageModal
           pkg={packageModal}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           onClose={() => setPackageModal(undefined)}
           onSave={handleSavePackage}
         />

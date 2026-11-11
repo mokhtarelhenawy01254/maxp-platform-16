@@ -49,6 +49,8 @@ export interface EducationTabConfig {
 export interface EducationSettingsData {
   systemTitle: string;
   systemTitleEn: string;
+  educationMode?: "COURSES" | "ACADEMIC";
+  enableSubjects?: boolean;
   tabs: EducationTabConfig[];
 }
 
@@ -164,6 +166,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [saving, setSaving] = useState(false);
   const [systemTitle, setSystemTitle] = useState("النظام التعليمي");
   const [systemTitleEn, setSystemTitleEn] = useState("Education System");
+  const [educationMode, setEducationMode] = useState<"COURSES" | "ACADEMIC">("COURSES");
+  const [enableSubjects, setEnableSubjects] = useState<boolean>(false);
   const [tabs, setTabs] = useState<EducationTabConfig[]>([]);
   const [initialData, setInitialData] = useState<EducationSettingsData | null>(null);
 
@@ -175,6 +179,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       if (data) {
         setSystemTitle(data.systemTitle || "النظام التعليمي");
         setSystemTitleEn(data.systemTitleEn || "Education System");
+        const mode = data.educationMode || (data.enableSubjects ? "ACADEMIC" : "COURSES");
+        setEducationMode(mode);
+        const subjectsActive = data.enableSubjects !== undefined ? Boolean(data.enableSubjects) : (mode === "ACADEMIC");
+        setEnableSubjects(subjectsActive);
         setTabs(data.tabs || []);
         setInitialData(data);
       }
@@ -183,6 +191,25 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleModeChange = (mode: "COURSES" | "ACADEMIC") => {
+    setEducationMode(mode);
+    const subjectsOn = mode === "ACADEMIC";
+    setEnableSubjects(subjectsOn);
+    setTabs((prev) =>
+      prev.map((t) => {
+        if (t.id.toLowerCase() === "subjects") {
+          return { ...t, visible: subjectsOn };
+        }
+        return t;
+      })
+    );
+    toast.info(
+      mode === "COURSES"
+        ? "تم اختيار نمط الكورسات والباقات (المواد مخفية كوضع افتراضي)"
+        : "تم اختيار نمط السناتر والمواد الدراسية (المواد مفعلة)"
+    );
   };
 
   useEffect(() => {
@@ -291,13 +318,15 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       const payload = {
         systemTitle: systemTitle.trim(),
         systemTitleEn: systemTitleEn.trim(),
+        educationMode,
+        enableSubjects,
         tabs: tabs.map((t, idx) => ({
           id: t.id,
           key: t.key,
           labelAr: t.labelAr.trim() || t.defaultLabelAr,
           labelEn: t.labelEn.trim() || t.defaultLabelEn,
           order: idx,
-          visible: t.locked ? true : t.visible,
+          visible: t.id.toLowerCase() === "subjects" ? enableSubjects : (t.locked ? true : t.visible),
         })),
       };
 
@@ -316,9 +345,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         onSaved({
           systemTitle: payload.systemTitle,
           systemTitleEn: payload.systemTitleEn,
+          educationMode,
+          enableSubjects,
           tabs: tabs.map((t, idx) => ({
             ...t,
             order: idx,
+            visible: t.id.toLowerCase() === "subjects" ? enableSubjects : (t.locked ? true : t.visible),
           })),
         });
       }
@@ -385,6 +417,122 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             )}
             حفظ التعديلات
           </button>
+        </div>
+      </div>
+
+      {/* 0. Operating Mode Selector: Courses/Packages (Default) vs Academic Subjects */}
+      <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-primary" />
+              نمط تشغيل المنظومة وسكاشن المواد الدراسية
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              حدد كيف يعمل نظامك التعليمي: نظام باقات وكورسات مباشرة بدون تشتيت، أو نظام سنتر أكاديمي بمواد دراسية
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+            educationMode === "COURSES"
+              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+          }`}>
+            النمط المختار: {educationMode === "COURSES" ? "🎯 كورسات وباقات (المواد مخفية)" : "🏫 سنتر ومواد دراسية"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* Option 1: Courses & Packages (Default) */}
+          <div
+            onClick={() => handleModeChange("COURSES")}
+            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+              educationMode === "COURSES"
+                ? "border-primary bg-primary/5 shadow-xs"
+                : "border-border/70 hover:border-primary/40 bg-card hover:bg-muted/30"
+            }`}
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg border ${
+                    educationMode === "COURSES"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}>
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">
+                      أكاديمية تدريب وكورسات وباقات
+                    </h4>
+                    <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      (الوضع الافتراضي)
+                    </span>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  educationMode === "COURSES"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/40"
+                }`}>
+                  {educationMode === "COURSES" && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                مخصص لأكاديميات ومراكز الكورسات (برمجة، لغات، مهارات، باقات ساعات). يتم <strong>إخفاء سيكشن وخانات المواد الدراسية</strong> تلقائياً لتوفير واجهة خفيفة، وإنشاء الباقات والكورسات مباشرة بدون تعقيد.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/40 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
+              <span>سيكشن المواد: <strong className="text-red-500">مخفي</strong></span>
+              <span>إنشاء الباقة: <strong className="text-emerald-600 dark:text-emerald-400">مباشر بدون مادة</strong></span>
+            </div>
+          </div>
+
+          {/* Option 2: Academic Subjects */}
+          <div
+            onClick={() => handleModeChange("ACADEMIC")}
+            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+              educationMode === "ACADEMIC"
+                ? "border-primary bg-primary/5 shadow-xs"
+                : "border-border/70 hover:border-primary/40 bg-card hover:bg-muted/30"
+            }`}
+          >
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg border ${
+                    educationMode === "ACADEMIC"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted text-muted-foreground border-border"
+                  }`}>
+                    <School className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">
+                      سنتر دراسي ومواد تعليمية
+                    </h4>
+                    <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                      (نظام أكاديمي ومدرسي)
+                    </span>
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  educationMode === "ACADEMIC"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/40"
+                }`}>
+                  {educationMode === "ACADEMIC" && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                مخصص للمدارس والسناتر ومراكز الدروس الخصوصية. يُفعّل <strong>سيكشن المواد الدراسية</strong> (فيزياء، كيمياء، لغات..) وخانات اختيار المواد في الباقات، وربط المدرسين بتخصصاتهم وأسعارهم.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/40 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
+              <span>سيكشن المواد: <strong className="text-emerald-600 dark:text-emerald-400">مفعل وظاهر</strong></span>
+              <span>إنشاء الباقة: <strong className="text-blue-600 dark:text-blue-400">ربط بالمادة إجباري</strong></span>
+            </div>
+          </div>
         </div>
       </div>
 
