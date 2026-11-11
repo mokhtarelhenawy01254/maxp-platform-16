@@ -186,6 +186,22 @@ async function getAppByKey(key = PRIMARY_APP_KEY) {
 async function getSafeAppsList() {
   const apps = await getAllApps();
 
+  // التطبيق الافتراضي للتسجيل يُقرأ بـ SQL خام حتى لا نعتمد على إعادة توليد Prisma Client
+  let defaultSignupKey = null;
+  try {
+    await ensureSchema();
+    const prisma = getPrismaClient();
+    if (prisma?.$queryRawUnsafe) {
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT "key" FROM "facebook_apps" WHERE "isDefaultForSignup" = true LIMIT 1`
+      );
+      const key = Array.isArray(rows) ? rows[0]?.key : null;
+      defaultSignupKey = key ? String(key).trim().toLowerCase() : null;
+    }
+  } catch (_) {
+    defaultSignupKey = null;
+  }
+
   return apps.map((app) => ({
     id: app.id || `app-${app.key}`,
     key: app.key,
@@ -194,6 +210,7 @@ async function getSafeAppsList() {
     appSecretRef: app.appSecretRef,
     webhookVerifyTokenRef: app.webhookVerifyTokenRef,
     isActive: Boolean(app.isActive),
+    isDefaultForSignup: defaultSignupKey ? String(app.key).toLowerCase() === defaultSignupKey : false,
     hasSecretConfigured: Boolean(app.appSecret && !isPlaceholderFacebookCredential(app.appSecret)),
     hasVerifyTokenConfigured: Boolean(app.webhookVerifyToken),
     createdAt: app.createdAt,
@@ -268,6 +285,57 @@ async function toggleAppStatus(key, isActive) {
 }
 
 /**
+ * جلب مفتاح التطبيق الافتراضي المستخدم عند تسجيل/ربط عملاء جدد
+ * يرجع 'primary' كافتراضي آمن عندما لا يوجد تطبيق مُعلَّم أو عند فشل القراءة.
+ * @returns {Promise<string>}
+ */
+async function getDefaultSignupAppKey() {
+  try {
+    await ensureSchema();
+    const prisma = getPrismaClient();
+    if (!prisma?.$queryRawUnsafe) return PRIMARY_APP_KEY;
+
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT "key" FROM "facebook_apps" WHERE "isDefaultForSignup" = true AND "isActive" = true LIMIT 1`
+    );
+    const key = Array.isArray(rows) ? rows[0]?.key : null;
+    return key ? String(key).trim().toLowerCase() : PRIMARY_APP_KEY;
+  } catch (err) {
+    console.warn('[META-APP-REGISTRY] تعذر قراءة التطبيق الافتراضي للتسجيل:', err?.message || err);
+    return PRIMARY_APP_KEY;
+  }
+}
+
+/**
+ * تعيين التطبيق الافتراضي للتسجيل (يُستخدم في مسار OAuth عند عدم تمرير app صريح)
+ * @param {string} key
+ * @returns {Promise<{key: string}>}
+ */
+async function setDefaultSignupAppKey(key) {
+  const normalizedKey = String(key || PRIMARY_APP_KEY).trim().toLowerCase();
+  const prisma = getPrismaClient();
+  if (!prisma?.$executeRawUnsafe) {
+    throw new Error('قاعدة البيانات غير متوفرة لتعيين التطبيق الافتراضي');
+  }
+
+  await ensureSchema();
+
+  const app = await prisma.facebookApp.findUnique({ where: { key: normalizedKey } });
+  if (!app) throw new Error('التطبيق غير مسجّل في سجل التطبيقات');
+  if (!app.isActive) throw new Error('لا يمكن تعيين تطبيق معطّل كتطبيق افتراضي للتسجيل');
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "facebook_apps" SET "isDefaultForSignup" = false WHERE "isDefaultForSignup" = true`
+  );
+  await prisma.$executeRawUnsafe(
+    `UPDATE "facebook_apps" SET "isDefaultForSignup" = true, "updatedAt" = CURRENT_TIMESTAMP WHERE "key" = $1`,
+    normalizedKey
+  );
+
+  return { key: normalizedKey };
+}
+
+/**
  * التأكد من وجود التطبيقات الافتراضية في قاعدة البيانات (Seeding)
  */
 async function ensureDefaultAppsSeeded() {
@@ -322,9 +390,11 @@ async function ensureSchema() {
         "configId" TEXT,
         "webhookVerifyTokenRef" TEXT,
         "isActive" BOOLEAN NOT NULL DEFAULT true,
+        "isDefaultForSignup" BOOLEAN NOT NULL DEFAULT false,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );`,
+      `ALTER TABLE "facebook_apps" ADD COLUMN IF NOT EXISTS "isDefaultForSignup" BOOLEAN NOT NULL DEFAULT false;`,
       `CREATE TABLE IF NOT EXISTS "webhook_event_dedupe" (
         "id" TEXT PRIMARY KEY,
         "channel" TEXT NOT NULL DEFAULT 'facebook',
@@ -698,6 +768,8 @@ module.exports = {
   getSafeAppsList,
   upsertApp,
   toggleAppStatus,
+  getDefaultSignupAppKey,
+  setDefaultSignupAppKey,
   ensureDefaultAppsSeeded,
   ensureSchema,
   testAppConnection,

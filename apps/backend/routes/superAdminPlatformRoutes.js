@@ -76,6 +76,7 @@ router.get('/business-specialties/app-options', platformSpecialtyController.getM
 router.get(['/meta-apps', '/facebook-apps'], superAdminPlatformController.getMetaApps);
 router.post(['/meta-apps', '/facebook-apps'], superAdminPlatformController.upsertMetaApp);
 router.patch(['/meta-apps/:key/toggle', '/facebook-apps/:key/toggle'], superAdminPlatformController.toggleMetaAppStatus);
+router.patch(['/meta-apps/:key/default', '/facebook-apps/:key/default'], superAdminPlatformController.setDefaultMetaApp);
 router.post(['/meta-apps/:key/test-connection', '/facebook-apps/:key/test-connection'], superAdminPlatformController.testMetaAppConnection);
 
 // Platform Central Settings

@@ -182,10 +182,12 @@ exports.toggleMetaAppStatus = async (req, res) => {
     const { isActive } = req.body || {};
 
     const normalizedKey = String(key || '').trim().toLowerCase();
-    if (!['primary', 'growth'].includes(normalizedKey)) {
+    const knownApps = await metaAppRegistry.getAllApps().catch(() => []);
+    const knownKeys = (knownApps || []).map((a) => String(a.key || '').toLowerCase());
+    if (!normalizedKey || (knownKeys.length && !knownKeys.includes(normalizedKey))) {
       return res.status(400).json({
         success: false,
-        message: 'مفتاح التطبيق غير صالح (يجب أن يكون primary أو growth)'
+        message: 'مفتاح التطبيق غير مسجّل في سجل التطبيقات'
       });
     }
 
@@ -200,6 +202,37 @@ exports.toggleMetaAppStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'فشل في تعديل حالة تطبيق فيسبوك',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route PATCH /api/v1/super-admin/platform/meta-apps/:key/default
+ * @desc تعيين التطبيق الافتراضي المستخدم عند تسجيل/ربط الشركات الجديدة
+ * @access Super Admin
+ */
+exports.setDefaultMetaApp = async (req, res) => {
+  try {
+    const metaAppRegistry = require('../services/metaAppRegistryService');
+    const { key } = req.params;
+
+    const normalizedKey = String(key || '').trim().toLowerCase();
+    if (!normalizedKey) {
+      return res.status(400).json({ success: false, message: 'مفتاح التطبيق مطلوب' });
+    }
+
+    const result = await metaAppRegistry.setDefaultSignupAppKey(normalizedKey);
+    return res.json({
+      success: true,
+      message: `تم تعيين تطبيق ${normalizedKey} كتطبيق افتراضي للعملاء الجدد`,
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ Error setting default meta app:', error);
+    return res.status(400).json({
+      success: false,
+      message: 'فشل في تعيين التطبيق الافتراضي',
       error: error.message
     });
   }

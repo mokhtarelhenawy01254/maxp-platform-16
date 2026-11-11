@@ -8,6 +8,7 @@ export interface MetaApp {
   appSecretRef: string;
   webhookVerifyTokenRef?: string | null;
   isActive: boolean;
+  isDefaultForSignup?: boolean;
   hasSecretConfigured: boolean;
   hasVerifyTokenConfigured: boolean;
   createdAt?: string | null;
@@ -61,6 +62,12 @@ export const metaAppsService = {
     const response = await apiClient.patch(`/super-admin/platform/meta-apps/${key}/toggle`, {
       isActive,
     });
+    const resData = response?.data as any;
+    return resData?.data || resData;
+  },
+
+  async setDefaultForSignup(key: string): Promise<{ key: string }> {
+    const response = await apiClient.patch(`/super-admin/platform/meta-apps/${key}/default`);
     const resData = response?.data as any;
     return resData?.data || resData;
   },

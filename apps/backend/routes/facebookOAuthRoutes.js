@@ -40,6 +40,11 @@ const {
   getFacebookAppKeyConfig,
 } = require("../config/facebookAppConfig");
 
+// سجل تطبيقات Meta المتعددة: يحدد التطبيق الافتراضي للعملاء الجدد عند عدم تمرير app صريح
+// (fallback آمن إلى 'primary' لو الجدول غير متاح — نفس السلوك القديم تمامًا)
+const { getDefaultSignupAppKey } = require("../services/metaAppRegistryService");
+const { resolveFacebookAppKeyForCompany } = require("../services/facebookAppResolver");
+
 // Facebook OAuth Configuration — single source of truth: facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 function getFacebookAppConfig() {
   const config = getFacebookOAuthConfig();
@@ -1381,7 +1386,13 @@ router.get(
   verifyToken.requireRole(["OWNER", "MANAGER", "COMPANY_ADMIN", "SUPER_ADMIN"]),
   async (req, res) => {
     try {
-      const requestedAppKey = (req.query.app || req.query.facebookAppKey || req.query.appKey || "primary").trim().toLowerCase();
+      const explicitAppKey = req.query.app || req.query.facebookAppKey || req.query.appKey;
+      const requestedAppKey = String(
+        explicitAppKey
+          || (req.query.companyId ? await resolveFacebookAppKeyForCompany(req.query.companyId) : "")
+          || (await getDefaultSignupAppKey())
+          || "primary"
+      ).trim().toLowerCase();
       const appConfig = getFacebookAppKeyConfig(requestedAppKey);
       const appId = appConfig.appId || getFacebookOAuthConfig().appId;
       const { companyId, popup } = req.query;
@@ -1451,7 +1462,13 @@ router.get(
  */
 router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
   try {
-    const requestedAppKey = (req.query.app || req.query.facebookAppKey || req.query.appKey || "primary").trim().toLowerCase();
+    const explicitAppKey = req.query.app || req.query.facebookAppKey || req.query.appKey;
+    const requestedAppKey = String(
+      explicitAppKey
+        || (req.query.companyId ? await resolveFacebookAppKeyForCompany(req.query.companyId) : "")
+        || (await getDefaultSignupAppKey())
+        || "primary"
+    ).trim().toLowerCase();
     const appConfig = getFacebookAppKeyConfig(requestedAppKey);
     const appId = appConfig.appId || getFacebookOAuthConfig().appId;
     const { companyId, popup } = req.query;

@@ -89,6 +89,16 @@ export default function MetaAppsManagement() {
     }
   };
 
+  const handleSetDefaultForSignup = async (key: string) => {
+    try {
+      await metaAppsService.setDefaultForSignup(key);
+      toast.success(`تم تعيين تطبيق ${key} كتطبيق افتراضي للعملاء الجدد`);
+      setApps((prev) => prev.map((app) => ({ ...app, isDefaultForSignup: app.key === key })));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "فشل في تعيين التطبيق الافتراضي");
+    }
+  };
+
   const handleOpenEdit = (app: MetaApp) => {
     setSelectedApp(app);
     setFormData({
@@ -367,6 +377,17 @@ export default function MetaAppsManagement() {
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${testingKey === app.key ? "animate-spin" : ""}`} />
                     {testingKey === app.key ? "جاري الفحص..." : "فحص الاتصال والصلاحيات"}
+                  </Button>
+
+                  <Button
+                    variant={app.isDefaultForSignup ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleSetDefaultForSignup(app.key)}
+                    disabled={app.isDefaultForSignup || !app.isActive}
+                    className="flex items-center gap-1.5 text-xs h-8"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {app.isDefaultForSignup ? "افتراضي للعملاء الجدد" : "تعيين كافتراضي للتسجيل"}
                   </Button>
 
                   <Button
