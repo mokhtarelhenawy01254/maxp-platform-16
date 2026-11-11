@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   Settings,
   Sparkles,
@@ -73,7 +74,9 @@ const PRESETS = [
   {
     id: "school",
     name: "مراكز تعليمية ومدارس",
+    nameEn: "Educational Centers & Schools",
     desc: "المعلمين، الطلاب، الحصص، والمواد الدراسية",
+    descEn: "Teachers, students, lessons, and academic subjects",
     icon: School,
     badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     systemTitle: "النظام التعليمي والدروس",
@@ -94,7 +97,9 @@ const PRESETS = [
   {
     id: "engineering",
     name: "مراكز تدريب هندسي وتقني",
+    nameEn: "Engineering & Technical Centers",
     desc: "المهندسين، المتدربين، الورش والمشاريع",
+    descEn: "Engineers, trainees, workshops, and technical projects",
     icon: Cpu,
     badgeColor: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
     systemTitle: "نظام المركز الهندسي والتقني",
@@ -115,7 +120,9 @@ const PRESETS = [
   {
     id: "academy",
     name: "أكاديميات تدريب وكورسات",
+    nameEn: "Training Academies & Courses",
     desc: "المدربين، الدارسين، البرامج والكورسات",
+    descEn: "Trainers, learners, courses, and programs",
     icon: Briefcase,
     badgeColor: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
     systemTitle: "أكاديمية التدريب والتطوير",
@@ -136,7 +143,9 @@ const PRESETS = [
   {
     id: "institute",
     name: "معاهد وجامعات أكاديمية",
+    nameEn: "Academic Institutes & Universities",
     desc: "هيئة التدريس، الطلاب، والمقررات",
+    descEn: "Faculty members, students, and curriculum",
     icon: Building2,
     badgeColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
     systemTitle: "نظام المعهد الأكاديمي",
@@ -161,6 +170,8 @@ interface EducationSettingsTabProps {
 }
 
 export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const { refreshSettings } = useSidebarSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -187,7 +198,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         setInitialData(data);
       }
     } catch (err: any) {
-      toast.error(err.message || "تعذر جلب إعدادات النظام التعليمي");
+      toast.error(err.message || (isEn ? "Failed to load education system settings" : "تعذر جلب إعدادات النظام التعليمي"));
     } finally {
       setLoading(false);
     }
@@ -207,8 +218,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     );
     toast.info(
       mode === "COURSES"
-        ? "تم اختيار نمط الكورسات والباقات (المواد مخفية كوضع افتراضي)"
-        : "تم اختيار نمط السناتر والمواد الدراسية (المواد مفعلة)"
+        ? (isEn ? "Courses & packages mode selected (subjects hidden by default)" : "تم اختيار نمط الكورسات والباقات (المواد مخفية كوضع افتراضي)")
+        : (isEn ? "Academic center mode selected (subjects enabled)" : "تم اختيار نمط السناتر والمواد الدراسية (المواد مفعلة)")
     );
   };
 
@@ -233,7 +244,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         return tab;
       })
     );
-    toast.success(`تم تطبيق قالب "${preset.name}" — اضغط حفظ لتطبيق التغييرات`);
+    const presetName = isEn ? (preset.nameEn || preset.name) : preset.name;
+    toast.success(
+      isEn
+        ? `Applied "${presetName}" preset — click Save to apply changes`
+        : `تم تطبيق قالب "${presetName}" — اضغط حفظ لتطبيق التغييرات`
+    );
   };
 
   // Reorder tab
@@ -256,7 +272,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       prev.map((t, i) => {
         if (i === index) {
           if (t.locked) {
-            toast.info("هذا التاب أساسي لا يمكن إخفاؤه لضمان الوصول للإعدادات");
+            toast.info(isEn ? "This tab is required to ensure settings access" : "هذا التاب أساسي لا يمكن إخفاؤه لضمان الوصول للإعدادات");
             return t;
           }
           return { ...t, visible: !t.visible };
@@ -292,7 +308,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         return t;
       })
     );
-    toast.info("تمت استعادة الاسم الافتراضي لهذا العنصر");
+    toast.info(isEn ? "Restored default label for this item" : "تمت استعادة الاسم الافتراضي لهذا العنصر");
   };
 
   // Reset all to system defaults
@@ -308,7 +324,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         order: i,
       }))
     );
-    toast.info("تمت استعادة كافة المسميات والتابات الافتراضية");
+    toast.info(isEn ? "All labels and tabs restored to system defaults" : "تمت استعادة كافة المسميات والتابات الافتراضية");
   };
 
   // Save to backend
@@ -335,7 +351,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         body: JSON.stringify(payload),
       });
 
-      toast.success("تم حفظ إعدادات النظام التعليمي وتحديث القائمة الجانبية بنجاح");
+      toast.success(isEn ? "Education settings saved and sidebar updated successfully" : "تم حفظ إعدادات النظام التعليمي وتحديث القائمة الجانبية بنجاح");
 
       if (refreshSettings) {
         refreshSettings();
@@ -355,7 +371,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         });
       }
     } catch (err: any) {
-      toast.error(err.message || "فشل حفظ إعدادات النظام التعليمي");
+      toast.error(err.message || (isEn ? "Failed to save education settings" : "فشل حفظ إعدادات النظام التعليمي"));
     } finally {
       setSaving(false);
     }
@@ -367,31 +383,35 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-mono">جاري تحميل إعدادات النظام التعليمي...</span>
+        <span className="text-xs font-mono">
+          {t("education.settingsTab.loading", isEn ? "Loading education settings..." : "جاري تحميل إعدادات النظام التعليمي...")}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-12" dir="rtl">
+    <div className="space-y-6 pb-12" dir={isEn ? "ltr" : "rtl"}>
       {/* Top Banner */}
       <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
               <Settings className="w-3.5 h-3.5" />
-              تخصيص الواجهة والسكاشن
+              {t("education.settingsTab.badge", isEn ? "Interface & Sections Customization" : "تخصيص الواجهة والسكاشن")}
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {visibleCount} من {tabs.length} سكاشن ظاهرة
+              {isEn ? `${visibleCount} of ${tabs.length} sections visible` : `${visibleCount} من ${tabs.length} سكاشن ظاهرة`}
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            إعدادات مسميات وسكاشن النظام التعليمي
+            {t("education.settingsTab.title", isEn ? "Education System Labels & Sections Settings" : "إعدادات مسميات وسكاشن النظام التعليمي")}
           </h2>
           <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-            تحكم بحرية كاملة في الاسم الرئيسي للنظام وتخصيص أسماء السكاشن والقوائم الجانبية (مثل تغيير سكشن "المهندسين" إلى "المعلمين" أو "المدربين" أو "المحاضرين") وترتيبها وإظهارها أو إخفائها.
+            {t("education.settingsTab.description", isEn
+              ? "Full control over system branding, sidebar section labels, display order, and visibility."
+              : "تحكم بحرية كاملة في الاسم الرئيسي للنظام وتخصيص أسماء السكاشن والقوائم الجانبية وترتيبها وإظهارها أو إخفائها.")}
           </p>
         </div>
 
@@ -402,7 +422,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold rounded-xl border border-border/60 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-            استعادة الافتراضي
+            {t("education.settingsTab.resetDefaults", isEn ? "Reset Defaults" : "استعادة الافتراضي")}
           </button>
           <button
             type="button"
@@ -415,7 +435,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             ) : (
               <Save className="w-3.5 h-3.5" />
             )}
-            حفظ التعديلات
+            {t("education.settingsTab.saveChanges", isEn ? "Save Changes" : "حفظ التعديلات")}
           </button>
         </div>
       </div>
@@ -426,10 +446,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-primary" />
-              نمط تشغيل المنظومة وسكاشن المواد الدراسية
+              {t("education.settingsTab.modeTitle", isEn ? "Operation Mode & Academic Sections" : "نمط تشغيل المنظومة وسكاشن المواد الدراسية")}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              حدد كيف يعمل نظامك التعليمي: نظام باقات وكورسات مباشرة بدون تشتيت، أو نظام سنتر أكاديمي بمواد دراسية
+              {t("education.settingsTab.modeDesc", isEn
+                ? "Define how your educational system operates: courses and packages directly, or academic center with subjects"
+                : "حدد كيف يعمل نظامك التعليمي: نظام باقات وكورسات مباشرة بدون تشتيت، أو نظام سنتر أكاديمي بمواد دراسية")}
             </p>
           </div>
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
@@ -437,7 +459,9 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
               : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
           }`}>
-            النمط المختار: {educationMode === "COURSES" ? "🎯 كورسات وباقات (المواد مخفية)" : "🏫 سنتر ومواد دراسية"}
+            {isEn
+              ? (educationMode === "COURSES" ? "🎯 Courses & Packages Mode (Subjects hidden)" : "🏫 Academic Center & Subjects Mode")
+              : (educationMode === "COURSES" ? "🎯 كورسات وباقات (المواد مخفية)" : "🏫 سنتر ومواد دراسية")}
           </span>
         </div>
 
@@ -463,10 +487,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">
-                      أكاديمية تدريب وكورسات وباقات
+                      {isEn ? "Courses & Training Academy" : "أكاديمية تدريب وكورسات وباقات"}
                     </h4>
                     <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                      (الوضع الافتراضي)
+                      {isEn ? "(Default Mode)" : "(الوضع الافتراضي)"}
                     </span>
                   </div>
                 </div>
@@ -479,12 +503,14 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                مخصص لأكاديميات ومراكز الكورسات (برمجة، لغات، مهارات، باقات ساعات). يتم <strong>إخفاء سيكشن وخانات المواد الدراسية</strong> تلقائياً لتوفير واجهة خفيفة، وإنشاء الباقات والكورسات مباشرة بدون تعقيد.
+                {isEn
+                  ? "Tailored for skill academies (programming, languages, coaching). Automatically hides subjects for a clean UI, enabling direct package creation."
+                  : "مخصص لأكاديميات ومراكز الكورسات (برمجة، لغات، مهارات، باقات ساعات). يتم إخفاء سيكشن وخانات المواد الدراسية تلقائياً لتوفير واجهة خفيفة، وإنشاء الباقات والكورسات مباشرة بدون تعقيد."}
               </p>
             </div>
             <div className="pt-2 border-t border-border/40 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
-              <span>سيكشن المواد: <strong className="text-red-500">مخفي</strong></span>
-              <span>إنشاء الباقة: <strong className="text-emerald-600 dark:text-emerald-400">مباشر بدون مادة</strong></span>
+              <span>{isEn ? "Subjects Section:" : "سيكشن المواد:"} <strong className="text-red-500">{isEn ? "Hidden" : "مخفي"}</strong></span>
+              <span>{isEn ? "Package Creation:" : "إنشاء الباقة:"} <strong className="text-emerald-600 dark:text-emerald-400">{isEn ? "Direct without subject" : "مباشر بدون مادة"}</strong></span>
             </div>
           </div>
 
@@ -509,10 +535,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-foreground">
-                      سنتر دراسي ومواد تعليمية
+                      {isEn ? "Academic Center & Subjects" : "سنتر دراسي ومواد تعليمية"}
                     </h4>
                     <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
-                      (نظام أكاديمي ومدرسي)
+                      {isEn ? "(Academic & School Mode)" : "(نظام أكاديمي ومدرسي)"}
                     </span>
                   </div>
                 </div>
@@ -525,12 +551,14 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                مخصص للمدارس والسناتر ومراكز الدروس الخصوصية. يُفعّل <strong>سيكشن المواد الدراسية</strong> (فيزياء، كيمياء، لغات..) وخانات اختيار المواد في الباقات، وربط المدرسين بتخصصاتهم وأسعارهم.
+                {isEn
+                  ? "Tailored for schools and tutoring centers. Activates subjects (physics, languages, etc.), binds packages to subjects, and manages teachers by subject."
+                  : "مخصص للمدارس والسناتر ومراكز الدروس الخصوصية. يُفعّل سيكشن المواد الدراسية وخانات اختيار المواد في الباقات، وربط المدرسين بتخصصاتهم وأسعارهم."}
               </p>
             </div>
             <div className="pt-2 border-t border-border/40 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
-              <span>سيكشن المواد: <strong className="text-emerald-600 dark:text-emerald-400">مفعل وظاهر</strong></span>
-              <span>إنشاء الباقة: <strong className="text-blue-600 dark:text-blue-400">ربط بالمادة إجباري</strong></span>
+              <span>{isEn ? "Subjects Section:" : "سيكشن المواد:"} <strong className="text-emerald-600 dark:text-emerald-400">{isEn ? "Visible" : "مفعل وظاهر"}</strong></span>
+              <span>{isEn ? "Package Creation:" : "إنشاء الباقة:"} <strong className="text-blue-600 dark:text-blue-400">{isEn ? "Bound to subject" : "ربط بالمادة إجباري"}</strong></span>
             </div>
           </div>
         </div>
@@ -541,10 +569,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
             <Wand2 className="w-4 h-4 text-primary" />
-            قوالب جاهزة بضغطة واحدة (تسميات سريعة للنشاط)
+            {t("education.settingsTab.presetsTitle", isEn ? "One-Click Quick Terminology Presets" : "قوالب جاهزة بضغطة واحدة (تسميات سريعة للنشاط)")}
           </h3>
           <span className="text-[11px] text-muted-foreground">
-            اختر قالباً يناسب طبيعة مركزك لتطبيق المسميات فوراً
+            {t("education.settingsTab.presetsSub", isEn ? "Pick a preset tailored to your institution to apply labels instantly" : "اختر قالباً يناسب طبيعة مركزك لتطبيق المسميات فوراً")}
           </span>
         </div>
 
@@ -556,24 +584,24 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                 key={preset.id}
                 type="button"
                 onClick={() => applyPreset(preset)}
-                className="group p-3.5 bg-card hover:bg-muted/40 border border-border/80 hover:border-primary/40 rounded-xl text-right transition-all flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs"
+                className={`group p-3.5 bg-card hover:bg-muted/40 border border-border/80 hover:border-primary/40 rounded-xl transition-all flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs ${isEn ? "text-left" : "text-right"}`}
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
-                      {preset.name}
+                      {isEn ? (preset.nameEn || preset.name) : preset.name}
                     </span>
                     <div className={`p-1.5 rounded-lg border ${preset.badgeColor}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    {preset.desc}
+                    {isEn ? (preset.descEn || preset.desc) : preset.desc}
                   </p>
                 </div>
                 <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-primary font-medium">
-                  <span>تطبيق هذا القالب</span>
-                  <ArrowRight className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+                  <span>{isEn ? "Apply This Preset" : "تطبيق هذا القالب"}</span>
+                  <ArrowRight className={`w-3 h-3 transition-transform ${isEn ? "group-hover:translate-x-1" : "group-hover:-translate-x-1"}`} />
                 </div>
               </button>
             );
@@ -590,26 +618,26 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             <div className="flex items-center gap-2 border-b border-border/50 pb-3">
               <GraduationCap className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-bold text-foreground">
-                المسمى الرئيسي للنظام (يظهر أعلى القائمة الجانبية والهيدر)
+                {t("education.settingsTab.systemNameTitle", isEn ? "Main System Title (shown in sidebar and header)" : "المسمى الرئيسي للنظام (يظهر أعلى القائمة الجانبية والهيدر)")}
               </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-medium text-foreground">
-                  الاسم بالعربية <span className="text-red-500">*</span>
+                  {isEn ? "Arabic Name" : "الاسم بالعربية"} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={systemTitle}
                   onChange={(e) => setSystemTitle(e.target.value)}
-                  placeholder="مثال: النظام التعليمي أو أكاديمية التدريب"
+                  placeholder={isEn ? "e.g. النظام التعليمي" : "مثال: النظام التعليمي أو أكاديمية التدريب"}
                   maxLength={60}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[11px] font-medium text-foreground">
-                  الاسم بالإنجليزية (اختياري)
+                  {isEn ? "English Name (Optional)" : "الاسم بالإنجليزية (اختياري)"}
                 </label>
                 <input
                   type="text"
@@ -630,11 +658,11 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-primary" />
                 <h3 className="text-xs font-bold text-foreground">
-                  تخصيص وترتيب وإظهار سكاشن النظام والقائمة الجانبية
+                  {t("education.settingsTab.sectionsTitle", isEn ? "Customize, Reorder and Toggle System Sections" : "تخصيص وترتيب وإظهار سكاشن النظام والقائمة الجانبية")}
                 </h3>
               </div>
               <span className="text-[11px] text-muted-foreground">
-                استخدم الأسهم ⬆ ⬇ لإعادة الترتيب أو أيقونة العين لإخفاء السكشن
+                {t("education.settingsTab.sectionsHint", isEn ? "Use ⬆ ⬇ arrows to reorder, or eye icon to toggle visibility" : "استخدم الأسهم ⬆ ⬇ لإعادة الترتيب أو أيقونة العين لإخفاء السكشن")}
               </span>
             </div>
 
@@ -664,7 +692,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                             type="button"
                             onClick={() => moveTab(index, "up")}
                             disabled={isFirst}
-                            title="تحريك لأعلى"
+                            title={isEn ? "Move up" : "تحريك لأعلى"}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
                           >
                             <ChevronUp className="w-3.5 h-3.5" />
@@ -673,7 +701,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                             type="button"
                             onClick={() => moveTab(index, "down")}
                             disabled={isLast}
-                            title="تحريك لأسفل"
+                            title={isEn ? "Move down" : "تحريك لأسفل"}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
                           >
                             <ChevronDown className="w-3.5 h-3.5" />
@@ -694,19 +722,19 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-foreground truncate">
-                              {tab.labelAr || tab.defaultLabelAr}
+                              {isEn ? (tab.labelEn || tab.defaultLabelEn || tab.labelAr) : (tab.labelAr || tab.defaultLabelAr)}
                             </span>
                             {tab.locked && (
-                              <Lock className="w-3 h-3 text-muted-foreground" title="تاب أساسي" />
+                              <Lock className="w-3 h-3 text-muted-foreground" title={isEn ? "Locked tab" : "تاب أساسي"} />
                             )}
                           </div>
                           <span className="text-[10px] text-muted-foreground font-mono block truncate">
-                            الأصل: {tab.defaultLabelAr}
+                            {isEn ? `Default: ${tab.defaultLabelEn || tab.defaultLabelAr}` : `الأصل: ${tab.defaultLabelAr}`}
                           </span>
                         </div>
                       </div>
 
-                      {/* Middle: Arabic Label Editor */}
+                      {/* Middle: Arabic & English Label Editor */}
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
                         <div>
                           <input
@@ -737,7 +765,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                           <button
                             type="button"
                             onClick={() => resetTabToDefault(index)}
-                            title="استعادة الاسم الأصلي"
+                            title={isEn ? "Reset to default" : "استعادة الاسم الأصلي"}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted text-xs transition-colors"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
@@ -747,7 +775,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                         <button
                           type="button"
                           onClick={() => toggleVisibility(index)}
-                          title={tab.visible ? "إخفاء هذا التاب" : "إظهار هذا التاب"}
+                          title={tab.visible ? (isEn ? "Hide section" : "إخفاء هذا التاب") : (isEn ? "Show section" : "إظهار هذا التاب")}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                             tab.visible
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
@@ -757,12 +785,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                           {tab.visible ? (
                             <>
                               <Eye className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">ظاهر</span>
+                              <span className="hidden sm:inline">{isEn ? "Visible" : "ظاهر"}</span>
                             </>
                           ) : (
                             <>
                               <EyeOff className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">مخفي</span>
+                              <span className="hidden sm:inline">{isEn ? "Hidden" : "مخفي"}</span>
                             </>
                           )}
                         </button>
@@ -780,21 +808,21 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <Eye className="w-4 h-4 text-primary" />
-              معاينة حية لشكل القائمة الجانبية
+              {t("education.settingsTab.previewTitle", isEn ? "Sidebar Real-time Preview" : "معاينة حية لشكل القائمة الجانبية")}
             </h3>
             <span className="text-[10px] text-muted-foreground font-mono">Real-time Preview</span>
           </div>
 
-          {/* Miniature AppSidebar Mockup matching user screenshot */}
+          {/* Miniature AppSidebar Mockup */}
           <div
             className="w-full bg-[#0b1329] text-slate-100 rounded-2xl border border-slate-800 shadow-xl overflow-hidden font-sans select-none"
-            dir="rtl"
+            dir={isEn ? "ltr" : "rtl"}
           >
             {/* Back to Apps header button */}
             <div className="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 transition-colors">
               <div className="flex items-center gap-2">
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-                <span className="font-semibold text-[11px]">الرجوع للتطبيقات</span>
+                <ArrowRight className={`w-4 h-4 text-slate-400 ${isEn ? "rotate-180" : ""}`} />
+                <span className="font-semibold text-[11px]">{isEn ? "Back to Apps" : "الرجوع للتطبيقات"}</span>
               </div>
             </div>
 
@@ -805,10 +833,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               </div>
               <div className="min-w-0">
                 <h4 className="text-sm font-bold text-white truncate tracking-wide">
-                  {systemTitle || "النظام التعليمي"}
+                  {isEn ? (systemTitleEn || systemTitle) : (systemTitle || "النظام التعليمي")}
                 </h4>
                 <span className="text-[10px] text-slate-400 block truncate font-mono">
-                  {systemTitleEn || "Education System"}
+                  {isEn ? systemTitle : (systemTitleEn || "Education System")}
                 </span>
               </div>
             </div>
@@ -816,7 +844,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             {/* Page Explanations Pill */}
             <div className="px-4 py-2 border-b border-slate-800/50 flex items-center gap-2 text-slate-400 text-xs">
               <HelpCircle className="w-4 h-4 text-slate-400" />
-              <span className="text-[11px] font-medium">شرح الصفحة</span>
+              <span className="text-[11px] font-medium">{isEn ? "Page Guide" : "شرح الصفحة"}</span>
             </div>
 
             {/* List of sidebar items */}
@@ -838,7 +866,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Icon className="w-4 h-4 shrink-0 text-slate-400" />
-                        <span className="truncate">{tab.labelAr || tab.defaultLabelAr}</span>
+                        <span className="truncate">{isEn ? (tab.labelEn || tab.defaultLabelEn || tab.labelAr) : (tab.labelAr || tab.defaultLabelAr)}</span>
                       </div>
                       <span className="text-[9px] font-mono text-slate-500 tabular-nums">
                         #{idx + 1}
@@ -850,7 +878,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
 
             {/* Preview Footer note */}
             <div className="px-4 py-2.5 bg-slate-900/60 border-t border-slate-800/80 text-[10px] text-slate-400 text-center">
-              هذه المعاينة تطابق تماماً ما يظهر في القائمة الجانبية لحسابك
+              {isEn ? "This preview matches exactly what appears in your sidebar" : "هذه المعاينة تطابق تماماً ما يظهر في القائمة الجانبية لحسابك"}
             </div>
           </div>
         </div>

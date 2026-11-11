@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone, MapPin, Hash } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
@@ -22,6 +23,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -153,7 +157,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const handleSubmit = async () => {
     if (!form.firstName.trim() || saving) return;
     if (!hasGuardian) {
-      alert("اختر ولي أمر موجود، أو اضغط «إدخال ولي أمر جديد» واكتب اسمه ورقمه — أو فعّل «أنا ولي الأمر».");
+      alert(t("education.students.guardianAlert", isEn ? "Select an existing guardian, or enter a new guardian, or enable 'Student is their own guardian'." : "اختر ولي أمر موجود، أو اضغط «إدخال ولي أمر جديد» واكتب اسمه ورقمه — أو فعّل «أنا ولي الأمر»."));
       return;
     }
     setSaving(true);
@@ -196,10 +200,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
       <div
         className={MODAL_CLS + " max-h-[90vh] overflow-y-auto"}
         onClick={(e) => e.stopPropagation()}
+        dir={isEn ? "ltr" : "rtl"}
       >
         <div className="flex items-center justify-between pb-3 border-b border-border/80">
           <h3 className="text-sm font-bold text-foreground">
-            {student?.id ? "تعديل بيانات الطالب" : "إضافة طالب جديد"}
+            {student?.id
+              ? t("education.students.modalTitleEdit", isEn ? "Edit Student Details" : "تعديل بيانات الطالب")
+              : t("education.students.modalTitleNew", isEn ? "Add New Student" : "إضافة طالب جديد")}
           </h3>
           <button
             type="button"
@@ -215,11 +222,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
                 <Hash className="w-3.5 h-3.5 text-primary" />
-                <span>كود الطالب</span>
+                <span>{t("education.students.code", isEn ? "Student Code" : "كود الطالب")}</span>
               </label>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-muted-foreground font-normal">
-                  {student?.id ? "معرف فريد للطالب" : "اختياري — سيتم إنشاؤه تلقائياً إذا تُرك فارغاً"}
+                  {student?.id
+                    ? t("education.students.codeUnique", isEn ? "Unique student identifier" : "معرف فريد للطالب")
+                    : t("education.students.codeOptional", isEn ? "Optional — auto-generated if blank" : "اختياري — سيتم إنشاؤه تلقائياً إذا تُرك فارغاً")}
                 </span>
                 <button
                   type="button"
@@ -229,7 +238,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   }}
                   className="text-[10px] text-primary hover:underline font-medium cursor-pointer"
                 >
-                  توليد تلقائي
+                  {t("education.students.autoCode", isEn ? "Auto Generate" : "توليد تلقائي")}
                 </button>
               </div>
             </div>
@@ -237,7 +246,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               className={INPUT_CLS + " font-mono tracking-wide"}
               value={form.code || ""}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
-              placeholder="مثال: STU-1001"
+              placeholder="e.g. STU-1001"
               dir="ltr"
             />
           </div>
@@ -246,7 +255,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
-                الاسم الأول *
+                {t("education.students.firstName", isEn ? "First Name" : "الاسم الأول")} *
               </label>
               <input
                 className={INPUT_CLS}
@@ -254,12 +263,12 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 onChange={(e) =>
                   setForm({ ...form, firstName: e.target.value })
                 }
-                placeholder="مثال: سفيان"
+                placeholder={isEn ? "e.g. Adam" : "مثال: سفيان"}
               />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
-                الاسم الأخير
+                {t("education.students.lastName", isEn ? "Last Name" : "الاسم الأخير")}
               </label>
               <input
                 className={INPUT_CLS}
@@ -267,7 +276,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 onChange={(e) =>
                   setForm({ ...form, lastName: e.target.value })
                 }
-                placeholder="مثال: أحمد"
+                placeholder={isEn ? "e.g. Ahmed" : "مثال: أحمد"}
               />
             </div>
           </div>
@@ -276,8 +285,8 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground flex items-center justify-between">
-                <span>هاتف الطالب (الأساسي)</span>
-                <span className="text-[10px] text-muted-foreground font-normal">أساسي</span>
+                <span>{t("education.students.phone", isEn ? "Student Primary Phone" : "هاتف الطالب (الأساسي)")}</span>
+                <span className="text-[10px] text-muted-foreground font-normal">{isEn ? "Primary" : "أساسي"}</span>
               </label>
               <input
                 className={INPUT_CLS}
@@ -289,14 +298,14 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground flex items-center justify-between">
-                <span>رقم هاتف إضافي للطالب</span>
-                <span className="text-[10px] text-primary/80 font-normal">اختياري</span>
+                <span>{t("education.students.phone2", isEn ? "Secondary Phone Number" : "رقم هاتف إضافي للطالب")}</span>
+                <span className="text-[10px] text-primary/80 font-normal">{t("education.students.addressOptional", isEn ? "Optional" : "اختياري")}</span>
               </label>
               <input
                 className={INPUT_CLS}
                 value={form.phone2 || ""}
                 onChange={(e) => setForm({ ...form, phone2: e.target.value })}
-                placeholder="رقم بديل / واتساب إضافي"
+                placeholder={isEn ? "Alternate phone / WhatsApp" : "رقم بديل / واتساب إضافي"}
                 dir="ltr"
               />
             </div>
@@ -305,25 +314,27 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           {/* Gender & Grade */}
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-foreground">الجنس</label>
+              <label className="text-xs font-medium text-foreground">
+                {t("education.students.gender", isEn ? "Gender" : "الجنس")}
+              </label>
               <select
                 className={INPUT_CLS}
                 value={form.gender || "MALE"}
                 onChange={(e) => setForm({ ...form, gender: e.target.value })}
               >
-                <option value="MALE">ذكر</option>
-                <option value="FEMALE">أنثى</option>
+                <option value="MALE">{t("education.students.male", isEn ? "Male" : "ذكر")}</option>
+                <option value="FEMALE">{t("education.students.female", isEn ? "Female" : "أنثى")}</option>
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
-                المرحلة / الصف
+                {t("education.students.grade", isEn ? "Grade / Level" : "المرحلة / الصف")}
               </label>
               <input
                 className={INPUT_CLS}
                 value={form.grade || ""}
                 onChange={(e) => setForm({ ...form, grade: e.target.value })}
-                placeholder="مثال: الصف الأول الإعدادي"
+                placeholder={t("education.students.gradePlaceholder", isEn ? "e.g. Grade 7 / Middle School" : "مثال: الصف الأول الإعدادي")}
               />
             </div>
           </div>
@@ -333,15 +344,15 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             <label className="text-xs font-medium text-foreground flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-primary" />
-                <span>العنوان / السكن</span>
+                <span>{t("education.students.address", isEn ? "Address / Residence" : "العنوان / السكن")}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground font-normal">اختياري</span>
+              <span className="text-[10px] text-muted-foreground font-normal">{t("education.students.addressOptional", isEn ? "Optional" : "اختياري")}</span>
             </label>
             <input
               className={INPUT_CLS}
               value={form.address || ""}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="مثال: القاهرة - المعادي - شارع 9 أو عنوان السكن الحالي..."
+              placeholder={t("education.students.addressPlaceholder", isEn ? "e.g. Cairo - Maadi or current residence address..." : "مثال: القاهرة - المعادي - شارع 9 أو عنوان السكن الحالي...")}
             />
           </div>
 
@@ -350,12 +361,12 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-primary" />
-                <span>المواد الدراسية (المواد المتاحة لدينا)</span>
+                <span>{t("education.students.subjectsTitle", isEn ? "Academic Subjects (Available Subjects)" : "المواد الدراسية (المواد المتاحة لدينا)")}</span>
               </label>
               <span className="text-[11px] text-muted-foreground font-mono">
                 {selectedSubjectIds.length > 0
-                  ? `${selectedSubjectIds.length} مادة مختارة`
-                  : "لم يتم تحديد مواد"}
+                  ? t("education.students.subjectsCount", { count: selectedSubjectIds.length, defaultValue: isEn ? `${selectedSubjectIds.length} subjects selected` : `${selectedSubjectIds.length} مادة مختارة` })
+                  : t("education.students.noSubjectsSelected", isEn ? "No subjects selected" : "لم يتم تحديد مواد")}
               </span>
             </div>
 
@@ -388,7 +399,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               </div>
             ) : (
               <div className="text-[11px] text-muted-foreground py-1">
-                لا توجد مواد مسجلة حالياً في النظام. يمكنك إضافتها من تبويب «المواد».
+                {t("education.students.noSubjectsAvailable", isEn ? "No subjects registered in the system yet. You can add them from the 'Subjects' tab." : "لا توجد مواد مسجلة حالياً في النظام. يمكنك إضافتها من تبويب «المواد».")}
               </div>
             )}
           </div>
@@ -397,7 +408,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <div className="space-y-2" ref={searchContainerRef}>
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-foreground">
-                ولي الأمر (العميل) *
+                {t("education.students.guardianTitle", isEn ? "Guardian (Customer) *" : "ولي الأمر (العميل) *")}
               </label>
               <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
                 <input
@@ -413,14 +424,14 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     }
                   }}
                 />
-                <span>الطالب هو ولي أمر نفسه (بالغ/مباشر)</span>
+                <span>{t("education.students.selfGuardianCheck", isEn ? "Student is their own guardian (Adult/Direct)" : "الطالب هو ولي أمر نفسه (بالغ/مباشر)")}</span>
               </label>
             </div>
 
             {isSelfGuardian ? (
               <div className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${form.phone?.trim() ? "border-primary/30 bg-primary/5 text-primary" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
                 <User className="w-4 h-4 shrink-0" />
-                <span>سيتم تسجيل الطالب كولي أمر نفسه تلقائياً بأرقام هواتفه (الأساسي والإضافي).</span>
+                <span>{t("education.students.selfGuardianNotice", isEn ? "Student will be automatically registered as their own guardian with their phone numbers." : "سيتم تسجيل الطالب كولي أمر نفسه تلقائياً بأرقام هواتفه (الأساسي والإضافي).")}</span>
               </div>
             ) : selectedCustomer ? (
               <div className="p-2.5 rounded-lg border border-primary/40 bg-primary/5 text-xs space-y-2.5">
@@ -434,9 +445,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                         {selectedCustomer.firstName} {selectedCustomer.lastName || ""}
                       </div>
                       <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
-                        {selectedCustomer.phone && <span>الهاتف: {selectedCustomer.phone}</span>}
+                        {selectedCustomer.phone && <span>{t("education.students.guardianPhone", isEn ? "Phone:" : "الهاتف:")} {selectedCustomer.phone}</span>}
                         {((selectedCustomer as any).phone2 || guardianPhone2) && (
-                          <span className="text-primary font-medium">| إضافي: {(selectedCustomer as any).phone2 || guardianPhone2}</span>
+                          <span className="text-primary font-medium">| {isEn ? "Secondary:" : "إضافي:"} {(selectedCustomer as any).phone2 || guardianPhone2}</span>
                         )}
                       </div>
                     </div>
@@ -445,22 +456,22 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     type="button"
                     onClick={handleClearCustomer}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                    title="تغيير ولي الأمر"
+                    title={t("education.students.changeGuardian", isEn ? "Change Guardian" : "تغيير ولي الأمر")}
                   >
                     <X className="w-3.5 h-3.5" />
-                    <span>تغيير</span>
+                    <span>{t("education.students.changeGuardian", isEn ? "Change" : "تغيير")}</span>
                   </button>
                 </div>
 
                 {/* Option for additional phone for selected guardian */}
                 <div className="pt-2 border-t border-border/40 flex items-center gap-2">
                   <label className="text-[11px] text-muted-foreground whitespace-nowrap">
-                    رقم هاتف إضافي لولي الأمر:
+                    {t("education.students.additionalGuardianPhone", isEn ? "Additional phone for guardian:" : "رقم هاتف إضافي لولي الأمر:")}
                   </label>
                   <input
                     type="text"
                     className={INPUT_CLS + " py-1 text-xs"}
-                    placeholder="رقم بديل / هاتف إضافي لولي الأمر"
+                    placeholder={isEn ? "Alternate phone number" : "رقم بديل / هاتف إضافي لولي الأمر"}
                     value={guardianPhone2}
                     onChange={(e) => setGuardianPhone2(e.target.value)}
                     dir="ltr"
@@ -470,32 +481,32 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             ) : isManualGuardian ? (
               <div className="p-2.5 rounded-lg border border-border bg-muted/30 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground">إدخال ولي أمر جديد:</span>
+                  <span className="font-semibold text-foreground">{t("education.students.manualGuardianTitle", isEn ? "Enter New Guardian:" : "إدخال ولي أمر جديد:")}</span>
                   <button
                     type="button"
                     onClick={() => setIsManualGuardian(false)}
                     className="text-muted-foreground hover:text-foreground text-[11px]"
                   >
-                    العودة للبحث
+                    {t("education.students.backToSearch", isEn ? "Back to Search" : "العودة للبحث")}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input
                     className={INPUT_CLS}
-                    placeholder="اسم ولي الأمر *"
+                    placeholder={t("education.students.manualGuardianName", isEn ? "Guardian Name *" : "اسم ولي الأمر *")}
                     value={manualGuardian.name}
                     onChange={(e) => setManualGuardian({ ...manualGuardian, name: e.target.value })}
                   />
                   <input
                     className={INPUT_CLS}
-                    placeholder="هاتف ولي الأمر *"
+                    placeholder={t("education.students.manualGuardianPhone", isEn ? "Guardian Phone *" : "هاتف ولي الأمر *")}
                     value={manualGuardian.phone}
                     onChange={(e) => setManualGuardian({ ...manualGuardian, phone: e.target.value })}
                     dir="ltr"
                   />
                   <input
                     className={INPUT_CLS}
-                    placeholder="هاتف إضافي لولي الأمر"
+                    placeholder={t("education.students.manualGuardianPhone2", isEn ? "Guardian Secondary Phone" : "هاتف إضافي لولي الأمر")}
                     value={manualGuardian.phone2}
                     onChange={(e) => setManualGuardian({ ...manualGuardian, phone2: e.target.value })}
                     dir="ltr"
@@ -507,8 +518,8 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 <div className="relative">
                   <input
                     type="text"
-                    className={INPUT_CLS + " pr-9 pl-8"}
-                    placeholder="ابحث عن ولي أمر بالاسم أو الهاتف..."
+                    className={INPUT_CLS + (isEn ? " pl-9 pr-8" : " pr-9 pl-8")}
+                    placeholder={t("education.students.searchGuardianPlaceholder", isEn ? "Search guardian by name or phone..." : "ابحث عن ولي أمر بالاسم أو الهاتف...")}
                     value={customerSearch}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -517,7 +528,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     }}
                     onFocus={() => setShowResults(true)}
                   />
-                  <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Search className={`w-3.5 h-3.5 absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none`} />
                   {customerSearch && (
                     <button
                       type="button"
@@ -525,7 +536,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                         setCustomerSearch("");
                         setShowResults(false);
                       }}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                      className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5`}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -541,7 +552,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     }}
                     className="text-primary hover:underline font-medium"
                   >
-                    + إدخال ولي أمر جديد يدوياً
+                    {t("education.students.addManualGuardian", isEn ? "+ Enter new guardian manually" : "+ إدخال ولي أمر جديد يدوياً")}
                   </button>
                 </div>
 
@@ -549,7 +560,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   <div className="absolute z-20 left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-border/60">
                     {customerSearch.trim().length < 2 ? (
                       <div className="px-3 py-2.5 text-center text-[11px] text-muted-foreground">
-                        اكتب حرفين أو أكثر للبحث...
+                        {t("education.students.minSearchChars", isEn ? "Type 2 or more characters to search..." : "اكتب حرفين أو أكثر للبحث...")}
                       </div>
                     ) : customerResults.length > 0 ? (
                       customerResults.map((c) => (
@@ -563,19 +574,19 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                               {c.firstName} {c.lastName || ""}
                             </span>
                             {c.phone && (
-                              <span className="text-muted-foreground mr-2 font-mono text-[11px]">
+                              <span className={`text-muted-foreground ${isEn ? "ml-2" : "mr-2"} font-mono text-[11px]`}>
                                 ({c.phone}{c.phone2 ? ` / ${c.phone2}` : ""})
                               </span>
                             )}
                           </div>
                           <span className="text-[11px] text-primary font-medium">
-                            اختيار
+                            {t("education.students.selectGuardian", isEn ? "Select" : "اختيار")}
                           </span>
                         </div>
                       ))
                     ) : (
                       <div className="px-3 py-3 text-center text-xs space-y-1.5">
-                        <p className="text-muted-foreground">لا يوجد ولي أمر مطابق للبحث "{customerSearch}"</p>
+                        <p className="text-muted-foreground">{t("education.students.noGuardianMatch", { query: customerSearch, defaultValue: isEn ? `No guardian found matching "${customerSearch}"` : `لا يوجد ولي أمر مطابق للبحث "${customerSearch}"` })}</p>
                         <button
                           type="button"
                           onClick={() => {
@@ -585,7 +596,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                           }}
                           className="text-xs text-primary font-semibold hover:underline block mx-auto"
                         >
-                          + إضافة "{customerSearch}" كولي أمر جديد
+                          {t("education.students.addNewGuardianWithQuery", { query: customerSearch, defaultValue: isEn ? `+ Add "${customerSearch}" as new guardian` : `+ إضافة "${customerSearch}" كولي أمر جديد` })}
                         </button>
                       </div>
                     )}
@@ -598,14 +609,14 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           {/* Notes */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
-              ملاحظات
+              {t("education.students.notes", isEn ? "Notes" : "ملاحظات")}
             </label>
             <textarea
               className={INPUT_CLS}
               rows={2}
               value={form.notes || ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="أي ملاحظات إضافية عن الطالب..."
+              placeholder={t("education.students.notesPlaceholder", isEn ? "Any additional notes about the student..." : "أي ملاحظات إضافية عن الطالب...")}
             />
           </div>
 
@@ -613,13 +624,13 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-2.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
-              <span>بيانات دخول بوابة ولي الأمر (/parent)</span>
+              <span>{t("education.students.parentPortalTitle", isEn ? "Parent Portal Login Credentials (/parent)" : "بيانات دخول بوابة ولي الأمر (/parent)")}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-foreground flex items-center gap-1">
                   <Mail className="w-3 h-3 text-muted-foreground" />
-                  البريد الإلكتروني (اسم المستخدم)
+                  {t("education.students.parentEmail", isEn ? "Email Address (Username)" : "البريد الإلكتروني (اسم المستخدم)")}
                 </label>
                 <input
                   type="email"
@@ -627,12 +638,15 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   placeholder="parent@example.com"
                   value={guardianEmail}
                   onChange={(e) => setGuardianEmail(e.target.value)}
+                  dir="ltr"
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-medium text-foreground flex items-center gap-1">
                   <Lock className="w-3 h-3 text-muted-foreground" />
-                  {student?.id ? "كلمة المرور الجديدة (اختياري)" : "كلمة المرور لبوابة ولي الأمر"}
+                  {student?.id
+                    ? t("education.students.parentPasswordEdit", isEn ? "New Password (optional)" : "كلمة المرور الجديدة (اختياري)")
+                    : t("education.students.parentPassword", isEn ? "Password for Parent Portal" : "كلمة المرور لبوابة ولي الأمر")}
                 </label>
                 <input
                   type="password"
@@ -640,11 +654,12 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   placeholder="••••••••"
                   value={guardianPassword}
                   onChange={(e) => setGuardianPassword(e.target.value)}
+                  dir="ltr"
                 />
               </div>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              تُستخدم هذه البيانات ليسجل ولي الأمر الدخول مباشرة عبر الرابط <code>/parent/login</code> لمتابعة حصص وساعات أبنائه.
+              {t("education.students.parentPortalHelp", isEn ? "These credentials allow the guardian to log in directly via /parent/login to monitor sessions and hours." : "تُستخدم هذه البيانات ليسجل ولي الأمر الدخول مباشرة عبر الرابط /parent/login لمتابعة حصص وساعات أبنائه.")}
             </p>
           </div>
         </div>
@@ -654,7 +669,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             onClick={onClose}
             className="px-3.5 py-1.5 text-xs rounded-lg bg-muted text-foreground hover:bg-muted/80"
           >
-            إلغاء
+            {t("education.actions.cancel", isEn ? "Cancel" : "إلغاء")}
           </button>
           <button
             type="button"
@@ -663,7 +678,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
             className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <span>{saving ? "جارٍ الحفظ..." : "حفظ"}</span>
+            <span>{saving ? t("education.actions.saving", isEn ? "Saving..." : "جارٍ الحفظ...") : t("education.actions.save", isEn ? "Save" : "حفظ")}</span>
           </button>
         </div>
       </div>

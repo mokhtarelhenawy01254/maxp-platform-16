@@ -1,16 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import {
   Calendar,
   Clock,
-  GraduationCap,
   ChevronRight,
   ChevronLeft,
   RotateCcw,
   CheckCircle2,
-  AlertCircle,
-  Users,
   BookOpen,
   Filter,
 } from "lucide-react";
@@ -43,7 +41,6 @@ const api = (path: string) => {
   return url.toString();
 };
 
-// Helper to convert any Date or ISO string to local YYYY-MM-DD
 const toLocalDateStr = (d: Date | string): string => {
   const date = typeof d === "string" ? new Date(d) : d;
   if (isNaN(date.getTime())) return "";
@@ -51,13 +48,10 @@ const toLocalDateStr = (d: Date | string): string => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-
-const SESSION_STATUS: Record<string, { label: string; color: string }> = {
-  SCHEDULED: { label: "مجدولة", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
-  CONFIRMED: { label: "مؤكدة", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
-  CANCELLED: { label: "ملغية", color: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" },
-};
+const getDays = (isEn: boolean) =>
+  isEn
+    ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    : ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
 interface Teacher {
   id: string;
@@ -79,6 +73,10 @@ interface Session {
 }
 
 export default function EducationTeacherSchedulePage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+  const days = useMemo(() => getDays(isEn), [isEn]);
+
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
@@ -147,7 +145,7 @@ export default function EducationTeacherSchedulePage() {
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString(isEn ? "en-US" : "ar-EG", { hour: "2-digit", minute: "2-digit" });
   };
 
   const stats = useMemo(() => {
@@ -157,10 +155,35 @@ export default function EducationTeacherSchedulePage() {
     return { total, confirmed, scheduled };
   }, [sessions]);
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "CONFIRMED":
+        return {
+          label: isEn ? "Confirmed" : "مؤكدة",
+          color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+        };
+      case "SCHEDULED":
+        return {
+          label: isEn ? "Scheduled" : "مجدولة",
+          color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+        };
+      case "CANCELLED":
+        return {
+          label: isEn ? "Cancelled" : "ملغية",
+          color: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+        };
+      default:
+        return {
+          label: status,
+          color: "bg-muted text-muted-foreground border-border",
+        };
+    }
+  };
+
   return (
     <div
-      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 rtl font-sans"
-      dir="rtl"
+      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 font-sans"
+      dir={isEn ? "ltr" : "rtl"}
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
@@ -168,17 +191,22 @@ export default function EducationTeacherSchedulePage() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
               <Calendar className="w-3.5 h-3.5" />
-              الجدول الأكاديمي
+              {t("education.schedule.badge", isEn ? "Academic Schedule" : "الجدول الأكاديمي")}
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {stats.total} حصة في الأسبوع المحدد
+              {stats.total} {t("education.schedule.sessionsInWeek", isEn ? "sessions in selected week" : "حصة في الأسبوع المحدد")}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            جدول المهندسين والحصص الأسبوعية
+            {t("education.schedule.title", isEn ? "Instructor Schedule & Weekly Sessions" : "جدول المهندسين والحصص الأسبوعية")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            استعراض المواعيد والحصص المجدولة والمؤكدة على مدار الأسبوع مع التصفية بحسب المهندس
+            {t(
+              "education.schedule.subtitle",
+              isEn
+                ? "Review scheduled and confirmed sessions across the week with instructor filtering"
+                : "استعراض المواعيد والحصص المجدولة والمؤكدة على مدار الأسبوع مع التصفية بحسب المهندس"
+            )}
           </p>
         </div>
       </div>
@@ -187,7 +215,9 @@ export default function EducationTeacherSchedulePage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">إجمالي الحصص بالأسبوع</div>
+            <div className="text-xs text-muted-foreground">
+              {t("education.schedule.totalSessions", isEn ? "Total Sessions This Week" : "إجمالي الحصص بالأسبوع")}
+            </div>
             <div className="text-xl font-bold text-foreground font-mono tabular-nums">
               {stats.total}
             </div>
@@ -199,7 +229,9 @@ export default function EducationTeacherSchedulePage() {
 
         <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">حصص مؤكدة</div>
+            <div className="text-xs text-muted-foreground">
+              {t("education.schedule.confirmed", isEn ? "Confirmed Sessions" : "حصص مؤكدة")}
+            </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {stats.confirmed}
             </div>
@@ -211,7 +243,9 @@ export default function EducationTeacherSchedulePage() {
 
         <div className="bg-card border border-border/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">حصص مجدولة بالانتظار</div>
+            <div className="text-xs text-muted-foreground">
+              {t("education.schedule.scheduled", isEn ? "Pending Scheduled Sessions" : "حصص مجدولة بالانتظار")}
+            </div>
             <div className="text-xl font-bold text-sky-600 dark:text-sky-400 font-mono tabular-nums">
               {stats.scheduled}
             </div>
@@ -231,7 +265,9 @@ export default function EducationTeacherSchedulePage() {
             value={selectedTeacher}
             onChange={(e) => setSelectedTeacher(e.target.value)}
           >
-            <option value="">كل المهندسين ({teachers.length})</option>
+            <option value="">
+              {t("education.schedule.allTeachers", isEn ? "All Instructors" : "كل المهندسين")} ({teachers.length})
+            </option>
             {teachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -242,23 +278,23 @@ export default function EducationTeacherSchedulePage() {
 
         <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto">
           <button
-            onClick={() => setWeekOffset((w) => w - 1)}
+            onClick={() => setWeekOffset((w) => (isEn ? w - 1 : w - 1))}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs shrink-0"
           >
-            <ChevronRight className="w-3.5 h-3.5" />
-            السابق
+            {isEn ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            {t("education.schedule.prevWeek", isEn ? "Previous" : "السابق")}
           </button>
 
           <span className="text-[11px] sm:text-xs font-semibold px-2 sm:px-3 py-1.5 bg-muted/30 rounded-lg border border-border/60 font-mono tabular-nums text-foreground truncate">
-            {weekDays[0]?.toLocaleDateString("ar-EG")} — {weekDays[6]?.toLocaleDateString("ar-EG")}
+            {weekDays[0]?.toLocaleDateString(isEn ? "en-US" : "ar-EG")} — {weekDays[6]?.toLocaleDateString(isEn ? "en-US" : "ar-EG")}
           </span>
 
           <button
-            onClick={() => setWeekOffset((w) => w + 1)}
+            onClick={() => setWeekOffset((w) => (isEn ? w + 1 : w + 1))}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-card text-foreground hover:bg-muted text-xs rounded-lg transition-colors border border-border/80 shadow-xs shrink-0"
           >
-            التالي
-            <ChevronLeft className="w-3.5 h-3.5" />
+            {t("education.schedule.nextWeek", isEn ? "Next" : "التالي")}
+            {isEn ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
           </button>
 
           {weekOffset !== 0 && (
@@ -267,7 +303,7 @@ export default function EducationTeacherSchedulePage() {
               className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
             >
               <RotateCcw className="w-3 h-3" />
-              هذا الأسبوع
+              {t("education.schedule.thisWeek", isEn ? "This Week" : "هذا الأسبوع")}
             </button>
           )}
         </div>
@@ -294,7 +330,7 @@ export default function EducationTeacherSchedulePage() {
                       : "bg-muted/40 text-foreground border-border/60"
                   }`}
                 >
-                  <div className="text-xs font-bold">{DAYS[i]}</div>
+                  <div className="text-xs font-bold">{days[i]}</div>
                   <div className="text-sm font-mono font-bold tabular-nums">
                     {day.getDate()}
                   </div>
@@ -304,11 +340,11 @@ export default function EducationTeacherSchedulePage() {
                 <div className="p-2 space-y-2 flex-1">
                   {daySessions.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground text-[11px] py-12">
-                      {loading ? "…" : "لا توجد حصص"}
+                      {loading ? "…" : t("education.schedule.noSessions", isEn ? "No sessions" : "لا توجد حصص")}
                     </div>
                   ) : (
                     daySessions.map((s) => {
-                      const st = SESSION_STATUS[s.status];
+                      const st = getStatusBadge(s.status);
                       return (
                         <div
                           key={s.id}
@@ -321,19 +357,19 @@ export default function EducationTeacherSchedulePage() {
                             </span>
                             <span
                               className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${
-                                st?.color || "bg-muted text-muted-foreground border-border"
+                                st.color
                               }`}
                             >
-                              {st?.label || s.status}
+                              {st.label}
                             </span>
                           </div>
 
                           <div className="font-semibold text-foreground text-xs truncate">
-                            {s.teacher?.name || "مدرس غير محدد"}
+                            {s.teacher?.name || (isEn ? "Unassigned Instructor" : "مدرس غير محدد")}
                           </div>
 
                           <div className="text-muted-foreground text-[11px] truncate">
-                            الطالب: {s.student ? `${s.student.firstName} ${s.student.lastName || ""}` : "—"}
+                            {t("education.schedule.studentPrefix", isEn ? "Student:" : "الطالب:")} {s.student ? `${s.student.firstName} ${s.student.lastName || ""}` : "—"}
                           </div>
 
                           {s.subject?.name && (

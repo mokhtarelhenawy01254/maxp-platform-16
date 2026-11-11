@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Plus, Pencil, Check, Trash2 } from "lucide-react";
 import type { EducationSubject } from "./types";
 import { CELL_CLS } from "./types";
@@ -25,23 +26,26 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
   handleToggleSubject,
   handleDeleteSubject,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const q = subjectSearch.toLowerCase().trim();
   const filtered = subjects.filter(
     (s) => !q || (s.name || "").toLowerCase().includes(q)
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? "ltr" : "rtl"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">
-          إدارة المواد الأكاديمية
+          {t("education.subjects.title", isEn ? "Academic Subjects Management" : "إدارة المواد الأكاديمية")}
         </h2>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
+            <Search className={`w-3.5 h-3.5 absolute ${isEn ? "left-3" : "right-3"} top-2.5 text-muted-foreground`} />
             <input
-              className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="بحث في المواد..."
+              className={`bg-background border border-input rounded-lg ${isEn ? "pl-9 pr-3" : "pr-9 pl-3"} py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary`}
+              placeholder={t("education.subjects.search", isEn ? "Search subjects..." : "بحث في المواد...")}
               value={subjectSearch}
               onChange={(e) => setSubjectSearch(e.target.value)}
             />
@@ -52,7 +56,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            إضافة مادة
+            {t("education.subjects.addSubject", isEn ? "Add Subject" : "إضافة مادة")}
           </button>
         </div>
       </div>
@@ -77,7 +81,9 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                     : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                 }`}
               >
-                {s.isActive ? "نشط" : "معطل"}
+                {s.isActive
+                  ? t("education.subjects.active", isEn ? "Active" : "نشط")
+                  : t("education.subjects.inactive", isEn ? "Inactive" : "معطل")}
               </span>
             </div>
             {s.description && (
@@ -86,11 +92,11 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
               </p>
             )}
             <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
-              <span className="text-muted-foreground">سعر المادة:</span>
+              <span className="text-muted-foreground">{t("education.subjects.price", isEn ? "Subject Price:" : "سعر المادة:")}</span>
               <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                 {typeof s.price === "number" && s.price > 0
-                  ? `${s.price.toLocaleString()} ج.م`
-                  : "0 ج.م"}
+                  ? t("education.subjects.priceWithCurrency", { price: s.price.toLocaleString(), defaultValue: isEn ? `${s.price.toLocaleString()} EGP` : `${s.price.toLocaleString()} ج.م` })
+                  : (isEn ? "0 EGP" : "0 ج.م")}
               </span>
             </div>
             <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-border/60">
@@ -100,7 +106,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border/60"
               >
                 <Pencil className="w-3.5 h-3.5" />
-                تعديل
+                {t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               </button>
               <button
                 type="button"
@@ -112,13 +118,15 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                 }`}
               >
                 <Check className="w-3.5 h-3.5" />
-                {s.isActive ? "تعطيل" : "تفعيل"}
+                {s.isActive
+                  ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل")
+                  : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteSubject(s.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                title="حذف"
+                title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -127,7 +135,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
         ))}
         {filtered.length === 0 && (
           <div className="bg-card border border-border/80 rounded-xl p-8 text-center text-xs text-muted-foreground">
-            لا توجد مواد مسجلة
+            {t("education.subjects.empty", isEn ? "No registered subjects" : "لا توجد مواد مسجلة")}
           </div>
         )}
       </div>
@@ -138,8 +146,14 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
           <table className="w-full">
             <thead>
               <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs">
-                {["الاسم", "الوصف", "السعر / الرسوم", "الحالة", ""].map((h) => (
-                  <th key={h} className="text-right py-3 px-4 font-semibold">
+                {[
+                  t("education.subjects.name", isEn ? "Name" : "الاسم"),
+                  t("education.subjects.description", isEn ? "Description" : "الوصف"),
+                  t("education.subjects.price", isEn ? "Price / Fee" : "السعر / الرسوم"),
+                  t("education.subjects.status", isEn ? "Status" : "الحالة"),
+                  "",
+                ].map((h, i) => (
+                  <th key={i} className={`${isEn ? "text-left" : "text-right"} py-3 px-4 font-semibold`}>
                     {h}
                   </th>
                 ))}
@@ -157,10 +171,10 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                   <td className={CELL_CLS + " font-mono tabular-nums text-foreground"}>
                     {typeof s.price === "number" && s.price > 0 ? (
                       <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                        {s.price.toLocaleString()} ج.م
+                        {t("education.subjects.priceWithCurrency", { price: s.price.toLocaleString(), defaultValue: isEn ? `${s.price.toLocaleString()} EGP` : `${s.price.toLocaleString()} ج.م` })}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">0 ج.م</span>
+                      <span className="text-muted-foreground">{isEn ? "0 EGP" : "0 ج.م"}</span>
                     )}
                   </td>
                   <td className={CELL_CLS}>
@@ -171,7 +185,9 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                           : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                       }`}
                     >
-                      {s.isActive ? "نشط" : "معطل"}
+                      {s.isActive
+                        ? t("education.subjects.active", isEn ? "Active" : "نشط")
+                        : t("education.subjects.inactive", isEn ? "Inactive" : "معطل")}
                     </span>
                   </td>
                   <td className={CELL_CLS}>
@@ -180,7 +196,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                         type="button"
                         onClick={() => setSubjectModal(s)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                        title="تعديل"
+                        title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -192,7 +208,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                             ? "text-red-600 dark:text-red-400 hover:bg-red-500/10"
                             : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                         }`}
-                        title={s.isActive ? "تعطيل" : "تفعيل"}
+                        title={s.isActive ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل") : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
@@ -200,7 +216,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                         type="button"
                         onClick={() => handleDeleteSubject(s.id)}
                         className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                        title="حذف"
+                        title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -213,7 +229,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
         </div>
         {filtered.length === 0 && (
           <p className="text-center py-12 text-xs text-muted-foreground">
-            لا توجد مواد مسجلة
+            {t("education.subjects.empty", isEn ? "No registered subjects" : "لا توجد مواد مسجلة")}
           </p>
         )}
       </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, Plus, Phone, Eye, Pencil, Trash2, BookOpen, MapPin } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { StudentModal } from "./StudentModal";
@@ -33,6 +34,9 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
   handleToggleStudent,
   handleDeleteStudent,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const q = studentSearch.toLowerCase().trim();
   const codeQ = q.startsWith("#") ? q.slice(1).trim() : q;
   const filtered = students.filter(
@@ -51,15 +55,17 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? "ltr" : "rtl"}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-base font-bold text-foreground">إدارة الطلاب</h2>
+        <h2 className="text-base font-bold text-foreground">
+          {t("education.students.title", isEn ? "Students Management" : "إدارة الطلاب")}
+        </h2>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
+            <Search className={`w-3.5 h-3.5 absolute ${isEn ? "left-3" : "right-3"} top-2.5 text-muted-foreground`} />
             <input
-              className="bg-background border border-input rounded-lg pr-9 pl-3 py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="بحث عن طالب بالاسم، الكود، أو الهاتف..."
+              className={`bg-background border border-input rounded-lg ${isEn ? "pl-9 pr-3" : "pr-9 pl-3"} py-1.5 text-xs text-foreground w-full focus:outline-none focus:ring-1 focus:ring-primary`}
+              placeholder={t("education.students.search", isEn ? "Search student by name, code, or phone..." : "بحث عن طالب بالاسم، الكود، أو الهاتف...")}
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
             />
@@ -70,7 +76,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            إضافة طالب
+            {t("education.students.addStudent", isEn ? "Add Student" : "إضافة طالب")}
           </button>
         </div>
       </div>
@@ -96,7 +102,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {s.grade || "الصف غير محدد"}
+                  {s.grade || (isEn ? "Grade not specified" : "الصف غير محدد")}
                 </p>
               </div>
               <span
@@ -106,7 +112,9 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                     : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                 }`}
               >
-                {s.isActive ? "نشط" : "معطل"}
+                {s.isActive
+                  ? t("education.statuses.ACTIVE", isEn ? "Active" : "نشط")
+                  : t("education.statuses.INACTIVE", isEn ? "Inactive" : "معطل")}
               </span>
             </div>
 
@@ -116,7 +124,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
               <span>{s.phone || "—"}</span>
               {s.phone2 && (
                 <span className="text-[10px] text-primary/90 font-sans bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-                  إضافي: {s.phone2}
+                  {isEn ? "Alt: " : "إضافي: "}{s.phone2}
                 </span>
               )}
             </div>
@@ -132,7 +140,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             {/* Guardian & Guardian Phones */}
             <div className="text-xs text-muted-foreground space-y-0.5">
               <div>
-                ولي الأمر:{" "}
+                {t("education.students.guardianTitle", isEn ? "Guardian:" : "ولي الأمر:")}{" "}
                 <span className="text-foreground font-medium">
                   {s.customer
                     ? `${s.customer.firstName} ${s.customer.lastName || ""}`
@@ -144,7 +152,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                   <span>{s.customer.phone}</span>
                   {(s.customer as any)?.phone2 && (
                     <span className="text-primary font-normal">
-                      | إضافي: {(s.customer as any).phone2}
+                      | {isEn ? "Alt: " : "إضافي: "}{(s.customer as any).phone2}
                     </span>
                   )}
                 </div>
@@ -180,13 +188,13 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                 className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-muted/60 text-foreground hover:bg-muted text-xs rounded-lg transition-colors"
               >
                 <Eye className="w-3.5 h-3.5" />
-                عرض
+                {t("education.actions.view", isEn ? "View" : "عرض")}
               </Link>
               <button
                 type="button"
                 onClick={() => setStudentModal(s)}
                 className="px-2.5 py-1.5 text-xs text-foreground bg-muted/60 hover:bg-muted rounded-lg transition-colors"
-                title="تعديل"
+                title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -199,13 +207,15 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                     : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                 }`}
               >
-                {s.isActive ? "تعطيل" : "تفعيل"}
+                {s.isActive
+                  ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل")
+                  : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteStudent(s.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                title="حذف"
+                title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -214,7 +224,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
         ))}
         {filtered.length === 0 && (
           <p className="col-span-full text-center py-12 text-xs text-muted-foreground">
-            لا يوجد طلاب مسجلين
+            {t("education.students.empty", isEn ? "No enrolled students" : "لا يوجد طلاب مسجلين")}
           </p>
         )}
       </div>

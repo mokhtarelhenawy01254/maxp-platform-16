@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Check, X, Pencil, Clock, BookOpen, User } from "lucide-react";
 import type {
   EducationSession,
@@ -7,7 +8,7 @@ import type {
   EducationEnrollment,
   EducationStudent,
 } from "./types";
-import { CELL_CLS, SESSION_STATUS } from "./types";
+import { CELL_CLS, SESSION_STATUS, getSessionStatus } from "./types";
 import { SessionModal } from "./SessionModal";
 import { DateInput } from '../../../components/ui/DateInput';
 
@@ -55,6 +56,9 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
   handleConfirmSession,
   handleCancelSession,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const filtered = sessions.filter((s) => {
     if (sessionFilters.status && s.status !== sessionFilters.status)
       return false;
@@ -70,10 +74,10 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? "ltr" : "rtl"}>
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">
-          إدارة الحصص والجداول
+          {t("education.sessions.title", isEn ? "Sessions & Schedule Management" : "إدارة الحصص والجداول")}
         </h2>
         <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full lg:w-auto items-stretch sm:items-center">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
@@ -84,10 +88,10 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 setSessionFilters({ ...sessionFilters, status: e.target.value })
               }
             >
-              <option value="">كل الحالات</option>
-              {Object.entries(SESSION_STATUS).map(([k, v]) => (
+              <option value="">{t("education.sessions.allStatuses", isEn ? "All Statuses" : "كل الحالات")}</option>
+              {Object.entries(SESSION_STATUS).map(([k]) => (
                 <option key={k} value={k}>
-                  {v.label}
+                  {getSessionStatus(k, isEn).label}
                 </option>
               ))}
             </select>
@@ -101,7 +105,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 })
               }
             >
-              <option value="">كل المهندسين</option>
+              <option value="">{t("education.sessions.allTeachers", isEn ? "All Instructors" : "كل المهندسين")}</option>
               {teachers
                 .filter((t) => t.isActive)
                 .map((t) => (
@@ -133,7 +137,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            إضافة حصة
+            {t("education.sessions.scheduleSession", isEn ? "Schedule Session" : "إضافة حصة")}
           </button>
         </div>
       </div>
@@ -161,15 +165,15 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <User className="w-3 h-3 text-primary shrink-0" />
-                  <span className="truncate">{s.teacher?.name || "مهندس غير محدد"}</span>
+                  <span className="truncate">{s.teacher?.name || (isEn ? "Unassigned Instructor" : "مهندس غير محدد")}</span>
                 </div>
               </div>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${
-                  SESSION_STATUS[s.status]?.color || ""
+                  getSessionStatus(s.status, isEn).color
                 }`}
               >
-                {SESSION_STATUS[s.status]?.label || s.status}
+                {getSessionStatus(s.status, isEn).label}
               </span>
             </div>
 
@@ -177,21 +181,21 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
               <div className="flex items-center gap-1.5 text-muted-foreground font-mono">
                 <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>
-                  {new Date(s.scheduledAt).toLocaleDateString("ar-EG")}{" "}
-                  {new Date(s.scheduledAt).toLocaleTimeString("ar-EG", {
+                  {new Date(s.scheduledAt).toLocaleDateString(isEn ? "en-US" : "ar-EG")}{" "}
+                  {new Date(s.scheduledAt).toLocaleTimeString(isEn ? "en-US" : "ar-EG", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </span>
               </div>
               <span className="text-[11px] font-mono tabular-nums bg-muted/60 text-foreground px-2 py-0.5 rounded-md">
-                {s.actualDuration || s.plannedDuration} دقيقة
+                {s.actualDuration || s.plannedDuration} {isEn ? "min" : "دقيقة"}
               </span>
             </div>
 
             {s.subject?.name && (
               <div className="flex items-center gap-1.5 text-xs">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px]">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px]">
                   <BookOpen className="w-3 h-3" />
                   {s.subject.name}
                 </span>
@@ -210,19 +214,19 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                     type="button"
                     onClick={() => handleConfirmSession(s.id)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors border border-emerald-500/20"
-                    title="تأكيد الحضور"
+                    title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
                   >
                     <Check className="w-3.5 h-3.5" />
-                    تأكيد
+                    {t("education.actions.confirm", isEn ? "Confirm" : "تأكيد")}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCancelSession(s.id)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors border border-red-500/20"
-                    title="إلغاء الحصة"
+                    title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
                   >
                     <X className="w-3.5 h-3.5" />
-                    إلغاء
+                    {t("education.actions.cancel", isEn ? "Cancel" : "إلغاء")}
                   </button>
                 </>
               )}
@@ -230,17 +234,17 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 type="button"
                 onClick={() => setSessionModal(s)}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border/60"
-                title="تفاصيل"
+                title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               >
                 <Pencil className="w-3.5 h-3.5" />
-                تعديل
+                {t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               </button>
             </div>
           </div>
         ))}
         {filtered.length === 0 && (
           <div className="bg-card border border-border/80 rounded-xl p-8 text-center text-xs text-muted-foreground">
-            لا توجد حصص مسجلة
+            {t("education.sessions.empty", isEn ? "No registered sessions matching criteria" : "لا توجد حصص مسجلة")}
           </div>
         )}
       </div>
@@ -252,15 +256,15 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
             <thead>
               <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs">
                 {[
-                  "الطالب",
-                  "المهندس",
-                  "المادة",
-                  "التاريخ والوقت",
-                  "المدة",
-                  "الحالة",
+                  t("education.enrollments.student", isEn ? "Student" : "الطالب"),
+                  t("education.enrollments.teacher", isEn ? "Instructor" : "المهندس"),
+                  t("education.enrollments.subject", isEn ? "Subject" : "المادة"),
+                  t("education.sessions.dateAndTime", isEn ? "Date & Time" : "التاريخ والوقت"),
+                  t("education.sessions.plannedDuration", isEn ? "Duration" : "المدة"),
+                  t("education.subjects.status", isEn ? "Status" : "الحالة"),
                   "",
-                ].map((h) => (
-                  <th key={h} className="text-right py-3 px-4 font-semibold">
+                ].map((h, i) => (
+                  <th key={i} className={`${isEn ? "text-left" : "text-right"} py-3 px-4 font-semibold`}>
                     {h}
                   </th>
                 ))}
@@ -290,8 +294,8 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                     {s.subject?.name || "—"}
                   </td>
                   <td className={CELL_CLS + " font-mono text-muted-foreground"}>
-                    {new Date(s.scheduledAt).toLocaleDateString("ar-EG")}{" "}
-                    {new Date(s.scheduledAt).toLocaleTimeString("ar-EG", {
+                    {new Date(s.scheduledAt).toLocaleDateString(isEn ? "en-US" : "ar-EG")}{" "}
+                    {new Date(s.scheduledAt).toLocaleTimeString(isEn ? "en-US" : "ar-EG", {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -301,15 +305,15 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                       CELL_CLS + " font-mono tabular-nums text-foreground"
                     }
                   >
-                    {s.actualDuration || s.plannedDuration} دقيقة
+                    {s.actualDuration || s.plannedDuration} {isEn ? "min" : "دقيقة"}
                   </td>
                   <td className={CELL_CLS}>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                        SESSION_STATUS[s.status]?.color || ""
+                        getSessionStatus(s.status, isEn).color
                       }`}
                     >
-                      {SESSION_STATUS[s.status]?.label || s.status}
+                      {getSessionStatus(s.status, isEn).label}
                     </span>
                   </td>
                   <td className={CELL_CLS}>
@@ -320,7 +324,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                             type="button"
                             onClick={() => handleConfirmSession(s.id)}
                             className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors"
-                            title="تأكيد الحضور"
+                            title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -328,7 +332,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                             type="button"
                             onClick={() => handleCancelSession(s.id)}
                             className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                            title="إلغاء الحصة"
+                            title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -338,7 +342,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                         type="button"
                         onClick={() => setSessionModal(s)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                        title="تفاصيل"
+                        title={t("education.actions.edit", isEn ? "Edit Details" : "تفاصيل")}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -351,7 +355,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
         </div>
         {filtered.length === 0 && (
           <p className="text-center py-12 text-xs text-muted-foreground">
-            لا توجد حصص مسجلة
+            {t("education.sessions.empty", isEn ? "No registered sessions" : "لا توجد حصص مسجلة")}
           </p>
         )}
       </div>

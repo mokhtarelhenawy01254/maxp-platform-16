@@ -123,7 +123,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={isEn ? "ltr" : "rtl"}>
       {/* Quick Stats Overview Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         <div className="bg-card border border-border/70 rounded-xl p-3 flex items-center gap-3 shadow-2xs">
@@ -353,7 +353,9 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                             : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
                         }`}
                       >
-                        {t.isActive ? "نشط" : "معطل"}
+                        {t.isActive
+                          ? (isEn ? "Active" : "نشط")
+                          : (isEn ? "Inactive" : "معطل")}
                       </span>
                     </div>
 
@@ -372,7 +374,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                             type="button"
                             onClick={(e) => handleCopyPhone(t.id, t.phone!, e)}
                             className="p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors"
-                            title="نسخ الرقم"
+                            title={isEn ? "Copy phone" : "نسخ الرقم"}
                           >
                             {copiedId === t.id ? (
                               <Check className="w-3 h-3 text-emerald-500" />
@@ -383,12 +385,12 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         </div>
                       ) : (
                         <span className="text-[11px] text-muted-foreground/70">
-                          بدون هاتف
+                          {isEn ? "No phone" : "بدون هاتف"}
                         </span>
                       )}
 
                       {t.qualifications && (
-                        <span className="text-[11px] text-muted-foreground truncate max-w-[200px] border-r border-border/60 pr-2">
+                        <span className={`text-[11px] text-muted-foreground truncate max-w-[200px] ${isEn ? "border-l pl-2" : "border-r pr-2"} border-border/60`}>
                           {t.qualifications}
                         </span>
                       )}
@@ -406,15 +408,15 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                       >
                         <BookOpen className="w-2.5 h-2.5 text-blue-500 shrink-0" />
                         <span className="font-sans font-medium">
-                          {sr.subject?.name || "مادة"}:
+                          {sr.subject?.name || (isEn ? "Subject" : "مادة")}:
                         </span>
-                        <span>{sr.hourlyRate} ج.م/س</span>
+                        <span>{sr.hourlyRate} {isEn ? "EGP/h" : "ج.م/س"}</span>
                       </span>
                     ))
                   ) : (
                     <span className="text-[11px] text-muted-foreground/70 italic flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-muted-foreground/50" />
-                      لا توجد أسعار محددة
+                      {isEn ? "No rates specified" : "لا توجد أسعار محددة"}
                     </span>
                   )}
                 </div>
@@ -428,7 +430,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors"
-                      title="مراسلة واتساب"
+                      title={isEn ? "Message on WhatsApp" : "مراسلة واتساب"}
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                     </a>
@@ -438,10 +440,10 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                   <Link
                     to={`/admin/education/teacher/${t.id}`}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-muted/70 hover:bg-muted text-foreground text-xs rounded-lg transition-colors font-medium border border-border/60"
-                    title="عرض الملف والتفاصيل"
+                    title={isEn ? "View profile details" : "عرض الملف والتفاصيل"}
                   >
                     <Eye className="w-3.5 h-3.5 text-primary" />
-                    <span>عرض</span>
+                    <span>{isEn ? "View" : "عرض"}</span>
                   </Link>
 
                   {/* Edit */}
@@ -449,7 +451,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => setTeacherModal(t)}
                     className="p-1.5 text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted rounded-lg transition-colors border border-border/60"
-                    title="تعديل البيانات"
+                    title={isEn ? "Edit Details" : "تعديل البيانات"}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -463,10 +465,10 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
                         : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                     }`}
-                    title={t.isActive ? "تعطيل المهندس" : "تفعيل المهندس"}
+                    title={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")}
                   >
                     <Power className="w-3 h-3" />
-                    <span>{t.isActive ? "تعطيل" : "تفعيل"}</span>
+                    <span>{t.isActive ? (isEn ? "Deactivate" : "تعطيل") : (isEn ? "Activate" : "تفعيل")}</span>
                   </button>
 
                   {/* Delete */}
@@ -474,7 +476,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => handleDeleteTeacher(t.id)}
                     className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title="حذف المهندس"
+                    title={isEn ? "Delete Instructor" : "حذف المهندس"}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   ChevronRight,
@@ -30,31 +31,39 @@ import type {
   EducationStudent,
 } from "./education-management/types";
 
-const MONTHS_AR = [
+const getMonths = (isEn: boolean) => isEn ? [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+] : [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
 ];
 
-const DAYS_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const getDays = (isEn: boolean) => isEn
+  ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+  : ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+const MONTHS_AR = getMonths(false);
+const DAYS_AR = getDays(false);
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string }> = {
   SCHEDULED: {
-    label: "مجدولة",
+    label: isEn ? "Scheduled" : "مجدولة",
     badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
     dot: "bg-blue-500",
   },
   CONFIRMED: {
-    label: "مؤكدة",
+    label: isEn ? "Confirmed" : "مؤكدة",
     badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
     dot: "bg-emerald-500",
   },
   COMPLETED: {
-    label: "مكتملة",
+    label: isEn ? "Completed" : "مكتملة",
     badge: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
     dot: "bg-purple-500",
   },
   CANCELLED: {
-    label: "ملغية",
+    label: isEn ? "Cancelled" : "ملغية",
     badge: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
     dot: "bg-red-500",
   },
@@ -79,6 +88,10 @@ const toLocalTimeStr = (d: Date | string): string => {
 };
 
 const EducationCalendarPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+  const months = useMemo(() => getMonths(isEn), [isEn]);
+  const days = useMemo(() => getDays(isEn), [isEn]);
   const [sessions, setSessions] = useState<EducationSession[]>([]);
   const [teachers, setTeachers] = useState<EducationTeacher[]>([]);
   const [subjects, setSubjects] = useState<EducationSubject[]>([]);
@@ -266,7 +279,7 @@ const EducationCalendarPage: React.FC = () => {
   };
 
   const handleCancelSession = async (id: string) => {
-    if (!window.confirm("هل أنت متأكد من رغبتك في إلغاء هذه الحصة الأكاديمية؟")) return;
+    if (!window.confirm(isEn ? "Are you sure you want to cancel this academic session?" : "هل أنت متأكد من رغبتك في إلغاء هذه الحصة الأكاديمية؟")) return;
     setActionLoading(id);
     try {
       const res = await fetch(api(`sessions/${id}/cancel`), {
@@ -299,7 +312,7 @@ const EducationCalendarPage: React.FC = () => {
     });
     const result = await res.json();
     if (!result.success) {
-      throw new Error(result.error || result.message || "تعذر حفظ الحصة، يرجى مراجعة البيانات");
+      throw new Error(result.error || result.message || (isEn ? "Failed to save session, please review data" : "تعذر حفظ الحصة، يرجى مراجعة البيانات"));
     }
     setSessionModal(undefined);
     setSelectedSession(null);
@@ -337,7 +350,7 @@ const EducationCalendarPage: React.FC = () => {
       return {
         date: d,
         dateStr,
-        dayName: DAYS_AR[d.getDay()],
+        dayName: days[d.getDay()],
         dayNumber: d.getDate(),
         isToday: dateStr === todayStr,
         sessions: filteredSessions.filter((s: EducationSession) => toLocalDateStr(s.scheduledAt) === dateStr),
@@ -363,7 +376,7 @@ const EducationCalendarPage: React.FC = () => {
 
     return Array.from(map.entries()).map(([dateStr, daySessions]) => {
       const dateObj = new Date(dateStr + "T00:00:00");
-      const dayName = isNaN(dateObj.getTime()) ? "" : DAYS_AR[dateObj.getDay()];
+      const dayName = isNaN(dateObj.getTime()) ? "" : days[dateObj.getDay()];
       return {
         dateStr,
         dayName,
@@ -401,8 +414,8 @@ const EducationCalendarPage: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 rtl font-sans"
-      dir="rtl"
+      className="w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 font-sans"
+      dir={isEn ? "ltr" : "rtl"}
     >
       {/* Header & Main Navigation */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/80">
@@ -410,17 +423,17 @@ const EducationCalendarPage: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
               <CalendarIcon className="w-3.5 h-3.5" />
-              التقويم الأكاديمي الشامل
+              {t("education.calendar.badge", isEn ? "Comprehensive Academic Calendar" : "التقويم الأكاديمي الشامل")}
             </span>
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {stats.total} حصة مسجلة
+              {stats.total} {t("education.calendar.sessionsCount", isEn ? "sessions" : "حصة مسجلة")}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            جدول ومواعيد الحصص الأكاديمية
+            {t("education.calendar.title", isEn ? "Academic Sessions Schedule & Calendar" : "جدول ومواعيد الحصص الأكاديمية")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            إدارة المواعيد، تأكيد الجلسات، واستعراض جداول المهندسين والطلاب
+            {t("education.calendar.subtitle", isEn ? "Manage schedules, confirm sessions, and inspect instructor & student calendars" : "إدارة المواعيد، تأكيد الجلسات، واستعراض جداول المهندسين والطلاب")}
           </p>
         </div>
 
@@ -437,7 +450,7 @@ const EducationCalendarPage: React.FC = () => {
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              شهري
+              {t("education.calendar.viewMonth", isEn ? "Month" : "شهري")}
             </button>
             <button
               onClick={() => setViewMode("week")}
@@ -448,7 +461,7 @@ const EducationCalendarPage: React.FC = () => {
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
-              أسبوعي
+              {t("education.calendar.viewWeek", isEn ? "Week" : "أسبوعي")}
             </button>
             <button
               onClick={() => setViewMode("agenda")}
@@ -459,7 +472,7 @@ const EducationCalendarPage: React.FC = () => {
               }`}
             >
               <List className="w-3.5 h-3.5" />
-              أجندة
+              {t("education.calendar.viewAgenda", isEn ? "Agenda" : "أجندة")}
             </button>
           </div>
 
@@ -469,7 +482,7 @@ const EducationCalendarPage: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition-all shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            حجز حصة جديدة
+            {t("education.calendar.newSessionBtn", isEn ? "Schedule New Session" : "حجز حصة جديدة")}
           </button>
         </div>
       </div>
@@ -482,7 +495,7 @@ const EducationCalendarPage: React.FC = () => {
             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-colors shadow-xs"
           >
             <RotateCcw className="w-3.5 h-3.5 text-primary" />
-            اليوم
+            {t("education.calendar.todayBtn", isEn ? "Today" : "اليوم")}
           </button>
 
           {/* Direct Month & Year Pickers */}
@@ -492,7 +505,7 @@ const EducationCalendarPage: React.FC = () => {
               onChange={(e) => setCurrentMonth(Number(e.target.value))}
               className="bg-background border border-border/80 text-foreground text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
             >
-              {MONTHS_AR.map((m, idx) => (
+              {months.map((m, idx) => (
                 <option key={m} value={idx}>
                   {m}
                 </option>
@@ -517,11 +530,11 @@ const EducationCalendarPage: React.FC = () => {
         <div className="flex items-center justify-between sm:justify-end gap-2">
           <button
             onClick={viewMode === "week" ? prevWeek : prevMonth}
-            aria-label="السابق"
+            aria-label={isEn ? "Previous" : "السابق"}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-colors shadow-xs"
           >
             <ChevronRight className="w-4 h-4" />
-            {viewMode === "week" ? "الأسبوع السابق" : "الشهر السابق"}
+            {isEn ? (viewMode === "week" ? "Previous Week" : "Previous Month") : (viewMode === "week" ? "الأسبوع السابق" : "الشهر السابق")}
           </button>
 
           <span className="text-xs font-bold text-foreground px-2 font-mono text-center">
@@ -532,10 +545,10 @@ const EducationCalendarPage: React.FC = () => {
 
           <button
             onClick={viewMode === "week" ? nextWeek : nextMonth}
-            aria-label="التالي"
+            aria-label={isEn ? "Next" : "التالي"}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-border/80 bg-background hover:bg-muted text-foreground transition-colors shadow-xs"
           >
-            {viewMode === "week" ? "الأسبوع التالي" : "الشهر التالي"}
+            {isEn ? (viewMode === "week" ? "Next Week" : "Next Month") : (viewMode === "week" ? "الأسبوع التالي" : "الشهر التالي")}
             <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
@@ -549,7 +562,7 @@ const EducationCalendarPage: React.FC = () => {
             <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="بحث بالطالب، المهندس، المادة، الموضوع..."
+              placeholder={t("education.calendar.searchPlaceholder", isEn ? "Search by student, instructor, subject, topic..." : "بحث بالطالب، المهندس، المادة، الموضوع...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border/80 rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
@@ -562,7 +575,7 @@ const EducationCalendarPage: React.FC = () => {
             onChange={(e) => setTeacherFilter(e.target.value)}
             className="w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
           >
-            <option value="">جميع المهندسين والمعلمين</option>
+            <option value="">{t("education.calendar.allTeachers", isEn ? "All Instructors" : "جميع المهندسين والمعلمين")}</option>
             {teachers
               .filter((t) => t.isActive !== false)
               .map((t) => (
@@ -578,7 +591,7 @@ const EducationCalendarPage: React.FC = () => {
             onChange={(e) => setSubjectFilter(e.target.value)}
             className="w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
           >
-            <option value="">جميع المواد والمسارات</option>
+            <option value="">{t("education.calendar.allSubjects", isEn ? "All Subjects" : "جميع المواد والمسارات")}</option>
             {subjects
               .filter((s) => s.isActive !== false)
               .map((s) => (
@@ -595,7 +608,7 @@ const EducationCalendarPage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="flex-1 bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
             >
-              <option value="">جميع الحالات</option>
+              <option value="">{t("education.calendar.allStatuses", isEn ? "All Statuses" : "جميع الحالات")}</option>
               {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>
                   {cfg.label}
@@ -606,7 +619,7 @@ const EducationCalendarPage: React.FC = () => {
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                title="إعادة ضبط الفلاتر"
+                title={isEn ? "Reset Filters" : "إعادة ضبط الفلاتر"}
                 className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors shadow-xs"
               >
                 <X className="w-3.5 h-3.5" />
@@ -620,7 +633,7 @@ const EducationCalendarPage: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between shadow-xs">
           <div className="space-y-0.5">
-            <div className="text-[11px] text-muted-foreground">إجمالي الحصص المعروضة</div>
+            <div className="text-[11px] text-muted-foreground">{t("education.calendar.totalDisplayed", isEn ? "Total Displayed" : "إجمالي الحصص المعروضة")}</div>
             <div className="text-lg font-bold text-foreground font-mono tabular-nums">{stats.total}</div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
@@ -630,7 +643,7 @@ const EducationCalendarPage: React.FC = () => {
 
         <div className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between shadow-xs">
           <div className="space-y-0.5">
-            <div className="text-[11px] text-muted-foreground">حصص مؤكدة</div>
+            <div className="text-[11px] text-muted-foreground">{t("education.calendar.confirmedSessions", isEn ? "Confirmed Sessions" : "حصص مؤكدة")}</div>
             <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {stats.confirmed}
             </div>
@@ -642,7 +655,7 @@ const EducationCalendarPage: React.FC = () => {
 
         <div className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between shadow-xs">
           <div className="space-y-0.5">
-            <div className="text-[11px] text-muted-foreground">حصص مجدولة</div>
+            <div className="text-[11px] text-muted-foreground">{t("education.calendar.scheduledSessions", isEn ? "Scheduled Sessions" : "حصص مجدولة")}</div>
             <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums">
               {stats.scheduled}
             </div>
@@ -654,7 +667,7 @@ const EducationCalendarPage: React.FC = () => {
 
         <div className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between shadow-xs">
           <div className="space-y-0.5">
-            <div className="text-[11px] text-muted-foreground">حصص ملغية</div>
+            <div className="text-[11px] text-muted-foreground">{t("education.calendar.cancelledSessions", isEn ? "Cancelled Sessions" : "حصص ملغية")}</div>
             <div className="text-lg font-bold text-red-600 dark:text-red-400 font-mono tabular-nums">
               {stats.cancelled}
             </div>
@@ -670,7 +683,7 @@ const EducationCalendarPage: React.FC = () => {
         {loading && (
           <div className="p-8 text-center space-y-2">
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
-            <p className="text-xs text-muted-foreground">جارٍ تحميل وتحديث الحصص الأكاديمية...</p>
+            <p className="text-xs text-muted-foreground">{t("education.calendar.loadingSessions", isEn ? "Loading and updating academic sessions..." : "جارٍ تحميل وتحديث الحصص الأكاديمية...")}</p>
           </div>
         )}
 
@@ -734,7 +747,7 @@ const EducationCalendarPage: React.FC = () => {
                                 ? "bg-primary text-primary-foreground shadow-xs"
                                 : "text-foreground hover:bg-muted"
                             }`}
-                            title="عرض كافة حصص هذا اليوم"
+                            title={isEn ? "View all sessions for this day" : "عرض كافة حصص هذا اليوم"}
                           >
                             {day}
                           </button>
@@ -751,7 +764,7 @@ const EducationCalendarPage: React.FC = () => {
                           type="button"
                           onClick={() => openAddSessionForDate(dateStr)}
                           className="w-5 h-5 rounded-md hover:bg-primary/10 hover:text-primary text-muted-foreground flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 sm:opacity-70"
-                          title="حجز حصة جديدة في هذا اليوم"
+                          title={isEn ? "Book new session on this day" : "حجز حصة جديدة في هذا اليوم"}
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -766,12 +779,12 @@ const EducationCalendarPage: React.FC = () => {
                               key={s.id}
                               onClick={() => setSelectedSession(s)}
                               className={`w-full text-right text-[11px] px-1.5 py-0.5 rounded-md border truncate block transition-transform active:scale-[0.98] ${st.badge}`}
-                              title={`${s.scheduledAt.slice(11, 16)} - ${s.student?.firstName || "طالب"} (${s.subject?.name || ""})`}
+                              title={`${s.scheduledAt.slice(11, 16)} - ${s.student?.firstName || (isEn ? "Student" : "طالب")} (${s.subject?.name || ""})`}
                             >
                               <span className="font-mono tabular-nums font-semibold ml-1">
                                 {toLocalTimeStr(s.scheduledAt)}
                               </span>
-                              <span>{s.student?.firstName || "طالب"}</span>
+                              <span>{s.student?.firstName || (isEn ? "Student" : "طالب")}</span>
                             </button>
                           );
                         })}
@@ -789,7 +802,7 @@ const EducationCalendarPage: React.FC = () => {
                             }
                             className="text-[10px] text-primary font-bold px-1 py-0.5 hover:underline block text-right w-full"
                           >
-                            +{daySessions.length - 3} المزيد
+                            +{daySessions.length - 3} {isEn ? "more" : "المزيد"}
                           </button>
                         )}
                       </div>
@@ -831,7 +844,7 @@ const EducationCalendarPage: React.FC = () => {
                         type="button"
                         onClick={() => openAddSessionForDate(col.dateStr)}
                         className="w-6 h-6 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                        title="إضافة حصة"
+                        title={isEn ? "Add session" : "إضافة حصة"}
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -842,13 +855,13 @@ const EducationCalendarPage: React.FC = () => {
                   <div className="space-y-2 flex-1 min-h-[160px]">
                     {col.sessions.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-center p-3 text-muted-foreground border border-dashed border-border/60 rounded-lg">
-                        <span className="text-[11px]">لا توجد حصص</span>
+                        <span className="text-[11px]">{isEn ? "No sessions" : "لا توجد حصص"}</span>
                         <button
                           type="button"
                           onClick={() => openAddSessionForDate(col.dateStr)}
                           className="mt-1 text-[10px] text-primary hover:underline font-medium"
                         >
-                          + حجز حصة
+                          {isEn ? "+ Book session" : "+ حجز حصة"}
                         </button>
                       </div>
                     ) : (
@@ -862,17 +875,17 @@ const EducationCalendarPage: React.FC = () => {
                           >
                             <div className="flex items-center justify-between font-mono font-bold text-[11px]">
                               <span>{toLocalTimeStr(s.scheduledAt)}</span>
-                              <span className="text-[10px]">{s.plannedDuration} د</span>
+                              <span className="text-[10px]">{s.plannedDuration} {isEn ? "min" : "د"}</span>
                             </div>
                             <div className="font-semibold text-foreground truncate">
                               {s.student?.firstName} {s.student?.lastName || ""}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
-                              {s.subject?.name || "مادة غير محددة"}
+                              {s.subject?.name || (isEn ? "Unspecified Subject" : "مادة غير محددة")}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
                               <User className="w-3 h-3 text-primary shrink-0" />
-                              <span>{s.teacher?.name || "مهندس غير محدد"}</span>
+                              <span>{s.teacher?.name || (isEn ? "Unspecified Instructor" : "مهندس غير محدد")}</span>
                             </div>
                           </div>
                         );
@@ -891,9 +904,9 @@ const EducationCalendarPage: React.FC = () => {
             {agendaGroups.length === 0 ? (
               <div className="text-center py-12 space-y-3">
                 <CalendarIcon className="w-10 h-10 text-muted-foreground/40 mx-auto" />
-                <h3 className="text-sm font-bold text-foreground">لا توجد حصص مسجلة في هذا النطاق</h3>
+                <h3 className="text-sm font-bold text-foreground">{t("education.calendar.noSessionsRange", isEn ? "No sessions recorded in this range" : "لا توجد حصص مسجلة في هذا النطاق")}</h3>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  لم يتم العثور على أي مواعيد مطابقة للفلاتر المحددة أو خلال هذا الشهر
+                  {t("education.calendar.noSessionsRangeDesc", isEn ? "No sessions match the selected filters or month" : "لم يتم العثور على أي مواعيد مطابقة للفلاتر المحددة أو خلال هذا الشهر")}
                 </p>
                 <button
                   type="button"
@@ -901,7 +914,7 @@ const EducationCalendarPage: React.FC = () => {
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg shadow-xs hover:bg-primary/90"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  حجز أول حصة الآن
+                  {t("education.calendar.bookFirstSession", isEn ? "Book First Session Now" : "حجز أول حصة الآن")}
                 </button>
               </div>
             ) : (
@@ -923,7 +936,7 @@ const EducationCalendarPage: React.FC = () => {
                         {group.dateStr}
                       </span>
                       <span className="text-[11px] text-muted-foreground">
-                        ({group.sessions.length} حصة)
+                        ({group.sessions.length} {t("education.calendar.sessionsCountUnit", isEn ? "sessions" : "حصة")})
                       </span>
                     </div>
 
@@ -933,7 +946,7 @@ const EducationCalendarPage: React.FC = () => {
                       className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-semibold"
                     >
                       <Plus className="w-3 h-3" />
-                      إضافة حصة
+                      {t("education.calendar.addSession", isEn ? "Add Session" : "إضافة حصة")}
                     </button>
                   </div>
 
@@ -953,7 +966,7 @@ const EducationCalendarPage: React.FC = () => {
                               </div>
                               <div className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
                                 <BookOpen className="w-3 h-3 text-primary shrink-0" />
-                                <span>{s.subject?.name || "مادة غير محددة"}</span>
+                                <span>{s.subject?.name || (isEn ? "Unspecified Subject" : "مادة غير محددة")}</span>
                               </div>
                             </div>
 
@@ -965,17 +978,17 @@ const EducationCalendarPage: React.FC = () => {
                           <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground bg-muted/20 p-2 rounded-lg">
                             <div className="flex items-center gap-1 truncate">
                               <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                              <span className="truncate">{s.teacher?.name || "مهندس غير محدد"}</span>
+                              <span className="truncate">{s.teacher?.name || (isEn ? "Unspecified Instructor" : "مهندس غير محدد")}</span>
                             </div>
                             <div className="flex items-center gap-1 justify-end font-mono tabular-nums">
                               <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                              <span>{toLocalTimeStr(s.scheduledAt)} ({s.plannedDuration} د)</span>
+                              <span>{toLocalTimeStr(s.scheduledAt)} ({s.plannedDuration} {isEn ? "min" : "د"})</span>
                             </div>
                           </div>
 
                           {s.topic && (
                             <div className="text-[11px] text-muted-foreground truncate bg-card border border-border/60 px-2 py-1 rounded-md">
-                              موضوع: {s.topic}
+                              {t("education.calendar.topicPrefix", isEn ? "Topic:" : "موضوع:")} {s.topic}
                             </div>
                           )}
 
@@ -992,7 +1005,7 @@ const EducationCalendarPage: React.FC = () => {
                                 ) : (
                                   <Check className="w-3 h-3" />
                                 )}
-                                تأكيد
+                                {t("education.calendar.confirmBtn", isEn ? "Confirm" : "تأكيد")}
                               </button>
                             )}
 
@@ -1001,7 +1014,7 @@ const EducationCalendarPage: React.FC = () => {
                               onClick={() => setSelectedSession(s)}
                               className="px-2 py-1 bg-muted/60 text-foreground border border-border/80 rounded-md text-[11px] font-medium hover:bg-muted"
                             >
-                              تفاصيل وإجراءات
+                              {t("education.calendar.detailsAndActions", isEn ? "Details & Actions" : "تفاصيل وإجراءات")}
                             </button>
                           </div>
                         </div>
@@ -1017,13 +1030,13 @@ const EducationCalendarPage: React.FC = () => {
         {/* Empty state when no sessions in month */}
         {!loading && sessions.length === 0 && (
           <div className="border-t border-border/80 py-8 text-center text-xs text-muted-foreground space-y-1">
-            <p>لا توجد حصص أكاديمية مسجلة في هذا الشهر</p>
+            <p>{t("education.calendar.noSessionsMonth", isEn ? "No academic sessions recorded for this month" : "لا توجد حصص أكاديمية مسجلة في هذا الشهر")}</p>
             <button
               type="button"
               onClick={() => setSessionModal({})}
               className="text-primary hover:underline font-semibold"
             >
-              + اضغط هنا لجدولة حصة جديدة
+              {t("education.calendar.clickToSchedule", isEn ? "+ Click here to schedule a new session" : "+ اضغط هنا لجدولة حصة جديدة")}
             </button>
           </div>
         )}
@@ -1046,7 +1059,7 @@ const EducationCalendarPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-foreground">
-                    حصص يوم {dayOverviewDate.dayName}
+                    {t("education.calendar.daySessionsTitle", isEn ? "Sessions on" : "حصص يوم")} {dayOverviewDate.dayName}
                   </h3>
                   <p className="text-[11px] text-muted-foreground font-mono">
                     {dayOverviewDate.dateStr}
@@ -1066,7 +1079,7 @@ const EducationCalendarPage: React.FC = () => {
             <div className="space-y-2">
               {filteredSessions.filter((s) => toLocalDateStr(s.scheduledAt) === dayOverviewDate.dateStr).length === 0 ? (
                 <div className="text-center py-6 text-xs text-muted-foreground">
-                  لا توجد حصص في هذا اليوم
+                  {t("education.calendar.noSessionsDay", isEn ? "No sessions on this day" : "لا توجد حصص في هذا اليوم")}
                 </div>
               ) : (
                 filteredSessions
@@ -1090,17 +1103,17 @@ const EducationCalendarPage: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                           <div className="flex items-center gap-1 truncate">
                             <BookOpen className="w-3 h-3 text-primary shrink-0" />
-                            <span className="truncate">{s.subject?.name || "مادة غير محددة"}</span>
+                            <span className="truncate">{s.subject?.name || (isEn ? "Unspecified Subject" : "مادة غير محددة")}</span>
                           </div>
                           <div className="flex items-center gap-1 truncate">
                             <User className="w-3 h-3 text-muted-foreground shrink-0" />
-                            <span className="truncate">{s.teacher?.name || "مهندس غير محدد"}</span>
+                            <span className="truncate">{s.teacher?.name || (isEn ? "Unspecified Instructor" : "مهندس غير محدد")}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] pt-2 border-t border-border/60">
                           <div className="font-mono text-muted-foreground">
-                            {toLocalTimeStr(s.scheduledAt)} ({s.plannedDuration} دقيقة)
+                            {toLocalTimeStr(s.scheduledAt)} ({s.plannedDuration} {t("education.calendar.minutes", isEn ? "min" : "دقيقة")})
                           </div>
                           <div className="flex items-center gap-1.5">
                             {s.status === "SCHEDULED" && (
@@ -1110,7 +1123,7 @@ const EducationCalendarPage: React.FC = () => {
                                 onClick={() => handleConfirmSession(s.id)}
                                 className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded text-[11px] font-medium hover:bg-emerald-500/20"
                               >
-                                تأكيد
+                                {t("education.calendar.confirmBtn", isEn ? "Confirm" : "تأكيد")}
                               </button>
                             )}
                             <button
@@ -1142,7 +1155,7 @@ const EducationCalendarPage: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                حجز حصة لهذا اليوم
+                {t("education.calendar.bookForDayBtn", isEn ? "Book session for this day" : "حجز حصة لهذا اليوم")}
               </button>
 
               <button
@@ -1173,7 +1186,7 @@ const EducationCalendarPage: React.FC = () => {
                   <CalendarIcon className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground">تفاصيل وإجراءات الحصة</h3>
+                  <h3 className="text-base font-bold text-foreground">{t("education.calendar.sessionDetailsTitle", isEn ? "Session Details & Actions" : "تفاصيل وإجراءات الحصة")}</h3>
                   <span className="text-[11px] text-muted-foreground font-mono">
                     ID: {selectedSession.id.slice(0, 8)}...
                   </span>
@@ -1196,7 +1209,7 @@ const EducationCalendarPage: React.FC = () => {
                   <p className="font-semibold text-foreground text-xs">
                     {selectedSession.student?.firstName} {selectedSession.student?.lastName || ""}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">الطالب المقيد</p>
+                  <p className="text-[11px] text-muted-foreground">{t("education.calendar.enrolledStudent", isEn ? "Enrolled Student" : "الطالب المقيد")}</p>
                 </div>
               </div>
 
@@ -1205,9 +1218,9 @@ const EducationCalendarPage: React.FC = () => {
                 <GraduationCap className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1">
                   <p className="font-semibold text-foreground text-xs">
-                    {selectedSession.teacher?.name || "مهندس غير محدد"}
+                    {selectedSession.teacher?.name || (isEn ? "Unspecified Instructor" : "مهندس غير محدد")}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">المدرس / المهندس المسؤول</p>
+                  <p className="text-[11px] text-muted-foreground">{t("education.calendar.assignedTeacher", isEn ? "Assigned Instructor" : "المدرس / المهندس المسؤول")}</p>
                 </div>
               </div>
 
@@ -1216,9 +1229,9 @@ const EducationCalendarPage: React.FC = () => {
                 <BookOpen className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 <div className="flex-1">
                   <p className="font-semibold text-foreground text-xs">
-                    {selectedSession.subject?.name || "مادة غير محددة"}
+                    {selectedSession.subject?.name || (isEn ? "Unspecified Subject" : "مادة غير محددة")}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">المادة الدراسية</p>
+                  <p className="text-[11px] text-muted-foreground">{t("education.calendar.subject", isEn ? "Academic Subject" : "المادة الدراسية")}</p>
                 </div>
               </div>
 
@@ -1233,17 +1246,17 @@ const EducationCalendarPage: React.FC = () => {
                       month: "long",
                       day: "numeric",
                     })}{" "}
-                    — الساعة {toLocalTimeStr(selectedSession.scheduledAt)}
+                    — {isEn ? "at" : "الساعة"} {toLocalTimeStr(selectedSession.scheduledAt)}
                   </p>
                   <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
-                    المدة المحددة: {selectedSession.actualDuration || selectedSession.plannedDuration} دقيقة
+                    {t("education.calendar.durationLabel", isEn ? "Duration:" : "المدة المحددة:")} {selectedSession.actualDuration || selectedSession.plannedDuration} {t("education.calendar.minutes", isEn ? "minutes" : "دقيقة")}
                   </p>
                 </div>
               </div>
 
               {/* Status */}
               <div className="flex justify-between items-center p-3 rounded-xl border border-border/60 bg-card">
-                <span className="text-muted-foreground font-medium">حالة الحصة الحالية</span>
+                <span className="text-muted-foreground font-medium">{t("education.calendar.currentStatus", isEn ? "Current Session Status" : "حالة الحصة الحالية")}</span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
                     STATUS_CONFIG[selectedSession.status]?.badge || ""
@@ -1256,14 +1269,14 @@ const EducationCalendarPage: React.FC = () => {
               {/* Topic & Notes */}
               {selectedSession.topic && (
                 <div className="p-3 bg-muted/30 border border-border/60 rounded-xl">
-                  <p className="text-[11px] text-muted-foreground mb-1">موضوع الدرس</p>
+                  <p className="text-[11px] text-muted-foreground mb-1">{t("education.calendar.lessonTopic", isEn ? "Lesson Topic" : "موضوع الدرس")}</p>
                   <p className="font-medium text-foreground text-xs">{selectedSession.topic}</p>
                 </div>
               )}
 
               {selectedSession.notes && (
                 <div className="p-3 bg-muted/30 border border-border/60 rounded-xl">
-                  <p className="text-[11px] text-muted-foreground mb-1">ملاحظات إضافية</p>
+                  <p className="text-[11px] text-muted-foreground mb-1">{t("education.calendar.additionalNotes", isEn ? "Additional Notes" : "ملاحظات إضافية")}</p>
                   <p className="text-foreground text-xs">{selectedSession.notes}</p>
                 </div>
               )}
@@ -1284,7 +1297,7 @@ const EducationCalendarPage: React.FC = () => {
                     ) : (
                       <Check className="w-3.5 h-3.5" />
                     )}
-                    تأكيد الحضور
+                    {t("education.calendar.confirmAttendance", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
                   </button>
                 )}
 
@@ -1298,7 +1311,7 @@ const EducationCalendarPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border/80 text-foreground hover:bg-muted rounded-lg text-xs font-semibold shadow-xs"
                 >
                   <Pencil className="w-3.5 h-3.5 text-primary" />
-                  تعديل الموعد
+                  {t("education.calendar.reschedule", isEn ? "Edit Schedule" : "تعديل الموعد")}
                 </button>
 
                 {selectedSession.status !== "CANCELLED" && (

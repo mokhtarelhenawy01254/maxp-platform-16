@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Users,
   BookOpen,
@@ -80,6 +81,7 @@ export interface EducationGroup {
   status: "OPEN" | "FULL" | "IN_PROGRESS" | "COMPLETED" | "ARCHIVED";
   notes?: string | null;
   createdAt?: string;
+  isFull?: boolean;
 }
 
 export interface GroupMember {
@@ -108,17 +110,23 @@ export interface GroupSessionItem {
   notes?: string;
 }
 
-const WEEK_DAYS = [
-  { id: "SATURDAY", label: "السبت" },
-  { id: "SUNDAY", label: "الأحد" },
-  { id: "MONDAY", label: "الاثنين" },
-  { id: "TUESDAY", label: "الثلاثاء" },
-  { id: "WEDNESDAY", label: "الأربعاء" },
-  { id: "THURSDAY", label: "الخميس" },
-  { id: "FRIDAY", label: "الجمعة" },
+export const getWeekDays = (isEn: boolean) => [
+  { id: "SATURDAY", label: isEn ? "Saturday" : "السبت" },
+  { id: "SUNDAY", label: isEn ? "Sunday" : "الأحد" },
+  { id: "MONDAY", label: isEn ? "Monday" : "الاثنين" },
+  { id: "TUESDAY", label: isEn ? "Tuesday" : "الثلاثاء" },
+  { id: "WEDNESDAY", label: isEn ? "Wednesday" : "الأربعاء" },
+  { id: "THURSDAY", label: isEn ? "Thursday" : "الخميس" },
+  { id: "FRIDAY", label: isEn ? "Friday" : "الجمعة" },
 ];
 
+export const WEEK_DAYS = getWeekDays(false);
+
 export default function EducationGroupsPage({ embedded = false }: { embedded?: boolean }) {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+  const weekDays = useMemo(() => getWeekDays(isEn), [isEn]);
+
   const [groups, setGroups] = useState<EducationGroup[]>([]);
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
   const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([]);
@@ -187,7 +195,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
     );
   }, [groupDetails?.members, memberSearch]);
 
-  // Fetch initial data
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -212,7 +219,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       }
     } catch (err: any) {
       console.error("Error fetching education groups:", err);
-      toast.error("تعذر تحميل بيانات المجموعات التعليمية");
+      toast.error(isEn ? "Failed to load study groups" : "تعذر تحميل بيانات المجموعات التعليمية");
     } finally {
       setLoading(false);
     }
@@ -222,7 +229,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
     fetchData();
   }, []);
 
-  // Fetch single group full details
   const fetchGroupDetails = async (groupId: string) => {
     try {
       const res = await fetch(api(`groups/${groupId}`), { headers: getAuthHeaders() });
@@ -232,7 +238,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           members: json.data.members || [],
           sessions: json.data.sessions || [],
         });
-        // Also fetch financials
         fetchGroupFinancials(groupId);
       }
     } catch (err) {
@@ -258,15 +263,14 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
     fetchGroupDetails(group.id);
   };
 
-  // Group Form Save
   const handleSaveGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingGroup?.name?.trim()) {
-      toast.error("اسم المجموعة مطلوب");
+      toast.error(isEn ? "Group name is required" : "اسم المجموعة مطلوب");
       return;
     }
     if (!editingGroup?.subjectId) {
-      toast.error("يرجى اختيار المادة الدراسية");
+      toast.error(isEn ? "Please select a subject" : "يرجى اختيار المادة الدراسية");
       return;
     }
 
@@ -283,7 +287,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       const data = await res.json();
 
       if (data.success) {
-        toast.success(isEdit ? "تم تحديث المجموعة بنجاح" : "تم إنشاء المجموعة بنجاح");
+        toast.success(
+          isEdit
+            ? (isEn ? "Group updated successfully" : "تم تحديث المجموعة بنجاح")
+            : (isEn ? "Group created successfully" : "تم إنشاء المجموعة بنجاح")
+        );
         setGroupModalOpen(false);
         setEditingGroup(null);
         fetchData();
@@ -291,18 +299,19 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           fetchGroupDetails(editingGroup.id);
         }
       } else {
-        toast.error(data.error || "فشل حفظ المجموعة");
+        toast.error(data.error || (isEn ? "Failed to save group" : "فشل حفظ المجموعة"));
       }
     } catch (err: any) {
-      toast.error(err.message || "حدث خطأ أثناء حفظ المجموعة");
+      toast.error(err.message || (isEn ? "An error occurred while saving the group" : "حدث خطأ أثناء حفظ المجموعة"));
     }
   };
 
-  // Delete Group
   const handleDeleteGroup = async (id: string, name: string) => {
-    if (!window.confirm(`هل أنت متأكد من حذف المجموعة "${name}"؟ سيتم حذف جميع تسجيلات الحضور الخاصة بها.`)) {
-      return;
-    }
+    const confirmMsg = isEn
+      ? `Are you sure you want to delete the group "${name}"? All associated attendance records will be removed.`
+      : `هل أنت متأكد من حذف المجموعة "${name}"؟ سيتم حذف جميع تسجيلات الحضور الخاصة بها.`;
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       const res = await fetch(api(`groups/${id}`), {
         method: "DELETE",
@@ -310,22 +319,21 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("تم حذف المجموعة");
+        toast.success(isEn ? "Group deleted successfully" : "تم حذف المجموعة");
         if (activeGroup?.id === id) setActiveGroup(null);
         fetchData();
       } else {
-        toast.error(data.error || "فشل حذف المجموعة");
+        toast.error(data.error || (isEn ? "Failed to delete group" : "فشل حذف المجموعة"));
       }
     } catch (err: any) {
-      toast.error("حدث خطأ أثناء الحذف");
+      toast.error(isEn ? "Error while deleting" : "حدث خطأ أثناء الحذف");
     }
   };
 
-  // Enroll Student to Group
   const handleEnrollStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeGroup || !enrollStudentId) {
-      toast.error("يرجى اختيار الطالب");
+      toast.error(isEn ? "Please select a student" : "يرجى اختيار الطالب");
       return;
     }
     try {
@@ -340,7 +348,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.data?.message || "تم تسجيل الطالب بنجاح");
+        toast.success(data.data?.message || (isEn ? "Student enrolled successfully" : "تم تسجيل الطالب بنجاح"));
         setEnrollModalOpen(false);
         setEnrollStudentId("");
         setEnrollAmountPaid("");
@@ -354,17 +362,19 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           totalMembers: (prev.totalMembers || 0) + 1,
         } : null);
       } else {
-        toast.error(data.error || "فشل تسجيل الطالب");
+        toast.error(data.error || (isEn ? "Failed to enroll student" : "فشل تسجيل الطالب"));
       }
     } catch (err: any) {
-      toast.error("حدث خطأ أثناء التسجيل");
+      toast.error(isEn ? "Error while enrolling" : "حدث خطأ أثناء التسجيل");
     }
   };
 
-  // Remove Member
   const handleRemoveMember = async (studentId: string, studentName: string) => {
     if (!activeGroup) return;
-    if (!window.confirm(`هل أنت متأكد من إزالة الطالب "${studentName}" من المجموعة؟`)) return;
+    const confirmMsg = isEn
+      ? `Are you sure you want to remove "${studentName}" from the group?`
+      : `هل أنت متأكد من إزالة الطالب "${studentName}" من المجموعة؟`;
+    if (!window.confirm(confirmMsg)) return;
 
     try {
       const res = await fetch(api(`groups/${activeGroup.id}/members/${studentId}`), {
@@ -373,7 +383,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("تم إزالة الطالب من المجموعة");
+        toast.success(isEn ? "Student removed from group" : "تم إزالة الطالب من المجموعة");
         fetchGroupDetails(activeGroup.id);
         fetchData();
         setActiveGroup((prev) => prev ? {
@@ -382,18 +392,17 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           totalMembers: Math.max(0, (prev.totalMembers || 1) - 1),
         } : null);
       } else {
-        toast.error(data.error || "فشل إزالة الطالب");
+        toast.error(data.error || (isEn ? "Failed to remove student" : "فشل إزالة الطالب"));
       }
     } catch (err) {
-      toast.error("حدث خطأ أثناء العملية");
+      toast.error(isEn ? "Error while removing student" : "حدث خطأ أثناء العملية");
     }
   };
 
-  // Transfer Member to another group
   const handleTransferMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeGroup || !transferStudent || !targetGroupId) {
-      toast.error("يرجى اختيار المجموعة المستهدفة");
+      toast.error(isEn ? "Please select the target group" : "يرجى اختيار المجموعة المستهدفة");
       return;
     }
     try {
@@ -407,7 +416,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("تم نقل الطالب للمجموعة الجديدة بنجاح");
+        toast.success(isEn ? "Student transferred successfully" : "تم نقل الطالب للمجموعة الجديدة بنجاح");
         setTransferModalOpen(false);
         setTransferStudent(null);
         setTargetGroupId("");
@@ -419,32 +428,29 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           totalMembers: Math.max(0, (prev.totalMembers || 1) - 1),
         } : null);
       } else {
-        toast.error(data.error || "فشل نقل الطالب");
+        toast.error(data.error || (isEn ? "Failed to transfer student" : "فشل نقل الطالب"));
       }
     } catch (err) {
-      toast.error("حدث خطأ أثناء نقل الطالب");
+      toast.error(isEn ? "Error while transferring student" : "حدث خطأ أثناء نقل الطالب");
     }
   };
 
-  // Open Attendance Modal for active group
   const handleOpenAttendanceModal = () => {
     const activeMembers = groupDetails?.members?.filter((m) => m.status === "ACTIVE") || [];
     if (!activeGroup || activeMembers.length === 0) {
-      toast.info("لا يوجد طلاب منتظمين في المجموعة لتسجيل الحضور");
+      toast.info(isEn ? "No active students enrolled to record attendance" : "لا يوجد طلاب منتظمين في المجموعة لتسجيل الحضور");
       return;
     }
-    // Default everyone to PRESENT
     const initialRecords: Record<string, { status: "PRESENT" | "ABSENT" | "EXCUSED"; notes: string }> = {};
-    groupDetails.members
-      .filter((m) => m.status === "ACTIVE")
-      .forEach((m) => {
+    groupDetails?.members
+      ?.filter((m) => m.status === "ACTIVE")
+      ?.forEach((m) => {
         initialRecords[m.studentId] = { status: "PRESENT", notes: "" };
       });
     setAttendanceRecords(initialRecords);
     setAttendanceModalOpen(true);
   };
 
-  // Save Bulk Session & Attendance
   const handleSaveAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeGroup) return;
@@ -470,20 +476,19 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("تم توثيق المحاضرة وتسجيل الحضور وإشعار أولياء الأمور بنجاح");
+        toast.success(isEn ? "Session and attendance logged successfully" : "تم توثيق المحاضرة وتسجيل الحضور وإشعار أولياء الأمور بنجاح");
         setAttendanceModalOpen(false);
         setSessionTopic("");
         setSessionHomework("");
         fetchGroupDetails(activeGroup.id);
       } else {
-        toast.error(data.error || "فشل حفظ الحضور");
+        toast.error(data.error || (isEn ? "Failed to save attendance" : "فشل حفظ الحضور"));
       }
     } catch (err) {
-      toast.error("حدث خطأ أثناء حفظ الحضور");
+      toast.error(isEn ? "Error while saving attendance" : "حدث خطأ أثناء حفظ الحضور");
     }
   };
 
-  // Filter groups
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => {
       const matchSearch =
@@ -500,7 +505,6 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
     });
   }, [groups, search, selectedSubject, selectedTeacher, selectedStatus]);
 
-  // Overall statistics
   const stats = useMemo(() => {
     const totalGroups = groups.length;
     const activeGroups = groups.filter((g) => g.status === "OPEN" || g.status === "IN_PROGRESS").length;
@@ -512,24 +516,29 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
   }, [groups]);
 
   return (
-    <div className={`w-full max-w-[1600px] mx-auto p-4 sm:p-6 space-y-6 font-sans rtl ${embedded ? "" : "pb-24"}`} dir="rtl">
+    <div className={`w-full max-w-[1600px] mx-auto p-4 sm:p-6 space-y-6 font-sans ${embedded ? "" : "pb-24"}`} dir={isEn ? "ltr" : "rtl"}>
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
               <Users className="w-3.5 h-3.5" />
-              نظام المجموعات الدراسية (الجروبات)
+              {t("education.groups.badge", isEn ? "Study Groups System" : "نظام المجموعات الدراسية (الجروبات)")}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
-              {stats.activeGroups} مجموعة نشطة حالياً
+              {stats.activeGroups} {t("education.groups.activeNow", isEn ? "active groups" : "مجموعة نشطة حالياً")}
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            إدارة المجموعات التعليمية
+            {t("education.groups.title", isEn ? "Study Groups Management" : "إدارة المجموعات التعليمية")}
           </h1>
           <p className="text-xs text-muted-foreground">
-            إدارة فصول ومجموعات الطلاب، المواعيد الأسبوعية الثابتة، التسجيل، الحضور والغياب الجماعي، وتسويات المعلمين.
+            {t(
+              "education.groups.subtitle",
+              isEn
+                ? "Manage student classrooms and groups, weekly schedules, enrollments, attendance rosters, and instructor settlements"
+                : "إدارة فصول ومجموعات الطلاب، المواعيد الأسبوعية الثابتة، التسجيل، الحضور والغياب الجماعي، وتسويات المعلمين."
+            )}
           </p>
         </div>
 
@@ -537,7 +546,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
           <button
             type="button"
             onClick={fetchData}
-            title="تحديث البيانات"
+            title={t("education.common.refresh", isEn ? "Refresh Data" : "تحديث البيانات")}
             className="p-2.5 rounded-xl border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -564,7 +573,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs sm:text-sm font-semibold rounded-xl hover:bg-primary/90 shadow-md shadow-primary/20 transition-all"
           >
             <Plus className="w-4 h-4" />
-            إنشاء مجموعة جديدة
+            {t("education.groups.newGroup", isEn ? "Create New Group" : "إنشاء مجموعة جديدة")}
           </button>
         </div>
       </div>
@@ -573,27 +582,29 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">إجمالي المجموعات</span>
+            <span className="text-xs font-medium">{t("education.groups.totalGroups", isEn ? "Total Groups" : "إجمالي المجموعات")}</span>
             <Layers className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">{stats.totalGroups}</div>
           <div className="text-[11px] text-muted-foreground">
-            {stats.activeGroups} قيد التشغيل
+            {stats.activeGroups} {t("education.groups.inProgressCount", isEn ? "in progress" : "قيد التشغيل")}
           </div>
         </div>
 
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">الطلاب المسجلين</span>
+            <span className="text-xs font-medium">{t("education.groups.enrolledStudents", isEn ? "Enrolled Students" : "الطلاب المسجلين")}</span>
             <GraduationCap className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">{stats.totalStudentsEnrolled}</div>
-          <div className="text-[11px] text-emerald-600 font-medium">طالب منتظم بالفصول</div>
+          <div className="text-[11px] text-emerald-600 font-medium">
+            {t("education.groups.activeInClasses", isEn ? "Active students in groups" : "طالب منتظم بالفصول")}
+          </div>
         </div>
 
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">نسبة الإشغال</span>
+            <span className="text-xs font-medium">{t("education.groups.occupancyRate", isEn ? "Occupancy Rate" : "نسبة الإشغال")}</span>
             <Sparkles className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">{stats.capacityRatio}%</div>
@@ -609,45 +620,51 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">قوائم الانتظار</span>
+            <span className="text-xs font-medium">{t("education.groups.waitingLists", isEn ? "Waiting Lists" : "قوائم الانتظار")}</span>
             <Clock className="w-4 h-4 text-purple-500" />
           </div>
           <div className="text-2xl font-bold text-foreground">{stats.totalWaitingList}</div>
-          <div className="text-[11px] text-muted-foreground">طلاب بانتظار أماكن شاغرة</div>
+          <div className="text-[11px] text-muted-foreground">
+            {t("education.groups.waitingForSeats", isEn ? "Awaiting open seats" : "طلاب بانتظار أماكن شاغرة")}
+          </div>
         </div>
 
         <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1 col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">نظام التشغيل</span>
+            <span className="text-xs font-medium">{t("education.groups.operatingModel", isEn ? "Operating Model" : "نظام التشغيل")}</span>
             <CheckCircle2 className="w-4 h-4 text-primary" />
           </div>
-          <div className="text-sm font-bold text-foreground mt-1">جروبات ومواعيد ثابتة</div>
-          <div className="text-[11px] text-muted-foreground">حضور جماعي + اشتراك دوري</div>
+          <div className="text-sm font-bold text-foreground mt-1">
+            {t("education.groups.fixedSchedules", isEn ? "Groups & Fixed Slots" : "جروبات ومواعيد ثابتة")}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {t("education.groups.groupAttendanceSub", isEn ? "Group roster + Subscriptions" : "حضور جماعي + اشتراك دوري")}
+          </div>
         </div>
       </div>
 
       {/* Filters Bar */}
       <div className="bg-card border border-border/70 p-3.5 rounded-2xl shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-1 items-center gap-2.5 flex-wrap">
-          {/* Search */}
           <div className="relative min-w-[200px] flex-1">
-            <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2" />
+            <Search className={`w-4 h-4 text-muted-foreground absolute top-1/2 -translate-y-1/2 ${isEn ? "left-3" : "right-3"}`} />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث باسم المجموعة أو الكود..."
-              className="w-full bg-background border border-input rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder={t("education.groups.searchPlaceholder", isEn ? "Search by group name or code..." : "ابحث باسم المجموعة أو الكود...")}
+              className={`w-full bg-background border border-input rounded-xl py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary ${
+                isEn ? "pl-9 pr-3" : "pr-9 pl-3"
+              }`}
             />
           </div>
 
-          {/* Subject Filter */}
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
             className="bg-background border border-input rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">جميع المواد</option>
+            <option value="">{t("education.groups.allSubjects", isEn ? "All Subjects" : "جميع المواد")}</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -655,13 +672,12 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             ))}
           </select>
 
-          {/* Teacher Filter */}
           <select
             value={selectedTeacher}
             onChange={(e) => setSelectedTeacher(e.target.value)}
             className="bg-background border border-input rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">جميع المعلمين</option>
+            <option value="">{t("education.groups.allTeachers", isEn ? "All Instructors" : "جميع المعلمين")}</option>
             {teachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -669,17 +685,16 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             ))}
           </select>
 
-          {/* Status Filter */}
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="bg-background border border-input rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">جميع الحالات</option>
-            <option value="OPEN">مفتوح للتسجيل</option>
-            <option value="FULL">مكتمل العدد</option>
-            <option value="IN_PROGRESS">قيد التشغيل</option>
-            <option value="COMPLETED">منتهي</option>
+            <option value="">{t("education.groups.allStatuses", isEn ? "All Statuses" : "جميع الحالات")}</option>
+            <option value="OPEN">{t("education.groups.statusOpen", isEn ? "Open for Enrollment" : "مفتوح للتسجيل")}</option>
+            <option value="FULL">{t("education.groups.statusFull", isEn ? "Full" : "مكتمل العدد")}</option>
+            <option value="IN_PROGRESS">{t("education.groups.statusInProgress", isEn ? "In Progress" : "قيد التشغيل")}</option>
+            <option value="COMPLETED">{t("education.groups.statusCompleted", isEn ? "Completed" : "منتهي")}</option>
           </select>
         </div>
 
@@ -691,7 +706,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             className={`p-1.5 rounded-lg text-xs transition-colors ${
               viewMode === "grid" ? "bg-background shadow-xs text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
             }`}
-            title="عرض الكروت"
+            title={t("education.groups.viewGrid", isEn ? "Grid View" : "عرض الكروت")}
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
@@ -701,7 +716,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             className={`p-1.5 rounded-lg text-xs transition-colors ${
               viewMode === "table" ? "bg-background shadow-xs text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
             }`}
-            title="عرض الجدول"
+            title={t("education.groups.viewTable", isEn ? "Table View" : "عرض الجدول")}
           >
             <List className="w-4 h-4" />
           </button>
@@ -712,7 +727,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-muted-foreground">
           <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs">جاري تحميل المجموعات الدراسية...</span>
+          <span className="text-xs">{t("education.groups.loadingGroups", isEn ? "Loading study groups..." : "جاري تحميل المجموعات الدراسية...")}</span>
         </div>
       ) : filteredGroups.length === 0 ? (
         <div className="bg-card border border-border/80 rounded-2xl p-12 text-center space-y-4">
@@ -720,9 +735,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             <Users className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-semibold text-foreground">لا توجد مجموعات دراسية مطابقة</h3>
+            <h3 className="text-base font-semibold text-foreground">
+              {t("education.groups.noGroups", isEn ? "No matching study groups found" : "لا توجد مجموعات دراسية مطابقة")}
+            </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              لم يتم العثور على مجموعات أو أنك لم تقم بإنشاء أي مجموعة دراسية بعد.
+              {t("education.groups.noGroupsDesc", isEn ? "No groups found matching your search, or you haven't created any study groups yet." : "لم يتم العثور على مجموعات أو أنك لم تقم بإنشاء أي مجموعة دراسية بعد.")}
             </p>
           </div>
           <button
@@ -746,7 +763,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90"
           >
             <Plus className="w-4 h-4" />
-            إنشاء أول مجموعة دراسية
+            {t("education.groups.createFirstGroup", isEn ? "Create First Study Group" : "إنشاء أول مجموعة دراسية")}
           </button>
         </div>
       ) : viewMode === "grid" ? (
@@ -778,7 +795,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                               : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                           }`}
                         >
-                          {group.status === "OPEN" ? "مفتوح للتسجيل" : group.status === "FULL" ? "مكتمل" : group.status}
+                          {group.status === "OPEN"
+                            ? t("education.groups.statusOpen", isEn ? "Open" : "مفتوح للتسجيل")
+                            : group.status === "FULL"
+                            ? t("education.groups.statusFull", isEn ? "Full" : "مكتمل")
+                            : group.status}
                         </span>
                       </div>
                       <h3 className="text-base font-bold text-foreground leading-snug">{group.name}</h3>
@@ -792,7 +813,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                           setGroupModalOpen(true);
                         }}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                        title="تعديل المجموعة"
+                        title={t("education.common.edit", isEn ? "Edit Group" : "تعديل المجموعة")}
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
@@ -800,7 +821,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         type="button"
                         onClick={() => handleDeleteGroup(group.id, group.name)}
                         className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="حذف المجموعة"
+                        title={t("education.common.delete", isEn ? "Delete Group" : "حذف المجموعة")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -811,7 +832,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <span className="inline-flex items-center gap-1 bg-primary/5 text-primary px-2 py-0.5 rounded-md font-medium">
                       <BookOpen className="w-3 h-3" />
-                      {group.subjectName || "مادة دراسية"}
+                      {group.subjectName || (isEn ? "Subject" : "مادة دراسية")}
                     </span>
                     {group.teacherName && (
                       <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-foreground font-medium">
@@ -830,21 +851,21 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="inline-flex items-center gap-1 font-medium text-foreground">
                       <Calendar className="w-3.5 h-3.5 text-primary" />
-                      الأيام:
+                      {t("education.groups.daysLabel", isEn ? "Days:" : "الأيام:")}
                     </span>
                     <span className="font-semibold text-foreground">
                       {Array.isArray(group.scheduleDays) && group.scheduleDays.length > 0
                         ? group.scheduleDays
-                            .map((d) => WEEK_DAYS.find((wd) => wd.id === d)?.label || d)
+                            .map((d) => weekDays.find((wd) => wd.id === d)?.label || d)
                             .join(" • ")
-                        : "لم يتم تحديد الأيام"}
+                        : (isEn ? "Not set" : "لم يتم تحديد الأيام")}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="inline-flex items-center gap-1 font-medium text-foreground">
                       <Clock className="w-3.5 h-3.5 text-primary" />
-                      الموعد:
+                      {t("education.groups.timeLabel", isEn ? "Time:" : "الموعد:")}
                     </span>
                     <span className="font-mono text-foreground font-semibold" dir="ltr">
                       {group.startTime || "17:00"} - {group.endTime || "18:30"}
@@ -855,7 +876,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span className="inline-flex items-center gap-1 font-medium text-foreground">
                         <MapPin className="w-3.5 h-3.5 text-primary" />
-                        المكان / القاعة:
+                        {t("education.groups.roomLabel", isEn ? "Room / Link:" : "المكان / القاعة:")}
                       </span>
                       <span className="text-foreground">{group.room}</span>
                     </div>
@@ -866,7 +887,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                      الطلاب المسجلين:{" "}
+                      {t("education.groups.enrolledCountLabel", isEn ? "Enrolled students:" : "الطلاب المسجلين:")}{" "}
                       <strong className="text-foreground">
                         {group.activeMembers || 0} / {group.capacity}
                       </strong>
@@ -891,7 +912,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     className="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold gap-1 transition-colors"
                   >
                     <Users className="w-4 h-4 text-blue-500" />
-                    <span>الطلاب ({group.activeMembers || 0})</span>
+                    <span>{t("education.groups.studentsBtn", isEn ? "Students" : "الطلاب")} ({group.activeMembers || 0})</span>
                   </button>
 
                   <button
@@ -900,7 +921,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     className="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold gap-1 transition-colors"
                   >
                     <UserCheck className="w-4 h-4 text-emerald-500" />
-                    <span>تسجيل الحضور</span>
+                    <span>{t("education.groups.attendanceBtn", isEn ? "Attendance" : "تسجيل الحضور")}</span>
                   </button>
 
                   <button
@@ -909,7 +930,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     className="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/60 hover:bg-muted text-foreground text-xs font-semibold gap-1 transition-colors"
                   >
                     <DollarSign className="w-4 h-4 text-amber-500" />
-                    <span>الحسابات</span>
+                    <span>{t("education.groups.financialsBtn", isEn ? "Financials" : "الحسابات")}</span>
                   </button>
                 </div>
               </div>
@@ -920,16 +941,16 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
         /* Table View */
         <div className="bg-card border border-border/80 rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
+            <table className={`w-full text-xs ${isEn ? "text-left" : "text-right"}`}>
               <thead className="bg-muted/70 text-muted-foreground font-semibold border-b border-border">
                 <tr>
-                  <th className="py-3 px-4">كود / اسم المجموعة</th>
-                  <th className="py-3 px-4">المادة</th>
-                  <th className="py-3 px-4">المعلم</th>
-                  <th className="py-3 px-4">المواعيد الثابتة</th>
-                  <th className="py-3 px-4">الإشغال</th>
-                  <th className="py-3 px-4">الحالة</th>
-                  <th className="py-3 px-4 text-center">الإجراءات</th>
+                  <th className="py-3 px-4">{t("education.groups.colGroup", isEn ? "Code / Group Name" : "كود / اسم المجموعة")}</th>
+                  <th className="py-3 px-4">{t("education.groups.colSubject", isEn ? "Subject" : "المادة")}</th>
+                  <th className="py-3 px-4">{t("education.groups.colTeacher", isEn ? "Instructor" : "المعلم")}</th>
+                  <th className="py-3 px-4">{t("education.groups.colSchedule", isEn ? "Schedule" : "المواعيد الثابتة")}</th>
+                  <th className="py-3 px-4">{t("education.groups.colOccupancy", isEn ? "Occupancy" : "الإشغال")}</th>
+                  <th className="py-3 px-4">{t("education.groups.colStatus", isEn ? "Status" : "الحالة")}</th>
+                  <th className="py-3 px-4 text-center">{t("education.groups.colActions", isEn ? "Actions" : "الإجراءات")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -940,11 +961,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       <div className="text-[11px] text-muted-foreground font-mono">{g.code || "—"}</div>
                     </td>
                     <td className="py-3 px-4 font-medium text-foreground">{g.subjectName || "—"}</td>
-                    <td className="py-3 px-4 text-muted-foreground">{g.teacherName || "غير معين"}</td>
+                    <td className="py-3 px-4 text-muted-foreground">{g.teacherName || (isEn ? "Unassigned" : "غير معين")}</td>
                     <td className="py-3 px-4">
                       <div className="text-foreground">
                         {Array.isArray(g.scheduleDays)
-                          ? g.scheduleDays.map((d) => WEEK_DAYS.find((wd) => wd.id === d)?.label || d).join(" • ")
+                          ? g.scheduleDays.map((d) => weekDays.find((wd) => wd.id === d)?.label || d).join(" • ")
                           : "—"}
                       </div>
                       <div className="text-[11px] text-muted-foreground font-mono" dir="ltr">
@@ -966,7 +987,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                             : "bg-blue-500/10 text-blue-600"
                         }`}
                       >
-                        {g.status === "OPEN" ? "مفتوح" : g.status === "FULL" ? "مكتمل" : g.status}
+                        {g.status === "OPEN"
+                          ? (isEn ? "Open" : "مفتوح")
+                          : g.status === "FULL"
+                          ? (isEn ? "Full" : "مكتمل")
+                          : g.status}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -976,7 +1001,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                           onClick={() => handleOpenGroupDetails(g, "members")}
                           className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
                         >
-                          إدارة المجموعة
+                          {t("education.groups.manageGroup", isEn ? "Manage Group" : "إدارة المجموعة")}
                         </button>
                         <button
                           type="button"
@@ -1007,8 +1032,8 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
       {/* Group Detail Drawer / Modal */}
       {activeGroup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-end">
-          <div className="bg-card border-r border-border h-full w-full max-w-2xl shadow-2xl p-6 overflow-y-auto space-y-6 flex flex-col justify-between rtl font-sans">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-end" dir={isEn ? "ltr" : "rtl"}>
+          <div className="bg-card border-r border-border h-full w-full max-w-2xl shadow-2xl p-6 overflow-y-auto space-y-6 flex flex-col justify-between font-sans">
             <div className="space-y-5">
               {/* Drawer Top Header */}
               <div className="flex items-start justify-between gap-4 pb-4 border-b border-border">
@@ -1023,9 +1048,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   </div>
                   <h2 className="text-xl font-bold text-foreground">{activeGroup.name}</h2>
                   <p className="text-xs text-muted-foreground">
-                    المعلم: <strong>{activeGroup.teacherName || "غير معين"}</strong> • المواعيد:{" "}
+                    {t("education.groups.instructor", isEn ? "Instructor" : "المعلم")}: <strong>{activeGroup.teacherName || (isEn ? "Unassigned" : "غير معين")}</strong> • {t("education.groups.schedule", isEn ? "Schedule" : "المواعيد")}:{" "}
                     {Array.isArray(activeGroup.scheduleDays)
-                      ? activeGroup.scheduleDays.map((d) => WEEK_DAYS.find((wd) => wd.id === d)?.label || d).join(" • ")
+                      ? activeGroup.scheduleDays.map((d) => weekDays.find((wd) => wd.id === d)?.label || d).join(" • ")
                       : "—"}{" "}
                     ({activeGroup.startTime} - {activeGroup.endTime})
                   </p>
@@ -1052,7 +1077,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  طلاب الجروب ({groupDetails?.members?.length || 0})
+                  {t("education.groups.tabMembers", isEn ? "Group Students" : "طلاب الجروب")} ({groupDetails?.members?.length || 0})
                 </button>
 
                 <button
@@ -1065,7 +1090,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
-                  المحاضرات والحضور ({groupDetails?.sessions?.length || 0})
+                  {t("education.groups.tabAttendance", isEn ? "Sessions & Attendance" : "المحاضرات والحضور")} ({groupDetails?.sessions?.length || 0})
                 </button>
 
                 <button
@@ -1078,7 +1103,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   }`}
                 >
                   <DollarSign className="w-3.5 h-3.5" />
-                  تقرير الحسابات والتسوية
+                  {t("education.groups.tabFinancials", isEn ? "Settlement Report" : "تقرير الحسابات والتسوية")}
                 </button>
               </div>
 
@@ -1087,19 +1112,19 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="text-xs font-semibold text-foreground">
-                      قائمة الطلاب المسجلين (
-                      {groupDetails?.members?.filter((m) => m.status === "ACTIVE").length || 0} من أصل{" "}
+                      {t("education.groups.enrolledList", isEn ? "Enrolled Students List" : "قائمة الطلاب المسجلين")} (
+                      {groupDetails?.members?.filter((m) => m.status === "ACTIVE").length || 0} {t("education.groups.ofTotal", isEn ? "of" : "من أصل")}{" "}
                       {activeGroup.capacity})
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => window.print()}
-                        title="طباعة كشف طلاب المجموعة"
+                        title={t("education.groups.printRoster", isEn ? "Print Student Roster" : "طباعة كشف طلاب المجموعة")}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted text-foreground border border-border rounded-lg text-xs font-medium hover:bg-muted/80 transition-all"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        طباعة الكشف
+                        {t("education.groups.printBtn", isEn ? "Print Roster" : "طباعة الكشف")}
                       </button>
                       <button
                         type="button"
@@ -1107,38 +1132,42 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
-                        تسجيل طالب جديد
+                        {t("education.groups.enrollNewStudent", isEn ? "Enroll New Student" : "تسجيل طالب جديد")}
                       </button>
                     </div>
                   </div>
 
                   {groupDetails?.members && groupDetails.members.length > 3 && (
                     <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                      <Search className={`w-3.5 h-3.5 text-muted-foreground absolute top-1/2 -translate-y-1/2 ${isEn ? "left-2.5" : "right-2.5"}`} />
                       <input
                         type="text"
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
-                        placeholder="بحث عن طالب بالاسم، الكود، أو رقم الهاتف..."
-                        className="w-full bg-background border border-input rounded-xl pr-8 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder={t("education.groups.searchStudentPrompt", isEn ? "Search student by name, code, or phone..." : "بحث عن طالب بالاسم، الكود، أو رقم الهاتف...")}
+                        className={`w-full bg-background border border-input rounded-xl py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary ${
+                          isEn ? "pl-8 pr-3" : "pr-8 pl-3"
+                        }`}
                       />
                     </div>
                   )}
 
                   {groupDetails?.members?.length === 0 ? (
                     <div className="p-8 text-center bg-muted/30 rounded-xl space-y-2">
-                      <p className="text-xs text-muted-foreground">لا يوجد طلاب مسجلين في هذه المجموعة حتى الآن.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("education.groups.noEnrolledYet", isEn ? "No students enrolled in this group yet." : "لا يوجد طلاب مسجلين في هذه المجموعة حتى الآن.")}
+                      </p>
                       <button
                         type="button"
                         onClick={() => setEnrollModalOpen(true)}
                         className="text-xs text-primary font-semibold hover:underline"
                       >
-                        اضغط هنا لتسجيل أول طالب
+                        {t("education.groups.clickToEnrollFirst", isEn ? "Click here to enroll the first student" : "اضغط هنا لتسجيل أول طالب")}
                       </button>
                     </div>
                   ) : filteredMembers.length === 0 ? (
                     <div className="p-6 text-center bg-muted/20 rounded-xl text-xs text-muted-foreground">
-                      لا يوجد طلاب مطابقون لبحثك "{memberSearch}".
+                      {t("education.groups.noSearchResults", isEn ? `No students found matching "${memberSearch}"` : `لا يوجد طلاب مطابقون لبحثك "${memberSearch}".`)}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1162,12 +1191,14 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                     : "bg-purple-500/10 text-purple-600"
                                 }`}
                               >
-                                {member.status === "ACTIVE" ? "منتظم" : "قائمة انتظار"}
+                                {member.status === "ACTIVE"
+                                  ? (isEn ? "Active" : "منتظم")
+                                  : (isEn ? "Waiting List" : "قائمة انتظار")}
                               </span>
                             </div>
                             <div className="text-muted-foreground text-[11px] flex items-center gap-3">
-                              {member.studentPhone && <span>هاتف: {member.studentPhone}</span>}
-                              {member.guardianName && <span>ولي الأمر: {member.guardianName}</span>}
+                              {member.studentPhone && <span>{t("education.common.phone", isEn ? "Phone" : "هاتف")}: {member.studentPhone}</span>}
+                              {member.guardianName && <span>{t("education.common.guardian", isEn ? "Guardian" : "ولي الأمر")}: {member.guardianName}</span>}
                             </div>
                           </div>
 
@@ -1179,7 +1210,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                   : "bg-red-500/10 text-red-600"
                               }`}
                             >
-                              {member.paymentStatus === "PAID" ? "تم السداد" : "غير مسدد"}
+                              {member.paymentStatus === "PAID"
+                                ? (isEn ? "Paid" : "تم السداد")
+                                : (isEn ? "Unpaid" : "غير مسدد")}
                             </span>
 
                             <button
@@ -1189,7 +1222,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                 setTransferModalOpen(true);
                               }}
                               className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-colors"
-                              title="نقل لمجموعة أخرى"
+                              title={t("education.groups.transferBtn", isEn ? "Transfer to another group" : "نقل لمجموعة أخرى")}
                             >
                               <ArrowRightLeft className="w-3.5 h-3.5" />
                             </button>
@@ -1198,7 +1231,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                               type="button"
                               onClick={() => handleRemoveMember(member.studentId, member.studentName)}
                               className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                              title="إزالة من المجموعة"
+                              title={t("education.groups.removeBtn", isEn ? "Remove from group" : "إزالة من المجموعة")}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1214,26 +1247,30 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
               {drawerTab === "attendance" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs font-semibold text-foreground">سجلات المحاضرات والحضور الجماعي</div>
+                    <div className="text-xs font-semibold text-foreground">
+                      {t("education.groups.attendanceLogsTitle", isEn ? "Session Logs & Group Attendance" : "سجلات المحاضرات والحضور الجماعي")}
+                    </div>
                     <button
                       type="button"
                       onClick={handleOpenAttendanceModal}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-all shadow-xs"
                     >
                       <UserCheck className="w-3.5 h-3.5" />
-                      تسجيل محاضرة وحضور جديد
+                      {t("education.groups.logNewSessionBtn", isEn ? "Log New Session & Attendance" : "تسجيل محاضرة وحضور جديد")}
                     </button>
                   </div>
 
                   {groupDetails?.sessions?.length === 0 ? (
                     <div className="p-8 text-center bg-muted/30 rounded-xl space-y-2">
-                      <p className="text-xs text-muted-foreground">لم يتم تسجيل أي محاضرات أو حضور للجروب حتى الآن.</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("education.groups.noSessionsYet", isEn ? "No sessions or attendance recorded for this group yet." : "لم يتم تسجيل أي محاضرات أو حضور للجروب حتى الآن.")}
+                      </p>
                       <button
                         type="button"
                         onClick={handleOpenAttendanceModal}
                         className="text-xs text-emerald-600 font-semibold hover:underline"
                       >
-                        اضغط هنا لتسجيل أول محاضرة
+                        {t("education.groups.clickToLogFirstSession", isEn ? "Click here to log the first session" : "اضغط هنا لتسجيل أول محاضرة")}
                       </button>
                     </div>
                   ) : (
@@ -1245,26 +1282,32 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-foreground">
-                              {session.topic || "محاضرة دورية للمجموعة"}
+                              {session.topic || (isEn ? "Regular Group Session" : "محاضرة دورية للمجموعة")}
                             </span>
                             <span className="font-mono text-[11px] text-muted-foreground">
                               {(() => {
                                 const d = new Date(session.sessionDate);
-                                return isNaN(d.getTime()) ? (session.sessionDate || "—") : d.toLocaleDateString("ar-EG");
+                                return isNaN(d.getTime()) ? (session.sessionDate || "—") : d.toLocaleDateString(isEn ? "en-US" : "ar-EG");
                               })()}
                             </span>
                           </div>
 
                           {session.homework && (
                             <div className="text-[11px] text-muted-foreground bg-muted/50 p-2 rounded-lg">
-                              <strong>الواجب:</strong> {session.homework}
+                              <strong>{t("education.groups.homeworkLabel", isEn ? "Homework:" : "الواجب:")}</strong> {session.homework}
                             </div>
                           )}
 
                           <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/60">
-                            <span className="text-emerald-600 font-semibold">حضور: {session.presentCount} طالب</span>
-                            <span className="text-red-600 font-semibold">غياب: {session.absentCount} طالب</span>
-                            <span className="text-muted-foreground">إجمالي المقيدين: {session.totalCount}</span>
+                            <span className="text-emerald-600 font-semibold">
+                              {t("education.groups.present", isEn ? "Present" : "حضور")}: {session.presentCount}
+                            </span>
+                            <span className="text-red-600 font-semibold">
+                              {t("education.groups.absent", isEn ? "Absent" : "غياب")}: {session.absentCount}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {t("education.groups.totalEnrolledLabel", isEn ? "Total Enrolled" : "إجمالي المقيدين")}: {session.totalCount}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -1280,62 +1323,70 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div className="bg-muted/40 p-3 rounded-xl space-y-1">
-                          <span className="text-muted-foreground">إجمالي الاشتراكات المحصلة</span>
+                          <span className="text-muted-foreground">{t("education.groups.collectedFees", isEn ? "Total Collected Fees" : "إجمالي الاشتراكات المحصلة")}</span>
                           <div className="text-lg font-bold text-foreground font-mono">
-                            {financialsData.totalCollected} ج
+                            {financialsData.totalCollected} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
-                            من {financialsData.paidCount} طالب مسدد
+                            {t("education.groups.fromPaidStudents", isEn ? `from ${financialsData.paidCount} paid students` : `من ${financialsData.paidCount} طالب مسدد`)}
                           </span>
                         </div>
 
                         <div className="bg-muted/40 p-3 rounded-xl space-y-1">
-                          <span className="text-muted-foreground">المحاضرات المنفذة</span>
+                          <span className="text-muted-foreground">{t("education.groups.completedSessions", isEn ? "Executed Sessions" : "المحاضرات المنفذة")}</span>
                           <div className="text-lg font-bold text-foreground font-mono">
-                            {financialsData.sessionCount} محاضرة
+                            {financialsData.sessionCount} {t("education.groups.sessionsUnit", isEn ? "sessions" : "محاضرة")}
                           </div>
-                          <span className="text-[10px] text-muted-foreground">تم توثيقها بنجاح</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {t("education.groups.loggedSuccessfully", isEn ? "logged successfully" : "تم توثيقها بنجاح")}
+                          </span>
                         </div>
 
                         <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl space-y-1">
                           <span className="text-blue-700 dark:text-blue-300 font-semibold">
-                            مستحقات المعلم المحسوبة
+                            {t("education.groups.teacherShareCalculated", isEn ? "Instructor Share Calculated" : "مستحقات المعلم المحسوبة")}
                           </span>
                           <div className="text-xl font-bold text-blue-700 dark:text-blue-300 font-mono">
-                            {financialsData.teacherShare} ج
+                            {financialsData.teacherShare} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
-                            بناءً على ({financialsData.teacherRateType === "PERCENTAGE" ? `${financialsData.teacherRateValue}% نسبة` : `${financialsData.teacherRateValue} ج / حصة`})
+                            {isEn
+                              ? `Based on (${financialsData.teacherRateType === "PERCENTAGE" ? `${financialsData.teacherRateValue}% share` : `${financialsData.teacherRateValue} EGP/session`})`
+                              : `بناءً على (${financialsData.teacherRateType === "PERCENTAGE" ? `${financialsData.teacherRateValue}% نسبة` : `${financialsData.teacherRateValue} ج / حصة`})`}
                           </span>
                         </div>
 
                         <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl space-y-1">
                           <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
-                            صافي ربح السنتر
+                            {t("education.groups.centerProfit", isEn ? "Center Net Profit" : "صافي ربح السنتر")}
                           </span>
                           <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300 font-mono">
-                            {financialsData.centerProfit} ج
+                            {financialsData.centerProfit} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
-                          <span className="text-[10px] text-muted-foreground">بعد خصم أجر المعلم</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {t("education.groups.afterTeacherShare", isEn ? "after instructor share deduction" : "بعد خصم أجر المعلم")}
+                          </span>
                         </div>
                       </div>
 
                       <div className="bg-card border border-border p-4 rounded-xl text-xs space-y-2">
-                        <h4 className="font-bold text-foreground">قواعد التسوية للجروب:</h4>
+                        <h4 className="font-bold text-foreground">
+                          {t("education.groups.settlementRulesTitle", isEn ? "Group Settlement Rules:" : "قواعد التسوية للجروب:")}
+                        </h4>
                         <ul className="list-disc list-inside text-muted-foreground space-y-1 text-[11px]">
-                          <li>يتم احتساب أجر المعلم وصافي دخل السنتر آلياً مع كل اشتراك يتم تحصيله.</li>
+                          <li>{t("education.groups.settlementRule1", isEn ? "Teacher share and center net profit are automatically calculated with every collected fee." : "يتم احتساب أجر المعلم وصافي دخل السنتر آلياً مع كل اشتراك يتم تحصيله.")}</li>
                           <li>
-                            في نظام النسبة المئوية: تزيد مستحقات المعلم كلما زاد عدد الطلاب المسجلين في المجموعة.
+                            {t("education.groups.settlementRule2", isEn ? "In percentage model: teacher share increases as more students enroll in the group." : "في نظام النسبة المئوية: تزيد مستحقات المعلم كلما زاد عدد الطلاب المسجلين في المجموعة.")}
                           </li>
                           <li>
-                            في نظام الأجر الثابت: يتم احتساب الأجر بعدد المحاضرات المنفذة فعلياً بغض النظر عن الغياب.
+                            {t("education.groups.settlementRule3", isEn ? "In fixed rate model: rate is calculated based on executed sessions regardless of absences." : "في نظام الأجر الثابت: يتم احتساب الأجر بعدد المحاضرات المنفذة فعلياً بغض النظر عن الغياب.")}
                           </li>
                         </ul>
                       </div>
                     </div>
                   ) : (
                     <div className="p-8 text-center text-xs text-muted-foreground">
-                      جاري احتساب التسوية والبيانات المالية...
+                      {t("education.groups.calculatingFinancials", isEn ? "Calculating settlement and financials..." : "جاري احتساب التسوية والبيانات المالية...")}
                     </div>
                   )}
                 </div>
@@ -1349,7 +1400,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 onClick={() => setActiveGroup(null)}
                 className="px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-semibold hover:bg-muted/80"
               >
-                إغلاق النافذة
+                {t("education.common.close", isEn ? "Close Drawer" : "إغلاق النافذة")}
               </button>
             </div>
           </div>
@@ -1358,11 +1409,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
       {/* Modal 1: Create / Edit Group */}
       {groupModalOpen && editingGroup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-xl mx-auto space-y-4 max-h-[90vh] overflow-y-auto rtl font-sans">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" dir={isEn ? "ltr" : "rtl"}>
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-xl mx-auto space-y-4 max-h-[90vh] overflow-y-auto font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <h3 className="text-base font-bold text-foreground">
-                {editingGroup.id ? "تعديل بيانات المجموعة" : "إنشاء مجموعة دراسية جديدة"}
+                {editingGroup.id
+                  ? t("education.groups.editGroupTitle", isEn ? "Edit Study Group" : "تعديل بيانات المجموعة")
+                  : t("education.groups.createGroupTitle", isEn ? "Create New Study Group" : "إنشاء مجموعة دراسية جديدة")}
               </h3>
               <button
                 type="button"
@@ -1376,37 +1429,43 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             <form onSubmit={handleSaveGroup} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="font-semibold text-foreground">اسم المجموعة *</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldName", isEn ? "Group Name *" : "اسم المجموعة *")}
+                  </label>
                   <input
                     type="text"
                     required
                     value={editingGroup.name || ""}
                     onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
-                    placeholder="مثال: لغة إنجليزية - أبطال الابتدائي - ليفل 1"
+                    placeholder={t("education.groups.namePlaceholder", isEn ? "e.g. English - Elementary Heroes - Level 1" : "مثال: لغة إنجليزية - أبطال الابتدائي - ليفل 1")}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">كود المجموعة</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldCode", isEn ? "Group Code" : "كود المجموعة")}
+                  </label>
                   <input
                     type="text"
                     value={editingGroup.code || ""}
                     onChange={(e) => setEditingGroup({ ...editingGroup, code: e.target.value })}
-                    placeholder="مثال: GRP-101"
+                    placeholder="GRP-101"
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">المادة الدراسية *</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldSubject", isEn ? "Subject *" : "المادة الدراسية *")}
+                  </label>
                   <select
                     required
                     value={editingGroup.subjectId || ""}
                     onChange={(e) => setEditingGroup({ ...editingGroup, subjectId: e.target.value })}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">اختر المادة...</option>
+                    <option value="">{t("education.groups.selectSubjectPrompt", isEn ? "Select Subject..." : "اختر المادة...")}</option>
                     {subjects.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -1415,19 +1474,21 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   </select>
                   {subjects.length === 0 && (
                     <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
-                      ⚠️ لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.
+                      ⚠️ {t("education.groups.noSubjectsAlert", isEn ? "No subjects registered yet. Add a subject first." : "لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.")}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">المعلم المسؤول</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldTeacher", isEn ? "Assigned Instructor" : "المعلم المسؤول")}
+                  </label>
                   <select
                     value={editingGroup.teacherId || ""}
                     onChange={(e) => setEditingGroup({ ...editingGroup, teacherId: e.target.value })}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   >
-                    <option value="">اختر المعلم (اختياري)...</option>
+                    <option value="">{t("education.groups.selectTeacherOptional", isEn ? "Select Instructor (Optional)..." : "اختر المعلم (اختياري)...")}</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
@@ -1436,24 +1497,28 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   </select>
                   {teachers.length === 0 && (
                     <span className="text-[10px] text-muted-foreground block">
-                      (يمكنك إنشاء المجموعة وتعيين المعلم لاحقاً)
+                      ({t("education.groups.assignTeacherLater", isEn ? "You can assign instructor later" : "يمكنك إنشاء المجموعة وتعيين المعلم لاحقاً")})
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">المستوى / المرحلة</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldLevel", isEn ? "Level / Grade" : "المستوى / المرحلة")}
+                  </label>
                   <input
                     type="text"
                     value={editingGroup.level || ""}
                     onChange={(e) => setEditingGroup({ ...editingGroup, level: e.target.value })}
-                    placeholder="مثال: Grade 4 أو Level 2"
+                    placeholder="Grade 4 / Level 2"
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="font-semibold text-foreground">الطاقة الاستيعابية (الحد الأقصى) *</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldCapacity", isEn ? "Capacity (Maximum Students) *" : "الطاقة الاستيعابية (الحد الأقصى) *")}
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -1467,9 +1532,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
               {/* Days selection */}
               <div className="space-y-1.5 pt-2 border-t border-border/80">
-                <label className="font-semibold text-foreground block">الأيام الثابتة أسبوعياً *</label>
+                <label className="font-semibold text-foreground block">
+                  {t("education.groups.fieldFixedDays", isEn ? "Weekly Fixed Schedule Days *" : "الأيام الثابتة أسبوعياً *")}
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {WEEK_DAYS.map((day) => {
+                  {weekDays.map((day) => {
                     const isSelected = editingGroup.scheduleDays?.includes(day.id);
                     return (
                       <button
@@ -1498,7 +1565,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
               {/* Times */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">وقت البدء</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldStartTime", isEn ? "Start Time" : "وقت البدء")}
+                  </label>
                   <input
                     type="time"
                     value={editingGroup.startTime || "17:00"}
@@ -1508,7 +1577,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">وقت الانتهاء</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.fieldEndTime", isEn ? "End Time" : "وقت الانتهاء")}
+                  </label>
                   <input
                     type="time"
                     value={editingGroup.endTime || "18:30"}
@@ -1520,12 +1591,14 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
               {/* Location / Room */}
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">القاعة أو رابط الأونلاين</label>
+                <label className="font-semibold text-foreground">
+                  {t("education.groups.fieldRoom", isEn ? "Classroom or Online Link" : "القاعة أو رابط الأونلاين")}
+                </label>
                 <input
                   type="text"
                   value={editingGroup.room || ""}
                   onChange={(e) => setEditingGroup({ ...editingGroup, room: e.target.value })}
-                  placeholder="مثال: قاعة 3 - الدور الثاني أو رابط Zoom"
+                  placeholder={t("education.groups.roomPlaceholder", isEn ? "Room 3, 2nd Floor or Zoom link" : "مثال: قاعة 3 - الدور الثاني أو رابط Zoom")}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -1536,13 +1609,15 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   onClick={() => setGroupModalOpen(false)}
                   className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
                 >
-                  إلغاء
+                  {t("education.common.cancel", isEn ? "Cancel" : "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-sm"
                 >
-                  {editingGroup.id ? "تحديث المجموعة" : "إنشاء المجموعة"}
+                  {editingGroup.id
+                    ? t("education.groups.updateGroupBtn", isEn ? "Update Group" : "تحديث المجموعة")
+                    : t("education.groups.createGroupBtn", isEn ? "Create Group" : "إنشاء المجموعة")}
                 </button>
               </div>
             </form>
@@ -1552,10 +1627,12 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
       {/* Modal 2: Enroll Student in Active Group */}
       {enrollModalOpen && activeGroup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto space-y-4 rtl font-sans">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" dir={isEn ? "ltr" : "rtl"}>
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto space-y-4 font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-bold text-foreground">تسجيل طالب في ({activeGroup.name})</h3>
+              <h3 className="text-base font-bold text-foreground">
+                {t("education.groups.enrollInGroupTitle", isEn ? "Enroll Student in" : "تسجيل طالب في")} ({activeGroup.name})
+              </h3>
               <button
                 type="button"
                 onClick={() => setEnrollModalOpen(false)}
@@ -1567,15 +1644,19 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
             <form onSubmit={handleEnrollStudent} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">اختر الطالب للتسجيل *</label>
+                <label className="font-semibold text-foreground">
+                  {t("education.groups.selectStudentLabel", isEn ? "Select Student to Enroll *" : "اختر الطالب للتسجيل *")}
+                </label>
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  <Search className={`w-3.5 h-3.5 text-muted-foreground absolute top-1/2 -translate-y-1/2 ${isEn ? "left-2.5" : "right-2.5"}`} />
                   <input
                     type="text"
                     value={enrollStudentFilter}
                     onChange={(e) => setEnrollStudentFilter(e.target.value)}
-                    placeholder="ابحث عن طالب بالاسم، الهاتف، أو الكود..."
-                    className="w-full bg-background border border-input rounded-xl pr-8 pl-3 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary"
+                    placeholder={t("education.groups.searchStudentPrompt", isEn ? "Search by name, phone, or code..." : "ابحث عن طالب بالاسم، الهاتف، أو الكود...")}
+                    className={`w-full bg-background border border-input rounded-xl py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary ${
+                      isEn ? "pl-8 pr-3" : "pr-8 pl-3"
+                    }`}
                   />
                 </div>
                 <select
@@ -1586,48 +1667,55 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 >
                   <option value="">
                     {eligibleStudents.length === 0
-                      ? "لا يوجد طلاب متاحون للتسجيل"
-                      : "اختر الطالب من القائمة..."}
+                      ? (isEn ? "No available students to enroll" : "لا يوجد طلاب متاحون للتسجيل")
+                      : (isEn ? "Select student from list..." : "اختر الطالب من القائمة...")}
                   </option>
                   {eligibleStudents.map((st) => (
                     <option key={st.id} value={st.id}>
-                      {st.firstName} {st.lastName || ""} {st.code ? `(${st.code})` : ""} - {st.phone || "بدون هاتف"}
+                      {st.firstName} {st.lastName || ""} {st.code ? `(${st.code})` : ""} - {st.phone || (isEn ? "No phone" : "بدون هاتف")}
                     </option>
                   ))}
                 </select>
                 <span className="text-[10px] text-muted-foreground">
-                  (يتم إخفاء الطلاب المسجلين بالفعل في هذه المجموعة تلقائياً لمنع التكرار)
+                  ({t("education.groups.enrolledHiddenNotice", isEn ? "Already enrolled students are hidden automatically to prevent duplication" : "يتم إخفاء الطلاب المسجلين بالفعل في هذه المجموعة تلقائياً لمنع التكرار")})
                 </span>
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">حالة سداد الاشتراك</label>
+                <label className="font-semibold text-foreground">
+                  {t("education.groups.feeStatusLabel", isEn ? "Subscription Payment Status" : "حالة سداد الاشتراك")}
+                </label>
                 <select
                   value={enrollPaymentStatus}
                   onChange={(e) => setEnrollPaymentStatus(e.target.value)}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 >
-                  <option value="PAID">مسدد بالكامل</option>
-                  <option value="PENDING">معلق / لم يسدد بعد</option>
-                  <option value="PARTIAL">سداد جزئي</option>
+                  <option value="PAID">{t("education.groups.paidFull", isEn ? "Paid in Full" : "مسدد بالكامل")}</option>
+                  <option value="PENDING">{t("education.groups.pendingPay", isEn ? "Pending / Unpaid" : "معلق / لم يسدد بعد")}</option>
+                  <option value="PARTIAL">{t("education.groups.partialPay", isEn ? "Partial Payment" : "سداد جزئي")}</option>
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">المبلغ المدفوع (ج.م)</label>
+                <label className="font-semibold text-foreground">
+                  {t("education.groups.amountPaidLabel", isEn ? "Amount Paid (EGP)" : "المبلغ المدفوع (ج.م)")}
+                </label>
                 <input
                   type="number"
                   min="0"
                   value={enrollAmountPaid}
                   onChange={(e) => setEnrollAmountPaid(e.target.value)}
-                  placeholder={activeGroup.feeAmount ? `القيمة الافتراضية: ${activeGroup.feeAmount} ج` : "0 ج"}
+                  placeholder={activeGroup.feeAmount ? `${isEn ? "Default value:" : "القيمة الافتراضية:"} ${activeGroup.feeAmount}` : "0"}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               {activeGroup.activeMembers >= activeGroup.capacity && (
                 <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-xs space-y-1">
-                  <strong>تنبيه:</strong> المجموعة مكتملة العدد ({activeGroup.capacity} طالب). سيتم إضافة الطالب تلقائياً في <strong>قائمة الانتظار</strong> إلا إذا تم تفريغ مقعد.
+                  <strong>{t("education.common.warning", isEn ? "Notice:" : "تنبيه:")}</strong>{" "}
+                  {isEn
+                    ? `Group has reached maximum capacity (${activeGroup.capacity} students). Student will automatically be placed on the Waiting List.`
+                    : `المجموعة مكتملة العدد (${activeGroup.capacity} طالب). سيتم إضافة الطالب تلقائياً في قائمة الانتظار إلا إذا تم تفريغ مقعد.`}
                 </div>
               )}
 
@@ -1637,13 +1725,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   onClick={() => setEnrollModalOpen(false)}
                   className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
                 >
-                  إلغاء
+                  {t("education.common.cancel", isEn ? "Cancel" : "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
                 >
-                  تأكيد التسجيل
+                  {t("education.groups.confirmEnrollBtn", isEn ? "Confirm Enrollment" : "تأكيد التسجيل")}
                 </button>
               </div>
             </form>
@@ -1653,11 +1741,11 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
       {/* Modal 3: Transfer Student to another group */}
       {transferModalOpen && transferStudent && activeGroup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto space-y-4 rtl font-sans">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" dir={isEn ? "ltr" : "rtl"}>
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md mx-auto space-y-4 font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <h3 className="text-base font-bold text-foreground">
-                نقل الطالب ({transferStudent.studentName})
+                {t("education.groups.transferStudentTitle", isEn ? "Transfer Student" : "نقل الطالب")} ({transferStudent.studentName})
               </h3>
               <button
                 type="button"
@@ -1670,24 +1758,27 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
             <form onSubmit={handleTransferMember} className="space-y-4 text-xs">
               <p className="text-muted-foreground">
-                سيتم نقل الطالب من المجموعة الحالية (<strong>{activeGroup.name}</strong>) إلى المجموعة المحددة أدناه مع
-                نقل سجل اشتراكه.
+                {isEn
+                  ? `Student will be transferred from current group (${activeGroup.name}) to the target group selected below along with enrollment record.`
+                  : `سيتم نقل الطالب من المجموعة الحالية (${activeGroup.name}) إلى المجموعة المحددة أدناه مع نقل سجل اشتراكه.`}
               </p>
 
               <div className="space-y-1">
-                <label className="font-semibold text-foreground">اختر المجموعة البديلة *</label>
+                <label className="font-semibold text-foreground">
+                  {t("education.groups.selectTargetGroupLabel", isEn ? "Select Target Group *" : "اختر المجموعة البديلة *")}
+                </label>
                 <select
                   required
                   value={targetGroupId}
                   onChange={(e) => setTargetGroupId(e.target.value)}
                   className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">اختر المجموعة...</option>
+                  <option value="">{t("education.groups.selectGroupPrompt", isEn ? "Select Group..." : "اختر المجموعة...")}</option>
                   {groups
                     .filter((g) => g.id !== activeGroup.id)
                     .map((g) => (
                       <option key={g.id} value={g.id}>
-                        {g.name} - ({g.subjectName}) - شاغر: {g.capacity - (g.activeMembers || 0)}
+                        {g.name} - ({g.subjectName}) - {isEn ? "Vacant:" : "شاغر:"} {g.capacity - (g.activeMembers || 0)}
                       </option>
                     ))}
                 </select>
@@ -1699,13 +1790,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   onClick={() => setTransferModalOpen(false)}
                   className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
                 >
-                  إلغاء
+                  {t("education.common.cancel", isEn ? "Cancel" : "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
                 >
-                  تأكيد النقل الفوري
+                  {t("education.groups.confirmTransferBtn", isEn ? "Confirm Instant Transfer" : "تأكيد النقل الفوري")}
                 </button>
               </div>
             </form>
@@ -1715,15 +1806,15 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
       {/* Modal 4: Bulk Session & Attendance Logger */}
       {attendanceModalOpen && activeGroup && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-2xl mx-auto space-y-4 max-h-[90vh] overflow-y-auto rtl font-sans">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" dir={isEn ? "ltr" : "rtl"}>
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-2xl mx-auto space-y-4 max-h-[90vh] overflow-y-auto font-sans">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div>
                 <h3 className="text-base font-bold text-foreground">
-                  تسجيل محاضرة وحضور جماعي ({activeGroup.name})
+                  {t("education.groups.bulkAttendanceModalTitle", isEn ? "Log Session & Bulk Attendance" : "تسجيل محاضرة وحضور جماعي")} ({activeGroup.name})
                 </h3>
                 <p className="text-[11px] text-muted-foreground">
-                  المعلم: {activeGroup.teacherName || "غير معين"} • التاريخ: {sessionDate}
+                  {t("education.groups.instructor", isEn ? "Instructor" : "المعلم")}: {activeGroup.teacherName || (isEn ? "Unassigned" : "غير معين")} • {t("education.common.date", isEn ? "Date" : "التاريخ")}: {sessionDate}
                 </p>
               </div>
               <button
@@ -1738,7 +1829,9 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             <form onSubmit={handleSaveAttendance} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">تاريخ المحاضرة *</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.sessionDateField", isEn ? "Session Date *" : "تاريخ المحاضرة *")}
+                  </label>
                   <input
                     type="date"
                     required
@@ -1749,23 +1842,27 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-foreground">موضوع الدرس المشروح (Topic)</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.sessionTopicField", isEn ? "Lesson Topic (Topic)" : "موضوع الدرس المشروح (Topic)")}
+                  </label>
                   <input
                     type="text"
                     value={sessionTopic}
                     onChange={(e) => setSessionTopic(e.target.value)}
-                    placeholder="مثال: مراجعة الوحدة الأولى وحل التمارين"
+                    placeholder={t("education.groups.topicPlaceholder", isEn ? "e.g. Unit 1 Review & Exercises" : "مثال: مراجعة الوحدة الأولى وحل التمارين")}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="font-semibold text-foreground">الواجب المنزلي (Homework)</label>
+                  <label className="font-semibold text-foreground">
+                    {t("education.groups.sessionHomeworkField", isEn ? "Homework (Homework)" : "الواجب المنزلي (Homework)")}
+                  </label>
                   <input
                     type="text"
                     value={sessionHomework}
                     onChange={(e) => setSessionHomework(e.target.value)}
-                    placeholder="مثال: حل صفحة 24 و25 في كتاب التدريبات"
+                    placeholder={t("education.groups.homeworkPlaceholder", isEn ? "e.g. Solve pages 24-25 in Workbook" : "مثال: حل صفحة 24 و25 في كتاب التدريبات")}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1775,12 +1872,14 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
               <div className="space-y-2 pt-2 border-t border-border">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-foreground">كشف حضور الطلاب:</span>
+                    <span className="font-bold text-foreground">
+                      {t("education.groups.rosterChecklist", isEn ? "Attendance Roster:" : "كشف حضور الطلاب:")}
+                    </span>
                     <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      حاضر: {Object.values(attendanceRecords).filter((r) => r.status === "PRESENT").length}
+                      {t("education.groups.present", isEn ? "Present" : "حاضر")}: {Object.values(attendanceRecords).filter((r) => r.status === "PRESENT").length}
                     </span>
                     <span className="text-[11px] font-semibold text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">
-                      غائب: {Object.values(attendanceRecords).filter((r) => r.status === "ABSENT").length}
+                      {t("education.groups.absent", isEn ? "Absent" : "غائب")}: {Object.values(attendanceRecords).filter((r) => r.status === "ABSENT").length}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1795,7 +1894,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       }}
                       className="px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-lg text-[11px] font-semibold hover:bg-emerald-500/20"
                     >
-                      تحضير الكل
+                      {t("education.groups.markAllPresent", isEn ? "Mark All Present" : "تحضير الكل")}
                     </button>
                     <button
                       type="button"
@@ -1808,7 +1907,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       }}
                       className="px-2.5 py-1 bg-red-500/10 text-red-600 rounded-lg text-[11px] font-semibold hover:bg-red-500/20"
                     >
-                      تغييب الكل
+                      {t("education.groups.markAllAbsent", isEn ? "Mark All Absent" : "تغييب الكل")}
                     </button>
                   </div>
                 </div>
@@ -1845,7 +1944,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                   : "bg-muted text-muted-foreground hover:text-foreground"
                               }`}
                             >
-                              حاضر
+                              {t("education.groups.present", isEn ? "Present" : "حاضر")}
                             </button>
 
                             <button
@@ -1862,7 +1961,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                   : "bg-muted text-muted-foreground hover:text-foreground"
                               }`}
                             >
-                              غائب
+                              {t("education.groups.absent", isEn ? "Absent" : "غائب")}
                             </button>
 
                             <button
@@ -1879,7 +1978,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                                   : "bg-muted text-muted-foreground hover:text-foreground"
                               }`}
                             >
-                              معتذر
+                              {t("education.groups.excused", isEn ? "Excused" : "معتذر")}
                             </button>
                           </div>
                         </div>
@@ -1898,7 +1997,12 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="whatsappToggle" className="cursor-pointer font-medium text-emerald-800 dark:text-emerald-300">
-                  إرسال إشعار غياب فوري عبر واتساب لأولياء أمور الطلاب الغائبين تلقائياً
+                  {t(
+                    "education.groups.whatsappNotifyDesc",
+                    isEn
+                      ? "Automatically send instant WhatsApp absence notification to guardians of absent students"
+                      : "إرسال إشعار غياب فوري عبر واتساب لأولياء أمور الطلاب الغائبين تلقائياً"
+                  )}
                 </label>
               </div>
 
@@ -1908,13 +2012,13 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   onClick={() => setAttendanceModalOpen(false)}
                   className="px-4 py-2 rounded-xl border border-border text-foreground hover:bg-muted"
                 >
-                  إلغاء
+                  {t("education.common.cancel", isEn ? "Cancel" : "إلغاء")}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
                 >
-                  حفظ المحاضرة والحضور
+                  {t("education.groups.saveAttendanceBtn", isEn ? "Save Session & Attendance" : "حفظ المحاضرة والحضور")}
                 </button>
               </div>
             </form>
