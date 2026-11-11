@@ -11,6 +11,8 @@
  * the page lifetime (the real metric is a 98th-percentile over interactions).
  */
 
+import { getApiUrl } from "../config/environment";
+
 type VitalMetric = {
   name: 'LCP' | 'CLS' | 'INP' | 'TTFB';
   value: number;
@@ -18,7 +20,14 @@ type VitalMetric = {
   id?: string;
 };
 
-const BEACON_ENDPOINT = "/api/v1/analytics/track/web-vitals";
+const getBeaconEndpoint = (companyId: string | null): string => {
+  const base = typeof getApiUrl === "function" ? getApiUrl() : "/api/v1";
+  const endpoint = `${base}/analytics/track/web-vitals`;
+  return companyId
+    ? `${endpoint}?companyId=${encodeURIComponent(companyId)}`
+    : endpoint;
+};
+
 let initialized = false;
 
 // Same fallback chain as analyticsService.getCompanyId — sendBeacon cannot
@@ -152,9 +161,7 @@ export const initWebVitals = (): void => {
     if (sent || metrics.size === 0) return;
     sent = true;
     const companyId = resolveCompanyId();
-    const endpoint = companyId
-      ? `${BEACON_ENDPOINT}?companyId=${encodeURIComponent(companyId)}`
-      : BEACON_ENDPOINT;
+    const endpoint = getBeaconEndpoint(companyId);
     sendBeacon(endpoint, { path: window.location.pathname, metrics: [...metrics.values()] });
   };
 

@@ -84,10 +84,20 @@ const DynamicStorefrontPage: React.FC = () => {
     (localizedPageConfig as any)?.isSystemFallback || (pageConfig as any)?.isSystemFallback
   );
 
+  // Core e-commerce catalog routes have built-in section compositions and are not merchant rich-text policy pages.
+  const isCoreStoreRoute = [
+    "home",
+    "shop",
+    "sale",
+    "collections",
+    "catalog",
+    "products",
+  ].includes(resolvedPageKey);
+
   // If page exists in designTokens/theme with sections and is NOT a system fallback, render via PageComposer directly.
   // Otherwise fall back to DB page content (rich-text) or check for merchant custom page.
   const shouldFetchDbPage =
-    (!hasSections || isSystemFallback) && resolvedPageKey !== "home" && resolvedPageKey !== "shop";
+    (!hasSections || (isSystemFallback && !isCoreStoreRoute)) && !isCoreStoreRoute;
   const { page: dbPage, loading: dbLoading } = useStorePage(
     shouldFetchDbPage ? pageSlug : undefined,
     shouldFetchDbPage ? settings?.company?.id : undefined,

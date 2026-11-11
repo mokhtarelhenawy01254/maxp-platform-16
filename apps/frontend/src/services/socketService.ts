@@ -115,6 +115,7 @@ class SocketService {
   private isAudioInitialized: boolean = false;
   private audioUnlocked: boolean = false;
   private audioUnlockAttached: boolean = false;
+  private audioUnlockedLogged: boolean = false;
   private isConnecting: boolean = false;
   private alarmStopTimer: ReturnType<typeof setTimeout> | null = null;
   private alarmSources: Array<{ stop: () => void }> = [];
@@ -166,7 +167,9 @@ class SocketService {
     // سجّل مستمعات فتح الصوت فوراً — على الموبايل لازم الفتح يحصل داخل نفس
     // لمسة/ضغطة المستخدم، مش بعد ما الإشعار يوصل (ساعتها المتصفح يرفض التشغيل).
     this.setupAudioUnlock();
-    this.tryUnlockAudio();
+    if (this.audioUnlocked && this.audioContext && this.audioContext.state !== "running") {
+      this.tryUnlockAudio();
+    }
   }
 
   // تهيئة Audio Context
@@ -202,10 +205,13 @@ class SocketService {
       .then(() => {
         this.primeSilentBuffer(ctx);
         this.markAudioUnlocked();
-        console.log("🔊 [SOUND] Audio context resumed");
+        if (!this.audioUnlockedLogged) {
+          this.audioUnlockedLogged = true;
+          console.log("🔊 [SOUND] Audio context resumed");
+        }
       })
       .catch((error) => {
-        console.warn("⚠️ [SOUND] Could not resume audio context:", error);
+        console.debug("⚠️ [SOUND] Audio context pending user gesture:", error);
       });
   }
 
@@ -319,6 +325,13 @@ class SocketService {
 
     const unlock = () => {
       this.tryUnlockAudio();
+      if (this.audioUnlocked) {
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("keydown", unlock);
+        window.removeEventListener("touchstart", unlock);
+        window.removeEventListener("click", unlock);
+        window.removeEventListener("focus", unlock);
+      }
     };
 
     const opts: AddEventListenerOptions = { passive: true };

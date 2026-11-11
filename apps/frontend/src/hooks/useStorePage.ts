@@ -61,9 +61,21 @@ export const useStorePage = (slug?: string, companyId?: string) => {
         const response = await fetch(
           `${getApiUrl()}/store-pages/${resolvedCompanyId}/slug/${slug}`,
         );
-        const data = await response.json();
 
-        if (data.success) {
+        if (response.status === 404) {
+          setError("الصفحة غير موجودة");
+          setPage(null);
+          return;
+        }
+
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
+        if (data?.success) {
           setPage(data.data);
 
           if (data.data.metaTitle) {
@@ -81,7 +93,7 @@ export const useStorePage = (slug?: string, companyId?: string) => {
             }
           }
         } else {
-          setError(data.error || "الصفحة غير موجودة");
+          setError(data?.error || "الصفحة غير موجودة");
         }
       } catch (fetchError) {
         console.error("Error fetching page:", fetchError);

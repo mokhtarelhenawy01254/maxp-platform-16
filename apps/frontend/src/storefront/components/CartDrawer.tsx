@@ -72,18 +72,45 @@ const CartDrawer: React.FC = () => {
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isRedlineAuto = theme.id === 'redline-auto';
   const scrollRegionRef = React.useRef<HTMLDivElement | null>(null);
+  const drawerPanelRef = React.useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedElementRef = React.useRef<HTMLElement | null>(null);
 
-  const onClose = React.useCallback(() => setIsOpen(false), [setIsOpen]);
+  const onClose = React.useCallback(() => {
+    if (drawerPanelRef.current && drawerPanelRef.current.contains(document.activeElement)) {
+      (document.activeElement as HTMLElement)?.blur?.();
+    }
+    setIsOpen(false);
+  }, [setIsOpen]);
 
-  // Lock body scroll when drawer is open
+  // Lock body scroll when drawer is open & handle accessible focus management
   useEffect(() => {
     if (isOpen) {
+      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      if (drawerPanelRef.current && drawerPanelRef.current.contains(document.activeElement)) {
+        (document.activeElement as HTMLElement)?.blur?.();
+      }
+      if (previouslyFocusedElementRef.current && typeof previouslyFocusedElementRef.current.focus === 'function') {
+        previouslyFocusedElementRef.current.focus();
+        previouslyFocusedElementRef.current = null;
+      }
     }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   useLayoutEffect(() => {
     const isCartRoute = /\/cart$/.test(location.pathname);
@@ -354,6 +381,7 @@ const CartDrawer: React.FC = () => {
 
       {/* Drawer Panel */}
       <div
+        ref={drawerPanelRef}
         dir={theme.direction}
         className={`fixed top-0 z-[70] h-full w-full ${drawerPanelSizeClassName} ${drawerPanelClassName} transform transition-[transform,visibility] duration-300 ease-out flex flex-col ${
           theme.direction === 'rtl' 
@@ -364,6 +392,7 @@ const CartDrawer: React.FC = () => {
         aria-modal="true"
         aria-label={cartDialogLabel}
         aria-hidden={!isOpen}
+        inert={!isOpen ? true : undefined}
       >
         {/* Header */}
         <div className={`shrink-0 flex items-center justify-between p-5 border-b ${drawerBorderClassName}`}>
