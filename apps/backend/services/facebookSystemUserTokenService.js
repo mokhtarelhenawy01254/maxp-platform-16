@@ -22,12 +22,17 @@ const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 const CACHE_TTL_MS = 30_000;
 const GRAPH_TIMEOUT_MS = 10_000;
+const PAGE_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 let schemaEnsured = false;
 let schemaEnsurePromise = null;
 
 // كاش خفيف: cacheKey ('CENTRAL' | companyId) → { value, expiresAt }
 const resolutionCache = new Map();
+
+// كاش توكنات الصفحات المسكوبة من توكن السيستم يوزر: pageId → { token, expiresAt }
+// (توكنات الصفحات من سيستم يوزر لا تنتهي — TTL ساعة للكاش فقط كضمان تجديد)
+const pageTokenMintCache = new Map();
 
 function cacheKeyForScope(scope, companyId) {
   return scope === 'CENTRAL' ? 'CENTRAL' : String(companyId);
@@ -39,6 +44,7 @@ function invalidateSystemUserTokenCache(companyId) {
   } else {
     resolutionCache.clear();
   }
+  pageTokenMintCache.clear();
 }
 
 /**
@@ -245,18 +251,52 @@ async function resolveEffectiveSystemUserToken(companyId) {
 }
 
 /**
+ * سكب page access token من توكن السيستم يوزر — عمليات الصفحات (/posts، الرسائل، النشر)
+ * تتطلب توكن صفحة وليس توكن سيستم يوزر مباشرة (خطأ Graph 190/2069032).
+ * التوكن الناتج لا ينتهي صلاحيته؛ يُكاش لمدة ساعة.
+ */
+async function mintPageTokenFromSystemUserToken(systemUserToken, pageId) {
+  if (!systemUserToken || !pageId) return null;
+
+  const cached = pageTokenMintCache.get(String(pageId));
+  if (cached && cached.expiresAt > Date.now()) return cached.token;
+
+  try {
+    const res = await axios.get(
+      `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}`,
+      {
+        params: { fields: 'access_token', access_token: systemUserToken },
+        timeout: GRAPH_TIMEOUT_MS,
+      },
+    );
+    const pageToken = res.data?.access_token;
+    if (pageToken) {
+      pageTokenMintCache.set(String(pageId), {
+        token: pageToken,
+        expiresAt: Date.now() + PAGE_TOKEN_TTL_MS,
+      });
+      return pageToken;
+    }
+  } catch (_) {
+    /* الصفحة غير مخصصة أو خطأ شبكة — تراجع صامت للمسار القائم */
+  }
+  return null;
+}
+
+/**
  * قرار الاستخدام لصفحة محددة — النقطة الوحيدة التي تستشيرها getPageToken والنشر:
- *  - PRIMARY  → التوكن يحل محل توكن الصفحة دائمًا
- *  - FALLBACK → التوكن فقط عند غياب توكن الصفحة
+ *  - PRIMARY  → توكن صفحة مسكوب من السيستم يوزر يحل محل توكن الصفحة دائمًا
+ *  - FALLBACK → فقط عند غياب توكن الصفحة
+ * يرجع توكن صفحة (وليس توكن السيستم يوزر) لتتوافق مع كل مسارات الكود القائمة.
  */
 async function resolveSystemUserPageToken(page) {
   try {
-    if (!page?.companyId) return null;
+    if (!page?.companyId || !page?.pageId) return null;
     const effective = await resolveEffectiveSystemUserToken(page.companyId);
     if (!effective) return null;
-    if (effective.mode === 'PRIMARY') return effective.token;
-    if (!page.pageAccessToken) return effective.token;
-    return null;
+    const shouldUse = effective.mode === 'PRIMARY' || !page.pageAccessToken;
+    if (!shouldUse) return null;
+    return await mintPageTokenFromSystemUserToken(effective.token, page.pageId);
   } catch (_) {
     return null;
   }
@@ -444,6 +484,7 @@ module.exports = {
   getSystemUserTokenStatus,
   resolveEffectiveSystemUserToken,
   resolveSystemUserPageToken,
+  mintPageTokenFromSystemUserToken,
   listPagesForSystemUserToken,
   validateSystemUserTokenWithGraph,
   invalidateSystemUserTokenCache,

@@ -54,6 +54,14 @@ describe("facebookSystemUserTokenService", () => {
     jest.clearAllMocks();
     invalidateSystemUserTokenCache();
 
+    // سكب توكن الصفحة من توكن السيستم يوزر: GET /{pageId}?fields=access_token
+    axios.get.mockImplementation(async (url) => {
+      if (url.includes('/me')) {
+        return { data: { id: 'su-100', name: 'MaxP System User' } };
+      }
+      return { data: { access_token: 'EAAmintedPageTokenXYZ' } };
+    });
+
     queryResults = { tenantRows: [], centralRows: [] };
     executedStatements = [];
 
@@ -96,7 +104,7 @@ describe("facebookSystemUserTokenService", () => {
     expect(effective.scope).toBe("CENTRAL");
   });
 
-  test("FALLBACK mode: token used only when page token is missing", async () => {
+  test("FALLBACK mode: minted page token used only when page token is missing", async () => {
     queryResults.tenantRows = [buildRow({ mode: "FALLBACK", tokenEncrypted: encryptField("EAAsystemUser") })];
 
     const withPageToken = await resolveSystemUserPageToken({
@@ -111,10 +119,10 @@ describe("facebookSystemUserTokenService", () => {
       companyId: COMPANY_ID,
       pageAccessToken: null,
     });
-    expect(withoutPageToken).toBe("EAAsystemUser");
+    expect(withoutPageToken).toBe("EAAmintedPageTokenXYZ");
   });
 
-  test("PRIMARY mode: token overrides an existing page token", async () => {
+  test("PRIMARY mode: minted page token overrides an existing page token", async () => {
     queryResults.tenantRows = [buildRow({ mode: "PRIMARY", tokenEncrypted: encryptField("EAAsystemUser") })];
 
     const override = await resolveSystemUserPageToken({
@@ -122,7 +130,21 @@ describe("facebookSystemUserTokenService", () => {
       companyId: COMPANY_ID,
       pageAccessToken: "EAAexistingPageToken",
     });
-    expect(override).toBe("EAAsystemUser");
+    expect(override).toBe("EAAmintedPageTokenXYZ");
+  });
+
+  test("mint failure (page not assigned) degrades to null silently", async () => {
+    queryResults.tenantRows = [buildRow({ mode: "PRIMARY", tokenEncrypted: encryptField("EAAsystemUser") })];
+    axios.get.mockRejectedValue({
+      response: { data: { error: { code: 190, message: "Invalid OAuth 2.0 Access Token" } } },
+    });
+
+    const result = await resolveSystemUserPageToken({
+      pageId: "page-unassigned",
+      companyId: COMPANY_ID,
+      pageAccessToken: null,
+    });
+    expect(result).toBeNull();
   });
 
   test("graceful degradation: DB failures never throw to callers", async () => {
