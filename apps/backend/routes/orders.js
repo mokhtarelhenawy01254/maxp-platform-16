@@ -24,7 +24,12 @@ const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
 const { getCustomerFirstOrderInfo, getCustomerOrderHistory } = require('../utils/sessionDetailsHelper');
-const { buildAffiliateOrderWhere } = require('../utils/affiliateOrderFilter');
+const {
+  buildAffiliateOrderWhere,
+  parseCompanyIds,
+  buildCompanyOrderWhere,
+  intersectAllowedCompanies,
+} = require('../utils/affiliateOrderFilter');
 const { resolveIpLocation, isLocalOrPrivateIp } = require('../utils/ipGeoLookup');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 const {
@@ -3451,6 +3456,69 @@ router.post('/incomplete/:cartId/dismiss', verifyToken.authenticateToken, async 
   }
 });
 
+/**
+ * استخراج وفحص الشركات المستهدفة للطلب بناء على الصلاحيات وعضوية المستخدم:
+ * - SUPER_ADMIN: أي شركة مطلوبة في القائمة، أو شركته إن لم تُحدد.
+ * - مستخدم عادي: تتقاطع القائمة المطلوبة مع عضوياته النشطة في UserCompany + شركته الحالية.
+ * - إذا طلب شركة لا يملك صلاحية عليها -> isAuthorized = false و targetCompanyIds = []
+ */
+const resolveUserTargetCompanies = async (req, merchant = null) => {
+  const requestedCompanies = parseCompanyIds(req.query.companyId, req.query.companyIds);
+  const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+
+  if (isSuperAdmin) {
+    const targetCompanies = requestedCompanies.length > 0
+      ? requestedCompanies
+      : [merchant?.companyId || req.user?.companyId].filter(Boolean);
+    return {
+      requestedCompanies,
+      targetCompanyIds: targetCompanies,
+      isAuthorized: targetCompanies.length > 0 || requestedCompanies.length === 0,
+      primaryCompanyId: targetCompanies[0] || merchant?.companyId || req.user?.companyId || null,
+      companyWhere: buildCompanyOrderWhere(targetCompanies)
+    };
+  }
+
+  const allowedSet = new Set();
+  if (req.user?.companyId) allowedSet.add(req.user.companyId);
+  if (merchant?.companyId) allowedSet.add(merchant.companyId);
+  if (req.user?.id) {
+    try {
+      const memberships = await getSharedPrismaClient().userCompany.findMany({
+        where: { userId: req.user.id, isActive: true },
+        select: { companyId: true }
+      });
+      memberships.forEach((m) => {
+        if (m.companyId) allowedSet.add(m.companyId);
+      });
+    } catch (e) {
+      console.warn('⚠️ [ORDERS] Failed to fetch user companies:', e.message);
+    }
+  }
+
+  const allowedCompanies = Array.from(allowedSet);
+
+  if (requestedCompanies.length > 0) {
+    const targetCompanies = intersectAllowedCompanies(requestedCompanies, allowedCompanies);
+    return {
+      requestedCompanies,
+      targetCompanyIds: targetCompanies,
+      isAuthorized: targetCompanies.length > 0,
+      primaryCompanyId: targetCompanies[0] || null,
+      companyWhere: buildCompanyOrderWhere(targetCompanies)
+    };
+  }
+
+  const defaultTarget = [merchant?.companyId || req.user?.companyId].filter(Boolean);
+  return {
+    requestedCompanies,
+    targetCompanyIds: defaultTarget,
+    isAuthorized: defaultTarget.length > 0,
+    primaryCompanyId: defaultTarget[0] || null,
+    companyWhere: buildCompanyOrderWhere(defaultTarget)
+  };
+};
+
 // الحصول على الطلبات البسيطة
 // الحصول على الطلبات البسيطة (مع Pagination & Filtering)
 router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
@@ -3468,18 +3536,53 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
-    // فلتر المتجر/الشركة: السوبر أدمن فقط يمكنه تمرير companyId صريح في الـ query
-    const requestedCompanyId =
-      req.user?.role === 'SUPER_ADMIN' ? String(req.query.companyId || '').trim() : '';
-    const companyId = requestedCompanyId || merchant?.companyId || req.user?.companyId;
+
+    const {
+      requestedCompanies,
+      targetCompanyIds,
+      isAuthorized,
+      primaryCompanyId,
+      companyWhere
+    } = await resolveUserTargetCompanies(req, merchant);
+
+    // إذا طلب المستخدم شركة أو شركات ليس عضوًا فيها -> ترجيع صفر ومش تسرّب بيانات
+    if (requestedCompanies.length > 0 && !isAuthorized) {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 20;
+      return res.json({
+        success: true,
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+          hasMore: false,
+          hasPreviousPage: false,
+          hasNextPage: false
+        },
+        stats: {
+          total: 0,
+          totalAmount: 0,
+          pending: 0,
+          processing: 0,
+          shipped: 0,
+          delivered: 0,
+          cancelled: 0,
+          returned: 0
+        }
+      });
+    }
+
+    const companyId = primaryCompanyId;
 
     // Debug logging (development only)
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[ORDERS] /simple request - req.user:`, req.user ? { id: req.user.id, email: req.user.email, companyId: req.user.companyId, role: req.user.role } : 'null');
-      console.log(`[ORDERS] /simple request - companyId:`, companyId, 'merchantId:', merchant?.id || null);
+      console.log(`[ORDERS] /simple request - targetCompanies:`, targetCompanyIds, 'primaryCompanyId:', companyId, 'merchantId:', merchant?.id || null);
     }
 
-    if (!companyId) {
+    if (!companyId || !companyWhere) {
       console.error(`[ORDERS] /simple - Missing companyId. req.user:`, req.user);
       return res.status(403).json({
         success: false,
@@ -3561,8 +3664,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
 
     // بناء شروط البحث (Where Clause)
-    const whereClause = { companyId };
-    const guestWhereClause = { companyId };
+    const whereClause = { ...companyWhere };
+    const guestWhereClause = { ...companyWhere };
 
     // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
     // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
@@ -4007,7 +4110,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       (!sourceTypes.length || sourceTypes.includes('storefront'));
     let cartQueryWhere = null;
     if (includeIncompleteCarts) {
-      cartQueryWhere = { companyId };
+      cartQueryWhere = { ...companyWhere };
       const cartAnd = [];
       if (incompleteFilterStatus === 'incomplete') {
         cartAnd.push(cartActiveClause);
@@ -4360,7 +4463,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       if (filteredGuestOrderNumbers.length > 0) {
         const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
           where: {
-            companyId,
+            ...companyWhere,
             // mode insensitive عشان يمسك نفس الرقم بصيغ مختلفة (حروف كبيرة/صغيرة)
             orderNumber: { in: filteredGuestOrderNumbers, mode: 'insensitive' }
           },
@@ -4429,7 +4532,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       guestOrders.length > 0 && guestOrders.some((order) => toSafeOrderAmount(order.shippingCost) <= 0)
         ? await getSharedPrismaClient().shippingZone.findMany({
             where: {
-              companyId,
+              ...companyWhere,
               isActive: true
             }
           })
@@ -8439,18 +8542,25 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 // Export Orders
 router.get('/export', verifyToken.authenticateToken, async (req, res) => {
   try {
-    // فلتر المتجر/الشركة: السوبر أدمن فقط يمكنه تمرير companyId صريح في الـ query
-    const requestedCompanyId =
-      req.user?.role === 'SUPER_ADMIN' ? String(req.query.companyId || '').trim() : '';
-    const companyId = requestedCompanyId || req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+    const {
+      requestedCompanies,
+      targetCompanyIds,
+      isAuthorized,
+      primaryCompanyId,
+      companyWhere
+    } = await resolveUserTargetCompanies(req, null);
 
+    if (!isAuthorized || targetCompanyIds.length === 0 || !companyWhere) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const companyId = primaryCompanyId;
     const { status, paymentStatus, search, startDate, endDate } = req.query;
     const sourceType = req.query.sourceType || req.query.source;
 
     // Build Filters (Same as /simple)
-    const whereClause = { companyId };
-    const guestWhereClause = { companyId };
+    const whereClause = { ...companyWhere };
+    const guestWhereClause = { ...companyWhere };
 
     // نفس منطق فلتر المسوق المستخدم في قائمة الطلبات (orders.affiliateId فقط)
     const affiliateWhere = buildAffiliateOrderWhere(req.query.affiliateId);
@@ -10327,6 +10437,7 @@ router.post('/simple/:orderNumber/schedule', verifyToken.authenticateToken, asyn
 });
 
 router._buildRegularSourceCondition = buildRegularSourceCondition;
+router._resolveUserTargetCompanies = resolveUserTargetCompanies;
 
 module.exports = router;
 

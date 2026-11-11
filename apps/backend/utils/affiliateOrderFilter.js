@@ -60,6 +60,49 @@ const buildAffiliateOrderWhere = (rawValue) => {
 };
 
 /**
+ * تطبيع قائمة معرفات الشركات القادمة من الـ query (نص مفصول بفواصل أو مصفوفة)
+ */
+const parseCompanyIds = (...inputs) => {
+  const seen = new Set();
+  const ids = [];
+
+  inputs.forEach((input) => {
+    if (!input) return;
+    const parts = Array.isArray(input) ? input : String(input).split(',');
+    parts.forEach((value) => {
+      const normalized = String(value ?? '').trim();
+      if (!normalized || normalized === 'null' || normalized === 'undefined') return;
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
+      ids.push(normalized);
+    });
+  });
+
+  return ids;
+};
+
+/**
+ * شرط Prisma للفلترة على companyId للطلبات.
+ * يعيد null عند عدم وجود معرفات.
+ * شركة واحدة -> { companyId: id }
+ * أكثر من شركة -> { companyId: { in: ids } }
+ */
+const buildCompanyOrderWhere = (companyIds) => {
+  const ids = parseCompanyIds(companyIds);
+  if (ids.length === 0) return null;
+  if (ids.length === 1) return { companyId: ids[0] };
+  return { companyId: { in: ids } };
+};
+
+/**
+ * تقاطع قائمة الشركات المطلوبة مع قائمة الشركات المسموح بها للمستخدم
+ */
+const intersectAllowedCompanies = (requestedIds = [], allowedIds = []) => {
+  const allowedSet = new Set(parseCompanyIds(allowedIds));
+  return parseCompanyIds(requestedIds).filter((id) => allowedSet.has(id));
+};
+
+/**
  * فهرس عدد الطلبات لكل مسوق من نتيجة groupBy على الطلبات
  */
 const buildOrderCountIndex = (orderStats = []) => {
@@ -119,9 +162,9 @@ const mergeAffiliateMarketers = ({
   const rows = new Map();
 
   const keyForAffiliate = (affiliate) =>
-    affiliate?.userId
-      ? `user:${affiliate.userId}`
-      : `affiliate:${affiliate?.id || 'unknown'}`;
+    affiliate?.id
+      ? `affiliate:${affiliate.id}`
+      : (affiliate?.userId ? `user:${affiliate.userId}` : 'affiliate:unknown');
 
   const upsertAffiliate = (affiliate) => {
     if (!affiliate) return;
@@ -160,22 +203,26 @@ const mergeAffiliateMarketers = ({
 
   memberships.forEach((membership) => {
     if (!membership?.userId) return;
-    const key = `user:${membership.userId}`;
-    const existing = rows.get(key);
+    let found = false;
 
-    if (existing) {
-      rows.set(key, {
-        ...existing,
-        isMember: true,
-        membershipRole: membership.role || existing.membershipRole || null,
-        membershipActive: Boolean(membership.isActive),
-      });
-      return;
+    for (const [k, existing] of rows.entries()) {
+      if (existing.userId === membership.userId) {
+        found = true;
+        rows.set(k, {
+          ...existing,
+          isMember: true,
+          membershipRole: membership.role || existing.membershipRole || null,
+          membershipActive: Boolean(membership.isActive),
+        });
+      }
     }
+
+    if (found) return;
 
     if (membership.role !== AFFILIATE_MEMBERSHIP_ROLE) return;
 
     // عضو بدور مسوق بدون سجل Affiliate: يظهر في القائمة بانتظار التفعيل ولا يفلتر طلبات
+    const key = `user:${membership.userId}`;
     rows.set(key, {
       affiliateId: null,
       userId: membership.userId,
@@ -282,6 +329,9 @@ module.exports = {
   isOtherCompanyAffiliate,
   normalizeAffiliateIdList,
   buildAffiliateOrderWhere,
+  parseCompanyIds,
+  buildCompanyOrderWhere,
+  intersectAllowedCompanies,
   buildOrderCountIndex,
   buildCommissionIndex,
   sortMarketerRows,

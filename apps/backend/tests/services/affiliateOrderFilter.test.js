@@ -3,11 +3,34 @@ const {
   isOtherCompanyAffiliate,
   normalizeAffiliateIdList,
   buildAffiliateOrderWhere,
+  parseCompanyIds,
+  buildCompanyOrderWhere,
+  intersectAllowedCompanies,
   buildOrderCountIndex,
   buildCommissionIndex,
   mergeAffiliateMarketers,
   summarizeAffiliateStores,
 } = require("../../utils/affiliateOrderFilter");
+
+const { describe, it } =
+  typeof global.describe === "function" && typeof global.it === "function"
+    ? { describe: global.describe, it: global.it }
+    : require("node:test");
+const assert = require("node:assert");
+const expect =
+  typeof global.expect === "function"
+    ? global.expect
+    : (actual) => ({
+        toBe: (expected) => assert.strictEqual(actual, expected),
+        toEqual: (expected) => assert.deepStrictEqual(actual, expected),
+        toBeDefined: () => assert.notStrictEqual(actual, undefined),
+        toBeNull: () => assert.strictEqual(actual, null),
+        toHaveLength: (len) => assert.strictEqual(actual?.length, len),
+        not: {
+          toBe: (expected) => assert.notStrictEqual(actual, expected),
+          toContain: (substr) => assert.ok(!String(actual).includes(substr)),
+        },
+      });
 
 // سيناريو الإنتاج: شركة cmleybpf70028juo2wwpmp8rt
 // 141 طلبًا تحمل عمولة موزعة على مسوقين اثنين فقط، أحدهما بلا عضوية والآخر مدير شركة،
@@ -291,6 +314,180 @@ describe("affiliateOrderFilter helpers", () => {
       expect(stores[0].companyId).toBe(OTHER_COMPANY_ID);
       expect(stores[0].orderCount).toBe(0);
       expect(stores[0].activeMarketersCount).toBe(2);
+    });
+  });
+
+  describe("(أ) نفس المستخدم في شركتين -> صفين مختلفين وفلتر كل شركة بيرجع صفها", () => {
+    const multiUser = {
+      id: "user-multi-company",
+      firstName: "مسوق",
+      lastName: "متعدد",
+      email: "multi@example.com",
+    };
+
+    const affCompanyA = {
+      id: "aff-compA-1",
+      userId: multiUser.id,
+      companyId: "company-A",
+      affiliateCode: "MULTI_A",
+      status: "ACTIVE",
+      user: multiUser,
+    };
+
+    const affCompanyB = {
+      id: "aff-compB-2",
+      userId: multiUser.id,
+      companyId: "company-B",
+      affiliateCode: "MULTI_B",
+      status: "ACTIVE",
+      user: multiUser,
+    };
+
+    const orderStatsCompA = [{ affiliateId: affCompanyA.id, _count: { _all: 15 } }];
+    const orderStatsCompB = [{ affiliateId: affCompanyB.id, _count: { _all: 30 } }];
+
+    it("ينتج صفين مختلفين لنفس المستخدم وكل شركة تحتفظ بسجلها الخاص ولا يلغى صف الشركة نفسها", () => {
+      // عند الدمج لسياق شركة A
+      const rowsA = mergeAffiliateMarketers({
+        companyId: "company-A",
+        ownAffiliates: [affCompanyA],
+        linkedAffiliates: [affCompanyB],
+        memberships: [{ userId: multiUser.id, role: AFFILIATE_MEMBERSHIP_ROLE, isActive: true, user: multiUser }],
+        orderStats: orderStatsCompA,
+      });
+
+      expect(rowsA).toHaveLength(2);
+      const rowInA = rowsA.find((r) => r.affiliateId === affCompanyA.id);
+      const rowOtherInA = rowsA.find((r) => r.affiliateId === affCompanyB.id);
+
+      expect(rowInA).toBeDefined();
+      expect(rowInA.isOtherCompany).toBe(false);
+      expect(rowInA.orderCount).toBe(15);
+      expect(rowInA.affiliateCompanyId).toBe("company-A");
+
+      expect(rowOtherInA).toBeDefined();
+      expect(rowOtherInA.isOtherCompany).toBe(true);
+      expect(rowOtherInA.orderCount).toBe(0);
+      expect(rowOtherInA.affiliateCompanyId).toBe("company-B");
+
+      // فلتر شركة A بالمسوق يعيد معرف سجل شركة A وليس صفرا
+      const filterA = buildAffiliateOrderWhere(rowInA.affiliateId);
+      expect(filterA).toEqual({ affiliateId: "aff-compA-1" });
+
+      // عند الدمج لسياق شركة B
+      const rowsB = mergeAffiliateMarketers({
+        companyId: "company-B",
+        ownAffiliates: [affCompanyB],
+        linkedAffiliates: [affCompanyA],
+        memberships: [{ userId: multiUser.id, role: AFFILIATE_MEMBERSHIP_ROLE, isActive: true, user: multiUser }],
+        orderStats: orderStatsCompB,
+      });
+
+      expect(rowsB).toHaveLength(2);
+      const rowInB = rowsB.find((r) => r.affiliateId === affCompanyB.id);
+      const rowOtherInB = rowsB.find((r) => r.affiliateId === affCompanyA.id);
+
+      expect(rowInB).toBeDefined();
+      expect(rowInB.isOtherCompany).toBe(false);
+      expect(rowInB.orderCount).toBe(30);
+
+      expect(rowOtherInB).toBeDefined();
+      expect(rowOtherInB.isOtherCompany).toBe(true);
+      expect(rowOtherInB.orderCount).toBe(0);
+
+      // فلتر شركة B بالمسوق يعيد معرف سجل شركة B
+      const filterB = buildAffiliateOrderWhere(rowInB.affiliateId);
+      expect(filterB).toEqual({ affiliateId: "aff-compB-2" });
+    });
+  });
+
+  describe("(ب) فلترة الشركات المتعددة companyId='A,B' وتحويلها لشرط where", () => {
+    it("يحول companyId='A,B' إلى شرط { companyId: { in: ['A', 'B'] } }", () => {
+      const where = buildCompanyOrderWhere("A,B");
+      expect(where).toEqual({ companyId: { in: ["A", "B"] } });
+    });
+
+    it("يتعامل مع المسافات والتكرار والقيم الفارغة", () => {
+      const where = buildCompanyOrderWhere(" A , B,A ,  null, undefined ");
+      expect(where).toEqual({ companyId: { in: ["A", "B"] } });
+    });
+
+    it("يحول شركة واحدة إلى { companyId: 'A' }", () => {
+      expect(buildCompanyOrderWhere("A")).toEqual({ companyId: "A" });
+      expect(buildCompanyOrderWhere(["A"])).toEqual({ companyId: "A" });
+    });
+
+    it("يعيد null عند تمرير قيمة فارغة", () => {
+      expect(buildCompanyOrderWhere("")).toBeNull();
+      expect(buildCompanyOrderWhere(null)).toBeNull();
+      expect(buildCompanyOrderWhere([])).toBeNull();
+    });
+
+    it("يطبق تقاطع الشركات المسموح بها بدقة ولا يسرب أي شركة غير مصرح بها", () => {
+      const allowed = ["A", "B"];
+      expect(intersectAllowedCompanies(["A", "B"], allowed)).toEqual(["A", "B"]);
+      expect(intersectAllowedCompanies(["A", "C"], allowed)).toEqual(["A"]);
+      expect(intersectAllowedCompanies(["X", "Y"], allowed)).toEqual([]);
+    });
+  });
+
+  describe("(ج) فلتر affiliateId مع companyId يغير عداد المتجر", () => {
+    const companies = [
+      { id: "comp-1", name: "متجر رئيسي" },
+      { id: "comp-2", name: "متجر فرعي" },
+    ];
+
+    it("يحسب عداد الأوردرات لكل متجر بحسب المسوق المفلتر مقارنة بالكل", () => {
+      // إحصائيات عامة بدون فلتر مسوق
+      const allStats = [
+        { companyId: "comp-1", _count: { _all: 100 } },
+        { companyId: "comp-2", _count: { _all: 50 } },
+      ];
+      const storesAll = summarizeAffiliateStores({
+        companies,
+        companyStats: allStats,
+        activeMarketerStats: [
+          { companyId: "comp-1", _count: { _all: 3 } },
+          { companyId: "comp-2", _count: { _all: 2 } },
+        ],
+      });
+
+      expect(storesAll.find((s) => s.companyId === "comp-1").orderCount).toBe(100);
+      expect(storesAll.find((s) => s.companyId === "comp-2").orderCount).toBe(50);
+
+      // إحصائيات بعد تطبيق فلتر مسوق معين (affiliateId='aff-1')
+      const filteredStatsMarketer1 = [
+        { companyId: "comp-1", _count: { _all: 12 } },
+        { companyId: "comp-2", _count: { _all: 0 } },
+      ];
+      const storesFiltered1 = summarizeAffiliateStores({
+        companies,
+        companyStats: filteredStatsMarketer1,
+        activeMarketerStats: [
+          { companyId: "comp-1", _count: { _all: 1 } },
+        ],
+      });
+
+      const store1 = storesFiltered1.find((s) => s.companyId === "comp-1");
+      expect(store1.orderCount).toBe(12);
+      expect(store1.orderCount).not.toBe(100);
+
+      // إحصائيات بعد تطبيق فلتر مسوق آخر (affiliateId='aff-2')
+      const filteredStatsMarketer2 = [
+        { companyId: "comp-1", _count: { _all: 3 } },
+        { companyId: "comp-2", _count: { _all: 18 } },
+      ];
+      const storesFiltered2 = summarizeAffiliateStores({
+        companies,
+        companyStats: filteredStatsMarketer2,
+        activeMarketerStats: [
+          { companyId: "comp-1", _count: { _all: 1 } },
+          { companyId: "comp-2", _count: { _all: 1 } },
+        ],
+      });
+
+      expect(storesFiltered2.find((s) => s.companyId === "comp-1").orderCount).toBe(3);
+      expect(storesFiltered2.find((s) => s.companyId === "comp-2").orderCount).toBe(18);
     });
   });
 });

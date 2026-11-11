@@ -16,6 +16,10 @@ const { ensureWithinPlanLimit } = require("../utils/planLimitPayloads");
 const uploadAffiliatePayoutProof = require("../middleware/affiliatePayoutProofUpload");
 const uploadAffiliateIdentityDocument = require("../middleware/affiliateIdentityDocumentUpload");
 const { isProductVisibleToAffiliate } = require("../utils/affiliateProductVisibility");
+const {
+  parseCompanyIds,
+  intersectAllowedCompanies,
+} = require("../utils/affiliateOrderFilter");
 
 const canManageAffiliates = (userRole) =>
   ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "ADMIN"].includes(userRole);
@@ -1604,21 +1608,48 @@ router.get("/stores", verifyToken.authenticateToken, async (req, res) => {
         .json({ success: false, message: "ليس لديك صلاحية" });
     }
 
-    const requestedCompanyIds = String(req.query.companyIds || "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const requestedCompanyIds = parseCompanyIds(
+      req.query.companyId,
+      req.query.companyIds
+    );
+    let companyIds = [];
 
-    const companyIds =
-      req.user.role === "SUPER_ADMIN"
-        ? requestedCompanyIds
-        : [req.user.companyId].filter(Boolean);
+    if (req.user.role === "SUPER_ADMIN") {
+      companyIds = requestedCompanyIds;
+    } else {
+      const allowedSet = new Set();
+      if (req.user?.companyId) allowedSet.add(req.user.companyId);
+      if (req.user?.id) {
+        try {
+          const memberships = await getSharedPrismaClient().userCompany.findMany({
+            where: { userId: req.user.id, isActive: true },
+            select: { companyId: true },
+          });
+          memberships.forEach((m) => {
+            if (m.companyId) allowedSet.add(m.companyId);
+          });
+        } catch (e) {
+          console.warn("⚠️ [AFFILIATE-STORES] Failed to fetch user companies:", e.message);
+        }
+      }
+      const allowedCompanies = Array.from(allowedSet);
 
-    if (companyIds.length === 0 && req.user.role !== "SUPER_ADMIN") {
-      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+      if (requestedCompanyIds.length > 0) {
+        companyIds = intersectAllowedCompanies(requestedCompanyIds, allowedCompanies);
+        if (companyIds.length === 0) {
+          return res.json({ success: true, data: [] });
+        }
+      } else {
+        companyIds = allowedCompanies;
+      }
+
+      if (companyIds.length === 0) {
+        return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+      }
     }
 
-    const stores = await affiliateService.listAffiliateStores({ companyIds });
+    const affiliateId = req.query.affiliateId || req.query.affiliateIds;
+    const stores = await affiliateService.listAffiliateStores({ companyIds, affiliateId });
     res.json({ success: true, data: stores });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

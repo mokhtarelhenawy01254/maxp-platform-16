@@ -3,6 +3,7 @@ const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibi
 const {
   mergeAffiliateMarketers,
   summarizeAffiliateStores,
+  buildAffiliateOrderWhere,
 } = require('../utils/affiliateOrderFilter');
 
 const VALID_COMMISSION_TYPES = new Set(['PERCENTAGE', 'MARKUP', 'FIXED', 'FIXED_PER_ITEM']);
@@ -1614,18 +1615,28 @@ class AffiliateService {
         ? { companyId: { in: companyIds } }
         : { companyId: { not: null } };
 
+      const affiliateWhere = buildAffiliateOrderWhere(options.affiliateId);
+      const orderWhere = {
+        ...orderScope,
+        ...(affiliateWhere
+          ? { affiliateId: affiliateWhere.affiliateId }
+          : { OR: [{ affiliateId: { not: null } }, { orderSource: 'AFFILIATE_DIRECT' }] }),
+      };
+      const affiliateFilterWhere = {
+        ...affiliateScope,
+        status: 'ACTIVE',
+        ...(affiliateWhere ? { id: affiliateWhere.affiliateId } : {}),
+      };
+
       const [companyStats, activeMarketerStats] = await Promise.all([
         prisma.order.groupBy({
           by: ['companyId'],
-          where: {
-            ...orderScope,
-            OR: [{ affiliateId: { not: null } }, { orderSource: 'AFFILIATE_DIRECT' }],
-          },
+          where: orderWhere,
           _count: { _all: true },
         }),
         prisma.affiliate.groupBy({
           by: ['companyId'],
-          where: { ...affiliateScope, status: 'ACTIVE' },
+          where: affiliateFilterWhere,
           _count: { _all: true },
         }),
       ]);
