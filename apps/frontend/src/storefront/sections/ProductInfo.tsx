@@ -117,7 +117,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = (props) => {
     return <ElessiMainBuybox ctrl={ctrl} />;
   }
 
-  if (ctrl.variant === 'marketplace-bazaar') {
+  if (
+    ctrl.variant === 'marketplace-bazaar' ||
+    ctrl.isMarketplaceBazaar ||
+    ctrl.theme?.id?.includes('marketplace-avenue')
+  ) {
     return <MarketplaceBuybox ctrl={ctrl} />;
   }
 

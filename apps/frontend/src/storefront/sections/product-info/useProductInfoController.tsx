@@ -873,7 +873,9 @@ export const useProductInfoController = ({
     theme,
     settings: sectionSettings,
     sectionSettings,
-    isMarketplaceBazaar: variant === 'marketplace-bazaar',
+    isMarketplaceBazaar:
+      variant === 'marketplace-bazaar' ||
+      Boolean(theme?.id && theme.id.includes('marketplace-avenue')),
     product,
     isLoading,
     error,

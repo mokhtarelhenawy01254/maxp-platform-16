@@ -29,6 +29,7 @@ import {
   localizeSectionSettings,
   type StorefrontLocale,
 } from '../i18n';
+import { useStorefrontTheme } from './ThemeProvider';
 
 interface PageComposerProps {
   pageConfig: StorefrontPageConfig;
@@ -454,6 +455,8 @@ export const PageComposer: React.FC<PageComposerProps> = ({
   const inRouter = useInRouterContext();
   const location = inRouter ? useLocation() : null;
   const activeLocale = propLocale || getStorefrontLocale(location?.search);
+  const { theme: activeTheme } = useStorefrontTheme();
+  const activeThemeId = activeTheme?.id;
 
   const pageConfig = React.useMemo(() => {
     return localizePageConfig(rawPageConfig, activeLocale);
@@ -915,7 +918,9 @@ export const PageComposer: React.FC<PageComposerProps> = ({
         return !isProductDetailCompanionSection(sectionId, componentKey);
       });
 
-      const isMarketplace3Col = getSectionVariant(infoSection) === 'marketplace-bazaar';
+      const isMarketplace3Col =
+        getSectionVariant(infoSection) === 'marketplace-bazaar' ||
+        Boolean(activeThemeId && activeThemeId.includes('marketplace-avenue'));
 
       const useCompactMobileProductDetail =
         pageSettings?.['compactMobileLayout'] === true;
@@ -949,7 +954,15 @@ export const PageComposer: React.FC<PageComposerProps> = ({
                   : 'flex min-w-0 flex-col gap-3 sm:gap-5'
               }
             >
-              {renderSection(infoSection, infoIndex)}
+              {renderSection(
+                isMarketplace3Col &&
+                  typeof infoSection === 'object' &&
+                  infoSection !== null &&
+                  (infoSection as any).variant !== 'marketplace-bazaar'
+                  ? { ...infoSection, variant: 'marketplace-bazaar' }
+                  : infoSection,
+                infoIndex,
+              )}
               {companionSections.map(({ sectionEntry, index }) =>
                 renderSection(sectionEntry, index),
               )}

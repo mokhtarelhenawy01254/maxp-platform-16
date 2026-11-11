@@ -1,9 +1,40 @@
 "use strict";
 
+const fs = require("fs");
 const path = require("path");
 const { getPublicProductSlug } = require("../utils/productSlugValidation");
 
 const DEFAULT_THEME_ID = "modern-minimal";
+
+const themePresetCache = new Map();
+
+const getThemePresetSeo = (themeId) => {
+  if (!themeId || typeof themeId !== "string") return {};
+  if (themePresetCache.has(themeId)) return themePresetCache.get(themeId);
+
+  const candidatePaths = [
+    path.resolve(__dirname, "../../frontend/src/storefront/themes", `${themeId}.json`),
+    path.resolve(__dirname, "../../../frontend2/src/storefront/themes", `${themeId}.json`),
+    path.resolve("/var/www/frontend2/src/storefront/themes", `${themeId}.json`),
+  ];
+
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, "utf8");
+        const parsed = JSON.parse(raw);
+        const seo = isRecord(parsed.seo) ? parsed.seo : {};
+        themePresetCache.set(themeId, seo);
+        return seo;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  themePresetCache.set(themeId, {});
+  return {};
+};
 
 /** Absolute URL for the MaxP platform OG cover — used as ultimate fallback when
  *  a storefront has no logo/theme image configured. */
@@ -178,9 +209,12 @@ const resolveCompanyDescription = ({ company, storefrontSettings, templateSettin
   const templateSeo = parseJsonObject(templateSettings?.seo);
 
   return (
+    trimToNull(designTokens?.seo?.description) ||
+    trimToNull(designTokens?.settings?.seo?.description) ||
     trimToNull(templateSeo.description) ||
     trimToNull(companySettings.description) ||
     trimToNull(designTokens.description) ||
+    trimToNull(designTokens?.settings?.description) ||
     null
   );
 };
@@ -597,29 +631,75 @@ const buildStorefrontSeoMetadata = ({
     templateSettings,
     templateContent: isRecord(templateContent) ? templateContent : {},
   });
+  const themePresetSeo = getThemePresetSeo(themeId);
+
+  const activePageKey = routeContext.isHomePage
+    ? "home"
+    : (routeContext.pageSegment || "home");
+
+  const pageTokens =
+    parseJsonObject(designTokens?.pages?.[activePageKey]) ||
+    parseJsonObject(designTokens?.pageOverrides?.[activePageKey]) ||
+    parseJsonObject(designTokens?.pages?.[routeContext.pageSegment]) ||
+    parseJsonObject(designTokens?.pageOverrides?.[routeContext.pageSegment]) ||
+    {};
+
+  const pageSeo = parseJsonObject(pageTokens.seo);
+  const rootSeo = parseJsonObject(designTokens?.seo || designTokens?.settings?.seo);
+
+  const effectiveKeywords =
+    trimToNull(pageSeo.keywords) ||
+    trimToNull(rootSeo.keywords) ||
+    trimToNull(templateSeo.keywords) ||
+    trimToNull(themePresetSeo.keywords) ||
+    null;
+
   const storeName = resolveStoreName({
     company,
     storefrontSettings,
     templateSettings,
     templateContent,
   });
+
   const companyDescription =
-    resolveCompanyDescription({ company, storefrontSettings, templateSettings });
+    trimToNull(pageSeo.description) ||
+    trimToNull(rootSeo.description) ||
+    trimToNull(templateSeo.description) ||
+    trimToNull(companySettings.description) ||
+    trimToNull(designTokens.description) ||
+    trimToNull(designTokens?.settings?.description) ||
+    trimToNull(themePresetSeo.description);
+
   const fallbackDescription =
     companyDescription ||
     `${storeName} — تسوق أونلاين واكتشف أحدث المنتجات والعروض المتاحة الآن.`;
-  const titleTemplate = trimToNull(templateSeo.titleTemplate) || "%s | {{store}}";
+
+  const titleTemplate =
+    trimToNull(pageSeo.titleTemplate) ||
+    trimToNull(rootSeo.titleTemplate) ||
+    trimToNull(templateSeo.titleTemplate) ||
+    trimToNull(themePresetSeo.titleTemplate) ||
+    "%s | {{store}}";
+
   const direction =
     trimToNull(designTokens?.direction) ||
     trimToNull(templateSettings?.direction) ||
     trimToNull(templateContent?.direction) ||
     "rtl";
+
   const defaultImage =
+    resolveAbsoluteUrl(pageSeo.ogImage, currentUrl) ||
+    resolveAbsoluteUrl(rootSeo.ogImage, currentUrl) ||
     resolveAbsoluteUrl(templateSeo.defaultOgImage, currentUrl) ||
+    resolveAbsoluteUrl(themePresetSeo.defaultOgImage, currentUrl) ||
     resolveAbsoluteUrl(company?.logo, currentUrl) ||
     PLATFORM_OG_COVER;
+
   const faviconUrl =
+    resolveAbsoluteUrl(pageSeo.faviconUrl, currentUrl) ||
+    resolveAbsoluteUrl(rootSeo.faviconUrl, currentUrl) ||
     resolveAbsoluteUrl(templateSeo.faviconUrl, currentUrl) ||
+    resolveAbsoluteUrl(themePresetSeo.faviconUrl, currentUrl) ||
     resolveAbsoluteUrl(company?.logo, currentUrl) ||
     null;
 
@@ -1172,8 +1252,13 @@ const buildStorefrontSeoMetadata = ({
       storePage.slug || routeContext.storePageSlug || routeContext.pageSegment,
     )}`;
   } else if (routeContext.isHomePage) {
-    title = storeName;
-    description = fallbackDescription;
+    const customHomeTitle = trimToNull(pageSeo.title) || trimToNull(rootSeo.title);
+    title = customHomeTitle || storeName;
+    description = trimToNull(pageSeo.description) || trimToNull(rootSeo.description) || fallbackDescription;
+    image =
+      resolveAbsoluteUrl(pageSeo.ogImage, currentUrl) ||
+      resolveAbsoluteUrl(rootSeo.ogImage, currentUrl) ||
+      defaultImage;
     canonicalUrl = `${baseUrl}/`;
 
     jsonLd = {
@@ -1240,13 +1325,16 @@ const buildStorefrontSeoMetadata = ({
       sameAs: sameAs.length > 0 ? sameAs : undefined,
     };
 
+    const customOgTitle = trimToNull(pageSeo.title) || trimToNull(rootSeo.title) || storeName;
     return {
       title,
       h1: storeName,
-      ogTitle: storeName,
+      ogTitle: customOgTitle,
       imageAlt: storeName,
       entityName,
       description,
+      keywords: effectiveKeywords,
+      author: storeName,
       image,
       faviconUrl,
       siteName: storeName,
