@@ -538,3 +538,6 @@ apps/frontend/public/**/*.blockmap
 apps/ai-service/.env.production
 **/.env.production
 apps/backend/login.json
+
+# OBS-1 — build metadata runtime artifact
+apps/backend/build-info.json

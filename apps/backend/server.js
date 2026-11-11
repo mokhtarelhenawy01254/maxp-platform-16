@@ -544,7 +544,7 @@ app.use((req, res, next) => {
   if (isShuttingDown) {
     res.setHeader("Connection", "close");
     // Allow health checks to report shutdown status, reject other traffic with 503 for fast upstream failover
-    if (req.path !== "/health" && req.path !== "/api/v1/health") {
+    if (req.path !== "/health" && req.path !== "/api/v1/health" && req.path !== "/api/health") {
       return res.status(503).json({
         error: "Server is restarting",
         code: "SERVER_SHUTTING_DOWN",
@@ -832,6 +832,7 @@ app.use("/api/v1/shipments", turboWebhookRoutes);
 app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
 app.use("/health", healthRoute);
 app.use("/api/v1/health", healthRoute);
+app.use("/api/health", healthRoute);
 app.use("/api/v1/app/version", appVersionRoutes);
 app.use("/api/v1/version", (req, res) => {
   res.status(200).json({

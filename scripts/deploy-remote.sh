@@ -424,6 +424,46 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
   fi
 
+  # 🏷️ OBS-1: Ensure GIT_SHA and BUILD_TIME are set in backend .env
+  if [ -z "$GIT_SHA" ] && [ -f "$DEPLOY_STAGING/backend_extract/backend/build-info.json" ]; then
+    GIT_SHA=$(node -e 'try { console.log(require(process.argv[1]).gitSha || ""); } catch(_) {}' "$DEPLOY_STAGING/backend_extract/backend/build-info.json")
+  fi
+  if [ -z "$BUILD_TIME" ] && [ -f "$DEPLOY_STAGING/backend_extract/backend/build-info.json" ]; then
+    BUILD_TIME=$(node -e 'try { console.log(require(process.argv[1]).buildTime || ""); } catch(_) {}' "$DEPLOY_STAGING/backend_extract/backend/build-info.json")
+  fi
+
+  if [ -n "$GIT_SHA" ]; then
+    echo "🏷️ Setting GIT_SHA=${GIT_SHA} in backend .env..."
+    if grep -q '^GIT_SHA=' /var/www/backend2/.env; then
+      sudo sed -i "s|^GIT_SHA=.*|GIT_SHA=${GIT_SHA}|" /var/www/backend2/.env
+    else
+      echo "GIT_SHA=${GIT_SHA}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+    if [ -f "/tmp/backend_env_backup.env" ]; then
+      if grep -q '^GIT_SHA=' /tmp/backend_env_backup.env; then
+        sudo sed -i "s|^GIT_SHA=.*|GIT_SHA=${GIT_SHA}|" /tmp/backend_env_backup.env
+      else
+        echo "GIT_SHA=${GIT_SHA}" | sudo tee -a /tmp/backend_env_backup.env >/dev/null
+      fi
+    fi
+  fi
+
+  if [ -n "$BUILD_TIME" ]; then
+    echo "🏷️ Setting BUILD_TIME=${BUILD_TIME} in backend .env..."
+    if grep -q '^BUILD_TIME=' /var/www/backend2/.env; then
+      sudo sed -i "s|^BUILD_TIME=.*|BUILD_TIME=${BUILD_TIME}|" /var/www/backend2/.env
+    else
+      echo "BUILD_TIME=${BUILD_TIME}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+    if [ -f "/tmp/backend_env_backup.env" ]; then
+      if grep -q '^BUILD_TIME=' /tmp/backend_env_backup.env; then
+        sudo sed -i "s|^BUILD_TIME=.*|BUILD_TIME=${BUILD_TIME}|" /tmp/backend_env_backup.env
+      else
+        echo "BUILD_TIME=${BUILD_TIME}" | sudo tee -a /tmp/backend_env_backup.env >/dev/null
+      fi
+    fi
+  fi
+
   # 🔒 P0-Security: Ensure ALLOW_ACADEMY_TEST_OTP is disabled in production
   if [ -f "/var/www/backend2/.env" ]; then
     if grep -q '^ALLOW_ACADEMY_TEST_OTP=' /var/www/backend2/.env; then
@@ -520,6 +560,46 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
     sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
   elif [ -f "/var/www/backend2/.env.production" ]; then
     sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+  fi
+
+  # 🏷️ OBS-1: Ensure GIT_SHA and BUILD_TIME are set in backend .env
+  if [ -z "$GIT_SHA" ] && [ -f "$DEPLOY_STAGING/backend_extract/backend/build-info.json" ]; then
+    GIT_SHA=$(node -e 'try { console.log(require(process.argv[1]).gitSha || ""); } catch(_) {}' "$DEPLOY_STAGING/backend_extract/backend/build-info.json")
+  fi
+  if [ -z "$BUILD_TIME" ] && [ -f "$DEPLOY_STAGING/backend_extract/backend/build-info.json" ]; then
+    BUILD_TIME=$(node -e 'try { console.log(require(process.argv[1]).buildTime || ""); } catch(_) {}' "$DEPLOY_STAGING/backend_extract/backend/build-info.json")
+  fi
+
+  if [ -n "$GIT_SHA" ]; then
+    echo "🏷️ Setting GIT_SHA=${GIT_SHA} in backend .env..."
+    if grep -q '^GIT_SHA=' /var/www/backend2/.env; then
+      sudo sed -i "s|^GIT_SHA=.*|GIT_SHA=${GIT_SHA}|" /var/www/backend2/.env
+    else
+      echo "GIT_SHA=${GIT_SHA}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+    if [ -f "/tmp/backend_env_backup.env" ]; then
+      if grep -q '^GIT_SHA=' /tmp/backend_env_backup.env; then
+        sudo sed -i "s|^GIT_SHA=.*|GIT_SHA=${GIT_SHA}|" /tmp/backend_env_backup.env
+      else
+        echo "GIT_SHA=${GIT_SHA}" | sudo tee -a /tmp/backend_env_backup.env >/dev/null
+      fi
+    fi
+  fi
+
+  if [ -n "$BUILD_TIME" ]; then
+    echo "🏷️ Setting BUILD_TIME=${BUILD_TIME} in backend .env..."
+    if grep -q '^BUILD_TIME=' /var/www/backend2/.env; then
+      sudo sed -i "s|^BUILD_TIME=.*|BUILD_TIME=${BUILD_TIME}|" /var/www/backend2/.env
+    else
+      echo "BUILD_TIME=${BUILD_TIME}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+    if [ -f "/tmp/backend_env_backup.env" ]; then
+      if grep -q '^BUILD_TIME=' /tmp/backend_env_backup.env; then
+        sudo sed -i "s|^BUILD_TIME=.*|BUILD_TIME=${BUILD_TIME}|" /tmp/backend_env_backup.env
+      else
+        echo "BUILD_TIME=${BUILD_TIME}" | sudo tee -a /tmp/backend_env_backup.env >/dev/null
+      fi
+    fi
   fi
 
   # 🔑 Restore Firebase Service Account Key from persistent /var/www/shared
@@ -892,6 +972,22 @@ if [ -n "$PM2_BIN" ]; then
   fi
   echo "✅ DEPLOY_SECRET verified in backend .env (length: ${#VERIFIED_SECRET})"
 
+  # 🏷️ OBS-1: Ensure GIT_SHA and BUILD_TIME are verified before PM2 reload
+  if [ -n "$GIT_SHA" ]; then
+    if grep -q '^GIT_SHA=' /var/www/backend2/.env; then
+      sudo sed -i "s|^GIT_SHA=.*|GIT_SHA=${GIT_SHA}|" /var/www/backend2/.env
+    else
+      echo "GIT_SHA=${GIT_SHA}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+  fi
+  if [ -n "$BUILD_TIME" ]; then
+    if grep -q '^BUILD_TIME=' /var/www/backend2/.env; then
+      sudo sed -i "s|^BUILD_TIME=.*|BUILD_TIME=${BUILD_TIME}|" /var/www/backend2/.env
+    else
+      echo "BUILD_TIME=${BUILD_TIME}" | sudo tee -a /var/www/backend2/.env >/dev/null
+    fi
+  fi
+
   # 🧪 Pre-Flight Server Load Check before PM2 touches the new code
   echo "🧪 Verifying server.js dry-run load on production before PM2 reload..."
   if ! NODE_ENV=production timeout 30 node -e "require('./server.js'); console.log('✅ server.js pre-flight require passed'); process.exit(0);"; then
@@ -1021,6 +1117,8 @@ if [ -n "$PM2_BIN" ]; then
   fi
 
   echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
+  HEALTH_PAYLOAD=$(curl -s --max-time 5 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/health" 2>/dev/null || echo "")
+  echo "🏷️ [OBS-1] Health check payload: ${HEALTH_PAYLOAD}"
 
   echo "🧹 Purging in-memory HTML caches on the running backend..."
   PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2- | tr -d '\"'\')"

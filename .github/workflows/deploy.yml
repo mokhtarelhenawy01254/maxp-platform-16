@@ -55,6 +55,8 @@ jobs:
       ai-changed: ${{ steps.diff-check.outputs.ai-changed }}
       copilot-changed: ${{ steps.diff-check.outputs.copilot-changed }}
       manufacturing-changed: ${{ steps.diff-check.outputs.manufacturing-changed }}
+      git-sha: ${{ steps.build-meta.outputs.git-sha }}
+      build-time: ${{ steps.build-meta.outputs.build-time }}
 
     steps:
       - name: Checkout code
@@ -84,6 +86,19 @@ jobs:
           fi
           echo "✅ This is the latest commit on main. Proceeding with deploy."
           echo "is-latest=true" >> "$GITHUB_OUTPUT"
+
+      - name: Record Build Metadata
+        id: build-meta
+        shell: bash
+        run: |
+          GIT_SHA=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "git-sha=$GIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "build-time=$BUILD_TIME" >> "$GITHUB_OUTPUT"
+          echo "GIT_SHA=$GIT_SHA" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=$BUILD_TIME" >> "$GITHUB_ENV"
+          echo "{\"gitSha\":\"$GIT_SHA\",\"buildTime\":\"$BUILD_TIME\"}" > apps/backend/build-info.json
+          echo "🏷️ Build metadata: gitSha=$GIT_SHA buildTime=$BUILD_TIME"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -646,6 +661,8 @@ jobs:
           PRISMA_CHANGED: ${{ needs.build.outputs.prisma-changed }}
           AI_CHANGED: ${{ needs.build.outputs.ai-changed }}
           FE_NEEDED: ${{ needs.build.outputs.fe-needed }}
+          GIT_SHA: ${{ needs.build.outputs.git-sha }}
+          BUILD_TIME: ${{ needs.build.outputs.build-time }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -654,7 +671,7 @@ jobs:
           debug: false
           timeout: 40m
           command_timeout: 35m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,DEPLOY_SECRET,CATALOG_CHANGED,BACKEND_DEPS_CHANGED,PRISMA_CHANGED,AI_CHANGED,FE_NEEDED
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,DEPLOY_SECRET,CATALOG_CHANGED,BACKEND_DEPS_CHANGED,PRISMA_CHANGED,AI_CHANGED,FE_NEEDED,GIT_SHA,BUILD_TIME
           script: |
             set -e
             sudo -n true || {
