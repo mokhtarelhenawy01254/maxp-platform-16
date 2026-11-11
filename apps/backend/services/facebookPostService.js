@@ -118,7 +118,7 @@ async function syncPagePosts(pageId, companyId) {
     });
   }
 
-  return { synced: allPosts.length, pageName: pageToken.pageName };
+  return { synced: allPosts.length, pageName: pageToken?.pageName || page.pageName };
 }
 
 async function setProduct(postId, productId) {
