@@ -288,4 +288,50 @@ describe("useOrdersLookupData hook", () => {
       expect(result.current.affiliateOptionsError).toBe("");
     });
   });
+
+  it("fetches affiliate store options passing affiliateFilterId and updates store options", async () => {
+    let capturedConfig: any = null;
+    (apiClient.get as jest.Mock).mockImplementation((url: string, config: any) => {
+      if (url === "/affiliates/stores") {
+        capturedConfig = config;
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: [
+              {
+                companyId: "comp-1",
+                companyName: "Store 1",
+                orderCount: 12,
+                activeMarketersCount: 1,
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    const { result } = renderHook(() =>
+      useOrdersLookupData({
+        companyId: "comp-1",
+        isAdmin: true,
+        isMerchant: false,
+        canSelectOrders: true,
+        merchantFilterLength: 0,
+        affiliateFilterId: "aff-1,aff-2",
+        defaultOrderStatuses: mockDefaultOrderStatuses,
+        defaultPaymentStatuses: mockDefaultPaymentStatuses,
+        normalizeStatusCode,
+        getApiErrorMessage,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.storeOptions).toHaveLength(1);
+      expect(result.current.storeOptions[0].companyId).toBe("comp-1");
+      expect(result.current.storeOptions[0].orderCount).toBe(12);
+    });
+
+    expect(capturedConfig?.params?.affiliateId).toBe("aff-1,aff-2");
+  });
 });

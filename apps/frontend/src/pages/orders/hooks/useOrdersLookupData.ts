@@ -31,6 +31,7 @@ export const useOrdersLookupData = ({
   canSelectOrders,
   merchantFilterId,
   merchantFilterLength,
+  affiliateFilterId,
   defaultOrderStatuses,
   defaultPaymentStatuses,
   normalizeStatusCode,
@@ -194,12 +195,27 @@ export const useOrdersLookupData = ({
       }
     };
 
-    // فلتر المتجر/الشركة: الشركات التي لديها نشاط تسويقي فعلي مع عدد الطلبات
+    void fetchMerchants();
+    void fetchAffiliateOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin, isMerchant, companyId, affiliateRetryToken]);
+
+  // 2b. Fetch Affiliate Store Filter Options (re-fetches when affiliateFilterId changes to reflect marketer order counts)
+  useEffect(() => {
+    let isMounted = true;
+
     const fetchStoreOptions = async () => {
       try {
+        const params: Record<string, string> = {};
+        if (affiliateFilterId && String(affiliateFilterId).trim()) {
+          params.affiliateId = String(affiliateFilterId).trim();
+        }
         const response = await apiClient.get<{ success: boolean; data?: AffiliateStoreOption[] }>(
           "/affiliates/stores",
-          { _skipErrorToast: true },
+          { params, _skipErrorToast: true },
         );
         if (!isMounted) return;
         const stores =
@@ -212,14 +228,12 @@ export const useOrdersLookupData = ({
       }
     };
 
-    void fetchMerchants();
-    void fetchAffiliateOptions();
     void fetchStoreOptions();
 
     return () => {
       isMounted = false;
     };
-  }, [isAdmin, isMerchant, companyId, affiliateRetryToken]);
+  }, [companyId, affiliateFilterId]);
 
   // 3. Fetch Active Carriers
   useEffect(() => {

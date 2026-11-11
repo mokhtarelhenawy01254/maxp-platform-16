@@ -255,8 +255,11 @@ const normalizeOrderRouteCode = (value) =>
 const companyHasActiveBillingHold = async (companyId) => {
   if (!companyId) return false;
   try {
+    const whereCondition = (typeof companyId === 'object' && companyId !== null)
+      ? (companyId.companyId !== undefined ? companyId : { companyId })
+      : { companyId };
     const held = await getSharedPrismaClient().order.findFirst({
-      where: { companyId, billingHoldAt: { not: null } },
+      where: { ...whereCondition, billingHoldAt: { not: null } },
       select: { id: true }
     });
     return Boolean(held);
@@ -3583,6 +3586,33 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
 
     if (!companyId || !companyWhere) {
+      if (req.user?.role === 'SUPER_ADMIN') {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        return res.json({
+          success: true,
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasMore: false,
+            hasPreviousPage: false,
+            hasNextPage: false
+          },
+          stats: {
+            total: 0,
+            totalAmount: 0,
+            pending: 0,
+            processing: 0,
+            shipped: 0,
+            delivered: 0,
+            cancelled: 0,
+            returned: 0
+          }
+        });
+      }
       console.error(`[ORDERS] /simple - Missing companyId. req.user:`, req.user);
       return res.status(403).json({
         success: false,
@@ -3670,7 +3700,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
     // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
     const includeHeldOrders = req.query.includeHeld === 'true';
-    const companyHasBillingHold = !includeHeldOrders && await companyHasActiveBillingHold(companyId);
+    const companyHasBillingHold = !includeHeldOrders && await companyHasActiveBillingHold(companyWhere?.companyId || companyId);
     if (!includeHeldOrders) {
       whereClause.billingHoldAt = null;
     }

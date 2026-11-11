@@ -98,6 +98,9 @@ export const useOrdersPageController = () => {
     canSelectOrders,
     merchantFilterId: filters.merchantId?.[0] || "",
     merchantFilterLength: filters.merchantId?.length || 0,
+    affiliateFilterId: Array.isArray(filters.affiliateId)
+      ? filters.affiliateId.join(",")
+      : (filters.affiliateId || ""),
     defaultOrderStatuses: DEFAULT_ORDER_STATUSES,
     defaultPaymentStatuses: DEFAULT_PAYMENT_STATUSES,
     normalizeStatusCode,

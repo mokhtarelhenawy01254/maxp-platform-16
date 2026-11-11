@@ -34,6 +34,7 @@ export interface UseOrdersLookupDataParams {
   canSelectOrders: boolean;
   merchantFilterId?: string;
   merchantFilterLength: number;
+  affiliateFilterId?: string;
   defaultOrderStatuses: OrderStatusDefinition[];
   defaultPaymentStatuses: OrderStatusDefinition[];
   normalizeStatusCode: (value: string | null | undefined) => string;
