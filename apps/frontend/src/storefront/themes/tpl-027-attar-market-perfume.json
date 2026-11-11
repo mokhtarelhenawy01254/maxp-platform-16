@@ -1,0 +1,315 @@
+{
+  "id": "tpl-027-attar-market-perfume",
+  "name": "سوق العطّار — عطور",
+  "description": "قالب عطور موبايل-أولًا بمنطق السوق المحلي: خلفية بنفسجي داكن وعنبري، شريط أسود صريح، هيرو موزاييك، فئات دوائر، باقات كمية، وشريط توصيل يقول الحقيقة مع UGC متحرك. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "38 78% 56%",
+      "primaryForeground": "285 40% 8%",
+      "secondary": "285 18% 17%",
+      "secondaryForeground": "38 45% 92%",
+      "accent": "16 82% 56%",
+      "accentForeground": "0 0% 100%",
+      "background": "285 26% 9%",
+      "foreground": "38 20% 95%",
+      "muted": "285 16% 15%",
+      "mutedForeground": "38 12% 70%",
+      "border": "285 14% 22%",
+      "card": "285 22% 12%",
+      "cardForeground": "38 20% 95%",
+      "ring": "38 78% 56%"
+    },
+    "typography": {
+      "headingFont": "Cairo, sans-serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.875rem",
+      "buttonRadius": "0.625rem"
+    },
+    "productCard": {
+      "borderRadius": "0.875rem",
+      "boxShadow": "0 8px 24px hsl(0 0% 0% / .42)",
+      "hoverShadow": "0 16px 34px -20px hsl(38 78% 56% / .32)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | سوق العطّار",
+    "description": "قالب عطور موبايل-أولًا بمنطق السوق المحلي: خلفية بنفسجي داكن وعنبري، شريط أسود صريح، هيرو موزاييك، فئات دوائر، باقات كمية، وشريط توصيل يقول الحقيقة مع UGC متحرك. مبني لحملات الدفع عند الاستلام والطلب من الموبايل."
+  },
+  "preview": {
+    "colors": [
+      "38 78% 56%",
+      "16 82% 56%",
+      "285 26% 9%"
+    ],
+    "imageUrl": "/assets/themes/tpl-027-attar-market-perfume/preview.png"
+  },
+  "header": {
+    "variant": "retail-direct",
+    "brandName": "سوق العطّار",
+    "transparentOnHome": false,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "الدفع عند الاستلام · شحن 24-72 ساعة لكل المحافظات",
+    "announcementLinkText": "مناطق الشحن",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      {
+        "label": "الأكثر طلبًا",
+        "to": "/shop?sort=best"
+      },
+      {
+        "label": "عطور رجالي",
+        "to": "/shop?category=men"
+      },
+      {
+        "label": "عطور حريمي",
+        "to": "/shop?category=women"
+      },
+      {
+        "label": "زيوت وعود",
+        "to": "/shop?category=oils"
+      },
+      {
+        "label": "العروض",
+        "to": "/shop?sort=sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "retail-direct",
+    "description": "سوق العطّار — عطور وزيوت عود بأسعار السوق، دفع عند الاستلام وشحن لكل مصر.",
+    "copyrightText": "© 2026 سوق العطّار",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "عطور رجالي",
+            "to": "/shop?category=men"
+          },
+          {
+            "label": "عطور حريمي",
+            "to": "/shop?category=women"
+          },
+          {
+            "label": "زيوت وعود",
+            "to": "/shop?category=oils"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "واتساب",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "easyorders-black-bar",
+          "settings": {
+            "badge": "عرض محدود",
+            "message": "2 زجاجة بخصم 25% · 3 بخصم 35% — لحد آخر الأسبوع",
+            "saleLabel": "لفترة محدودة",
+            "shippingLabel": "دفع عند الاستلام"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "easyorders-masonry",
+          "settings": {
+            "eyebrow": "تشكيلة العود",
+            "title": "عطر يفضل 12 ساعة",
+            "subtitle": "زيوت عود ومسك مركزة، تعبئة 50 مل، ودفع عند الاستلام في كل المحافظات.",
+            "ctaText": "اطلب دلوقتي",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شوف العروض",
+            "secondaryCtaLink": "/shop?sort=sale",
+            "backgroundImage": "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "easyorders-circles",
+          "settings": {
+            "title": "اختار القسم"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "title": "باقات التوفير"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الأكثر طلبًا النهاردة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "title": "من عملاء سوق العطّار"
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "title": "بتدور على إيه؟"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "standard"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "market-basket",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "standard"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب للطلب السريع، ومكالمة لو محتاج مساعدة في اختيار العطر."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

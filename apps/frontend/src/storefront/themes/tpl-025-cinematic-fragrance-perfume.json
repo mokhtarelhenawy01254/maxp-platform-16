@@ -1,0 +1,319 @@
+{
+  "id": "tpl-025-cinematic-fragrance-perfume",
+  "name": "Noir Atelier — عطور",
+  "description": "قالب عطور سينمائي غامق: خلفية فحمية سوداء وذهبي شامبانيا، هيرو مسرح بارز بقطعة واحدة، ريال فئات بعمود معرض، قصة عطر تحريرية توضّح النوتات، وآراء مكتوبة بأسلوب مجلة. زوايا حادة (2px) وطباعة سيريف كبيرة تخلّي الزجاجة هي البطل.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "38 45% 62%",
+      "primaryForeground": "240 10% 6%",
+      "secondary": "240 6% 14%",
+      "secondaryForeground": "38 30% 90%",
+      "accent": "38 60% 48%",
+      "accentForeground": "0 0% 100%",
+      "background": "240 8% 5%",
+      "foreground": "40 18% 94%",
+      "muted": "240 6% 12%",
+      "mutedForeground": "40 8% 66%",
+      "border": "240 5% 18%",
+      "card": "240 7% 8%",
+      "cardForeground": "40 18% 94%",
+      "ring": "38 45% 62%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Cormorant Garamond, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.125rem",
+      "buttonRadius": "0.0625rem"
+    },
+    "productCard": {
+      "borderRadius": "0.125rem",
+      "boxShadow": "0 10px 40px hsl(0 0% 0% / .55)",
+      "hoverShadow": "0 24px 56px -26px hsl(38 45% 62% / .35)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | NOIR ATELIER",
+    "description": "قالب عطور سينمائي غامق: خلفية فحمية سوداء وذهبي شامبانيا، هيرو مسرح بارز بقطعة واحدة، ريال فئات بعمود معرض، قصة عطر تحريرية توضّح النوتات، وآراء مكتوبة بأسلوب مجلة. زوايا حادة (2px) وطباعة سيريف كبيرة تخلّي الزجاجة هي البطل."
+  },
+  "preview": {
+    "colors": [
+      "38 45% 62%",
+      "38 60% 48%",
+      "240 8% 5%"
+    ],
+    "imageUrl": "/assets/themes/tpl-025-cinematic-fragrance-perfume/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "NOIR ATELIER",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "عيّنة 2 مل مع كل زجاجة 50 مل · شحن مجاني فوق 2000 جنيه",
+    "announcementLinkText": "اطلب عيّنة",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "التشكيلة",
+        "to": "/collections"
+      },
+      {
+        "label": "شرقي",
+        "to": "/shop?category=oriental"
+      },
+      {
+        "label": "خشبي",
+        "to": "/shop?category=woody"
+      },
+      {
+        "label": "يونيسكس",
+        "to": "/shop?category=unisex"
+      },
+      {
+        "label": "الهدايا",
+        "to": "/collections"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "NOIR ATELIER — تركيبات عطرية مركّزة، تعبئة يدوية في القاهرة، ودفعات محدودة كل موسم.",
+    "copyrightText": "© 2026 NOIR ATELIER",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "شرقي",
+            "to": "/shop?category=oriental"
+          },
+          {
+            "label": "خشبي",
+            "to": "/shop?category=woody"
+          },
+          {
+            "label": "الهدايا",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "standard",
+          "settings": {
+            "badge": "إصدار الموسم",
+            "message": "دفعة محدودة — 300 زجاجة مرقّمة",
+            "saleLabel": "عيّنة مجانية",
+            "shippingLabel": "شحن مجاني فوق 2000"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "cinematic-plinth",
+          "settings": {
+            "eyebrow": "Eau de Parfum · 30٪ تركيز",
+            "title": "ظلّ يفضل معاك لآخر اليوم",
+            "subtitle": "عنبر أسود، عود كمبودي، ومسك أبيض — تركيبة واحدة بثلاث مراحل على الجلد.",
+            "ctaText": "اكتشف التشكيلة",
+            "ctaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "اختار عائلة العطر",
+            "subtitle": "شرقي · خشبي · حمضي · يونيسكس"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الأكثر طلبًا",
+            "subtitle": "زجاجات 50 مل و100 مل"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "eyebrow": "من المعمل",
+            "title": "بنقيس كل تركيبة 6 أسابيع",
+            "subtitle": "من أول مزيج لحد التعبئة، كل دفعة بتتساب تتخمّر قبل ما تنزل."
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء مكتوبة بصيغة مجلة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "اعرف الدفعة الجديدة الأول",
+            "subtitle": "رسالة واحدة كل موسم — مفيش إزعاج."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "fragrance-console"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "stacked"
+        },
+        {
+          "type": "product-info",
+          "variant": "scent-brief"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "bought-together",
+          "variant": "gift-pairings"
+        },
+        {
+          "type": "related-products",
+          "variant": "luxury"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "استشارة عطر مجانية على واتساب، ومنافذ البيع في القاهرة والإسكندرية."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

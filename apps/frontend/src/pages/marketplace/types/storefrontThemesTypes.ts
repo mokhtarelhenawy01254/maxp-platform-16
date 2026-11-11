@@ -33,6 +33,7 @@ export const MARKETPLACE_CATEGORY_ORDER = [
   "digital",
   "education",
   "services",
+  "beauty",
 ];
 
 export const MARKETPLACE_SUBCATEGORY_ORDER: Record<string, string[]> = {
@@ -47,6 +48,10 @@ export const MARKETPLACE_SUBCATEGORY_ORDER: Record<string, string[]> = {
     "mens-shoes",
     "womens-fashion",
     "mens-clothing",
+    "tailoring",
+    "mens-shirts",
+    "mens-casual",
+    "mens-occasion",
     "fashion-store",
     "luxury-fashion",
     "heritage-fashion",
@@ -60,6 +65,7 @@ export const MARKETPLACE_SUBCATEGORY_ORDER: Record<string, string[]> = {
   digital: ["web3"],
   "education": ["kids-academy"],
   services: ["travel-services"],
+  beauty: ["perfume", "makeup", "skincare"],
 };
 
 export const STOREFRONT_READY_MARKETPLACE_PREVIEWS = new Set([

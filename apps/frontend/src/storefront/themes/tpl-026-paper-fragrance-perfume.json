@@ -1,0 +1,318 @@
+{
+  "id": "tpl-026-paper-fragrance-perfume",
+  "name": "Papier Parfumé — عطور",
+  "description": "قالب عطور تحريري فاتح: ورق عاجي وحبر غامق ولمسة طيني، هيرو هادئ بمحاذاة يسار، فئات تحريرية بأعمدة، بانر عرض مزدوج، دفتر عطور، وشريط خدمة واضح. إيقاع المجلة الورقية بدل اللمعان المعدني.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "24 30% 22%",
+      "primaryForeground": "40 30% 97%",
+      "secondary": "40 28% 92%",
+      "secondaryForeground": "24 30% 18%",
+      "accent": "18 55% 46%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 33% 97%",
+      "foreground": "24 22% 14%",
+      "muted": "40 22% 93%",
+      "mutedForeground": "24 12% 42%",
+      "border": "36 18% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "24 22% 14%",
+      "ring": "24 30% 22%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.25rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 2px 14px hsl(24 22% 14% / .07)",
+      "hoverShadow": "0 18px 34px -22px hsl(24 30% 22% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | PAPIER PARFUMÉ",
+    "description": "قالب عطور تحريري فاتح: ورق عاجي وحبر غامق ولمسة طيني، هيرو هادئ بمحاذاة يسار، فئات تحريرية بأعمدة، بانر عرض مزدوج، دفتر عطور، وشريط خدمة واضح. إيقاع المجلة الورقية بدل اللمعان المعدني."
+  },
+  "preview": {
+    "colors": [
+      "24 30% 22%",
+      "18 55% 46%",
+      "40 33% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-026-paper-fragrance-perfume/preview.png"
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "PAPIER PARFUMÉ",
+    "transparentOnHome": false,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن مجاني فوق 1500 جنيه · تغليف هدية مجاني",
+    "announcementLinkText": "الشحن والاستبدال",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "دفتر العطور",
+        "to": "/collections"
+      },
+      {
+        "label": "مجموعات",
+        "to": "/collections"
+      },
+      {
+        "label": "هدايا",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "PAPIER PARFUMÉ — بيت عطور صغير بيكتب عن كل تركيبة زي ما بيعملها.",
+    "copyrightText": "© 2026 PAPIER PARFUMÉ",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "كل العطور",
+            "to": "/shop"
+          },
+          {
+            "label": "مجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "هدايا",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "الخصوصية",
+            "to": "/privacy"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "كل يوم",
+            "message": "عيّنة 1.5 مل على كل أوردر · تغليف هدية ببلاش",
+            "saleLabel": "خصم 10% على أول أوردر",
+            "shippingLabel": "شحن 48 ساعة"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "graceful-banner",
+          "settings": {
+            "eyebrow": "خريف 2026",
+            "title": "عطر بيتكتب مش بيتقال",
+            "subtitle": "أربع تركيبات جديدة، كل واحدة بذكريات ونوتات مكتوبة بالتفصيل قبل ما تشمّها.",
+            "ctaText": "اقرا واتسوق",
+            "ctaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "حسب المزاج",
+            "subtitle": "صباحي · مسائي · مكتب · مناسبة"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "مختار هذا الأسبوع",
+            "subtitle": "قطعة واحدة لكل مزاج"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo",
+          "settings": {
+            "title": "باقة العيّنات",
+            "subtitle": "4 عينات 2 مل بسعر زجاجة واحدة"
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "دفتر العطور"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "رسالة الشهر",
+            "subtitle": "قصة عطر واحد + كوبون 10% على أول أوردر."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial"
+        },
+        {
+          "type": "related-products",
+          "variant": "editorial"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "اتكلم معانا",
+            "subtitle": "اسأل عن النوتات أو اطلب استشارة قبل الشراء — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

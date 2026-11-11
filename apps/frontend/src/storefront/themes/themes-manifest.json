@@ -1984,6 +1984,68 @@
     }
   },
   {
+    "id": "menswear-bespoke",
+    "name": "Bespoke — أزياء رجالي",
+    "description": "قالب أزياء رجالي أصلي: هيرو داكن، مخطّط إطلالات (planner) يمشي خطوة خطوة، ستوري بارالاكس، ريل مناسبات، بنتو عروض مزدوج، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-occasion",
+        "label": "مناسبات رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "25 25% 18%",
+      "90 12% 88%",
+      "42 50% 55%"
+    ],
+    "previewImage": "/assets/themes/menswear-bespoke/preview.png",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 9,
+      "cartSections": 2,
+      "totalSections": 25
+    }
+  },
+  {
+    "id": "menswear-dapper",
+    "name": "Dapper — أزياء رجالي",
+    "description": "قالب أزياء رجالي بمنطق متاجر الدفع عند الاستلام: شريط عرض ثابت، كتالوج فئات سريع، شبكة كثيفة، وشريط توصيل صريح (استلام/شحن/استبدال) مع UGC متحرك.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-casual",
+        "label": "كاجوال رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 18% 22%",
+      "35 30% 90%",
+      "18 60% 52%"
+    ],
+    "previewImage": "/assets/themes/menswear-dapper/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 10,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
     "id": "menswear-lumiere",
     "name": "Atelier Homme — أزياء رجالي",
     "description": "قالب أزياء رجالي تحريري: هيرو عريض، مساحات بيضاء، شبكة منتجات هادية، ولوك بوك.",
@@ -2077,6 +2139,37 @@
     }
   },
   {
+    "id": "menswear-oxford",
+    "name": "Oxford — أزياء رجالي",
+    "description": "قالب أزياء رجالي بكثافة تجارية عالية: ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وشريط خدمة واضح (شحن/استبدال/دفع عند الاستلام). مبني على منطق متجر WordPress/WooCommerce.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "mens-shirts",
+        "label": "قمصان رجالي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "222 45% 18%",
+      "45 25% 90%",
+      "38 55% 50%"
+    ],
+    "previewImage": "/assets/themes/menswear-oxford/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 9,
+      "cartSections": 2,
+      "totalSections": 24
+    }
+  },
+  {
     "id": "menswear-prime",
     "name": "Menswear Prime",
     "description": "قالب مخصص للملابس الرجالية الكلاسيكية يركز على الثقة والقصات الرسمية وتجربة شراء أكثر فخامة.",
@@ -2105,6 +2198,37 @@
       "pdpSections": 7,
       "cartSections": 2,
       "totalSections": 21
+    }
+  },
+  {
+    "id": "menswear-regent",
+    "name": "Regent — أزياء رجالي",
+    "description": "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "tailoring",
+        "label": "تايلورنج وبدل"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "220 15% 12%",
+      "35 20% 90%",
+      "28 45% 48%"
+    ],
+    "previewImage": "/assets/themes/menswear-regent/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 9,
+      "cartSections": 2,
+      "totalSections": 24
     }
   },
   {
@@ -3221,6 +3345,130 @@
       "pdpSections": 10,
       "cartSections": 2,
       "totalSections": 26
+    }
+  },
+  {
+    "id": "tpl-025-cinematic-fragrance-perfume",
+    "name": "Noir Atelier — عطور",
+    "description": "قالب عطور سينمائي غامق: خلفية فحمية سوداء وذهبي شامبانيا، هيرو مسرح بارز بقطعة واحدة، ريال فئات بعمود معرض، قصة عطر تحريرية توضّح النوتات، وآراء مكتوبة بأسلوب مجلة. زوايا حادة (2px) وطباعة سيريف كبيرة تخلّي الزجاجة هي البطل.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "perfume",
+        "label": "عطور"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "38 45% 62%",
+      "240 6% 14%",
+      "38 60% 48%"
+    ],
+    "previewImage": "/assets/themes/tpl-025-cinematic-fragrance-perfume/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-026-paper-fragrance-perfume",
+    "name": "Papier Parfumé — عطور",
+    "description": "قالب عطور تحريري فاتح: ورق عاجي وحبر غامق ولمسة طيني، هيرو هادئ بمحاذاة يسار، فئات تحريرية بأعمدة، بانر عرض مزدوج، دفتر عطور، وشريط خدمة واضح. إيقاع المجلة الورقية بدل اللمعان المعدني.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "perfume",
+        "label": "عطور"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 30% 22%",
+      "40 28% 92%",
+      "18 55% 46%"
+    ],
+    "previewImage": "/assets/themes/tpl-026-paper-fragrance-perfume/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-027-attar-market-perfume",
+    "name": "سوق العطّار — عطور",
+    "description": "قالب عطور موبايل-أولًا بمنطق السوق المحلي: خلفية بنفسجي داكن وعنبري، شريط أسود صريح، هيرو موزاييك، فئات دوائر، باقات كمية، وشريط توصيل يقول الحقيقة مع UGC متحرك. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "perfume",
+        "label": "عطور"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "38 78% 56%",
+      "285 18% 17%",
+      "16 82% 56%"
+    ],
+    "previewImage": "/assets/themes/tpl-027-attar-market-perfume/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-028-ritual-apothecary-perfume",
+    "name": "Ritual Lab — عطور",
+    "description": "قالب عطور أصلي بروح الأبارتيكري الحديث: خلفية مريمية فاتحة ونحاسي دافئ، هيرو نباتي هادي، مخطّط روتين بخطوات (صباح/مساء)، قصة خامات، ريل مناسبات، وآراء بصوت العملاء. هوية بصرية خاصة مش مبنية على قالب منافس.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "perfume",
+        "label": "عطور"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 22% 26%",
+      "140 12% 88%",
+      "40 48% 46%"
+    ],
+    "previewImage": "/assets/themes/tpl-028-ritual-apothecary-perfume/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
     }
   },
   {

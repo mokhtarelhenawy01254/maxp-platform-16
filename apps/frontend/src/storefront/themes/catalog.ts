@@ -269,6 +269,30 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "mens-clothing",
     "ملابس رجالي",
   ),
+  "menswear-regent": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "tailoring",
+    "تايلورنج وبدل",
+  ),
+  "menswear-oxford": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "mens-shirts",
+    "قمصان رجالي",
+  ),
+  "menswear-dapper": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "mens-casual",
+    "كاجوال رجالي",
+  ),
+  "menswear-bespoke": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "mens-occasion",
+    "مناسبات رجالي",
+  ),
   "tpl-001-bulk-commerce-women-fashion": createThemeCategoryMeta(
     "fashion",
     "أزياء",
@@ -316,6 +340,30 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "أزياء",
     "kids-storybook",
     "أطفال — حكاية",
+  ),
+  "tpl-025-cinematic-fragrance-perfume": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "perfume",
+    "عطور",
+  ),
+  "tpl-026-paper-fragrance-perfume": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "perfume",
+    "عطور",
+  ),
+  "tpl-027-attar-market-perfume": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "perfume",
+    "عطور",
+  ),
+  "tpl-028-ritual-apothecary-perfume": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "perfume",
+    "عطور",
   ),
   "cairo-stride": createThemeCategoryMeta(
     "fashion",
@@ -627,6 +675,22 @@ export const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "menswear-regent":
+    "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز.",
+  "menswear-oxford":
+    "قالب أزياء رجالي بكثافة تجارية عالية: ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وشريط خدمة واضح (شحن/استبدال/دفع عند الاستلام). مبني على منطق متجر WordPress/WooCommerce.",
+  "menswear-dapper":
+    "قالب أزياء رجالي بمنطق متاجر الدفع عند الاستلام: شريط عرض ثابت، كتالوج فئات سريع، شبكة كثيفة، وشريط توصيل صريح (استلام/شحن/استبدال) مع UGC متحرك.",
+  "menswear-bespoke":
+    "قالب أزياء رجالي أصلي: هيرو داكن، مخطّط إطلالات (planner) يمشي خطوة خطوة، ستوري بارالاكس، ريل مناسبات، بنتو عروض مزدوج، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس.",
+  "tpl-025-cinematic-fragrance-perfume":
+    "قالب عطور سينمائي غامق: خلفية فحمية سوداء وذهبي شامبانيا، هيرو مسرح بارز بقطعة واحدة، ريال فئات بعمود معرض، قصة عطر تحريرية توضّح النوتات، وآراء مكتوبة بأسلوب مجلة. زوايا حادة (2px) وطباعة سيريف كبيرة تخلّي الزجاجة هي البطل.",
+  "tpl-026-paper-fragrance-perfume":
+    "قالب عطور تحريري فاتح: ورق عاجي وحبر غامق ولمسة طيني، هيرو هادئ بمحاذاة يسار، فئات تحريرية بأعمدة، بانر عرض مزدوج، دفتر عطور، وشريط خدمة واضح. إيقاع المجلة الورقية بدل اللمعان المعدني.",
+  "tpl-027-attar-market-perfume":
+    "قالب عطور موبايل-أولًا بمنطق السوق المحلي: خلفية بنفسجي داكن وعنبري، شريط أسود صريح، هيرو موزاييك، فئات دوائر، باقات كمية، وشريط توصيل يقول الحقيقة مع UGC متحرك. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+  "tpl-028-ritual-apothecary-perfume":
+    "قالب عطور أصلي بروح الأبارتيكري الحديث: خلفية مريمية فاتحة ونحاسي دافئ، هيرو نباتي هادي، مخطّط روتين بخطوات (صباح/مساء)، قصة خامات، ريل مناسبات، وآراء بصوت العملاء. هوية بصرية خاصة مش مبنية على قالب منافس.",
   "tpl-001-bulk-commerce-women-fashion":
     "Wholesale House — قالب أزياء حريمي بمنطق الجملة: باقات كمية محسوبة، حد أدنى واضح، وشريط ثقة يجاوب سؤال الفاتورة والاستبدال قبل الشراء.",
   "tpl-002-marketplace-multi-women-fashion":
@@ -782,6 +846,22 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
+  "menswear-regent":
+    "/assets/themes/menswear-regent/preview.png",
+  "menswear-oxford":
+    "/assets/themes/menswear-oxford/preview.png",
+  "menswear-dapper":
+    "/assets/themes/menswear-dapper/preview.png",
+  "menswear-bespoke":
+    "/assets/themes/menswear-bespoke/preview.png",
+  "tpl-025-cinematic-fragrance-perfume":
+    "/assets/themes/tpl-025-cinematic-fragrance-perfume/preview.png",
+  "tpl-026-paper-fragrance-perfume":
+    "/assets/themes/tpl-026-paper-fragrance-perfume/preview.png",
+  "tpl-027-attar-market-perfume":
+    "/assets/themes/tpl-027-attar-market-perfume/preview.png",
+  "tpl-028-ritual-apothecary-perfume":
+    "/assets/themes/tpl-028-ritual-apothecary-perfume/preview.png",
   "tpl-001-bulk-commerce-women-fashion":
     "/assets/themes/tpl-001-bulk-commerce-women-fashion/preview.png",
   "tpl-002-marketplace-multi-women-fashion":

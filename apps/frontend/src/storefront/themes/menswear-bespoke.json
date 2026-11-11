@@ -1,0 +1,321 @@
+{
+  "id": "menswear-bespoke",
+  "name": "Bespoke — أزياء رجالي",
+  "description": "قالب أزياء رجالي أصلي: هيرو داكن، مخطّط إطلالات (planner) يمشي خطوة خطوة، ستوري بارالاكس، ريل مناسبات، بنتو عروض مزدوج، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "25 25% 18%",
+      "primaryForeground": "40 30% 96%",
+      "secondary": "90 12% 88%",
+      "secondaryForeground": "25 25% 18%",
+      "accent": "42 50% 55%",
+      "accentForeground": "25 25% 18%",
+      "background": "38 24% 96%",
+      "foreground": "25 25% 16%",
+      "muted": "38 16% 90%",
+      "mutedForeground": "25 12% 40%",
+      "border": "38 14% 82%",
+      "card": "0 0% 100%",
+      "cardForeground": "25 25% 16%",
+      "ring": "42 50% 55%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 2px 10px hsl(25 25% 18% / .06)",
+      "hoverShadow": "0 20px 40px -24px hsl(25 25% 18% / .38)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | BESPOKE",
+    "description": "قالب أزياء رجالي أصلي: هيرو داكن، مخطّط إطلالات (planner) يمشي خطوة خطوة، ستوري بارالاكس، ريل مناسبات، بنتو عروض مزدوج، وآراء بصوت العميل. هوية بصرية خاصة مش مبنية على قالب منافس."
+  },
+  "preview": {
+    "colors": [
+      "25 25% 18%",
+      "42 50% 55%",
+      "38 24% 96%"
+    ],
+    "imageUrl": "/assets/themes/menswear-bespoke/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "BESPOKE",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "تشكيلة محدودة — 40 قطعة لكل موديل",
+    "announcementLinkText": "اعرف الحكاية",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الحكاية",
+        "to": "/collections"
+      },
+      {
+        "label": "بدل",
+        "to": "/shop?category=suits"
+      },
+      {
+        "label": "جاكيت",
+        "to": "/shop?category=jackets"
+      },
+      {
+        "label": "المناسبات",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "BESPOKE — قطع محدودة بقصّات مضبوطة، ومقاس حقيقي مش تخمين.",
+    "copyrightText": "© 2026 BESPOKE",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "بدل",
+            "to": "/shop?category=suits"
+          },
+          {
+            "label": "جاكيت",
+            "to": "/shop?category=jackets"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "grooming-hero",
+          "settings": {
+            "eyebrow": "إصدار محدود",
+            "title": "كل تفصيلة مقصودة",
+            "subtitle": "كتف مضبوط، طول مظبوط، وقماش يستحمل اليوم كله.",
+            "ctaText": "شوف الإصدار",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide",
+            "backgroundImage": "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "خطّط إطلالتك",
+            "subtitle": "3 خطوات: المناسبة ← القطعة ← المقاس"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "title": "من الورشة",
+            "subtitle": "بنخيط كل قطعة في ورشة واحدة بالقاهرة"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "occasion-ribbon",
+          "settings": {
+            "title": "حسب المناسبة",
+            "subtitle": "عمل · فرح · يومي"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "قطع الإصدار"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo",
+          "settings": {
+            "title": "عرضين مخترين"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "آراء بصوت العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "store-advantages-pastel"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "من دفتر الورشة"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "fit-finder"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "command-specs"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "related-products",
+          "variant": "closet-pairings"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    }
+  }
+}

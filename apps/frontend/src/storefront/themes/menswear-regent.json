@@ -1,0 +1,328 @@
+{
+  "id": "menswear-regent",
+  "name": "Regent — أزياء رجالي",
+  "description": "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "220 15% 12%",
+      "primaryForeground": "40 30% 96%",
+      "secondary": "35 20% 90%",
+      "secondaryForeground": "220 15% 12%",
+      "accent": "28 45% 48%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 20% 97%",
+      "foreground": "220 15% 12%",
+      "muted": "35 15% 92%",
+      "mutedForeground": "220 8% 40%",
+      "border": "35 12% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 15% 12%",
+      "ring": "28 45% 48%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.15rem",
+      "buttonRadius": "0.15rem"
+    },
+    "productCard": {
+      "borderRadius": "0.15rem",
+      "boxShadow": "none",
+      "hoverShadow": "0 22px 44px -26px hsl(220 15% 12% / .40)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | REGENT",
+    "description": "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز."
+  },
+  "preview": {
+    "colors": [
+      "220 15% 12%",
+      "28 45% 48%",
+      "40 20% 97%"
+    ],
+    "imageUrl": "/assets/themes/menswear-regent/preview.png"
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "REGENT",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن مجاني للأوردرات فوق 2000 جنيه · استبدال المقاس خلال 14 يوم",
+    "announcementLinkText": "سياسة الاستبدال",
+    "announcementLinkTo": "/returns",
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "قمصان",
+        "to": "/shop?category=shirts"
+      },
+      {
+        "label": "بدل وجاكيت",
+        "to": "/shop?category=suits"
+      },
+      {
+        "label": "لوك بوك",
+        "to": "/collections"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "REGENT — تايلورنج مصري بإحساس هادي: قصات مضبوطة، أقمشة تتنفس، وخدمة مقاس حقيقية.",
+    "copyrightText": "© 2026 REGENT",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop"
+          },
+          {
+            "label": "قمصان",
+            "to": "/shop?category=shirts"
+          },
+          {
+            "label": "بدل",
+            "to": "/shop?category=suits"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "standard",
+          "settings": {
+            "badge": "خريف 2026",
+            "message": "تشكيلة البدل وصلت — كمية محدودة لكل مقاس",
+            "saleLabel": "خصم حتى 20%",
+            "shippingLabel": "شحن 48 ساعة"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "dawn-image-banner",
+          "settings": {
+            "eyebrow": "تشكيلة الخريف",
+            "title": "التفصيلة اللي تفرق",
+            "subtitle": "قمصان وبدل بقصّات مضبوطة وأقمشة تتنفس — مبنية على مقاسك مش على الترند.",
+            "ctaText": "اتفرج على التشكيلة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide",
+            "backgroundImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "ابدأ منين",
+            "subtitle": "قمصان · بدل · كاجوال راقي"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "قطع الموسم",
+            "subtitle": "مختارة من فريق التنسيق"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
+          "settings": {
+            "title": "لوك بوك الخريف",
+            "subtitle": "تنسيقات كاملة بالقطع والمقاسات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "قصص التنسيق كل أسبوع",
+            "subtitle": "ابعت بريدك ونبعتلك لوك واحد بس، مفيد."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "graceful-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "stylist-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "fashion-counter-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "style-ledger"
+        },
+        {
+          "type": "pdp-checkout"
+        },
+        {
+          "type": "quantity-offers"
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial"
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look"
+        },
+        {
+          "type": "related-products",
+          "variant": "luxury"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجع القطع والمقاسات قبل الدفع.",
+            "emptyText": "لسه ما اخترتش حاجة.",
+            "continueLabel": "كمّل تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "split"
+        },
+        {
+          "type": "product-grid"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "واتساب، تليفون، وعنوان الفرع."
+          }
+        }
+      ]
+    }
+  }
+}
