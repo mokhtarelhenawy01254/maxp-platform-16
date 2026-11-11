@@ -855,11 +855,11 @@ export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "menswear-bespoke":
     "/assets/themes/menswear-bespoke/preview.png",
   "tpl-025-cinematic-fragrance-perfume":
-    "/assets/themes/tpl-025-cinematic-fragrance-perfume/preview.png",
+    "/assets/themes/tpl-025-cinematic-fragrance-perfume/preview.png?v=20261111b",
   "tpl-026-paper-fragrance-perfume":
-    "/assets/themes/tpl-026-paper-fragrance-perfume/preview.png",
+    "/assets/themes/tpl-026-paper-fragrance-perfume/preview.png?v=20261111b",
   "tpl-027-attar-market-perfume":
-    "/assets/themes/tpl-027-attar-market-perfume/preview.png",
+    "/assets/themes/tpl-027-attar-market-perfume/preview.png?v=20261111b",
   "tpl-028-ritual-apothecary-perfume":
     "/assets/themes/tpl-028-ritual-apothecary-perfume/preview.png",
   "tpl-001-bulk-commerce-women-fashion":
