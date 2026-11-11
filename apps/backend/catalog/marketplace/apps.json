@@ -3462,7 +3462,7 @@
   {
     "id": "cat-app-product-break-even",
     "slug": "product-break-even",
-    "name": "B-EV المنتج — CAC و ROAS",
+    "name": "تعادل المنتج — CAC وROAS",
     "nameEn": "Product B-EV - CAC & ROAS",
     "description": "حساب نقطة التعادل على مستوى المنتج مع CAC الفعّال والهامش المطلوب.",
     "category": "MARKETING",
@@ -3492,7 +3492,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
@@ -3632,7 +3632,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
@@ -3676,7 +3676,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
@@ -3810,7 +3810,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,
@@ -3902,7 +3902,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": true,
     "isFeatured": false,
     "isPopular": false,

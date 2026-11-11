@@ -12,13 +12,18 @@
     "isActive": true,
     "isFeatured": true,
     "appSlugs": [
+      "ad-budget-planner",
       "break-even",
+      "campaign-calculator",
       "clv-calculator",
       "discount-impact",
+      "monthly-pnl",
       "pricing-strategy",
+      "product-break-even",
       "profitability-engine",
       "refund-rate",
-      "shipping-optimizer"
+      "shipping-optimizer",
+      "upsell-planner"
     ]
   },
   {
