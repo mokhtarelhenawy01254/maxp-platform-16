@@ -22,6 +22,8 @@
   "trash": "Trash",
   "turboSettings": "Turbo Settings",
   "exportExcel": "Export Excel",
+  "exportExcelRunning": "Exporting…",
+  "exportExcelDone": "Exported {{count}} orders",
   "statistics": "Statistics",
   "deleteAll": "Delete All",
   "deleting": "Deleting...",

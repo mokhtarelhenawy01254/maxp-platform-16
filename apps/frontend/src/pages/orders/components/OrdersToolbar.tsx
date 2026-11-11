@@ -5,6 +5,7 @@ import { FilterChips } from "./FilterChips";
 import { OrdersFilterDrawer } from "./OrdersFilterDrawer";
 import { OrdersSearchBar } from "./toolbar/OrdersSearchBar";
 import { OrdersActionButtons } from "./toolbar/OrdersActionButtons";
+import { OrdersExportButton } from "./toolbar/OrdersExportButton";
 import { OrdersQuickViewsBar } from "./toolbar/OrdersQuickViewsBar";
 import type {
   OrdersFilters,
@@ -145,6 +146,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               }
               onRefresh={onRefresh}
             />
+
+            <OrdersExportButton filters={filters} />
           </div>
 
           {/* Row 2: Status Pill Capsule Rail & Saved Views */}

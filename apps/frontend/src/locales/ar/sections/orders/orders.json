@@ -22,6 +22,8 @@
   "trash": "مهملة",
   "turboSettings": "إعدادات Turbo",
   "exportExcel": "تصدير Excel",
+  "exportExcelRunning": "جارٍ التصدير…",
+  "exportExcelDone": "تم تصدير {{count}} أوردر",
   "statistics": "الإحصائيات",
   "deleteAll": "حذف الكل",
   "deleting": "جاري الحذف...",
