@@ -161,6 +161,7 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
   const isVelaFashion = theme.id === 'vela-fashion-eg';
   const isFastlyTheme = theme.id === 'fastly-eg';
   const isGracefulTheme = theme.id === 'soft-graceful';
+  const isMarketplaceAvenue = theme.id === 'marketplace-avenue';
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
 
   const hasCustomShopStudio =
@@ -291,14 +292,16 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
       ? 'list'
       : resolveCardVariant(variant, studioProductCardVariant);
 
-  const listCardVariant = viewMode === 'list' ? 'list' : null;
+  const listCardVariant = viewMode === 'list' ? (isMarketplaceAvenue ? 'marketplace-row' : 'list') : null;
   const resolvedCardVariant: ProductCardVariant =
     listCardVariant ??
-    (isKhemetLuxe &&
-    isShopPage &&
-    variant === 'editorial-card'
-      ? 'editorial-bare'
-      : cardVariant);
+    (isMarketplaceAvenue && isShopPage
+      ? 'marketplace-tile'
+      : isKhemetLuxe &&
+        isShopPage &&
+        variant === 'editorial-card'
+        ? 'editorial-bare'
+        : cardVariant);
 
   const isHorizontalRail = variant === 'carousel' || variant === 'boutique-rail';
 
@@ -377,10 +380,14 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8'
             : isKhemetLuxe && variant === 'boutique-shelf' && isShopPage
               ? 'grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4'
-              : resolveDefaultGridClass(variant);
+              : isMarketplaceAvenue && isShopPage
+                ? 'grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-5'
+                : resolveDefaultGridClass(variant);
 
   const resolvedGridClass =
-    viewMode === 'list' && isKhemetLuxe && isShopPage ? 'flex flex-col gap-5' : gridClass;
+    viewMode === 'list'
+      ? (isKhemetLuxe && isShopPage ? 'flex flex-col gap-5' : 'flex flex-col gap-3 w-full')
+      : gridClass;
 
   const carouselCardClass =
     variant === 'compact'
@@ -565,6 +572,7 @@ export const useProductGridController = ({ section, settings }: ProductGridProps
     isShopPage,
     isSalePage,
     saleOnly,
+    isMarketplaceAvenue,
     isKhemetLuxe,
     isWomenFashion,
     isWomenCuratedRack,

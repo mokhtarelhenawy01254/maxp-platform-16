@@ -63,13 +63,83 @@ export const ProductGridHeader: React.FC<ProductGridHeaderProps> = ({ controller
     sectionEyebrow,
     isFastlyOfferWall,
     isKhemetLuxe,
+    isMarketplaceAvenue,
     viewMode,
     setViewMode,
   } = controller;
 
   return (
     <>
-      {isShopPage && isZenOrganic ? (
+      {isShopPage && isMarketplaceAvenue ? (
+        <div className="mb-6 flex flex-col gap-3 border-b border-[#e5e7eb] pb-4 sm:flex-row sm:items-center sm:justify-between" dir={theme.direction}>
+          <p className="text-[14px] font-normal text-[#777777]">
+            {theme.direction === 'rtl' ? (
+              <>عرض ١–{Math.min(filteredProducts.length, resultsCount)} من أصل {resultsCount} نتيجة</>
+            ) : (
+              <>Showing 1–{Math.min(filteredProducts.length, resultsCount)} of {resultsCount} results</>
+            )}
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <select
+                value={searchParams.get('sortBy') || 'default'}
+                onChange={(e) => setSearchParams((prev) => {
+                  const nextParams = new URLSearchParams(prev);
+                  if (e.target.value === 'default') nextParams.delete('sortBy');
+                  else nextParams.set('sortBy', e.target.value);
+                  return nextParams;
+                })}
+                className={`appearance-none cursor-pointer rounded-[4px] border border-[#e2e8f0] bg-white py-1.5 ${theme.direction === 'rtl' ? 'pl-8 pr-3' : 'pr-8 pl-3'} text-[13px] font-medium text-[#333333] shadow-xs outline-none transition hover:border-[#ad7d61] focus:border-[#ad7d61] focus:ring-1 focus:ring-[#ad7d61]`}
+              >
+                <option value="default">{theme.direction === 'rtl' ? 'الترتيب الافتراضي' : 'Default sorting'}</option>
+                <option value="price-asc">{theme.direction === 'rtl' ? 'ترتيب حسب السعر: من الأقل إلى الأعلى' : 'Sort by price: low to high'}</option>
+                <option value="price-desc">{theme.direction === 'rtl' ? 'ترتيب حسب السعر: من الأعلى إلى الأقل' : 'Sort by price: high to low'}</option>
+                <option value="latest">{theme.direction === 'rtl' ? 'ترتيب حسب الأحدث' : 'Sort by latest'}</option>
+              </select>
+              <div className={`pointer-events-none absolute ${theme.direction === 'rtl' ? 'left-2.5' : 'right-2.5'} top-1/2 -translate-y-1/2 text-[#777777]`}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 rounded-[4px] border border-[#e2e8f0] bg-[#fbfbfb] p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`rounded-[3px] p-1.5 transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-[#333333] shadow-xs'
+                    : 'text-[#888888] hover:text-[#333333]'
+                }`}
+                aria-label={theme.direction === 'rtl' ? 'عرض شبكي' : 'Grid view'}
+                title={theme.direction === 'rtl' ? 'عرض شبكي' : 'Grid view'}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`rounded-[3px] p-1.5 transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-white text-[#333333] shadow-xs'
+                    : 'text-[#888888] hover:text-[#333333]'
+                }`}
+                aria-label={theme.direction === 'rtl' ? 'عرض قائمة' : 'List view'}
+                title={theme.direction === 'rtl' ? 'عرض قائمة' : 'List view'}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="4" width="18" height="3" rx="1"/>
+                  <rect x="3" y="10.5" width="18" height="3" rx="1"/>
+                  <rect x="3" y="17" width="18" height="3" rx="1"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : isShopPage && isZenOrganic ? (
         <div className="mb-10 flex flex-col gap-4 border-b border-[#e9ebe5] pb-5 sm:flex-row sm:items-center sm:justify-between" dir={theme.direction}>
           <p className="font-sans text-sm font-medium tracking-wide text-muted-foreground">
             {theme.direction === 'rtl' ? (

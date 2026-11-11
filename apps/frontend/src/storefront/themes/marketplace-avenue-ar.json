@@ -1287,20 +1287,16 @@
     },
     "shop": {
       "title": "المتجر",
+      "layoutHint": "sidebar-left",
       "sections": [
         {
-          "type": "shop-hero",
+          "type": "filters-sidebar",
           "settings": {
-            "badge": "كل المنتجات",
-            "title": "تسوّق كل الأقسام في مكان واحد",
-            "subtitle": "فلتر بالسعر والقسم والتوفر، واطلب في خطوتين.",
-            "i18n": {
-              "en": {
-                "badge": "All products",
-                "title": "Shop every department in one place",
-                "subtitle": "Filter by price, department and availability, then check out in two steps."
-              }
-            }
+            "showSearch": true,
+            "searchPlaceholder": "ابحث عن المنتجات أو الفئات...",
+            "clearButtonText": "مسح الفلاتر",
+            "showMobileLabel": "إظهار الفلاتر",
+            "hideMobileLabel": "إخفاء الفلاتر"
           }
         },
         {

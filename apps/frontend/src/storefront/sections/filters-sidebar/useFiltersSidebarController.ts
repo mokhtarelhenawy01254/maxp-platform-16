@@ -132,6 +132,7 @@ export const useFiltersSidebarController = ({ settings }: FiltersSidebarProps) =
   const isDistrictMarket = theme.id === 'district-market';
   const isPcHub = theme.id === 'pc-hub-eg';
   const isRoseBoutique = theme.id === 'rose-boutique-eg';
+  const isMarketplaceAvenue = theme.id === 'marketplace-avenue';
 
   const sidebarTitle =
     settings?.title ||
@@ -288,7 +289,9 @@ export const useFiltersSidebarController = ({ settings }: FiltersSidebarProps) =
       ? 'rounded-[1.3rem] border border-[#ead8cf] bg-[rgba(255,255,255,0.88)] p-4 shadow-[0_22px_58px_-48px_rgba(76,42,44,0.18)]'
       : isDistrictMarket
         ? 'rounded-[1.3rem] border border-[#eddcd0] bg-white/84 p-4'
-        : '';
+        : isMarketplaceAvenue
+          ? 'rounded-[8px] border border-[#f0f0f0] bg-white p-4 shadow-xs'
+          : '';
 
   const headingClassName = isPcHub
     ? 'mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-[#6d717c]'
@@ -296,7 +299,9 @@ export const useFiltersSidebarController = ({ settings }: FiltersSidebarProps) =
       ? 'mb-3 text-[11px] font-black uppercase tracking-[0.22em] text-[#a26c73]'
       : isDistrictMarket
         ? 'mb-3 text-[11px] font-black tracking-[0.22em] text-[#8c6956]'
-        : 'mb-3 text-sm font-semibold tracking-wide text-foreground';
+        : isMarketplaceAvenue
+          ? 'mb-3 text-[14px] font-semibold text-[#333333] border-b border-[#f0f0f0] pb-2'
+          : 'mb-3 text-sm font-semibold tracking-wide text-foreground';
 
   const activeFilterCount = [
     activeSearch ? 1 : 0,
@@ -342,6 +347,7 @@ export const useFiltersSidebarController = ({ settings }: FiltersSidebarProps) =
     isDistrictMarket,
     isPcHub,
     isRoseBoutique,
+    isMarketplaceAvenue,
     isKhemetLuxe,
     isElegantLuxe,
     simpleCatalog,

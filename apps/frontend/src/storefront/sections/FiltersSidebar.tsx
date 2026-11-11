@@ -124,7 +124,9 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ settings }) => {
             ? 'rounded-[1.8rem] border-[#ead8cf] bg-[linear-gradient(180deg,#fffdfa,#f8f1ee)] shadow-[0_28px_84px_-60px_rgba(76,42,44,0.2)] lg:sticky lg:top-24'
             : ctrl.isDistrictMarket
               ? 'rounded-[1.75rem] border-[#ead8cb] bg-[linear-gradient(180deg,#fffdfa,#fff6ef)] shadow-[0_28px_72px_-58px_rgba(61,37,25,0.32)] lg:sticky lg:top-24'
-              : 'rounded-[var(--radius)] border-border bg-background'
+              : ctrl.isMarketplaceAvenue
+                ? 'rounded-xl border-[#eef0f2] bg-white shadow-xs lg:sticky lg:top-24'
+                : 'rounded-[var(--radius)] border-border bg-background'
       }`}
       data-testid="filters-sidebar"
     >
@@ -168,7 +170,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ settings }) => {
       {/* Desktop: inline sidebar */}
       <div
         className={`hidden lg:block ${
-          ctrl.isPcHub || ctrl.isRoseBoutique || ctrl.isDistrictMarket
+          ctrl.isPcHub || ctrl.isRoseBoutique || ctrl.isDistrictMarket || ctrl.isMarketplaceAvenue
             ? 'px-4 py-4'
             : 'px-4 py-6'
         }`}

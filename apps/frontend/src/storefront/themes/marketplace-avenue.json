@@ -652,14 +652,17 @@
       ]
     },
     "shop": {
-      "title": "المتجر",
+      "title": "Shop",
+      "layoutHint": "sidebar-left",
       "sections": [
         {
-          "type": "shop-hero",
+          "type": "filters-sidebar",
           "settings": {
-            "badge": "All products",
-            "title": "Shop every department in one place",
-            "subtitle": "Filter by price, department and availability, then check out in two steps."
+            "showSearch": true,
+            "searchPlaceholder": "Search products or categories...",
+            "clearButtonText": "Clear filters",
+            "showMobileLabel": "Show filters",
+            "hideMobileLabel": "Hide filters"
           }
         },
         {

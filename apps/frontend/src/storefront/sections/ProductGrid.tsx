@@ -53,9 +53,11 @@ export const ProductGrid: React.FC<ProductGridProps> = (props) => {
     isNovaMobile: controller.isNovaMobile,
   });
 
+  const paddingClass = controller.isMarketplaceAvenue && controller.isShopPage ? 'pt-0 pb-12' : 'pt-1 pb-24 md:py-12';
+
   return (
     <section
-      className={`w-full pt-1 pb-24 md:py-12 ${backgroundClass} ${controller.stableCatalogMinHeightClassName}`}
+      className={`w-full ${paddingClass} ${backgroundClass} ${controller.stableCatalogMinHeightClassName}`}
     >
       <div className={controller.containerClassName}>
         <ProductGridHeader controller={controller} />
