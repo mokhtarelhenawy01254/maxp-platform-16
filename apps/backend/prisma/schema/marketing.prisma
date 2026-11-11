@@ -1480,8 +1480,34 @@ model FacebookApp {
   configId              String?
   webhookVerifyTokenRef String?  // اسم متغير البيئة لمفتاح التحقق
   isActive              Boolean  @default(true)
+  isDefaultForSignup    Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@map("facebook_apps")
 }
+
+/// توكنات System User الدائمة من Meta Business Manager (مستوى TENANT أو CENTRAL)
+model FacebookSystemUserToken {
+  id             String   @id @default(cuid())
+  companyId      String?
+  scope          String   @default("TENANT")
+  label          String?
+  tokenEncrypted String
+  tokenLast4     String?
+  businessId     String?
+  appId          String?
+  appKey         String?
+  scopes         String?
+  mode           String   @default("FALLBACK")
+  isActive       Boolean  @default(true)
+  priority       Int      @default(100)
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  @@index([companyId, isActive, priority], map: "facebook_system_user_tokens_company_idx")
+  @@index([scope, isActive, priority], map: "facebook_system_user_tokens_scope_idx")
+  @@map("facebook_system_user_tokens")
+}
+
