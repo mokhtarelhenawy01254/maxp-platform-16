@@ -831,7 +831,9 @@ const getAllProducts = async (req, res) => {
           excludeFromFreeShipping,
           workflow,
           createdBy: p.createdBy || null,
-          updatedBy: p.updatedBy || null,
+          updatedBy: latestAuditMap[p.id]?.userName || p.updatedBy || null,
+          updatedById: p.updatedBy || latestAuditMap[p.id]?.userId || null,
+          updatedAt: latestAuditMap[p.id]?.updatedAt || p.updatedAt || null,
           lastModifiedBy: latestAuditMap[p.id] || null,
           merchantContext: currentMerchant
             ? {
@@ -2222,7 +2224,13 @@ const deleteSingleProduct = async (req, res) => {
     }
 
     // التحقق من أن المنتج ينتمي للشركة ولسكوب التاجر عند الحاجة
-    const existingProduct = await getAuthorizedProductForMutation(req, id);
+    const existingProduct = await getAuthorizedProductForMutation(req, id, {
+      sku: true,
+      price: true,
+      _count: {
+        select: { productVariants: true },
+      },
+    });
 
     if (!existingProduct) {
       if (process.env.NODE_ENV !== 'production') {
@@ -2234,25 +2242,34 @@ const deleteSingleProduct = async (req, res) => {
       });
     }
 
-    await getSharedPrismaClient().product.update({
-      where: { id: id },
-      data: {
-        deletedAt: new Date(),
-        updatedBy: req.user?.id || null,
-      }
-    });
+    const deletedAtValue = new Date();
+    const deleteChanges = productAuditService.buildDeleteSnapshotChanges(
+      existingProduct,
+      deletedAtValue.toISOString(),
+    );
 
+    // تسجيل صف audit قبل الحذف (action=DELETE مع changes تحتوي snapshot للاسم/SKU/السعر وعدد المتغيرات)
     try {
       await productAuditService.logProductChange({
         companyId,
         productId: id,
         user: req.user,
         action: 'DELETE',
-        source: 'UI',
+        before: existingProduct,
+        source: req.body?.source || 'UI',
+        changes: deleteChanges,
       });
     } catch (auditErr) {
       console.error('⚠️ [PRODUCT-AUDIT] Failed to log product deletion audit:', auditErr.message);
     }
+
+    await getSharedPrismaClient().product.update({
+      where: { id: id },
+      data: {
+        deletedAt: deletedAtValue,
+        updatedBy: req.user?.id || null,
+      }
+    });
 
     await invalidateStorefrontProductCaches(companyId, id);
 
@@ -2398,13 +2415,45 @@ const permanentDeleteProduct = async (req, res) => {
     }
 
     // التحقق من أن المنتج المحذوف ينتمي للشركة ولسكوب التاجر عند الحاجة
-    const existingProduct = await getSharedPrismaClient().product.findFirst({ where });
+    const prisma = getSharedPrismaClient();
+    const existingProduct = await prisma.product.findFirst({ where });
 
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
         message: 'المنتج غير موجود في سلة المحذوفات'
       });
+    }
+
+    let variantsCount = existingProduct._count?.productVariants ?? 0;
+    if (!variantsCount && prisma.productVariant && typeof prisma.productVariant.count === 'function') {
+      try {
+        variantsCount = await prisma.productVariant.count({
+          where: { productId: id },
+        });
+      } catch {
+        variantsCount = 0;
+      }
+    }
+
+    const deleteChanges = productAuditService.buildDeleteSnapshotChanges(
+      { ...existingProduct, variantsCount },
+      'PERMANENTLY_DELETED',
+    );
+
+    // تسجيل صف audit قبل الحذف النهائي (action=DELETE مع changes تحتوي snapshot للاسم/SKU/السعر وعدد المتغيرات)
+    try {
+      await productAuditService.logProductChange({
+        companyId,
+        productId: id,
+        user: req.user,
+        action: 'DELETE',
+        before: existingProduct,
+        source: req.body?.source || 'UI',
+        changes: deleteChanges,
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log permanent product deletion audit:', auditErr.message);
     }
 
     // حذف نهائي
@@ -2770,12 +2819,24 @@ const createProduct = async (req, res) => {
 
     // Log create / import audit
     try {
-      const auditSource = req.body.source || (req.body.isImport ? 'IMPORT' : 'UI');
+      const rawSource = typeof req.body?.source === 'string' ? req.body.source.trim().toUpperCase() : '';
+      const isImportRequest = Boolean(
+        req.body?.isImport === true ||
+        req.body?.isImport === 'true' ||
+        req.query?.import === 'true' ||
+        req.query?.isImport === 'true' ||
+        rawSource === 'IMPORT' ||
+        ['GOOGLE-SHEETS', 'EASY-ORDERS', 'WOOCOMMERCE', 'CSV', 'EXCEL'].includes(rawSource) ||
+        (req.path && req.path.toLowerCase().includes('import'))
+      );
+      const auditSource = isImportRequest
+        ? 'IMPORT'
+        : (productAuditService.VALID_SOURCES.has(rawSource) ? rawSource : 'UI');
       await productAuditService.logProductChange({
         companyId,
         productId: product.id,
         user: req.user,
-        action: auditSource === 'IMPORT' ? 'IMPORT' : 'CREATE',
+        action: isImportRequest ? 'IMPORT' : 'CREATE',
         after: product,
         source: auditSource,
       });
@@ -4241,11 +4302,36 @@ const deleteAllProducts = async (req, res) => {
     // First, get all products for this company
     const productsToDelete = await prisma.product.findMany({
       where: { companyId },
-      select: { id: true }
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+        deletedAt: true,
+        _count: {
+          select: { productVariants: true },
+        },
+      },
     });
 
     const productIds = productsToDelete.map(p => p.id);
     let deletedVariantsCount = 0;
+
+    // Log audit row for EACH product before deletion
+    if (productIds.length > 0) {
+      try {
+        await productAuditService.logBulkProductChanges({
+          companyId,
+          productIds,
+          user: req.user,
+          action: 'DELETE',
+          source: req.body?.source || 'UI',
+          productsBefore: productsToDelete,
+        });
+      } catch (auditErr) {
+        console.error('⚠️ [PRODUCT-AUDIT] Failed to log deleteAllProducts audit:', auditErr.message);
+      }
+    }
 
     // Delete all variants first (if there are any products)
     if (productIds.length > 0) {
@@ -4555,6 +4641,375 @@ const bulkUpdateTrackInventory = async (req, res) => {
   }
 };
 
+const bulkUpdatePrice = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const rawIds = req.body.ids || req.body.productIds;
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة (ids)' });
+    }
+
+    const rawValue = req.body.value !== undefined ? req.body.value : req.body.price;
+    const newPrice = Number(rawValue);
+    if (
+      rawValue === undefined ||
+      rawValue === null ||
+      rawValue === '' ||
+      !Number.isFinite(newPrice) ||
+      newPrice < 0
+    ) {
+      return res.status(400).json({ success: false, message: 'السعر الجديد غير صالح' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const where = { id: { in: rawIds }, companyId, deletedAt: null };
+    if (isMerchantUser(req.user)) {
+      const merchant = await requireMerchantAccountForUser(req.user);
+      Object.assign(where, getMerchantProductWhere(merchant, where));
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      select: { id: true, price: true, name: true, sku: true },
+    });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على أي منتج يتبع للشركة' });
+    }
+
+    const targetProductIds = products.map((p) => p.id);
+    const userId = req.user?.id || null;
+    const auditSource = req.body?.source || 'UI';
+
+    const executeBulkPrice = async (tx) => {
+      const result = await tx.product.updateMany({
+        where: { id: { in: targetProductIds }, companyId },
+        data: { price: newPrice, updatedBy: userId },
+      });
+
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds: targetProductIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: auditSource,
+        productsBefore: products,
+        changes: (productId, prod) => {
+          const oldPrice = prod?.price !== null && prod?.price !== undefined ? Number(prod.price) : null;
+          return {
+            price: { before: oldPrice, after: newPrice },
+          };
+        },
+        prismaClient: tx,
+        throwOnError: true,
+      });
+
+      return result;
+    };
+
+    const result =
+      typeof prisma.$transaction === 'function'
+        ? await prisma.$transaction(async (tx) => executeBulkPrice(tx))
+        : await executeBulkPrice(prisma);
+
+    await invalidateStorefrontProductCaches(companyId);
+
+    res.json({
+      success: true,
+      message: `تم تحديث سعر ${products.length} منتج بنجاح`,
+      data: { count: result?.count ?? products.length, price: newPrice },
+    });
+  } catch (err) {
+    console.error('❌ [BULK-PRICE] Error updating bulk product prices:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث الأسعار الجماعية', error: err.message });
+  }
+};
+
+const bulkUpdateStatus = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const rawIds = req.body.ids || req.body.productIds;
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة (ids)' });
+    }
+
+    const rawValue =
+      req.body.value !== undefined
+        ? req.body.value
+        : req.body.status !== undefined
+          ? req.body.status
+          : req.body.isActive;
+
+    let newIsActive;
+    if (typeof rawValue === 'boolean') {
+      newIsActive = rawValue;
+    } else if (typeof rawValue === 'number' && (rawValue === 0 || rawValue === 1)) {
+      newIsActive = rawValue === 1;
+    } else if (typeof rawValue === 'string') {
+      const norm = rawValue.trim().toLowerCase();
+      if (['active', 'true', '1', 'نشط', 'مفعل'].includes(norm)) {
+        newIsActive = true;
+      } else if (['inactive', 'false', '0', 'غير نشط', 'معطل'].includes(norm)) {
+        newIsActive = false;
+      }
+    }
+
+    if (typeof newIsActive !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'الحالة الجديدة غير صالحة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const where = { id: { in: rawIds }, companyId, deletedAt: null };
+    if (isMerchantUser(req.user)) {
+      const merchant = await requireMerchantAccountForUser(req.user);
+      Object.assign(where, getMerchantProductWhere(merchant, where));
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      select: { id: true, isActive: true, name: true, sku: true },
+    });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على أي منتج يتبع للشركة' });
+    }
+
+    const targetProductIds = products.map((p) => p.id);
+    const userId = req.user?.id || null;
+    const auditSource = req.body?.source || 'UI';
+
+    const executeBulkStatus = async (tx) => {
+      const result = await tx.product.updateMany({
+        where: { id: { in: targetProductIds }, companyId },
+        data: { isActive: newIsActive, updatedBy: userId },
+      });
+
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds: targetProductIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: auditSource,
+        productsBefore: products,
+        changes: (productId, prod) => {
+          const oldIsActive = Boolean(prod?.isActive);
+          return {
+            isActive: { before: oldIsActive, after: newIsActive },
+            status: {
+              before: oldIsActive ? 'ACTIVE' : 'INACTIVE',
+              after: newIsActive ? 'ACTIVE' : 'INACTIVE',
+            },
+          };
+        },
+        prismaClient: tx,
+        throwOnError: true,
+      });
+
+      return result;
+    };
+
+    const result =
+      typeof prisma.$transaction === 'function'
+        ? await prisma.$transaction(async (tx) => executeBulkStatus(tx))
+        : await executeBulkStatus(prisma);
+
+    await invalidateStorefrontProductCaches(companyId);
+
+    res.json({
+      success: true,
+      message: `تم تحديث حالة ${products.length} منتج بنجاح`,
+      data: { count: result?.count ?? products.length, isActive: newIsActive },
+    });
+  } catch (err) {
+    console.error('❌ [BULK-STATUS] Error updating bulk product status:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث حالة المنتجات الجماعية', error: err.message });
+  }
+};
+
+const bulkUpdateStock = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const rawIds = req.body.ids || req.body.productIds;
+    if (!Array.isArray(rawIds) || rawIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات مطلوبة (ids)' });
+    }
+
+    const rawValue = req.body.value !== undefined ? req.body.value : req.body.stock;
+    const stockValidation = validateStock(rawValue);
+    if (!stockValidation.ok) {
+      return res.status(400).json({ success: false, message: stockValidation.message || 'قيمة المخزون غير صالحة' });
+    }
+
+    const newStock = parseInt(rawValue, 10);
+    const prisma = getSharedPrismaClient();
+
+    if (isMerchantUser(req.user) && isCompanyWarehouseMerchant(await resolveMerchantAccount(req.user))) {
+      return res.status(403).json({ success: false, message: 'صلاحيات التاجر (مخزن الشركة) لا تسمح بتعديل المخزون' });
+    }
+
+    const where = { id: { in: rawIds }, companyId, deletedAt: null };
+    if (isMerchantUser(req.user)) {
+      const merchant = await requireMerchantAccountForUser(req.user);
+      Object.assign(where, getMerchantProductWhere(merchant, where));
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      select: { id: true, stock: true, name: true, sku: true },
+    });
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على أي منتج يتبع للشركة' });
+    }
+
+    const targetProductIds = products.map((p) => p.id);
+    const userId = req.user?.id || null;
+    const auditSource = req.body?.source || 'UI';
+
+    const executeBulkStock = async (tx) => {
+      const result = await tx.product.updateMany({
+        where: { id: { in: targetProductIds }, companyId },
+        data: { stock: newStock, updatedBy: userId },
+      });
+
+      await productAuditService.logBulkProductChanges({
+        companyId,
+        productIds: targetProductIds,
+        user: req.user,
+        action: 'BULK_UPDATE',
+        source: auditSource,
+        productsBefore: products,
+        changes: (productId, prod) => {
+          const oldStock = prod?.stock !== null && prod?.stock !== undefined ? Number(prod.stock) : 0;
+          return {
+            stock: { before: oldStock, after: newStock },
+          };
+        },
+        prismaClient: tx,
+        throwOnError: true,
+      });
+
+      return result;
+    };
+
+    const result =
+      typeof prisma.$transaction === 'function'
+        ? await prisma.$transaction(async (tx) => executeBulkStock(tx))
+        : await executeBulkStock(prisma);
+
+    await invalidateStorefrontProductCaches(companyId);
+
+    res.json({
+      success: true,
+      message: `تم تحديث مخزون ${products.length} منتج بنجاح`,
+      data: { count: result?.count ?? products.length, stock: newStock },
+    });
+  } catch (err) {
+    console.error('❌ [BULK-STOCK] Error updating bulk product stock:', err);
+    res.status(500).json({ success: false, message: 'فشل في تحديث المخزون الجماعي', error: err.message });
+  }
+};
+
+const bulkImport = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
+    }
+
+    const items = Array.isArray(req.body) ? req.body : (req.body?.products || req.body?.items || []);
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة المنتجات المستوردة مطلوبة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const results = {
+      imported: [],
+      failed: [],
+    };
+
+    for (const item of items) {
+      try {
+        const rawName = typeof item?.name === 'string' ? item.name.trim() : '';
+        if (!rawName) {
+          results.failed.push({ item, reason: 'اسم المنتج مطلوب' });
+          continue;
+        }
+
+        const rawPrice = item.price !== undefined && item.price !== null ? parseFloat(item.price) : 0;
+        const normalizedStock = validateStock(item.stock).ok ? (parseInt(item.stock, 10) || 0) : 0;
+
+        const product = await prisma.product.create({
+          data: {
+            name: rawName,
+            description: item.description || null,
+            price: Number.isFinite(rawPrice) ? rawPrice : 0,
+            comparePrice: item.comparePrice ? parseFloat(item.comparePrice) : null,
+            cost: item.cost ? parseFloat(item.cost) : null,
+            sku: item.sku ? String(item.sku).trim() : null,
+            barcode: item.barcode ? String(item.barcode).trim() : null,
+            stock: normalizedStock,
+            trackInventory: item.trackInventory !== undefined ? Boolean(item.trackInventory) : true,
+            companyId,
+            categoryId: item.categoryId || null,
+            isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+            source: 'import',
+            createdBy: req.user?.id || null,
+            updatedBy: req.user?.id || null,
+          },
+        });
+
+        try {
+          await productAuditService.logProductChange({
+            companyId,
+            productId: product.id,
+            user: req.user,
+            action: 'IMPORT',
+            after: product,
+            source: 'IMPORT',
+          });
+        } catch (auditErr) {
+          console.error('⚠️ [PRODUCT-AUDIT] Failed to log bulk import audit:', auditErr.message);
+        }
+
+        results.imported.push(product);
+      } catch (itemErr) {
+        results.failed.push({ item, reason: itemErr.message });
+      }
+    }
+
+    await invalidateStorefrontProductCaches(companyId);
+
+    res.json({
+      success: true,
+      message: `تم استيراد ${results.imported.length} منتج بنجاح`,
+      data: {
+        importedCount: results.imported.length,
+        failedCount: results.failed.length,
+        imported: results.imported,
+        failed: results.failed,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [BULK-IMPORT] Error importing products:', error);
+    res.status(500).json({ success: false, message: 'فشل في استيراد المنتجات', error: error.message });
+  }
+};
+
+const importProducts = bulkImport;
+
 
 
 const getProductHistory = async (req, res) => {
@@ -4629,6 +5084,11 @@ module.exports = {
   bulkUpdateVisibility,
   bulkUpdateAffiliateVisibility,
   bulkUpdateTrackInventory,
+  bulkUpdatePrice,
+  bulkUpdateStatus,
+  bulkUpdateStock,
+  bulkImport,
+  importProducts,
   createProduct,
   duplicateProduct,
   deleteImageFromOneProduct,

@@ -168,7 +168,48 @@ const computeProductDiff = (before = {}, after = {}) => {
   return diff;
 };
 
-const executeAuditInsert = async (prisma, logData) => {
+const buildDeleteSnapshotChanges = (target = null, deletedAtAfter = new Date().toISOString()) => {
+  const safeTarget = target || {};
+  const rawPrice =
+    safeTarget.price !== null && safeTarget.price !== undefined
+      ? sanitizeValueForAudit('price', safeTarget.price)
+      : null;
+  const variantsCount =
+    safeTarget._count?.productVariants ??
+    safeTarget._count?.variants ??
+    (Array.isArray(safeTarget.productVariants)
+      ? safeTarget.productVariants.length
+      : Array.isArray(safeTarget.variants)
+        ? safeTarget.variants.length
+        : typeof safeTarget.variantsCount === 'number'
+          ? safeTarget.variantsCount
+          : 0);
+
+  const snapshot = {
+    name: safeTarget.name || null,
+    sku: safeTarget.sku || null,
+    price: rawPrice,
+    variantsCount,
+  };
+
+  return {
+    snapshot: {
+      ...snapshot,
+      before: snapshot,
+      after: null,
+    },
+    name: { before: snapshot.name, after: null },
+    sku: { before: snapshot.sku, after: null },
+    price: { before: snapshot.price, after: null },
+    variantsCount: { before: snapshot.variantsCount, after: 0 },
+    deletedAt: {
+      before: safeTarget.deletedAt || null,
+      after: deletedAtAfter,
+    },
+  };
+};
+
+const executeAuditInsert = async (prisma, logData, { throwOnError = false } = {}) => {
   try {
     if (prisma.productAuditLog && typeof prisma.productAuditLog.create === 'function') {
       return await prisma.productAuditLog.create({
@@ -177,6 +218,10 @@ const executeAuditInsert = async (prisma, logData) => {
     }
 
     // Raw SQL fallback if Prisma Client hasn't been generated in current process
+    if (typeof prisma.$executeRawUnsafe !== 'function') {
+      return null;
+    }
+
     const id = logData.id || uuidv4();
     const changesJson = JSON.stringify(logData.changes || {});
     await prisma.$executeRawUnsafe(
@@ -194,6 +239,9 @@ const executeAuditInsert = async (prisma, logData) => {
     return { id, ...logData };
   } catch (err) {
     console.error('⚠️ [PRODUCT-AUDIT] Failed to insert audit log:', err.message);
+    if (throwOnError) {
+      throw err;
+    }
     return null;
   }
 };
@@ -207,6 +255,8 @@ const logProductChange = async ({
   after = null,
   source = 'UI',
   changes = null,
+  prismaClient = null,
+  throwOnError = false,
 }) => {
   if (!companyId || !productId) {
     return null;
@@ -220,7 +270,7 @@ const logProductChange = async ({
   let finalChanges = changes;
 
   if (!finalChanges) {
-    if (normalizedAction === 'CREATE') {
+    if (normalizedAction === 'CREATE' || normalizedAction === 'IMPORT') {
       finalChanges = {};
       const target = after || {};
       for (const field of TRACKED_FIELDS) {
@@ -232,12 +282,7 @@ const logProductChange = async ({
         }
       }
     } else if (normalizedAction === 'DELETE') {
-      finalChanges = {
-        deletedAt: {
-          before: null,
-          after: new Date().toISOString(),
-        },
-      };
+      finalChanges = buildDeleteSnapshotChanges(before);
     } else {
       finalChanges = computeProductDiff(before, after);
     }
@@ -248,7 +293,7 @@ const logProductChange = async ({
     return null;
   }
 
-  const prisma = getSharedPrismaClient();
+  const prisma = prismaClient || getSharedPrismaClient();
   const logData = {
     id: uuidv4(),
     companyId,
@@ -261,7 +306,7 @@ const logProductChange = async ({
     createdAt: new Date(),
   };
 
-  return executeAuditInsert(prisma, logData);
+  return executeAuditInsert(prisma, logData, { throwOnError });
 };
 
 const logBulkProductChanges = async ({
@@ -272,6 +317,8 @@ const logBulkProductChanges = async ({
   source = 'UI',
   changes = {},
   productsBefore = [],
+  prismaClient = null,
+  throwOnError = false,
 }) => {
   if (!companyId || !Array.isArray(productIds) || productIds.length === 0) {
     return [];
@@ -281,22 +328,24 @@ const logBulkProductChanges = async ({
   const normalizedSource = VALID_SOURCES.has(source) ? source : 'UI';
   const userId = user?.id || null;
   const userName = resolveUserName(user);
-  const prisma = getSharedPrismaClient();
+  const prisma = prismaClient || getSharedPrismaClient();
 
   const beforeMap = (productsBefore || []).reduce((acc, p) => {
     if (p && p.id) acc[p.id] = p;
     return acc;
   }, {});
 
-  const insertTasks = productIds.map(async (productId) => {
+  const buildLogData = (productId) => {
     let productChanges = changes;
     if (typeof changes === 'function') {
-      productChanges = changes(productId);
+      productChanges = changes(productId, beforeMap[productId]);
+    } else if (normalizedAction === 'DELETE' && beforeMap[productId]) {
+      productChanges = buildDeleteSnapshotChanges(beforeMap[productId]);
     } else if (beforeMap[productId]) {
       productChanges = computeProductDiff(beforeMap[productId], changes);
     }
 
-    const logData = {
+    return {
       id: uuidv4(),
       companyId,
       productId,
@@ -307,9 +356,20 @@ const logBulkProductChanges = async ({
       source: normalizedSource,
       createdAt: new Date(),
     };
+  };
 
-    return executeAuditInsert(prisma, logData);
-  });
+  if (prismaClient) {
+    const results = [];
+    for (const productId of productIds) {
+      const inserted = await executeAuditInsert(prisma, buildLogData(productId), { throwOnError });
+      results.push(inserted);
+    }
+    return results;
+  }
+
+  const insertTasks = productIds.map((productId) =>
+    executeAuditInsert(prisma, buildLogData(productId), { throwOnError })
+  );
 
   return Promise.all(insertTasks);
 };
@@ -509,6 +569,7 @@ module.exports = {
   VALID_SOURCES,
   TRACKED_FIELDS,
   resolveUserName,
+  buildDeleteSnapshotChanges,
   computeProductDiff,
   logProductChange,
   logBulkProductChanges,

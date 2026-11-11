@@ -4,6 +4,7 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const { validateStock } = require('../utils/stockValidation');
+const productAuditService = require('../services/productAuditService');
 
 /** قصّ المخزون للسقف المنطقي (يمنع أرقام تجريبية مثل 99914). */
 const clampWooStock = (value) => {
@@ -633,6 +634,20 @@ const importSelectedProducts = async (req, res) => {
           });
 
           isUpdate = true;
+
+          try {
+            await productAuditService.logProductChange({
+              companyId,
+              productId: product.id,
+              user: req.user,
+              action: 'IMPORT',
+              before: existingProduct,
+              after: product,
+              source: 'IMPORT',
+            });
+          } catch (auditErr) {
+            console.error('⚠️ [PRODUCT-AUDIT] Failed to log woocommerce update import audit:', auditErr.message);
+          }
         } else {
           // إنشاء منتج جديد
           const productLimitCheck = await ensureWithinPlanLimit(companyId, 'products', 1);
@@ -673,6 +688,19 @@ const importSelectedProducts = async (req, res) => {
               updatedAt: new Date() // ✅ Required field
             }
           });
+
+          try {
+            await productAuditService.logProductChange({
+              companyId,
+              productId: product.id,
+              user: req.user,
+              action: 'IMPORT',
+              after: product,
+              source: 'IMPORT',
+            });
+          } catch (auditErr) {
+            console.error('⚠️ [PRODUCT-AUDIT] Failed to log woocommerce create import audit:', auditErr.message);
+          }
         }
 
         // ✨ معالجة المتغيرات

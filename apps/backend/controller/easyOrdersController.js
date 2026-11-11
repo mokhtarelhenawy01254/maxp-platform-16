@@ -4,6 +4,7 @@ const axios = require('axios');
 const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const { validateStock } = require('../utils/stockValidation');
+const productAuditService = require('../services/productAuditService');
 
 /**
  * استيراد منتج واحد من Easy Orders
@@ -181,6 +182,19 @@ const importProductFromEasyOrders = async (req, res) => {
         category: true
       }
     });
+
+    try {
+      await productAuditService.logProductChange({
+        companyId,
+        productId: product.id,
+        user: req.user,
+        action: 'IMPORT',
+        after: product,
+        source: 'IMPORT',
+      });
+    } catch (auditErr) {
+      console.error('⚠️ [PRODUCT-AUDIT] Failed to log easy-orders import audit:', auditErr.message);
+    }
 
     console.log(`✅ [EASY-ORDERS] Product imported successfully: ${product.name}`);
 
@@ -366,6 +380,19 @@ const importProductsBulk = async (req, res) => {
             source: 'easy-orders'
           }
         });
+
+        try {
+          await productAuditService.logProductChange({
+            companyId,
+            productId: product.id,
+            user: req.user,
+            action: 'IMPORT',
+            after: product,
+            source: 'IMPORT',
+          });
+        } catch (auditErr) {
+          console.error('⚠️ [PRODUCT-AUDIT] Failed to log easy-orders bulk import audit:', auditErr.message);
+        }
 
         results.success.push(product);
 
@@ -762,6 +789,19 @@ const importSelectedProducts = async (req, res) => {
             source: 'easy-orders'
           }
         });
+
+        try {
+          await productAuditService.logProductChange({
+            companyId,
+            productId: product.id,
+            user: req.user,
+            action: 'IMPORT',
+            after: product,
+            source: 'IMPORT',
+          });
+        } catch (auditErr) {
+          console.error('⚠️ [PRODUCT-AUDIT] Failed to log easy-orders bulk import audit:', auditErr.message);
+        }
 
         results.success.push(product);
 

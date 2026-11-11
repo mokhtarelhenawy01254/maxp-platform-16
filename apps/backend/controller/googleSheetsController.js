@@ -7,6 +7,7 @@ const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const { validateStock } = require('../utils/stockValidation');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
+const productAuditService = require('../services/productAuditService');
 
 const PRODUCT_HEADER_ALIASES = {
   name: ['name', 'product name', 'اسم المنتج', 'الاسم', 'المنتج'],
@@ -517,7 +518,7 @@ const importProductsFromSheet = async (req, res) => {
           continue;
         }
 
-        await prisma.product.create({
+        const createdProduct = await prisma.product.create({
           data: {
             name: product.name,
             description: product.description || '',
@@ -537,6 +538,19 @@ const importProductsFromSheet = async (req, res) => {
             source: 'google-sheets'
           }
         });
+
+        try {
+          await productAuditService.logProductChange({
+            companyId,
+            productId: createdProduct.id,
+            user: req.user,
+            action: 'IMPORT',
+            after: createdProduct,
+            source: 'IMPORT',
+          });
+        } catch (auditErr) {
+          console.error('⚠️ [PRODUCT-AUDIT] Failed to log google-sheets import audit:', auditErr.message);
+        }
 
         results.imported += 1;
       } catch (error) {

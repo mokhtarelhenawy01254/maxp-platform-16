@@ -17,13 +17,24 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
     count: jest.fn(),
+  },
+  productVariant: {
+    count: jest.fn(),
+    deleteMany: jest.fn(),
+    updateMany: jest.fn(),
+  },
+  affiliateSetting: {
+    findUnique: jest.fn(),
   },
   productAuditLog: {
     create: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
   },
+  $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   $executeRawUnsafe: jest.fn(),
   $queryRawUnsafe: jest.fn(),
 };
@@ -453,6 +464,344 @@ describe('Product Audit Log System Tests (سجل تعديلات المنتجات
       }
 
       expect(blockedWith405).toBe(true);
+    });
+  });
+
+  // 7) deleteAllProducts logs audit rows before deletion & keeps merchant blocked
+  describe('Case 7: deleteAllProducts audit coverage & merchant protection', () => {
+    it('logs one DELETE audit row per deleted product BEFORE deleting variants and products', async () => {
+      const products = [
+        { id: 'p-del-1', name: 'منتج 1', sku: 'SKU-1', price: 100, _count: { productVariants: 2 } },
+        { id: 'p-del-2', name: 'منتج 2', sku: 'SKU-2', price: 250, _count: { productVariants: 0 } },
+        { id: 'p-del-3', name: 'منتج 3', sku: 'SKU-3', price: 300, _count: { productVariants: 5 } },
+      ];
+
+      const callOrder = [];
+      mockPrisma.product.findMany.mockResolvedValue(products);
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => {
+        callOrder.push(`audit:${data.productId}`);
+        return Promise.resolve({ id: `audit-${data.productId}`, ...data });
+      });
+      mockPrisma.productVariant.deleteMany.mockImplementation(() => {
+        callOrder.push('deleteVariants');
+        return Promise.resolve({ count: 7 });
+      });
+      mockPrisma.product.deleteMany.mockImplementation(() => {
+        callOrder.push('deleteProducts');
+        return Promise.resolve({ count: 3 });
+      });
+
+      const req = { user: testUser, body: {}, method: 'DELETE', path: '/bulk/delete' };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.deleteAllProducts(req, res);
+
+      expect(mockPrisma.productAuditLog.create).toHaveBeenCalledTimes(3);
+      expect(callOrder.slice(0, 3)).toEqual(['audit:p-del-1', 'audit:p-del-2', 'audit:p-del-3']);
+      expect(callOrder[3]).toBe('deleteVariants');
+      expect(callOrder[4]).toBe('deleteProducts');
+
+      const firstAudit = mockPrisma.productAuditLog.create.mock.calls[0][0].data;
+      expect(firstAudit.action).toBe('DELETE');
+      expect(firstAudit.changes.snapshot).toEqual(
+        expect.objectContaining({
+          name: 'منتج 1',
+          sku: 'SKU-1',
+          price: 100,
+          variantsCount: 2,
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('blocks merchant users from calling deleteAllProducts with 403', async () => {
+      const req = {
+        user: { id: 'merch-user', companyId, role: 'MERCHANT' },
+        body: {},
+        method: 'DELETE',
+        path: '/bulk/delete',
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.deleteAllProducts(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(mockPrisma.product.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // 8) deleteSingleProduct & permanentDeleteProduct log DELETE snapshot BEFORE deleting
+  describe('Case 8: Single & permanent delete audit snapshot before delete', () => {
+    it('logs DELETE audit with snapshot before soft-deleting in deleteSingleProduct', async () => {
+      const callOrder = [];
+      mockPrisma.product.findUnique.mockResolvedValue({
+        id: 'prod-single-1',
+        companyId,
+        deletedAt: null,
+        name: 'حذاء رياضي',
+        sku: 'SHOE-99',
+        price: 499,
+        _count: { productVariants: 3 },
+      });
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => {
+        callOrder.push('audit');
+        return Promise.resolve({ id: 'audit-single-1', ...data });
+      });
+      mockPrisma.product.update.mockImplementation(() => {
+        callOrder.push('softDelete');
+        return Promise.resolve({ id: 'prod-single-1' });
+      });
+
+      const req = { user: testUser, params: { id: 'prod-single-1' }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.deleteSingleProduct(req, res);
+
+      expect(callOrder).toEqual(['audit', 'softDelete']);
+      const auditData = mockPrisma.productAuditLog.create.mock.calls[0][0].data;
+      expect(auditData.action).toBe('DELETE');
+      expect(auditData.changes.snapshot).toEqual(
+        expect.objectContaining({
+          name: 'حذاء رياضي',
+          sku: 'SHOE-99',
+          price: 499,
+          variantsCount: 3,
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('logs DELETE audit with snapshot before hard-deleting in permanentDeleteProduct', async () => {
+      const callOrder = [];
+      mockPrisma.product.findFirst.mockResolvedValue({
+        id: 'prod-perm-1',
+        companyId,
+        deletedAt: new Date('2026-01-01T00:00:00Z'),
+        name: 'حقيبة جلد',
+        sku: 'BAG-77',
+        price: 850,
+      });
+      mockPrisma.productVariant.count.mockResolvedValue(4);
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => {
+        callOrder.push('audit');
+        return Promise.resolve({ id: 'audit-perm-1', ...data });
+      });
+      mockPrisma.product.delete.mockImplementation(() => {
+        callOrder.push('hardDelete');
+        return Promise.resolve({ id: 'prod-perm-1' });
+      });
+
+      const req = { user: testUser, params: { id: 'prod-perm-1' }, body: {} };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.permanentDeleteProduct(req, res);
+
+      expect(callOrder).toEqual(['audit', 'hardDelete']);
+      const auditData = mockPrisma.productAuditLog.create.mock.calls[0][0].data;
+      expect(auditData.action).toBe('DELETE');
+      expect(auditData.changes.snapshot).toEqual(
+        expect.objectContaining({
+          name: 'حقيبة جلد',
+          sku: 'BAG-77',
+          price: 850,
+          variantsCount: 4,
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+  });
+
+  // 9) Bulk routes for price, status, stock
+  describe('Case 9: Bulk price/status/stock routes & transactional audit rows', () => {
+    it('registers PATCH /bulk/price, /bulk/status, /bulk/stock routes', () => {
+      const paths = productRoutes.stack
+        .filter((layer) => layer.route && layer.route.methods.patch)
+        .map((layer) => layer.route.path);
+
+      expect(paths).toContain('/bulk/price');
+      expect(paths).toContain('/bulk/status');
+      expect(paths).toContain('/bulk/stock');
+    });
+
+    it('bulkUpdatePrice updates 10 products and writes 10 audit rows in one transaction', async () => {
+      const products = Array.from({ length: 10 }, (_, i) => ({
+        id: `prod-p-${i + 1}`,
+        name: `منتج ${i + 1}`,
+        sku: `SKU-${i + 1}`,
+        price: 100 + i * 10,
+      }));
+      const ids = products.map((p) => p.id);
+
+      mockPrisma.product.findMany.mockResolvedValue(products);
+      mockPrisma.product.updateMany.mockResolvedValue({ count: 10 });
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: `audit-${data.productId}`, ...data })
+      );
+
+      const req = { user: testUser, body: { ids, value: 299 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.bulkUpdatePrice(req, res);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ companyId, id: { in: ids } }),
+        })
+      );
+      expect(mockPrisma.productAuditLog.create).toHaveBeenCalledTimes(10);
+      expect(mockPrisma.productAuditLog.create.mock.calls[0][0].data.changes).toEqual({
+        price: { before: 100, after: 299 },
+      });
+      expect(mockPrisma.productAuditLog.create.mock.calls[9][0].data.changes).toEqual({
+        price: { before: 190, after: 299 },
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, data: expect.objectContaining({ count: 10 }) })
+      );
+    });
+
+    it('bulkUpdateStatus writes audit rows with status/isActive diff in transaction', async () => {
+      const products = [
+        { id: 'prod-s-1', isActive: true, name: 'A', sku: 'A1' },
+        { id: 'prod-s-2', isActive: false, name: 'B', sku: 'B1' },
+      ];
+      mockPrisma.product.findMany.mockResolvedValue(products);
+      mockPrisma.product.updateMany.mockResolvedValue({ count: 2 });
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => Promise.resolve(data));
+
+      const req = { user: testUser, body: { ids: ['prod-s-1', 'prod-s-2'], status: 'inactive' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.bulkUpdateStatus(req, res);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.productAuditLog.create).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.productAuditLog.create.mock.calls[0][0].data.changes).toEqual({
+        isActive: { before: true, after: false },
+        status: { before: 'ACTIVE', after: 'INACTIVE' },
+      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('bulkUpdateStock writes audit rows with stock diff in transaction', async () => {
+      const products = [
+        { id: 'prod-st-1', stock: 5, name: 'A', sku: 'A1' },
+        { id: 'prod-st-2', stock: 12, name: 'B', sku: 'B1' },
+      ];
+      mockPrisma.product.findMany.mockResolvedValue(products);
+      mockPrisma.product.updateMany.mockResolvedValue({ count: 2 });
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => Promise.resolve(data));
+
+      const req = { user: testUser, body: { ids: ['prod-st-1', 'prod-st-2'], stock: 50 } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.bulkUpdateStock(req, res);
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.productAuditLog.create).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.productAuditLog.create.mock.calls[0][0].data.changes).toEqual({
+        stock: { before: 5, after: 50 },
+      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+  });
+
+  // 10) bulkImport writes source=IMPORT
+  describe('Case 10: bulkImport writes audit logs with source=IMPORT', () => {
+    it('creates products and writes IMPORT audit rows with source=IMPORT', async () => {
+      mockPrisma.product.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: `imp-${data.sku}`, ...data })
+      );
+      mockPrisma.productAuditLog.create.mockImplementation(({ data }) => Promise.resolve(data));
+
+      const req = {
+        user: testUser,
+        body: {
+          products: [
+            { name: 'منتج مستورد 1', sku: 'IMP-1', price: 120, stock: 10 },
+            { name: 'منتج مستورد 2', sku: 'IMP-2', price: 240, stock: 20 },
+          ],
+        },
+      };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.bulkImport(req, res);
+
+      expect(mockPrisma.product.create).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.productAuditLog.create).toHaveBeenCalledTimes(2);
+      mockPrisma.productAuditLog.create.mock.calls.forEach((call) => {
+        expect(call[0].data.source).toBe('IMPORT');
+        expect(call[0].data.action).toBe('IMPORT');
+      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({ importedCount: 2 }),
+        })
+      );
+    });
+  });
+
+  // 11) getAllProducts includes updatedAt & updatedBy from latest audit log without breaking old products
+  describe('Case 11: getAllProducts last modified columns & legacy products', () => {
+    it('attaches updatedBy (userName) and updatedAt from audit and safely handles products with no logs', async () => {
+      const legacyUpdatedAt = new Date('2025-05-01T10:00:00Z');
+      const auditCreatedAt = new Date('2026-11-10T12:00:00Z');
+
+      mockPrisma.product.count.mockResolvedValue(2);
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'prod-audited',
+          name: 'منتج معدل',
+          price: 100,
+          stock: 5,
+          companyId,
+          updatedAt: new Date('2026-11-01T00:00:00Z'),
+          updatedBy: 'user-789',
+        },
+        {
+          id: 'prod-legacy',
+          name: 'منتج قديم بدون سجل',
+          price: 50,
+          stock: 2,
+          companyId,
+          updatedAt: legacyUpdatedAt,
+          updatedBy: null,
+        },
+      ]);
+      mockPrisma.affiliateSetting.findUnique.mockResolvedValue(null);
+      mockPrisma.productAuditLog.findMany.mockResolvedValue([
+        {
+          productId: 'prod-audited',
+          userName: 'أحمد علي',
+          userId: 'user-789',
+          createdAt: auditCreatedAt,
+          action: 'UPDATE',
+        },
+      ]);
+
+      const req = { user: testUser, query: { page: '1', limit: '20' } };
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+
+      await productController.getAllProducts(req, res);
+
+      expect(res.json).toHaveBeenCalledTimes(1);
+      const payload = res.json.mock.calls[0][0];
+      expect(payload.success).toBe(true);
+      expect(payload.data.length).toBe(2);
+
+      const audited = payload.data.find((p) => p.id === 'prod-audited');
+      expect(audited.updatedBy).toBe('أحمد علي');
+      expect(audited.updatedAt).toEqual(auditCreatedAt);
+      expect(audited.lastModifiedBy).toEqual(
+        expect.objectContaining({ userName: 'أحمد علي', action: 'UPDATE' })
+      );
+
+      const legacy = payload.data.find((p) => p.id === 'prod-legacy');
+      expect(legacy.updatedBy).toBeNull();
+      expect(legacy.updatedAt).toEqual(legacyUpdatedAt);
+      expect(legacy.lastModifiedBy).toBeNull();
     });
   });
 });

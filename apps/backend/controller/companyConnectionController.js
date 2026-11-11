@@ -3,6 +3,7 @@ const { resolveProductMediaState } = require('../utils/productMediaUtils');
 const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 const { validateStock } = require('../utils/stockValidation');
 const tenantContext = require('../services/tenantContext');
+const productAuditService = require('../services/productAuditService');
 
 const parseDecimalOrNull = (value) => {
     if (value === null || value === undefined || value === '') {
@@ -591,6 +592,19 @@ exports.importInternalProducts = async (req, res) => {
                             }
                         });
                     }
+                }
+
+                try {
+                    await productAuditService.logProductChange({
+                        companyId: consumerId,
+                        productId: createdProduct.id,
+                        user: req.user,
+                        action: 'IMPORT',
+                        after: createdProduct,
+                        source: 'IMPORT',
+                    });
+                } catch (auditErr) {
+                    console.error('⚠️ [PRODUCT-AUDIT] Failed to log internal import audit:', auditErr.message);
                 }
 
                 results.imported++;

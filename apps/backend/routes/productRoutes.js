@@ -58,6 +58,11 @@ router.delete('/bulk/delete', verifyToken.authenticateToken, requireDbPermission
 router.patch('/bulk/visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateVisibility);
 router.patch('/bulk/affiliate-visibility', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateAffiliateVisibility);
 router.patch('/bulk/track-inventory', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateTrackInventory);
+router.patch('/bulk/price', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdatePrice);
+router.patch('/bulk/status', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateStatus);
+router.patch('/bulk/stock', verifyToken.authenticateToken, requireDbPermission('products.edit'), productController.bulkUpdateStock);
+router.post('/bulk-import', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.bulkImport);
+router.post('/import', verifyToken.authenticateToken, requireDbPermission('products.create'), productController.importProducts);
 // 🛡️ Product Audit Routes (Immutable)
 router.get('/audit', verifyToken.authenticateToken, requireDbPermission('products.view'), productController.getAuditLogs);
 router.all('/audit', (req, res, next) => {
