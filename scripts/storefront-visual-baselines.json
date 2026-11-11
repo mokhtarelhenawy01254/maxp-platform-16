@@ -1,0 +1,924 @@
+{
+  "themes": {
+    "academy-little-coders": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "airlume-ai": {
+      "cls": 0.011,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 10,
+      "minFontSize": 8.5,
+      "firstProductScreen": 5.31,
+      "updatedAt": "2026-11-11"
+    },
+    "allure": {
+      "cls": 0.521,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 9,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.1,
+      "updatedAt": "2026-11-11"
+    },
+    "anjella-boutique": {
+      "cls": 0.02,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.56,
+      "updatedAt": "2026-11-11"
+    },
+    "atelier-nova": {
+      "cls": 0.021,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 10,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.92,
+      "updatedAt": "2026-11-11"
+    },
+    "aura-chic": {
+      "cls": 0.015,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.45,
+      "updatedAt": "2026-11-11"
+    },
+    "bags-bazaar": {
+      "cls": 0.084,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.54,
+      "updatedAt": "2026-11-11"
+    },
+    "bags-lumiere": {
+      "cls": 0.004,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "bags-maison": {
+      "cls": 0.222,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.48,
+      "updatedAt": "2026-11-11"
+    },
+    "bags-noor": {
+      "cls": 0.217,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.26,
+      "updatedAt": "2026-11-11"
+    },
+    "baladi-market-eg": {
+      "cls": 0.001,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 10,
+      "firstProductScreen": 2.38,
+      "updatedAt": "2026-11-11"
+    },
+    "bloom-studio": {
+      "cls": 0.318,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 7,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.16,
+      "updatedAt": "2026-11-11"
+    },
+    "bold-fashion": {
+      "cls": 0.286,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.55,
+      "updatedAt": "2026-11-11"
+    },
+    "butcher-counter-eg": {
+      "cls": 0.108,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 9,
+      "firstProductScreen": 4.83,
+      "updatedAt": "2026-11-11"
+    },
+    "butcher-shop-eg": {
+      "cls": 0.08,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.83,
+      "updatedAt": "2026-11-11"
+    },
+    "cafe-demo": {
+      "cls": 0.012,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.65,
+      "updatedAt": "2026-11-11"
+    },
+    "cairo-stride": {
+      "cls": 0.018,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 9,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.96,
+      "updatedAt": "2026-11-11"
+    },
+    "closet-os": {
+      "cls": 0.009,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.59,
+      "updatedAt": "2026-11-11"
+    },
+    "couture-atelier-eg": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "crafted": {
+      "cls": 0.439,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.98,
+      "updatedAt": "2026-11-11"
+    },
+    "creative-portfolio": {
+      "cls": 0.263,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "district-market": {
+      "cls": 0.022,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.74,
+      "updatedAt": "2026-11-11"
+    },
+    "electronics-demo": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "elegant-luxe": {
+      "cls": 0.055,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.27,
+      "updatedAt": "2026-11-11"
+    },
+    "fakhama-elite": {
+      "cls": 0.434,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.95,
+      "updatedAt": "2026-11-11"
+    },
+    "fastly-eg": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "fitting-room-studio": {
+      "cls": 0.152,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.08,
+      "updatedAt": "2026-11-11"
+    },
+    "fresh-cart": {
+      "cls": 0.025,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 7.07,
+      "updatedAt": "2026-11-11"
+    },
+    "furniture-demo": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "hayah-modest-eg": {
+      "cls": 0.026,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 5.35,
+      "updatedAt": "2026-11-11"
+    },
+    "ink-paper": {
+      "cls": 0.375,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 5.32,
+      "updatedAt": "2026-11-11"
+    },
+    "iron-forge": {
+      "cls": 0.278,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.81,
+      "updatedAt": "2026-11-11"
+    },
+    "khemet-fashion-eg": {
+      "cls": 0.004,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 12,
+      "minFontSize": 8.5,
+      "firstProductScreen": 5.59,
+      "updatedAt": "2026-11-11"
+    },
+    "khemet-general-eg": {
+      "cls": 0.004,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 12,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.32,
+      "updatedAt": "2026-11-11"
+    },
+    "khemet-luxe-eg": {
+      "cls": 0.001,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.49,
+      "updatedAt": "2026-11-11"
+    },
+    "khemet-luxe-v2": {
+      "cls": 0.286,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 12,
+      "minFontSize": 8.5,
+      "firstProductScreen": 7.21,
+      "updatedAt": "2026-11-11"
+    },
+    "kids-fashion-bazaar": {
+      "cls": 0.277,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.76,
+      "updatedAt": "2026-11-11"
+    },
+    "kids-fashion-lumiere": {
+      "cls": 0.024,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "kids-fashion-maison": {
+      "cls": 0.371,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.41,
+      "updatedAt": "2026-11-11"
+    },
+    "kids-fashion-noor": {
+      "cls": 0.202,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.3,
+      "updatedAt": "2026-11-11"
+    },
+    "kids-play": {
+      "cls": 0.054,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 5.3,
+      "updatedAt": "2026-11-11"
+    },
+    "layali-edit-eg": {
+      "cls": 0.093,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.38,
+      "updatedAt": "2026-11-11"
+    },
+    "legacy-default-old": {
+      "cls": 0.246,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 11,
+      "firstProductScreen": 1.69,
+      "updatedAt": "2026-11-11"
+    },
+    "look-atelier-eg": {
+      "cls": 0.01,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 6.39,
+      "updatedAt": "2026-11-11"
+    },
+    "marketplace-avenue-ar": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "marketplace-avenue": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "max-care-go": {
+      "cls": 0.042,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 10,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.15,
+      "updatedAt": "2026-11-11"
+    },
+    "men-shoes-eg": {
+      "cls": 0.023,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 2,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.15,
+      "updatedAt": "2026-11-11"
+    },
+    "mens-grooming-pro": {
+      "cls": 0.191,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 3,
+      "minFontSize": 8.5,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "menswear-bazaar": {
+      "cls": 0.099,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.05,
+      "updatedAt": "2026-11-11"
+    },
+    "menswear-lumiere": {
+      "cls": 0.022,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "menswear-maison": {
+      "cls": 0.226,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.13,
+      "updatedAt": "2026-11-11"
+    },
+    "menswear-noor": {
+      "cls": 0.216,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.26,
+      "updatedAt": "2026-11-11"
+    },
+    "menswear-prime": {
+      "cls": 0.227,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 11,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.2,
+      "updatedAt": "2026-11-11"
+    },
+    "modern-minimal": {
+      "cls": 0.113,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 7.08,
+      "updatedAt": "2026-11-11"
+    },
+    "modest-wear-bazaar": {
+      "cls": 0.208,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.84,
+      "updatedAt": "2026-11-11"
+    },
+    "modest-wear-lumiere": {
+      "cls": 0.025,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "modest-wear-maison": {
+      "cls": 0.081,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.42,
+      "updatedAt": "2026-11-11"
+    },
+    "modest-wear-noor": {
+      "cls": 0.215,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.26,
+      "updatedAt": "2026-11-11"
+    },
+    "mystic-desert": {
+      "cls": 0.434,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 2,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.13,
+      "updatedAt": "2026-11-11"
+    },
+    "nile-bistro": {
+      "cls": 0.036,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 9,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.69,
+      "updatedAt": "2026-11-11"
+    },
+    "nile-elegance-eg": {
+      "cls": 0.013,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 12,
+      "minFontSize": 8.5,
+      "firstProductScreen": 4.06,
+      "updatedAt": "2026-11-11"
+    },
+    "nova-mobile": {
+      "cls": 0.473,
+      "brokenImages": 0,
+      "proxyBrokenImages": 1,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.04,
+      "updatedAt": "2026-11-11"
+    },
+    "opulence": {
+      "cls": 0.286,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 7,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.91,
+      "updatedAt": "2026-11-11"
+    },
+    "pawsome": {
+      "cls": 0.352,
+      "brokenImages": 0,
+      "proxyBrokenImages": 1,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.97,
+      "updatedAt": "2026-11-11"
+    },
+    "pc-hub-eg": {
+      "cls": 0.001,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 12,
+      "minFontSize": 10,
+      "firstProductScreen": 1.78,
+      "updatedAt": "2026-11-11"
+    },
+    "perfume-eg": {
+      "cls": 0.109,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 10,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.7,
+      "updatedAt": "2026-11-11"
+    },
+    "prime-butcher-luxe": {
+      "cls": 0.301,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.01,
+      "updatedAt": "2026-11-11"
+    },
+    "redline-auto": {
+      "cls": 0.006,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 13,
+      "minFontSize": 9,
+      "firstProductScreen": 5.08,
+      "updatedAt": "2026-11-11"
+    },
+    "restaurant-demo": {
+      "cls": 0.021,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 6.84,
+      "updatedAt": "2026-11-11"
+    },
+    "rihla-resort-eg": {
+      "cls": 0.232,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 8.16,
+      "updatedAt": "2026-11-11"
+    },
+    "rose-boutique-eg": {
+      "cls": 0.091,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.31,
+      "updatedAt": "2026-11-11"
+    },
+    "shoes-bazaar": {
+      "cls": 0.082,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.29,
+      "updatedAt": "2026-11-11"
+    },
+    "shoes-lumiere": {
+      "cls": 0.024,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "shoes-maison": {
+      "cls": 0.057,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.87,
+      "updatedAt": "2026-11-11"
+    },
+    "shoes-noor": {
+      "cls": 0.342,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.26,
+      "updatedAt": "2026-11-11"
+    },
+    "shop-orbit": {
+      "cls": 0.274,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 7,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.5,
+      "updatedAt": "2026-11-11"
+    },
+    "skill-lab": {
+      "cls": 0.319,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 6.16,
+      "updatedAt": "2026-11-11"
+    },
+    "smart-bazaar": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "soft-graceful": {
+      "cls": 0.001,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 15,
+      "minFontSize": 8,
+      "firstProductScreen": 1.6,
+      "updatedAt": "2026-11-11"
+    },
+    "solea-femme": {
+      "cls": 0.053,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.85,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-001-bulk-commerce-women-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-002-marketplace-multi-women-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-003-local-market-women-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-004-original-women-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-009-modular-catalog-kids-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-010-multi-department-kids-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-011-local-market-kids-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "tpl-012-original-kids-fashion": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "turbo-parts": {
+      "cls": 0.049,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 6.02,
+      "updatedAt": "2026-11-11"
+    },
+    "vanguard-premium": {
+      "cls": 0.38,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.47,
+      "updatedAt": "2026-11-11"
+    },
+    "vela-fashion-eg": {
+      "cls": 0.266,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 13,
+      "minFontSize": 10,
+      "firstProductScreen": 1.32,
+      "updatedAt": "2026-11-11"
+    },
+    "velvet-glow": {
+      "cls": 0.429,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 6.95,
+      "updatedAt": "2026-11-11"
+    },
+    "women-fashion-bazaar": {
+      "cls": 0.089,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 6,
+      "minFontSize": 8.5,
+      "firstProductScreen": 2.14,
+      "updatedAt": "2026-11-11"
+    },
+    "women-fashion-eg": {
+      "cls": 0.008,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 9,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.68,
+      "updatedAt": "2026-11-11"
+    },
+    "women-fashion-lumiere": {
+      "cls": 0.055,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": 0.95,
+      "updatedAt": "2026-11-11"
+    },
+    "women-fashion-maison": {
+      "cls": 0.35,
+      "brokenImages": 0,
+      "proxyBrokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.79,
+      "updatedAt": "2026-11-11"
+    },
+    "women-fashion-noor": {
+      "cls": 0.218,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 4,
+      "minFontSize": 8.5,
+      "firstProductScreen": 1.26,
+      "updatedAt": "2026-11-11"
+    },
+    "zen-organic": {
+      "cls": 0.007,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 10,
+      "minFontSize": 8.5,
+      "firstProductScreen": 3.31,
+      "updatedAt": "2026-11-11"
+    },
+    "dental-lab-elite": {
+      "cls": 0.166,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 8,
+      "minFontSize": 8.5,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    },
+    "junior-ai-lab": {
+      "cls": 0,
+      "brokenImages": 0,
+      "overflowX": 0,
+      "tapsUnder24": 0,
+      "minFontSize": 16,
+      "firstProductScreen": null,
+      "updatedAt": "2026-11-11"
+    }
+  },
+  "updatedAt": "2026-11-11"
+}

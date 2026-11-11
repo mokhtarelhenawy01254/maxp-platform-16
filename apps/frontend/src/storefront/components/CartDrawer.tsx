@@ -298,8 +298,8 @@ const CartDrawer: React.FC = () => {
     ? 'p-2 rounded-full border border-[#e7ddd0] bg-white/92 text-[#725523] transition-colors hover:border-[#cdb286] hover:text-[#5e4719]'
     : 'p-2 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground';
   const continueButtonClassName = isKhemetLuxe
-    ? 'w-full text-center text-sm font-semibold text-[#725523] transition-colors hover:text-[#173f31]'
-    : 'w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors';
+    ? 'relative w-full text-center text-sm font-semibold text-[#725523] transition-colors hover:text-[#173f31] after:absolute after:inset-x-0 after:-inset-y-2 after:content-[""]'
+    : 'relative w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-[""]';
   const cartContentClassName = isKhemetLuxe
     ? 'min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-3'
     : 'min-h-0 flex-1 overflow-y-auto p-5 space-y-4';

@@ -65,11 +65,69 @@ export const getSectionSkeletonClassName = (
       : null;
 
   if (key.includes('promo-strip')) {
-    return 'min-h-[4rem]';
+    // median real mobile height ≈ 222px
+    return 'min-h-[14rem]';
+  }
+
+  if (key.includes('featured-collections')) {
+    // median real mobile height ≈ 596px (variants range 226–1304px)
+    return 'min-h-[38rem] md:min-h-[30rem]';
+  }
+
+  if (key.includes('features-bar')) {
+    // median real mobile height ≈ 665px
+    return 'min-h-[42rem] md:min-h-[16rem]';
+  }
+
+  if (key.includes('newsletter')) {
+    // median real mobile height ≈ 530px
+    return 'min-h-[34rem] md:min-h-[20rem]';
+  }
+
+  // long-tail section types measured against real mobile renders —
+  // the generic 20rem floor undershot these by 600–1400px
+  if (key.includes('shopping-intents')) {
+    return 'min-h-[100rem] md:min-h-[30rem]';
+  }
+  if (key.includes('offer-bento')) {
+    // real mobile renders: 1037 / 1184 / 2926 — median ≈ 1184px
+    return 'min-h-[74rem] md:min-h-[44rem]';
+  }
+  if (key.includes('featured-product') && !key.includes('featured-products')) {
+    return 'min-h-[70rem] md:min-h-[46rem]';
+  }
+  if (key.includes('journal-strip')) {
+    return 'min-h-[54rem] md:min-h-[30rem]';
+  }
+  // look-planner renders ≈150px and look-mosaic collapses to 0 on mobile — a tall
+  // floor here created a ~1000px overshoot shift on maison-family homes
+  if (key.includes('lookbook-showcase') || key.includes('look-atelier')) {
+    return 'min-h-[58rem] md:min-h-[48rem]';
+  }
+  if (key.includes('look-mosaic')) {
+    return 'min-h-0 md:min-h-[48rem]';
+  }
+  if (key.includes('look-planner')) {
+    return 'min-h-[10rem] md:min-h-[30rem]';
   }
 
   if (key.includes('reviews')) {
-    return 'min-h-[28rem] md:min-h-[32rem]';
+    // real mobile renders ≈ 1150px
+    return 'min-h-[72rem] md:min-h-[32rem]';
+  }
+
+  // Product-like sections render a card-grid skeleton (see SectionSkeleton) whose
+  // height emerges from the placeholder cards themselves — measured against real
+  // mobile renders, the previous fixed floors (min-h-[34rem]) undershot the real
+  // content by ~2000px and were the platform's largest layout-shift source.
+  if (
+    key.includes('product-grid') ||
+    key.includes('featured-products') ||
+    key.includes('related-products') ||
+    key.includes('bought-together') ||
+    key.includes('shop-product-grid')
+  ) {
+    return 'min-h-0';
   }
 
   if (key.includes('hero-banner') || key.includes('hero-sidebar')) {
@@ -77,7 +135,8 @@ export const getSectionSkeletonClassName = (
       return 'min-h-[42rem] md:min-h-[52rem]';
     }
 
-    return 'min-h-[30rem] md:min-h-[34rem]';
+    // median real mobile height across the corpus ≈ 704px
+    return 'min-h-[44rem] md:min-h-[34rem]';
   }
 
   if (key.includes('product-gallery')) {
@@ -90,14 +149,6 @@ export const getSectionSkeletonClassName = (
 
   if (shouldCollapseSectionSkeleton(componentKey, sectionId, sectionEntry)) {
     return 'min-h-0';
-  }
-
-  if (key.includes('product-grid') || key.includes('featured-products')) {
-    return 'min-h-[34rem] md:min-h-[38rem]';
-  }
-
-  if (key.includes('related-products') || key.includes('bought-together')) {
-    return 'min-h-[28rem] md:min-h-[32rem]';
   }
 
   if (key.includes('order-confirmation')) {
@@ -207,6 +258,40 @@ const SectionSkeleton: React.FC<{
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,13,11,0.18)_0%,rgba(9,13,11,0.46)_34%,rgba(9,13,11,0.78)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(215,182,108,0.16),transparent_38%),radial-gradient(circle_at_bottom,rgba(19,57,44,0.55),transparent_48%)]" />
         <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(180deg,transparent,rgba(7,9,8,0.72))]" />
+      </div>
+    );
+  }
+
+  if (
+    key.includes('product-grid') ||
+    key.includes('featured-products') ||
+    key.includes('related-products') ||
+    key.includes('bought-together') ||
+    key.includes('shop-product-grid')
+  ) {
+    if (shouldCollapseSectionSkeleton(componentKey, sectionId, sectionEntry)) {
+      return null;
+    }
+    // track the section's own limit so the placeholder height matches the real grid
+    const limitValue = Number(sectionSettings?.['limit'] ?? sectionSettings?.['productsLimit'] ?? sectionSettings?.['count'] ?? 8);
+    const placeholderCards = Math.min(Math.max(Number.isFinite(limitValue) && limitValue > 0 ? Math.ceil(limitValue) : 8, 4), 20);
+    return (
+      <div
+        aria-hidden="true"
+        className={`w-full ${getSectionSkeletonClassName(componentKey, sectionId, sectionEntry)}`}
+      >
+        <div className="container px-4 md:px-6">
+          {/* placeholder card rows: height emerges close to the real grid, killing the mount shift */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {Array.from({ length: placeholderCards }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="aspect-[4/5] w-full animate-pulse rounded-[var(--product-card-radius,1rem)] bg-muted" />
+                <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

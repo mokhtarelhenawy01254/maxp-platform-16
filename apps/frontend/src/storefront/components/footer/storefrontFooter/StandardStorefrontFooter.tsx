@@ -224,7 +224,7 @@ export const StandardStorefrontFooter: React.FC<{ controller: StorefrontFooterCo
                       <Link
                         to={link.to}
                         reloadDocument={shouldForceDocumentNavigation}
-                        className={`text-sm transition-colors ${
+                        className={`relative text-sm transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] ${
                           isIntruderNft
                             ? 'text-white/60 hover:text-primary'
                             : isEditorialSoftFooter
@@ -315,7 +315,7 @@ export const StandardStorefrontFooter: React.FC<{ controller: StorefrontFooterCo
                 key={link.label}
                 to={link.to}
                 reloadDocument={shouldForceDocumentNavigation}
-                className={`transition-colors ${
+                className={`relative transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] ${
                   isIntruderNft
                     ? 'hover:text-primary'
                     : isEditorialSoftFooter

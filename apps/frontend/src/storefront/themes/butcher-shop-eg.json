@@ -68,7 +68,7 @@
           "settings": {
             "title": "لحم طازج من قلب السوق",
             "subtitle": "قطع مختارة من أفضل اللحوم، جاهزة للطبخ بطريقتك. اطلب دلوقتي واحنا نوصلك لحد باب البيت.",
-            "backgroundImage": "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=2000",
+            "backgroundImage": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=2000",
             "buttonText": "اطلب اللحم الطازج"
           }
         },
@@ -77,7 +77,7 @@
           "settings": {
             "title": "اختر نوع اللحمة",
             "collections": [
-              { "title": "لحم بقري", "subtitle": "متميز وطازج", "image": "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=800" },
+              { "title": "لحم بقري", "subtitle": "متميز وطازج", "image": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800" },
               { "title": "لحم غنم", "subtitle": "طرية وطيبة", "image": "https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?auto=format&fit=crop&w=800" },
               { "title": "دجاج طازج", "subtitle": "من المزرعة", "image": "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=800" }
             ]

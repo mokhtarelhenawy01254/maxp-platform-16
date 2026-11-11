@@ -72,12 +72,20 @@ const CombinedListing: React.FC<CombinedListingProps> = ({ section, settings }) 
           href={mainLink}
           className="group relative overflow-hidden rounded-2xl border border-border bg-card"
         >
-          <img
-            src={buildResponsiveStorefrontImage(mainImage, { widths: [360, 720, 1080] })}
-            alt={mainTitle}
-            className="aspect-[4/5] h-full w-full object-cover transition group-hover:scale-105"
-            loading="lazy"
-          />
+          {(() => {
+            // buildResponsiveStorefrontImage returns { src, srcSet, sizes } — render each part
+            const resolved = buildResponsiveStorefrontImage(mainImage, { widths: [360, 720, 1080] });
+            return (
+              <img
+                src={resolved.src}
+                srcSet={resolved.srcSet}
+                sizes={resolved.sizes}
+                alt={mainTitle}
+                className="aspect-[4/5] h-full w-full object-cover transition group-hover:scale-105"
+                loading="lazy"
+              />
+            );
+          })()}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
             <p className="font-semibold">{mainTitle}</p>
             {mainPrice && <p className="text-sm">{mainPrice}</p>}
@@ -91,14 +99,19 @@ const CombinedListing: React.FC<CombinedListingProps> = ({ section, settings }) 
                 href={p.link || '#'}
                 className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card"
               >
-                {p.image && (
-                  <img
-                    src={buildResponsiveStorefrontImage(p.image, { widths: [200, 400] })}
-                    alt={p.title}
-                    className="aspect-square w-full object-cover transition group-hover:scale-105"
-                    loading="lazy"
-                  />
-                )}
+                {p.image && (() => {
+                  const resolved = buildResponsiveStorefrontImage(p.image, { widths: [200, 400] });
+                  return (
+                    <img
+                      src={resolved.src}
+                      srcSet={resolved.srcSet}
+                      sizes={resolved.sizes}
+                      alt={p.title}
+                      className="aspect-square w-full object-cover transition group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  );
+                })()}
                 <div className="p-2 text-center">
                   <p className="text-xs font-medium">{p.title}</p>
                   {p.price && (

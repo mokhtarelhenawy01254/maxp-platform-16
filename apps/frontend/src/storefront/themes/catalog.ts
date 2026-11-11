@@ -953,7 +953,7 @@ export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "academy-little-coders": "/assets/themes/academy-little-coders/preview.png",
   "junior-ai-lab": "/assets/themes/junior-ai-lab/preview.png",
   "nile-elegance-eg":
-    "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=1600",
+    "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
   "zen-organic":
     "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=1400",
   "baladi-market-eg":

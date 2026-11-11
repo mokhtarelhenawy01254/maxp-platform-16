@@ -106,6 +106,40 @@ jobs:
         if: steps.changed.outputs.files != ''
         run: node scripts/check-storefront-theme-budget.mjs ${{ steps.changed.outputs.files }}
 
+      - name: Start vite dev server (visual gate)
+        if: steps.changed.outputs.files != ''
+        working-directory: ./apps/frontend
+        run: |
+          nohup npx vite --port 5199 --strictPort --host 127.0.0.1 > /tmp/vite-visual-gate.log 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -m 2 -w "%{http_code}" http://127.0.0.1:5199/ || true)
+            if [ "$code" = "200" ]; then echo "vite is up"; exit 0; fi
+            sleep 2
+          done
+          echo "vite failed to start"; tail -50 /tmp/vite-visual-gate.log; exit 1
+
+      - name: Install Chromium (visual gate)
+        if: steps.changed.outputs.files != ''
+        working-directory: ./apps/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Visual UX gate (real render, mobile)
+        if: steps.changed.outputs.files != ''
+        env:
+          BASE_URL: http://127.0.0.1:5199
+        run: >
+          node scripts/storefront-visual-gate.mjs ${{ steps.changed.outputs.files }}
+          --shots-dir "$RUNNER_TEMP/visual-gate-shots"
+
+      - name: Upload visual gate evidence
+        if: always() && steps.changed.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-visual-gate
+          path: ${{ runner.temp }}/visual-gate-shots
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: No direct JSON import in themes/index.ts
         shell: bash
         run: |
