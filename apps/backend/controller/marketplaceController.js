@@ -17,7 +17,12 @@ const LEGACY_TEMPLATE_CATEGORY_VALUES = Array.from(LEGACY_TEMPLATE_CATEGORIES);
 
 // Slugs of apps that were merged into another app; GET /marketplace/apps/<old> must 301 to <new>.
 const LEGACY_APP_SLUG_REDIRECTS = {
-  'affiliate-program': 'affiliate-pro'
+  'affiliate-program': 'affiliate-pro',
+  // The /tools/break-even route and old marketplace links ask for the ghost slug;
+  // the catalog only has `break-even`. Without this entry every old link 404s.
+  // product-break-even-calculator is deliberately NOT mapped: it is its own
+  // catalog app (currently suspended) and must keep returning 404.
+  'project-break-even-calculator': 'break-even'
 };
 
 const LOG_FILE = path.join(__dirname, '../debug_marketplace.log');
