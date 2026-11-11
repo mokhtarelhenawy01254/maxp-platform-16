@@ -361,6 +361,18 @@ const SidebarSettings = React.lazy(
 const PageEngagementStats = React.lazy(
   () => import("./pages/PageEngagementStats"),
 );
+const PageInsights = React.lazy(
+  () => import("./pages/facebook-insights/PageInsights"),
+);
+const InstagramMedia = React.lazy(
+  () => import("./pages/instagram-studio/InstagramMedia"),
+);
+const InstagramComments = React.lazy(
+  () => import("./pages/instagram-studio/InstagramComments"),
+);
+const InstagramPublish = React.lazy(
+  () => import("./pages/instagram-studio/InstagramPublish"),
+);
 const TelegramSettings = React.lazy(
   () => import("./pages/settings/TelegramSettings"),
 );
@@ -4096,6 +4108,30 @@ const AppContent = () => {
                       <AppAccessRoute requiredAppSlugs={['instagram-business']}>
                         <InstagramInbox />
                       </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/instagram-studio/media"
+                  element={
+                    <Layout>
+                      <InstagramMedia />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/instagram-studio/comments"
+                  element={
+                    <Layout>
+                      <InstagramComments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/instagram-studio/publish"
+                  element={
+                    <Layout>
+                      <InstagramPublish />
                     </Layout>
                   }
                 />
@@ -7998,6 +8034,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <PageEngagementStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/facebook/insights"
+                  element={
+                    <Layout>
+                      <PageInsights />
                     </Layout>
                   }
                 />

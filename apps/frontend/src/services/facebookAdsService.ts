@@ -2778,6 +2778,7 @@ export interface LeadFormQuestion {
     | "STATE"
     | "ZIP"
     | "COUNTRY"
+    | "DOB"
     | "CUSTOM";
   key: string;
   label: string;
@@ -2823,6 +2824,68 @@ export const getLeads = async (formId: string): Promise<unknown[]> => {
     return response.data.data || [];
   } catch (error: unknown) {
     console.error("❌ Error fetching leads:", error);
+    throw error;
+  }
+};
+
+export interface LeadFormSummary {
+  id: string;
+  name: string;
+  status: string;
+  createdTime: string | null;
+  leadsCount: number;
+}
+
+export interface LeadFormPageInfo {
+  id: string;
+  name: string | null;
+}
+
+export interface LeadFormListResult {
+  data: LeadFormSummary[];
+  page: LeadFormPageInfo;
+}
+
+/**
+ * جلب قائمة Lead Forms لصفحة متصلة
+ */
+export const getLeadForms = async (
+  pageId: string,
+): Promise<LeadFormListResult> => {
+  try {
+    const response = await apiClient.get<{
+      data?: LeadFormSummary[];
+      page?: LeadFormPageInfo;
+    }>("/facebook-ads/lead-forms", { params: { pageId } });
+
+    return {
+      data: response.data.data || [],
+      page: response.data.page || { id: pageId, name: null },
+    };
+  } catch (error: unknown) {
+    console.error("❌ Error fetching lead forms:", error);
+    throw error;
+  }
+};
+
+export interface LeadFormDetail extends LeadFormSummary {
+  privacyPolicyUrl: string | null;
+  questions: Array<{ key: string; type: string; label: string }>;
+}
+
+/**
+ * جلب تفاصيل Lead Form (الأسئلة + الحالة)
+ */
+export const getLeadFormDetail = async (
+  formId: string,
+): Promise<LeadFormDetail | null> => {
+  try {
+    const response = await apiClient.get<{ data?: LeadFormDetail }>(
+      `/facebook-ads/lead-forms/${formId}/detail`,
+    );
+    return response.data.data || null;
+  } catch (error: unknown) {
+    console.error("❌ Error fetching lead form detail:", error);
     throw error;
   }
 };
@@ -3723,6 +3786,8 @@ export const facebookAdsService = {
   // v22.0: Lead Generation
   createLeadForm,
   getLeads,
+  getLeadForms,
+  getLeadFormDetail,
 
   // v22.0: Ad Scheduling
   updateAdSetSchedule,

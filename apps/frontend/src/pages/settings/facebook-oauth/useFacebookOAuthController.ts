@@ -7,6 +7,13 @@ import {
   emitFacebookPageSync,
   subscribeToFacebookPageSync,
 } from "../../../utils/facebookPageSync";
+import {
+  FACEBOOK_IMPORT_QUEUED_EVENT,
+  createQueuedImportProgress,
+  normalizeFacebookImportProgress,
+  publishFacebookImportProgress,
+  type FacebookImportProgress,
+} from "./FacebookOAuthImportProgress";
 import type {
   OAuthStatus,
   SkippedPage,
@@ -14,6 +21,10 @@ import type {
   AffectedCompany,
   AccountGroup,
 } from "./types";
+
+/** التقدم بيتم سؤاله كل 1.5 ثانية، وبنسيب فرصة 3 دقايق كحد أقصى. */
+const IMPORT_POLL_INTERVAL_MS = 1500;
+const IMPORT_POLL_MAX_DURATION_MS = 3 * 60 * 1000;
 
 const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
@@ -54,7 +65,22 @@ export function useFacebookOAuthController() {
   const [affectedCompanies, setAffectedCompanies] = useState<AffectedCompany[]>([]);
   const [reconsenting, setReconsenting] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  const [importProgress, setImportProgress] = useState<FacebookImportProgress | null>(null);
+  /** 0 = مفيش polling شغّال؛ أي رقم = معرّف جلسة polling (بيتيح restart نظيف). */
+  const [importPollRunId, setImportPollRunId] = useState(0);
   const popupRef = useRef<Window | null>(null);
+
+  const applyImportProgress = useCallback(
+    (progress: FacebookImportProgress | null) => {
+      setImportProgress(progress);
+      publishFacebookImportProgress(progress);
+    },
+    [],
+  );
+
+  const startImportPolling = useCallback(() => {
+    setImportPollRunId(Date.now());
+  }, []);
 
   const loadOAuthStatus = useCallback(async () => {
     if (!user?.companyId) {
@@ -77,6 +103,15 @@ export function useFacebookOAuthController() {
 
       if (data.success) {
         setOauthStatus(data);
+
+        // 📦 لو فيه استيراد صفحات شغّال/في الطابور، نكمل نتابع progress.
+        const progress = normalizeFacebookImportProgress(data.importProgress);
+        if (progress) {
+          applyImportProgress(progress);
+          if (progress.status === "queued" || progress.status === "running") {
+            setImportPollRunId(Date.now());
+          }
+        }
       } else {
         setError(data.message || t("facebookOAuth.loadStatusFailed"));
       }
@@ -89,7 +124,7 @@ export function useFacebookOAuthController() {
     } finally {
       setLoading(false);
     }
-  }, [user?.companyId, t]);
+  }, [user?.companyId, t, applyImportProgress]);
 
   const loadSkippedPages = useCallback(async () => {
     if (!user?.companyId) return;
@@ -118,6 +153,145 @@ export function useFacebookOAuthController() {
     }
   }, [isAuthenticated, loadOAuthStatus, loadSkippedPages, user?.companyId]);
 
+  // 🔄 متابعة استيراد الصفحات في الخلفية: poll لـ /status كل 1.5 ثانية،
+  // يتوقف عند completed/failed أو بعد 3 دقايق.
+  useEffect(() => {
+    if (!importPollRunId || !user?.companyId) return;
+
+    const companyId = user.companyId;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const deadline = Date.now() + IMPORT_POLL_MAX_DURATION_MS;
+
+    const tick = async () => {
+      if (cancelled) return;
+
+      try {
+        const response = await fetch(
+          `${envConfig.apiUrl}/facebook-oauth/status?companyId=${companyId}`,
+          { headers: getAuthHeaders({ "Content-Type": "application/json" }) },
+        );
+        const data = await response.json();
+        const progress = data?.success
+          ? normalizeFacebookImportProgress(data.importProgress)
+          : null;
+
+        if (cancelled) return;
+
+        if (progress) {
+          applyImportProgress(progress);
+
+          if (progress.status === "completed") {
+            setImportPollRunId(0);
+            setNoPageGrants(progress.total === 0);
+            if (progress.done > 0) {
+              setSuccess(
+                String(
+                  t("facebookOAuth.pagesConnected" as any, { count: progress.done }),
+                ),
+              );
+            }
+            await loadOAuthStatus();
+            void loadSkippedPages();
+            emitFacebookPageSync(companyId);
+            return;
+          }
+
+          if (progress.status === "failed") {
+            setImportPollRunId(0);
+            setError(
+              String(
+                t("facebookOAuth.importFailedWithError" as any, {
+                  error: progress.lastError || "",
+                }),
+              ),
+            );
+            await loadOAuthStatus();
+            return;
+          }
+        } else if (data?.success) {
+          // مفيش progress في الـ instance ده (ممكن الـ job شغّال على worker تاني
+          // في وضع PM2 cluster) — نعتمد على الداتابيز ونحدّث قائمة الصفحات.
+          setOauthStatus(data);
+        }
+      } catch {
+        // شبكة متعثرة لحظيًا — نكمل polling
+      }
+
+      if (cancelled) return;
+      if (Date.now() >= deadline) {
+        // خلص وقت المتابعة: نحدّث القائمة مرة أخيرة (الداتابيز هي الحقيقة).
+        setImportPollRunId(0);
+        void loadOAuthStatus();
+        return;
+      }
+      timer = setTimeout(() => void tick(), IMPORT_POLL_INTERVAL_MS);
+    };
+
+    void tick();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [
+    importPollRunId,
+    user?.companyId,
+    applyImportProgress,
+    loadOAuthStatus,
+    loadSkippedPages,
+    t,
+  ]);
+
+  // 🔁 لو الكارت أعاد تشغيل الاستيراد (زرار إعادة المحاولة) نبدأ polling جديد.
+  useEffect(() => {
+    const handleQueued = () => startImportPolling();
+    window.addEventListener(FACEBOOK_IMPORT_QUEUED_EVENT, handleQueued);
+    return () =>
+      window.removeEventListener(FACEBOOK_IMPORT_QUEUED_EVENT, handleQueued);
+  }, [startImportPolling]);
+
+  const retryPageImport = useCallback(async () => {
+    if (!user?.companyId) return;
+
+    try {
+      setError(null);
+      const response = await fetch(
+        `${envConfig.apiUrl}/facebook-oauth/import-pages?companyId=${user.companyId}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({}),
+        },
+      );
+
+      const data = await response.json();
+      if (data?.success) {
+        applyImportProgress(
+          normalizeFacebookImportProgress(data.importProgress) ||
+            createQueuedImportProgress(),
+        );
+        startImportPolling();
+      } else {
+        setError(
+          data?.message ||
+            String(
+              t(
+                "facebookOAuth.importRetryFailed" as any,
+                "تعذّر بدء استيراد الصفحات",
+              ),
+            ),
+        );
+      }
+    } catch {
+      setError(
+        String(
+          t("facebookOAuth.importRetryFailed" as any, "تعذّر بدء استيراد الصفحات"),
+        ),
+      );
+    }
+  }, [user?.companyId, applyImportProgress, startImportPolling, t]);
+
   useEffect(() => {
     const availablePageIds = new Set(
       (oauthStatus?.pages || []).map((page) => page.id),
@@ -145,6 +319,18 @@ export function useFacebookOAuthController() {
     const skippedParam = urlParams.get("skipped");
     const skippedDataParam = urlParams.get("skippedData");
     const companyParam = urlParams.get("companyId");
+    const importQueuedParam = urlParams.get("importQueued") === "true";
+
+    if (successParam === "true" && importQueuedParam) {
+      // 🚀 الاستيراد بقى شغل خلفي: مش بنعرض عدد وهمي ولا بنودّي المستخدم
+      // لحالة "مفيش صفحات"، بنبدأ متابعة التقدم لحد ما الجوب يخلص.
+      setNoPageGrants(false);
+      setSuccess(null);
+      applyImportProgress(createQueuedImportProgress());
+      startImportPolling();
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
 
     if (successParam === "true") {
       const pagesCount = pagesParam || "0";
@@ -207,13 +393,38 @@ export function useFacebookOAuthController() {
       );
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [loadOAuthStatus, loadSkippedPages, user?.companyId, t]);
+  }, [
+    loadOAuthStatus,
+    loadSkippedPages,
+    user?.companyId,
+    t,
+    applyImportProgress,
+    startImportPolling,
+  ]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "facebook-oauth-callback") {
         const data = event.data;
         if (data.success) {
+          if (data.importQueued) {
+            // 🚀 الجوب الخلفي بدأ: نظهر "جارٍ استيراد الصفحات" ونستنى الـ progress.
+            // ملاحظة مهمة: مش بنعمل refresh للصفحات دلوقتي عشان كارت الربط
+            // يفضل ظاهر ومعه شريط التقدم لحد ما الاستيراد يخلص.
+            setNoPageGrants(false);
+            setSuccess(null);
+            applyImportProgress(createQueuedImportProgress());
+            startImportPolling();
+            if (data.skippedPages) {
+              setSkippedPages(data.skippedPages);
+            }
+            if (popupRef.current && !popupRef.current.closed) {
+              popupRef.current.close();
+            }
+            popupRef.current = null;
+            return;
+          }
+
           const pagesCount = data.pages || "0";
           const skippedCount = data.skipped || "0";
           if (pagesCount === "0") {
@@ -246,7 +457,14 @@ export function useFacebookOAuthController() {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [loadOAuthStatus, loadSkippedPages, user?.companyId, t]);
+  }, [
+    loadOAuthStatus,
+    loadSkippedPages,
+    user?.companyId,
+    t,
+    applyImportProgress,
+    startImportPolling,
+  ]);
 
   useEffect(() => {
     if (!noPageGrants || !user?.companyId) return;
@@ -641,9 +859,11 @@ export function useFacebookOAuthController() {
     selectedConnectedPageIds,
     selectedReconnectablePageIds,
     accountGroups,
+    importProgress,
     loadOAuthStatus,
     loadSkippedPages,
     resolveSkippedPages,
+    retryPageImport,
     forceDisconnectPage,
     handleConnectFacebook,
     handleFullReconsent,

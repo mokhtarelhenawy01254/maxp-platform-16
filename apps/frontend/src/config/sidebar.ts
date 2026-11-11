@@ -802,6 +802,7 @@ export const getSidebarConfig = (
           icon: FacebookIcon,
             items: [
                 { to: '/facebook-inbox', icon: MessageSquare, label: t('sidebar.facebookInbox') },
+                { to: '/facebook/insights', icon: BarChart3, label: t('sidebar.facebookPageInsights') },
                 { to: '/unified-comments', icon: MessageSquare, label: t('sidebar.unifiedComments') },
                 { to: '/employee-stats', icon: BarChart3, label: t('sidebar.employeeStats') },
                 { to: '/sent-messages-stats', icon: BarChart3, label: t('sidebar.sentMessagesStats') },
@@ -820,6 +821,9 @@ export const getSidebarConfig = (
           icon: InstagramIcon,
             items: [
                 { to: '/instagram-inbox', icon: MessageSquare, label: t('sidebar.instagramInbox') },
+                { to: '/instagram-studio/media', icon: InstagramIcon, label: t('sidebar.instagramMediaLibrary') },
+                { to: '/instagram-studio/comments', icon: MessageSquare, label: t('sidebar.instagramCommentManager') },
+                { to: '/instagram-studio/publish', icon: InstagramIcon, label: t('sidebar.instagramPublisher') },
                 { to: '/settings/instagram', icon: Cog, label: t('sidebar.instagramSettings') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل

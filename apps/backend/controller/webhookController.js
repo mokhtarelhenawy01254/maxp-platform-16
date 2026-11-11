@@ -531,6 +531,30 @@ const postWebhook = async (req, res) => {
               console.error('❌ [IG-WEBHOOK] Background processing failed:', err.message);
             });
           }
+
+          // 💬 Instagram COMMENTS webhooks (instagram_manage_comments)
+          // ملاحظة: لا يوجد موديل Prisma مخصص لتعليقات Instagram حالياً،
+          // لذلك نُطبّع الحدث ونسجّله ثم نُقرّ بالاستلام بدون كسر أي شيء.
+          if (entry.changes && entry.changes.length > 0) {
+            for (const change of entry.changes) {
+              if (change?.field !== 'comments') continue;
+              const value = change.value || {};
+              const commentRecord = {
+                commentId: value.id || null,
+                text: value.text || null,
+                authorId: value.from?.id || null,
+                authorUsername: value.from?.username || null,
+                mediaId: value.media?.id || null,
+                mediaAdId: value.media?.ad_id || null,
+                parentId: value.parent_id || null,
+                igAccountId,
+                pageId: facebookPage.pageId,
+                companyId: facebookPage.companyId || null,
+                receivedAt: new Date().toISOString(),
+              };
+              console.log('[INSTAGRAM-COMMENT]', JSON.stringify(commentRecord));
+            }
+          }
         } catch (entryError) {
           console.error('❌ [IG-WEBHOOK] Entry error:', entryError.message);
         }

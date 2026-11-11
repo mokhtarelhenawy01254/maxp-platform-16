@@ -44,6 +44,13 @@ const {
 // (fallback آمن إلى 'primary' لو الجدول غير متاح — نفس السلوك القديم تمامًا)
 const { getDefaultSignupAppKey } = require("../services/metaAppRegistryService");
 const { resolveFacebookAppKeyForCompany } = require("../services/facebookAppResolver");
+// 📦 استيراد الصفحات بقى شغل خلفي (queue) بدل ما يتم جوّه الـ callback —
+// حسابات فيها 180+ صفحة كانت بتخلي الـ handler يستغرق 130-190 ثانية
+// فتضرب Cloudflare timeout (524) رغم إن الاستيراد بيكتمل على السيرفر.
+const {
+  queueFacebookPageImport,
+  getFacebookPageImportProgress,
+} = require("../services/facebookPageImportQueue");
 
 // Facebook OAuth Configuration — single source of truth: facebook-oauth-config.json (managed via /super-admin/facebook-oauth)
 function getFacebookAppConfig() {
@@ -685,12 +692,14 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
   }
 };
 
-// Facebook OAuth Scopes - Pages/Messenger (تشمل business_management لضمان ظهور صفحات محافظ الأعمال New Pages Experience)
+// Meta App Review 2026-11: scope list covers the 19 review permissions; scopes are additive — existing tokens stay valid until re-consent.
+// Facebook OAuth Scopes - Pages/Messaging/Publishing/Instagram
+// (تشمل business_management لضمان ظهور صفحات محافظ الأعمال New Pages Experience)
 // بدون pages_read_engagement — Advanced Access غير معتمد في التطبيق حاليًا،
 // وطلبه من فيسبوك كان بيمنع الصفحات اللي محتاجته من الظهور في /me/accounts.
 // (يُضاف لاحقًا عند تفعيل الكومنتات/المنشورات بعد App Review)
 const FACEBOOK_PAGE_SCOPES =
-  "public_profile,email,pages_show_list,pages_manage_metadata,pages_messaging,pages_read_user_content,pages_manage_engagement,business_management";
+  "public_profile,email,pages_show_list,pages_manage_metadata,pages_messaging,pages_read_user_content,pages_manage_engagement,pages_manage_posts,publish_video,read_insights,instagram_basic,instagram_manage_messages,instagram_manage_comments,instagram_content_publish,business_management";
 
 // Facebook OAuth Scopes - Pixel/Ads (بـ business_management للوصول للأعمال)
 const FACEBOOK_PIXEL_SCOPES =
@@ -698,8 +707,9 @@ const FACEBOOK_PIXEL_SCOPES =
 
 // Facebook OAuth Scopes - Isolated Ads connection
 // pages_show_list + pages_manage_ads مطلوبة لإنشاء Ad Creative يشير للصفحة
+// catalog_management + leads_retrieval مطلوبة لمراجعة التطبيق (App Review)
 const FACEBOOK_ADS_SCOPES =
-  "business_management,ads_management,ads_read,pages_show_list,pages_read_engagement,pages_manage_ads";
+  "business_management,ads_management,ads_read,pages_show_list,pages_read_engagement,pages_manage_ads,catalog_management,leads_retrieval";
 
 router.get(
   "/config",
@@ -2233,78 +2243,11 @@ router.get("/callback", async (req, res) => {
       console.log("✅ Saved user access token to company");
     }
 
-    // ✅ الحصول على كل الصفحات المرتبطة بالحساب مع دعم paging (للصفحات فقط)
-    let allPages = [];
-    let currentLimit = 20; // ابدأ بـ limit أصغر
-    let nextUrl = `${FACEBOOK_GRAPH_API_BASE_URL}/me/accounts?access_token=${userAccessToken}&fields=id,name,access_token&limit=${currentLimit}`;
-    let pageCount = 0;
-    let retryCount = 0;
-    const maxRetries = 2;
-
-    while (nextUrl && retryCount <= maxRetries) {
-      try {
-        const pagesResponse = await axios.get(nextUrl, {
-          timeout: 30000, // 30 seconds timeout
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (pagesResponse.data && Array.isArray(pagesResponse.data.data)) {
-          allPages = allPages.concat(pagesResponse.data.data);
-          pageCount += pagesResponse.data.data.length;
-          console.log(`📄 Fetched ${pageCount} pages so far...`);
-          retryCount = 0; // reset retry count on success
-        }
-
-        // تحقق من وجود paging.next
-        nextUrl =
-          pagesResponse.data.paging && pagesResponse.data.paging.next
-            ? pagesResponse.data.paging.next
-            : null;
-      } catch (pagingError) {
-        console.error(
-          "❌ Error fetching pages batch:",
-          pagingError.response?.data || pagingError.message,
-        );
-
-        // إذا Facebook طلب تقليل البيانات
-        if (
-          pagingError.response?.data?.error?.code === 1 &&
-          currentLimit > 10
-        ) {
-          currentLimit = Math.max(10, Math.floor(currentLimit / 2));
-          console.log(`⚠️ Reducing limit to ${currentLimit} and retrying...`);
-          nextUrl = `${FACEBOOK_GRAPH_API_BASE_URL}/me/accounts?access_token=${userAccessToken}&fields=id,name,access_token&limit=${currentLimit}`;
-          retryCount++;
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // wait 1 second
-          continue;
-        }
-
-        // لو فيه صفحات اتجمعت، استخدمهم
-        if (allPages.length > 0) {
-          console.log(`⚠️ Using ${allPages.length} pages fetched before error`);
-          break;
-        }
-
-        throw pagingError;
-      }
-    }
-    console.log(`✅ Found ${allPages.length} pages (with paging)`);
-
-    if (!allPages || !Array.isArray(allPages) || allPages.length === 0) {
-      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
-        success: true,
-        pages: 0,
-        message: "no_pages_found",
-      });
-    }
-
-    // حفظ الصفحات وكشف المتخطاة قبل إرسال الرد حتى تصل النتيجة الحقيقية
-    // للمستخدم لحظة إغلاق البوب أب (مش بعد ساعة)
-    const savedPages = [];
-    const skippedPages = [];
-    const failedPages = [];
+    // ✅ استيراد الصفحات بقى شغل خلفي (facebookPageImportQueue):
+    // تبادل الكود + حفظ توكِن المستخدم + حساب الربط بيتم هنا فورًا،
+    // والـ paging (/me/accounts) + حفظ كل صفحة + اشتراك الويب هوك
+    // بيتنقلوا لجوب خلفي بحد توازي صغير (5-8) عشان نحترم rate limits —
+    // بنفس كتابات Prisma ونفس facebookAppKey ونفس تسجيل الصفحات المتخطاة.
 
     // 🔗 Upsert the Facebook account connection so every page fetched in
     // this OAuth session is refreshable from THIS account's token even
@@ -2360,252 +2303,36 @@ router.get("/callback", async (req, res) => {
       }
     }
 
-    // 🔍 Fetch existing pages from DB to check for company ownership
-    const existingPages =
-      await getSharedPrismaClient().facebookPage.findMany({
-        where: {
-          pageId: { in: allPages.map((p) => p.id) },
-        },
-      });
-    const existingPagesMap = new Map(
-      existingPages.map((p) => [p.pageId, p]),
-    );
-
-    for (const page of allPages) {
-      try {
-        const existingPageInDB = existingPagesMap.get(page.id);
-
-        // 🚫 لا نمنع الربط إلا إذا كانت الصفحة connected فعلياً لدى شركة أخرى.
-        // إذا كان السجل القديم disconnected، نسمح بإعادة ربطها للشركة الحالية.
-        const isConnectedToAnotherCompany = Boolean(
-          existingPageInDB &&
-          existingPageInDB.companyId &&
-          existingPageInDB.companyId !== companyId &&
-          existingPageInDB.status === "connected",
-        );
-
-        if (isConnectedToAnotherCompany) {
-          // 🔍 فحص هل التوكن القديم لدى الشركة السابقة لا يزال يعمل أصلاً؟
-          // إذا كان التوكن القديم منتهي أو غير صالح، ننقل الصفحة للشركة الحالية تلقائياً
-          let oldTokenStillValid = false;
-          try {
-            const oldTokenCheck = await validateFacebookPageAccessToken({
-              pageId: page.id,
-              pageAccessToken: existingPageInDB.pageAccessToken,
-              timeoutMs: 3500,
-            });
-            oldTokenStillValid = oldTokenCheck.isValid;
-          } catch (_) {
-            oldTokenStillValid = false;
-          }
-
-          if (oldTokenStillValid) {
-            skippedPages.push({
-              pageId: page.id,
-              pageName: page.name,
-              reason: "already_connected_to_another_company",
-              connectedCompanyId: existingPageInDB.companyId,
-              attemptedCompanyId: companyId,
-            });
-            continue;
-          } else {
-            console.log(
-              `🔄 [OAUTH] Page ${page.name} had dead token in previous company (${existingPageInDB.companyId}). Auto-transferring to current company ${companyId}...`,
-            );
-            try {
-              await axios.delete(
-                `${FACEBOOK_GRAPH_API_BASE_URL}/${page.id}/subscribed_apps`,
-                {
-                  params: { access_token: existingPageInDB.pageAccessToken },
-                  timeout: 5000,
-                },
-              );
-            } catch (_) {}
-            invalidateFacebookPageCache(page.id);
-            pageTokenCache.delete(page.id);
-          }
-        }
-
-        // Update or Create page
-        const pageDataToUpdate = {
-          pageAccessToken: page.access_token,
-          pageName: page.name,
-          status: "connected",
-          facebookAppKey: callbackAppKey,
-          fbAppKey: callbackAppKey,
-          connectedAt: new Date(),
-          disconnectedAt: null,
-          companyId: companyId,
-          ...(accountConnectionId ? { facebookAccountId: accountConnectionId } : {}),
-        };
-
-        const pageDataToCreate = {
-          id: uuidv4(),
-          pageId: page.id,
-          pageName: page.name,
-          pageAccessToken: page.access_token,
-          status: "connected",
-          facebookAppKey: callbackAppKey,
-          fbAppKey: callbackAppKey,
-          connectedAt: new Date(),
-          updatedAt: new Date(),
-          companyId: companyId,
-          ...(accountConnectionId ? { facebookAccountId: accountConnectionId } : {}),
-        };
-
-        // ✅ الحفظ دائمًا مع ربط الحساب — لا يوجد fallback يسقط الربط بصمت
-        if (existingPageInDB && existingPageInDB.companyId === companyId) {
-          await getSharedPrismaClient().facebookPage.update({
-            where: { pageId: page.id },
-            data: pageDataToUpdate,
-          });
-        } else {
-          await getSharedPrismaClient().facebookPage.upsert({
-            where: { pageId: page.id },
-            update: pageDataToUpdate,
-            create: pageDataToCreate,
-          });
-        }
-
-        invalidateFacebookPageCache(page.id);
-        pageTokenCache.delete(page.id);
-
-        savedPages.push({
-          pageId: page.id,
-          pageAccessToken: page.access_token,
-        });
-      } catch (pageError) {
-        console.error(
-          `❌ [OAUTH] Error processing page ${page.name}:`,
-          pageError.message,
-        );
-        failedPages.push({
-          pageId: page.id,
-          pageName: page.name,
-          reason: pageError.message,
-        });
-      }
-    }
-
-    // Save skipped pages record
-    if (skippedPages.length > 0) {
-      try {
-        await getSharedPrismaClient().skippedFacebookPage.createMany({
-          data: skippedPages.map((sp) => ({
-            pageId: sp.pageId,
-            pageName: sp.pageName,
-            reason: sp.reason,
-            attemptedCompanyId: sp.attemptedCompanyId,
-            connectedToCompanyId: sp.connectedCompanyId,
-            isResolved: false,
-            updatedAt: new Date(),
-          })),
-          skipDuplicates: true,
-        });
-      } catch (skipError) {
-        console.error(
-          `❌ [OAUTH] Error saving skipped pages:`,
-          skipError.message,
-        );
-      }
-    }
-
-    sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
-      success: true,
-      pages: savedPages.length,
-      skipped: skippedPages.length,
-      failed: failedPages.length,
-      failedPages: failedPages.map((fp) => ({
-        pageId: fp.pageId,
-        pageName: fp.pageName,
-      })),
-      skippedPages: skippedPages.map((sp) => ({
-        pageId: sp.pageId,
-        pageName: sp.pageName,
-        reason: sp.reason,
-      })),
+    // 🚀 اطمن على الاستيراد في الخلفية وارجع الرد فورًا.
+    // الجوب بيستخدم نفس كتابات Prisma ونفس facebookAppKey ونفس سجل
+    // الصفحات المتخطاة ونفس حقول اشتراك الويب هوك — بالحرف.
+    const queueResult = queueFacebookPageImport({
       companyId,
+      appKey: callbackAppKey,
+      source: "oauth_callback",
+      userAccessToken,
+      facebookUserId,
+      facebookUserName,
+      facebookUserEmail,
+      connectedByUserId: userId || null,
+      accountConnectionId,
     });
 
-    // المعالجة البطيئة (اشتراكات الويب هوك + بيانات إنستجرام) بالتوازي في الخلفية
-    setImmediate(async () => {
-      try {
-        await Promise.all(
-          savedPages.map(async (page) => {
-            // Subscribe to webhooks (Facebook Messenger)
-            subscribePageToApp(page.pageId, page.pageAccessToken).catch(() => { });
+    console.log(
+      `🚀 [OAUTH] Page import ${queueResult.queued ? "queued" : "already running"} for company ${companyId} (app=${callbackAppKey})`,
+    );
 
-            // 🆕 Fetch and store linked Instagram Business Account
-            try {
-              const igResponse = await axios.get(
-                `${FACEBOOK_GRAPH_API_BASE_URL}/${page.pageId}`,
-                {
-                  params: {
-                    fields: "instagram_business_account",
-                    access_token: page.pageAccessToken,
-                  },
-                  timeout: 10000,
-                },
-              );
-              const igAccountId = igResponse.data?.instagram_business_account?.id;
-              if (igAccountId) {
-                // Fetch the Instagram account name
-                let igAccountName = null;
-                try {
-                  const igNameResponse = await axios.get(
-                    `${FACEBOOK_GRAPH_API_BASE_URL}/${igAccountId}`,
-                    {
-                      params: {
-                        fields: "name,username",
-                        access_token: page.pageAccessToken,
-                      },
-                      timeout: 10000,
-                    },
-                  );
-                  igAccountName = igNameResponse.data?.name || igNameResponse.data?.username || null;
-                } catch (_) { /* ignore */ }
-
-                await getSharedPrismaClient().facebookPage.update({
-                  where: { pageId: page.pageId },
-                  data: {
-                    instagramAccountId: igAccountId,
-                    instagramAccountName: igAccountName,
-                  },
-                });
-                console.log(`📸 [BG-OAuth] Linked Instagram account ${igAccountId} (${igAccountName}) to page ${page.pageId}`);
-
-                // Subscribe Instagram account to webhooks for DM delivery
-                try {
-                  await axios.post(
-                    `${FACEBOOK_GRAPH_API_BASE_URL}/${igAccountId}/subscribed_apps`,
-                    {},
-                    {
-                      params: {
-                        subscribed_fields: "messages,messaging_seen",
-                        access_token: page.pageAccessToken,
-                      },
-                      timeout: 10000,
-                    },
-                  );
-                  console.log(`✅ [BG-OAuth] Subscribed Instagram account ${igAccountId} to webhooks`);
-                } catch (igSubError) {
-                  console.warn(`⚠️ [BG-OAuth] Could not subscribe Instagram account ${igAccountId} to webhooks:`, igSubError.response?.data?.error?.message || igSubError.message);
-                }
-              }
-            } catch (igError) {
-              console.warn(`⚠️ [BG-OAuth] Could not fetch Instagram account for page ${page.pageId}:`, igError.message);
-            }
-          }),
-        );
-        console.log(
-          `✅ [BG-OAuth] Finished background processing for ${savedPages.length} pages.`,
-        );
-      } catch (fatalBgError) {
-        console.error(
-          "❌ [BG-OAuth] Fatal error in background processing:",
-          fatalBgError.message,
-        );
-      }
+    return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+      success: true,
+      // ⚠️ Placeholder متوافق للخلف: العدد الحقيقي بيوصل عبر importProgress
+      // (GET /status) بعد ما الجوب يخلص. قيمة pages=0 كانت بتودّي النسخ
+      // القديمة لحالة no_page_grants غلط، فبنبعت قيمة truthy.
+      pages: 1,
+      skipped: 0,
+      failed: 0,
+      importQueued: true,
+      importPending: true,
+      companyId,
     });
   } catch (error) {
     if (error.response) {
@@ -2641,6 +2368,78 @@ router.get("/callback", async (req, res) => {
 
     return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
       error: userError,
+    });
+  }
+});
+
+/**
+ * 🔁 Re-run the Page import for an already connected company.
+ * POST /api/v1/facebook-oauth/import-pages
+ * ✅ REQUIRES AUTHENTICATION
+ *
+ * Idempotent: الصفحات بتتحفظ بنفس upsert semantics (pageId)، فإعادة التشغيل
+ * بتحدّث الصفوف الحالية بدل ما تكررها، ولو التوكِن منتهي الجوب بيفشل بهدوء
+ * وبيرجّع lastError للمستخدم بدل ما يعمل crash.
+ */
+router.post("/import-pages", verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.query.companyId || req.body?.companyId;
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: "Company ID is required",
+        message: "معرف الشركة مطلوب",
+      });
+    }
+
+    if (req.user.companyId !== companyId) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized access to company",
+      });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { facebookUserAccessToken: true, facebookAppKey: true, fbAppKey: true },
+    });
+
+    if (!company?.facebookUserAccessToken) {
+      return res.status(400).json({
+        success: false,
+        error: "missing_user_token",
+        message: "لا يوجد توكِن فيسبوك محفوظ — أعد ربط الحساب أولاً",
+      });
+    }
+
+    const requestedAppKey = req.query.app || req.body?.app;
+    const appKey = requestedAppKey
+      ? String(requestedAppKey).trim().toLowerCase()
+      : String(company.fbAppKey || company.facebookAppKey || "primary")
+          .trim()
+          .toLowerCase();
+
+    const result = queueFacebookPageImport({
+      companyId,
+      appKey: appKey || "primary",
+      source: "manual_retry",
+    });
+
+    return res.json({
+      success: true,
+      queued: result.queued,
+      alreadyRunning: result.alreadyRunning,
+      importProgress: result.progress,
+      message: result.queued
+        ? "تم بدء استيراد الصفحات في الخلفية"
+        : "استيراد الصفحات شغّال بالفعل",
+    });
+  } catch (error) {
+    console.error("❌ [PAGE-IMPORT] Error queueing page import:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to queue Facebook page import",
     });
   }
 });
@@ -2757,8 +2556,20 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
 
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
-      select: { facebookUserAccessToken: true },
+      select: {
+        facebookUserAccessToken: true,
+        facebookAppKey: true,
+        fbAppKey: true,
+      },
     });
+
+    // 📊 Progress is an ADDITIVE UI hint only (the DB stays the source of
+    // truth). Keyed by company + app key, same key the background job uses.
+    const statusAppKey =
+      String(company?.fbAppKey || company?.facebookAppKey || "primary")
+        .trim()
+        .toLowerCase() || "primary";
+    const importProgress = getFacebookPageImportProgress(companyId, statusAppKey);
 
     let facebookUser = null;
     if (company?.facebookUserAccessToken) {
@@ -2825,6 +2636,9 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
       unhealthyPagesCount: unhealthyPages.length,
       attributionIssues,
       facebookUser,
+      // 📦 حالة استيراد الصفحات في الخلفية — field إضافي، ما بيحذفش ولا يغيّر أي
+      // field موجود (null لما مفيش job اتشغّل في الـ process ده).
+      importProgress,
       message:
         pages.length === 0
           ? "No Facebook pages connected"

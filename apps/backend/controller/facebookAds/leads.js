@@ -252,6 +252,173 @@ const getLeads = async (req, res) => {
 };
 
 /**
+ * GET /api/v1/facebook-ads/lead-forms?pageId=...
+ * قائمة نماذج جمع البيانات (Lead Forms) الخاصة بصفحة
+ */
+const listLeadForms = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const pageId = req.params?.pageId || req.query?.pageId;
+
+    if (!pageId) {
+      return res.status(400).json({
+        success: false,
+        error: "pageId is required",
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const storedPage = await prisma.facebookPage.findFirst({
+      where: { pageId: String(pageId), ...(companyId ? { companyId } : {}) },
+      select: { pageId: true, pageName: true, pageAccessToken: true },
+    });
+
+    const accessToken =
+      storedPage?.pageAccessToken ||
+      (await getCompanyPageAccessToken(companyId)) ||
+      (await getCompanyAdsAccessToken(companyId));
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Facebook Page Access Token not found. Please connect your Facebook account.",
+      });
+    }
+
+    const baseUrl = new FacebookAdsService(accessToken).baseUrl;
+
+    let formsResponse;
+    try {
+      formsResponse = await axios.get(
+        `${baseUrl}/${pageId}/leadgen_forms`,
+        {
+          params: {
+            access_token: accessToken,
+            fields: "id,name,status,created_time,leads_count",
+            limit: 50,
+          },
+        },
+      );
+    } catch (graphError) {
+      const graphErrorBody = graphError?.response?.data?.error;
+      return res.status(400).json({
+        success: false,
+        error: graphErrorBody?.message || graphError.message,
+        code: graphErrorBody?.code ?? null,
+      });
+    }
+
+    let pageName = storedPage?.pageName || null;
+    if (!pageName) {
+      try {
+        const pageResponse = await axios.get(`${baseUrl}/${pageId}`, {
+          params: { access_token: accessToken, fields: "id,name" },
+        });
+        pageName = pageResponse.data?.name || null;
+      } catch (pageError) {
+        // اسم الصفحة معلومات إضافية فقط — لا نُفشل الطلب بسببها
+        pageName = null;
+      }
+    }
+
+    const data = (formsResponse.data?.data || []).map((form) => ({
+      id: form.id,
+      name: form.name,
+      status: form.status,
+      createdTime: form.created_time || null,
+      leadsCount: toFiniteNumber(form.leads_count) || 0,
+    }));
+
+    res.json({
+      success: true,
+      data,
+      page: { id: String(pageId), name: pageName },
+    });
+  } catch (error) {
+    console.error("❌ Error listing Lead Forms:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/v1/facebook-ads/lead-forms/:formId/detail
+ * تفاصيل نموذج (الأسئلة + الحالة) لعرض رؤوس الأعمدة
+ */
+const getLeadFormDetail = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const formId = req.params?.formId || req.query?.formId;
+
+    if (!formId) {
+      return res.status(400).json({
+        success: false,
+        error: "formId is required",
+      });
+    }
+
+    const accessToken =
+      (await getCompanyPageAccessToken(companyId)) ||
+      (await getCompanyAdsAccessToken(companyId));
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Facebook Page Access Token not found. Please connect your Facebook account.",
+      });
+    }
+
+    const baseUrl = new FacebookAdsService(accessToken).baseUrl;
+
+    let detailResponse;
+    try {
+      detailResponse = await axios.get(`${baseUrl}/${formId}`, {
+        params: {
+          access_token: accessToken,
+          fields: "id,name,status,questions,privacy_policy_url,leads_count",
+        },
+      });
+    } catch (graphError) {
+      const graphErrorBody = graphError?.response?.data?.error;
+      return res.status(400).json({
+        success: false,
+        error: graphErrorBody?.message || graphError.message,
+        code: graphErrorBody?.code ?? null,
+      });
+    }
+
+    const form = detailResponse.data || {};
+
+    res.json({
+      success: true,
+      data: {
+        id: form.id,
+        name: form.name,
+        status: form.status,
+        createdTime: form.created_time || null,
+        leadsCount: toFiniteNumber(form.leads_count) || 0,
+        privacyPolicyUrl: form.privacy_policy_url || null,
+        questions: (form.questions || []).map((question) => ({
+          key: question.key,
+          type: question.type,
+          label: question.label,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error getting Lead Form detail:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
  * ============================================
  * v22.0 New Features: Conversion API (CAPI)
  * ============================================
@@ -265,4 +432,6 @@ const getLeads = async (req, res) => {
 module.exports = {
   createLeadForm,
   getLeads,
+  listLeadForms,
+  getLeadFormDetail,
 };

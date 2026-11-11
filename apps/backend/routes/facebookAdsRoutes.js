@@ -447,6 +447,12 @@ router.post('/ab-tests', facebookAdsController.createABTest);
 router.get('/ab-tests/:id', facebookAdsController.getABTestResults);
 
 // --- Lead Generation (v22.0) ---
+// GET /api/v1/facebook-ads/lead-forms?pageId=... - قائمة Lead Forms لصفحة
+router.get('/lead-forms', facebookAdsController.listLeadForms);
+
+// GET /api/v1/facebook-ads/lead-forms/:formId/detail - تفاصيل Lead Form
+router.get('/lead-forms/:formId/detail', facebookAdsController.getLeadFormDetail);
+
 // POST /api/v1/facebook-ads/lead-forms - إنشاء Lead Form
 router.post('/lead-forms', facebookAdsController.createLeadForm);
 

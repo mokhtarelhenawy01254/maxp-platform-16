@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink, RefreshCw, Info } from "lucide-react";
 import { FacebookIcon } from "../../../components/icons/brands";
 import { Button } from "../../../components/ui/button";
+import { FacebookOAuthImportProgress } from "./FacebookOAuthImportProgress";
 
 interface FacebookOAuthConnectCardProps {
   loading: boolean;
@@ -56,6 +57,9 @@ export const FacebookOAuthConnectCard: React.FC<FacebookOAuthConnectCardProps> =
           {t("facebookOAuth.reselectPagesInitial", "إعادة اختيار الصفحات")}
         </Button>
       </div>
+
+      {/* 📦 تقدم استيراد الصفحات في الخلفية (بيقرأ من store مش props) */}
+      <FacebookOAuthImportProgress />
 
       <div className="mt-4 flex max-w-md items-center gap-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2.5 text-start text-[11px] text-blue-700 dark:text-blue-300">
         <Info className="h-4 w-4 shrink-0" />
