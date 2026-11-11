@@ -107,6 +107,15 @@ const RESERVED_PAGE_SEGMENTS = new Set([
   "blog",
   "portal",
   "academy",
+  "parent",
+  "teacher",
+  "doctor",
+  "patient",
+  "dental-portal",
+  "courier-portal",
+  "wholesale-portal",
+  "account",
+  "client-portal",
 ]);
 
 const isRecord = (value) =>
@@ -604,6 +613,34 @@ const resolveRouteContext = (pathname = "/") => {
   };
 };
 
+const normalizePortalHexColor = (value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!match) return null;
+  let hex = match[1].toLowerCase();
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+  return `#${hex}`;
+};
+
+const extractPortalThemeColor = (rawDesignTokens) => {
+  const designTokens = parseJsonObject(rawDesignTokens);
+  const colors = parseJsonObject(designTokens.colors);
+  return (
+    normalizePortalHexColor(colors.primary) ||
+    normalizePortalHexColor(colors.primaryColor) ||
+    normalizePortalHexColor(colors.accent) ||
+    normalizePortalHexColor(designTokens.primaryColor) ||
+    "#4f46e5"
+  );
+};
+
 const buildStorefrontSeoMetadata = ({
   pathname = "/",
   currentUrl,
@@ -620,6 +657,11 @@ const buildStorefrontSeoMetadata = ({
   reviews = null,
   noIndex = false,
   robots = null,
+  portalTitle = null,
+  manifestUrl = null,
+  appleTouchIconUrl = null,
+  themeColor = null,
+  appTitle = null,
 }) => {
   const routeContext = resolveRouteContext(pathname);
   const templateSettings = extractTemplateSettings(templateContent);
@@ -794,6 +836,10 @@ const buildStorefrontSeoMetadata = ({
       robots: robots || (noIndex ? "noindex, follow" : "index, follow"),
       googleSiteVerification,
       facebookDomainVerification,
+      ...(manifestUrl ? { manifestUrl } : {}),
+      ...(appleTouchIconUrl ? { appleTouchIconUrl } : {}),
+      ...(themeColor ? { themeColor } : {}),
+      ...(appTitle ? { appTitle } : {}),
     };
   }
 
@@ -1442,6 +1488,12 @@ const buildStorefrontSeoMetadata = ({
       pageDescription = storeDesc
         ? `أحدث مقالات وأخبار ${storeName}. ${storeDesc}`
         : `أحدث المقالات والنصائح من ${storeName}.`;
+    } else if (portalTitle) {
+      pageTitle = portalTitle;
+      entityName = portalTitle;
+      pageDescription = storeDesc
+        ? `${portalTitle} — ${storeName}. ${storeDesc}`
+        : `${portalTitle} — ${storeName}`;
     } else {
       pageTitle =
         resolvePageNameFromSegment(routeContext.pageSegment) ||
@@ -1453,11 +1505,16 @@ const buildStorefrontSeoMetadata = ({
         : `${pageTitle} — تسوق أونلاين من ${storeName} واكتشف أحدث العروض والمنتجات.`;
     }
 
-    const pageCustomTitle = trimToNull(pageSeo.title);
-    title = pageCustomTitle || applyTitleTemplate(titleTemplate, pageTitle, storeName);
-    description = trimToNull(pageSeo.description) || pageDescription;
-    if (pageSeo.ogImage) {
-      image = resolveAbsoluteUrl(pageSeo.ogImage, currentUrl) || image;
+    if (portalTitle) {
+      title = `${portalTitle} | ${storeName}`;
+      description = pageDescription;
+    } else {
+      const pageCustomTitle = trimToNull(pageSeo.title);
+      title = pageCustomTitle || applyTitleTemplate(titleTemplate, pageTitle, storeName);
+      description = trimToNull(pageSeo.description) || pageDescription;
+      if (pageSeo.ogImage) {
+        image = resolveAbsoluteUrl(pageSeo.ogImage, currentUrl) || image;
+      }
     }
   }
 
@@ -1491,6 +1548,10 @@ const buildStorefrontSeoMetadata = ({
     robots: robots || (noIndex ? "noindex, follow" : "index, follow"),
     googleSiteVerification,
     facebookDomainVerification,
+    ...(manifestUrl ? { manifestUrl } : {}),
+    ...(appleTouchIconUrl ? { appleTouchIconUrl } : {}),
+    ...(themeColor ? { themeColor } : {}),
+    ...(appTitle ? { appTitle } : {}),
   };
 };
 
@@ -1650,6 +1711,37 @@ const injectStorefrontSeoTags = (html, metadata) => {
     );
   }
 
+  // Additive PWA tags strictly for isolated portal routes (no-op when undefined)
+  if (metadata.manifestUrl) {
+    nextHtml = setLinkTag(nextHtml, "manifest", metadata.manifestUrl);
+  }
+
+  if (metadata.appleTouchIconUrl) {
+    nextHtml = setLinkTag(nextHtml, "apple-touch-icon", metadata.appleTouchIconUrl);
+  }
+
+  if (metadata.themeColor) {
+    const themeColorMatches = nextHtml.match(/<meta[^>]+name=["']theme-color["'][^>]*>/gi);
+    if (themeColorMatches && themeColorMatches.length > 1) {
+      let seenFirstThemeColor = false;
+      nextHtml = nextHtml.replace(
+        /[ \t]*<meta[^>]+name=["']theme-color["'][^>]*>\r?\n?/gi,
+        (match) => {
+          if (!seenFirstThemeColor) {
+            seenFirstThemeColor = true;
+            return match;
+          }
+          return "";
+        },
+      );
+    }
+    nextHtml = setMetaTag(nextHtml, "name", "theme-color", metadata.themeColor);
+  }
+
+  if (metadata.appTitle) {
+    nextHtml = setMetaTag(nextHtml, "name", "apple-mobile-web-app-title", metadata.appTitle);
+  }
+
   // Dynamic html lang and dir matching theme
   const htmlLang = metadata.direction === "ltr" ? "en" : "ar";
   const htmlDir = metadata.direction === "ltr" ? "ltr" : "rtl";
@@ -1748,6 +1840,7 @@ module.exports = {
   applyTitleTemplate,
   buildStorefrontSeoMetadata,
   cleanCanonicalUrl,
+  extractPortalThemeColor,
   hasStaticFileExtension,
   injectStorefrontSeoTags,
   isHtmlRouteRequest,

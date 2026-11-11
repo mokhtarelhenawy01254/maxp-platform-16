@@ -3,7 +3,11 @@ const multer = require('multer');
 const router = express.Router();
 const controller = require('../controller/dentalLabPortalController');
 const { dentalPortalAuth } = require('../utils/dentalPortalAuth');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const { upload } = require('../utils/dentalLabUpload');
+
+// Multi-tenant subdomain resolution
+router.use(extractSubdomainMiddleware);
 
 // Public login
 router.post('/login', controller.portalLogin);

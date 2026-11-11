@@ -875,6 +875,10 @@ app.use(
   "/api/v1/public/storefront",
   require("./routes/publicStorefrontRoutes"),
 );
+app.use(
+  "/api/v1/public/portal",
+  require("./routes/publicPortalRoutes"),
+);
 // Storefront Analytics (AN-1)
 app.use("/api/v1/storefront-analytics", require("./routes/storefrontAnalyticsRoutes"));
 app.use("/api/v1/public/platform", publicPlatformRoutes);
@@ -1020,6 +1024,10 @@ app.use("/api/v1/app-explanations", appExplanationsRoutes);
 // path requires a companyId. Reflection runs at request time, so every route
 // mounted later in this file is still included.
 app.use("/api/v1/internal", internalCapabilitiesRoutes);
+
+// 🔔 Unified Multi-Actor Portal Push API (Web Push & FCM for all portal actors)
+// Self-authenticated via authenticateAnyPortalOrStaffToken inside portalPushRoutes.js
+app.use(["/api/v1/portal/push", "/api/portal/push"], require("./routes/portalPushRoutes"));
 
 // 🚀 Apply Security for sensitive Admin/Company routes
 app.use(globalSecurity);

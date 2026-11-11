@@ -13,22 +13,22 @@ import {
   Tag,
   PlusCircle,
 } from "lucide-react";
-
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
-import { useCompanyBranding } from "../../hooks/useCompanyBranding";
+import { resolveBrandingLogoUrl, useCompanyBranding } from "../../hooks/useCompanyBranding";
 import { apiClient } from "../../services/apiClient";
+import { PortalInstallBanner } from "../../components/common/PortalInstallBanner";
+import { PortalPushToggle } from "../../components/common/PortalPushToggle";
 
 interface CustomerPortalLayoutProps {
   children: React.ReactNode;
 }
 
-const getTokenRole = (): string | null => {
+const getTokenPayload = (): Record<string, unknown> | null => {
   try {
     const token = tokenManager.getAccessToken();
     if (!token) return null;
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload?.role || null;
+    return JSON.parse(atob(token.split(".")[1] || "")) as Record<string, unknown>;
   } catch {
     return null;
   }
@@ -40,16 +40,21 @@ const navItems = [
   { path: "/account/profile", label: "بياناتي", icon: User },
 ];
 
-const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
-  children,
-}) => {
+const wholesaleItems = [
+  { path: "/wholesale-portal/orders", label: "طلباتي (الجملة)", icon: ShoppingBag },
+  { path: "/wholesale-portal/statement", label: "رصيدي وكشف الحساب", icon: FileText },
+  { path: "/wholesale-portal/prices", label: "أسعاري وقائمتي", icon: Tag },
+  { path: "/wholesale-portal/new-order", label: "طلب جملة جديد", icon: PlusCircle },
+];
+
+const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [logoError, setLogoError] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoading, isAuthenticated, logout } = useAuth();
 
-  // 🔗 دخول سريع من رابط واتساب (زر "صفحة العميل"):
-  // ?token= بيجي من /magic-login — بنخزنه وبعدين نعمل reload عشان الـ auth يقراه.
+  // دخول سريع من رابط واتساب (زر "صفحة العميل"): ?token= ياتي من /magic-login
   const [hasMagicToken, setHasMagicToken] = React.useState(() => {
     const params = new URLSearchParams(window.location.search);
     return !!params.get("token");
@@ -66,30 +71,32 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
     }
   }, []);
 
-  // هوية الشركة (لوجو + اسم + لون) — من الـ token أو subdomain المتجر
-  const tokenCompanyId = (() => {
-    try {
-      const token = tokenManager.getAccessToken();
-      if (!token) return null;
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload?.companyId || null;
-    } catch {
-      return null;
-    }
-  })();
+  const payload = getTokenPayload();
+  const tokenCompanyId = typeof payload?.["companyId"] === "string" ? payload["companyId"] : null;
+  const role = typeof payload?.["role"] === "string" ? payload["role"] : null;
+
   const branding = useCompanyBranding(tokenCompanyId);
   const accentColor = branding.accent || "#6366f1";
+  const resolvedLogo = !logoError ? resolveBrandingLogoUrl(branding.logo) : null;
+  const displayBrandName = branding.name || "حسابي";
 
-  const [wholesaleProfile, setWholesaleProfile] = React.useState<{ isActive: boolean; availableCredit: number } | null>(null);
+  React.useEffect(() => {
+    setLogoError(false);
+  }, [branding.logo]);
+
+  const [wholesaleProfile, setWholesaleProfile] = React.useState<{
+    isActive: boolean;
+    availableCredit: number;
+  } | null>(null);
 
   React.useEffect(() => {
     if (isAuthenticated) {
       apiClient
-        .get("/wholesale-portal/me")
+        .get<{ success?: boolean; data?: { isActive: boolean; availableCredit: number } }>(
+          "/wholesale-portal/me",
+        )
         .then((res) => {
-          if (res.data?.success && res.data?.data?.isActive) {
-            setWholesaleProfile(res.data.data);
-          }
+          if (res.data?.success && res.data?.data?.isActive) setWholesaleProfile(res.data.data);
         })
         .catch(() => {});
     }
@@ -105,127 +112,73 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
 
   if (isLoading || hasMagicToken) {
     return (
-      <div
-        dir="rtl"
-        className="flex min-h-screen items-center justify-center bg-gray-50"
-      >
+      <div dir="rtl" className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="mt-4">جاري فتح حسابك...</p>
+          <p className="mt-4">جاري فتح حسابك…</p>
         </div>
       </div>
     );
   }
 
-  const role = getTokenRole();
   if (!isAuthenticated || role !== "CUSTOMER") {
     return <Navigate to="/auth/customer-register" replace />;
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-50" style={{ "--auth-accent": accentColor } as React.CSSProperties}>
-      {/* Mobile header */}
-      <header className="border-b bg-white shadow-sm lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-md p-2 hover:bg-gray-100"
-            aria-label="القائمة"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          <Link
-            to="/account"
-            className="flex items-center gap-2 text-lg font-bold"
-            style={{ color: accentColor }}
-          >
-            {branding.logo ? (
-              <img src={branding.logo} alt={branding.name || "logo"} className="h-6 w-6 rounded-full object-cover" />
-            ) : (
-              <ShieldCheck size={20} />
-            )}
-            {branding.name || "حسابي"}
-          </Link>
-          <div className="w-10" />
-        </div>
-      </header>
-
+    <div dir="rtl" className="min-h-screen bg-gray-50" style={{ "--auth-accent": accentColor, "--portal-primary": accentColor } as React.CSSProperties}>
       <div className="flex">
-        {/* Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? "block" : "hidden"
-          } fixed right-0 top-0 z-40 h-screen w-64 border-l bg-white shadow-lg lg:sticky lg:block`}
+            sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          } fixed right-0 top-0 z-40 flex h-screen w-64 shrink-0 flex-col border-l bg-white shadow-lg transition-transform duration-200 lg:sticky`}
         >
-          <div className="border-b p-6">
-            {branding.name && (
-              <div className="mb-3 flex items-center gap-2">
-                {branding.logo ? (
-                  <img
-                    src={branding.logo}
-                    alt={branding.name}
-                    className="h-9 w-9 rounded-full object-cover"
-                  />
+          <div className="border-b p-5">
+            {branding.name ? (
+              <div className="mb-3 flex items-center gap-2 min-w-0">
+                {resolvedLogo ? (
+                  <img src={resolvedLogo} alt={branding.name} onError={() => setLogoError(true)} className="h-9 w-9 shrink-0 rounded-full object-cover border border-gray-100" />
                 ) : (
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-white"
-                    style={{ backgroundColor: accentColor }}
-                  >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white font-bold" style={{ backgroundColor: accentColor }}>
                     {branding.name.charAt(0)}
                   </div>
                 )}
-                <span className="text-sm font-bold" style={{ color: accentColor }}>
-                  {branding.name}
-                </span>
+                <span className="truncate text-sm font-bold" style={{ color: accentColor }}>{branding.name}</span>
               </div>
-            )}
-            <Link
-              to="/account"
-              className="mb-1 flex items-center gap-2 text-xl font-bold"
-              style={{ color: accentColor }}
-            >
-              <ShieldCheck size={22} />
-              حسابي
+            ) : null}
+            <Link to="/account" className="flex items-center gap-2 text-lg font-bold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: accentColor }}>
+              <ShieldCheck size={22} className="shrink-0" />
+              <span className="truncate">حسابي</span>
             </Link>
           </div>
 
-          <nav className="space-y-1 p-4">
+          <nav className="flex-1 overflow-y-auto space-y-1 p-3">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = location.pathname === item.path || (item.path !== "/account" && location.pathname.startsWith(item.path));
               return (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                  style={isActive ? { backgroundColor: `${accentColor}14`, color: accentColor } : undefined}
+                  className={`flex min-h-[44px] items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    isActive ? "font-semibold" : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  <Icon size={20} />
-                  {item.label}
+                  <Icon size={18} className="shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
 
-            {wholesaleProfile?.isActive && (
+            {wholesaleProfile?.isActive ? (
               <div className="pt-3 mt-3 border-t border-gray-100">
-                <div className="px-3 mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">
-                    بوابة الموزع
-                  </span>
-                  <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold">
-                    معتمد
-                  </span>
+                <div className="px-3 mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-indigo-600 truncate">بوابة الموزع</span>
+                  <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold shrink-0">معتمد</span>
                 </div>
-                {[
-                  { path: "/wholesale-portal/orders", label: "طلباتي (الجملة)", icon: ShoppingBag },
-                  { path: "/wholesale-portal/statement", label: "رصيدي وكشف الحساب", icon: FileText },
-                  { path: "/wholesale-portal/prices", label: "أسعاري وقائمتي", icon: Tag },
-                  { path: "/wholesale-portal/new-order", label: "طلب جملة جديد", icon: PlusCircle },
-                ].map((item) => {
+                {wholesaleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname.startsWith(item.path);
                   return (
@@ -233,42 +186,73 @@ const CustomerPortalLayout: React.FC<CustomerPortalLayoutProps> = ({
                       key={item.path}
                       to={item.path}
                       onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-indigo-50 text-indigo-700 font-bold"
-                          : "text-gray-700 hover:bg-gray-100"
+                      className={`flex min-h-[44px] items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isActive ? "bg-indigo-50 text-indigo-700 font-bold" : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      <Icon size={18} />
-                      {item.label}
+                      <Icon size={18} className="shrink-0" />
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   );
                 })}
               </div>
-            )}
+            ) : null}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 border-t p-4">
+          <div className="border-t p-3">
             <button
+              type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+              className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
             >
-              <LogOut size={20} />
-              تسجيل خروج
+              <LogOut size={18} className="shrink-0" />
+              <span className="truncate">تسجيل خروج</span>
             </button>
           </div>
         </aside>
 
-        {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        {sidebarOpen ? <div className="fixed inset-0 z-30 bg-black/30 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
 
-        {/* Main content */}
-        <main className="min-h-screen flex-1 p-4 lg:p-8">{children}</main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur-sm shadow-2xs">
+            <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-6">
+              <div className="flex min-w-0 items-center gap-2 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                  aria-label="القائمة"
+                >
+                  {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+                </button>
+                <Link to="/account" className="flex min-w-0 items-center gap-2 text-base font-bold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" style={{ color: accentColor }}>
+                  {resolvedLogo ? (
+                    <img src={resolvedLogo} alt={displayBrandName} onError={() => setLogoError(true)} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <ShieldCheck size={20} className="shrink-0" />
+                  )}
+                  <span className="truncate">{displayBrandName}</span>
+                </Link>
+              </div>
+              <div className="hidden lg:flex items-center gap-2 min-w-0 text-sm font-semibold text-gray-800">
+                <span className="truncate">{displayBrandName}</span>
+              </div>
+              <PortalPushToggle portal="customer" accentColor={accentColor} />
+            </div>
+          </header>
+
+          <main className="min-h-screen flex-1 p-3 sm:p-6 lg:p-8">
+            <PortalInstallBanner
+              portal="customer"
+              companyId={branding.companyId || tokenCompanyId}
+              companyName={displayBrandName}
+              companyLogo={branding.logo}
+              accentColor={accentColor}
+              className="mb-4"
+            />
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

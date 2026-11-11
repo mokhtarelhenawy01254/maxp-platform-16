@@ -479,6 +479,8 @@ const PUBLIC_ROUTES = [
   'POST /api/v1/notifications/mark-all-read',
   'GET /api/v1/notifications/push/public-key',
   'GET /api/notifications/push/public-key',
+  'GET /api/v1/portal/push/public-key',
+  'GET /api/portal/push/public-key',
 
   // Temporary: queue stats for debugging
   'GET /api/v1/queue-stats',

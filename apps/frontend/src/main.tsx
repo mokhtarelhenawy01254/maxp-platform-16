@@ -9,16 +9,26 @@ import {
   recoverFromChunkLoadError,
   resetChunkLoadRecovery,
 } from "./utils/chunkLoadRecovery";
+import { getPortalSwScope, isPortalPath } from "./config/portals";
 import { installResilientLazy } from "./utils/resilientLazy";
-import { clearAllSWCaches } from "./utils/swCacheFlush";
+import { clearAllSWCaches, clearNonPortalSWCaches } from "./utils/swCacheFlush";
 
-// Proactively unregister any active or legacy Service Workers, wipe CacheStorage, and purge manifest
+const isPortalRoute =
+  typeof window !== "undefined" && isPortalPath(window.location.pathname || "/");
+
+// On non-portal routes: preserve legacy full SW unregister + CacheStorage purge + manifest removal.
+// On portal routes: clean only legacy/non-portal caches & workers before registering the scoped Portal PWA SW.
+let portalCacheFlushPromise: Promise<boolean> | null = null;
 if (typeof window !== "undefined") {
   try {
-    void clearAllSWCaches();
-    const existingManifest = document.querySelector('link[rel="manifest"]');
-    if (existingManifest) {
-      existingManifest.remove();
+    if (isPortalRoute) {
+      portalCacheFlushPromise = clearNonPortalSWCaches().catch(() => false);
+    } else {
+      void clearAllSWCaches();
+      const existingManifest = document.querySelector('link[rel="manifest"]');
+      if (existingManifest) {
+        existingManifest.remove();
+      }
     }
   } catch {
     // Ignore environments with restricted storage or workers
@@ -254,11 +264,33 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Unregister all Service Workers permanently across the entire application
+// On non-portal routes, unregister all Service Workers permanently; on portal routes, register scoped portal SW
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister().catch(() => false));
-  }).catch(() => {});
+  if (isPortalRoute) {
+    const portalScope = getPortalSwScope(window.location.pathname || "/");
+    if (portalScope) {
+      const registerPortalSw = () => {
+        navigator.serviceWorker
+          .register("/sw-portal.js", {
+            scope: portalScope,
+            updateViaCache: "none",
+          })
+          .catch(() => {});
+      };
+      if (portalCacheFlushPromise) {
+        void portalCacheFlushPromise.finally(registerPortalSw);
+      } else {
+        registerPortalSw();
+      }
+    }
+  } else {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => {
+        regs.forEach((r) => r.unregister().catch(() => false));
+      })
+      .catch(() => {});
+  }
 }
 
 // Hot Module Replacement (HMR) for development

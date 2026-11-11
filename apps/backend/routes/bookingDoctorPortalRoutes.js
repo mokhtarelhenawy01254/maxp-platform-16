@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/bookingDoctorAuthController');
 const { authenticateDoctorToken } = require('../utils/verifyDoctorToken');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+// 🌐 Multi-tenant Subdomain Resolution
+router.use(extractSubdomainMiddleware);
 
 router.post('/login', authController.login);
 router.get('/me', authenticateDoctorToken, authController.me);
@@ -12,7 +16,7 @@ router.put('/me/password', authenticateDoctorToken, authController.changePasswor
 router.get('/availability', authenticateDoctorToken, async (req, res) => {
   try {
     const data = await getSharedPrismaClient().doctorAvailability.findMany({
-      where: { doctorId: req.doctor.id },
+      where: { doctorId: req.doctor.id, companyId: req.doctor.companyId },
       orderBy: { dayOfWeek: 'asc' },
     });
     res.json({ success: true, data });
@@ -30,14 +34,14 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
-    const doctorId = req.doctor.id;
+    const { id: doctorId, companyId } = req.doctor;
     await prisma.$transaction(async (tx) => {
-      await tx.doctorAvailability.deleteMany({ where: { doctorId } });
+      await tx.doctorAvailability.deleteMany({ where: { doctorId, companyId } });
       await tx.doctorAvailability.createMany({
         data: slots
           .filter(s => s.isAvailable && s.startTime && s.endTime)
           .map(s => ({
-            companyId: req.doctor.companyId,
+            companyId,
             doctorId,
             dayOfWeek: Number(s.dayOfWeek),
             startTime: s.startTime,
@@ -47,7 +51,7 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
       });
     });
 
-    const data = await prisma.doctorAvailability.findMany({ where: { doctorId }, orderBy: { dayOfWeek: 'asc' } });
+    const data = await prisma.doctorAvailability.findMany({ where: { doctorId, companyId }, orderBy: { dayOfWeek: 'asc' } });
     res.json({ success: true, data });
   } catch (error) {
     console.error('[DoctorPortal] Update availability error:', error);
@@ -59,7 +63,7 @@ router.put('/availability', authenticateDoctorToken, async (req, res) => {
 router.get('/appointments', authenticateDoctorToken, async (req, res) => {
   try {
     const { status, dateFrom, dateTo, limit } = req.query;
-    const where = { doctorId: req.doctor.id };
+    const where = { doctorId: req.doctor.id, companyId: req.doctor.companyId };
     if (status) where.status = status;
     if (dateFrom || dateTo) {
       where.appointmentDate = {};
@@ -95,6 +99,7 @@ router.get('/schedule', authenticateDoctorToken, async (req, res) => {
     const data = await getSharedPrismaClient().appointment.findMany({
       where: {
         doctorId: req.doctor.id,
+        companyId: req.doctor.companyId,
         appointmentDate: { gte: startDate, lte: endDate },
         status: { notIn: ['cancelled', 'no_show'] },
       },
@@ -114,15 +119,16 @@ router.get('/schedule', authenticateDoctorToken, async (req, res) => {
 // Doctor's patients (distinct from their appointments)
 router.get('/patients', authenticateDoctorToken, async (req, res) => {
   try {
+    const { id: doctorId, companyId } = req.doctor;
     const appointments = await getSharedPrismaClient().appointment.findMany({
-      where: { doctorId: req.doctor.id, patientId: { not: null } },
+      where: { doctorId, companyId, patientId: { not: null } },
       select: { patientId: true },
       distinct: ['patientId'],
     });
     const ids = appointments.map(a => a.patientId).filter(Boolean);
     const patients = ids.length > 0
       ? await getSharedPrismaClient().patient.findMany({
-          where: { id: { in: ids } },
+          where: { id: { in: ids }, companyId },
           include: { _count: { select: { appointments: true } } },
           orderBy: { createdAt: 'desc' },
         })
@@ -138,8 +144,9 @@ router.get('/patients', authenticateDoctorToken, async (req, res) => {
 router.get('/payments', authenticateDoctorToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
+    const { id: doctorId, companyId } = req.doctor;
     const appointments = await prisma.appointment.findMany({
-      where: { doctorId: req.doctor.id },
+      where: { doctorId, companyId },
       select: { id: true },
     });
     const appointmentIds = appointments.map(a => a.id);
@@ -147,13 +154,13 @@ router.get('/payments', authenticateDoctorToken, async (req, res) => {
     const [invoices, totals] = await Promise.all([
       appointmentIds.length > 0
         ? prisma.medicalInvoice.findMany({
-            where: { appointmentId: { in: appointmentIds } },
+            where: { appointmentId: { in: appointmentIds }, companyId },
             orderBy: { createdAt: 'desc' },
           })
         : Promise.resolve([]),
       appointmentIds.length > 0
         ? prisma.medicalInvoice.aggregate({
-            where: { appointmentId: { in: appointmentIds }, status: { notIn: ['REFUNDED'] } },
+            where: { appointmentId: { in: appointmentIds }, companyId, status: { notIn: ['REFUNDED'] } },
             _sum: { total: true, discount: true, additionAmount: true, amountPaid: true },
           })
         : Promise.resolve({ _sum: { total: 0, discount: 0, additionAmount: 0, amountPaid: 0 } }),
@@ -179,22 +186,23 @@ router.get('/payments', authenticateDoctorToken, async (req, res) => {
 // Doctor dashboard stats
 router.get('/dashboard', authenticateDoctorToken, async (req, res) => {
   try {
-    const doctorId = req.doctor.id;
+    const { id: doctorId, companyId } = req.doctor;
     const prisma = getSharedPrismaClient();
     const now = new Date();
     const today = new Date(now); today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
     const [todayAppointments, upcomingAppointments, totalAppointments, completedAppointments, patientCount, unpaidInvoices] = await Promise.all([
-      prisma.appointment.count({ where: { doctorId, appointmentDate: today, status: { notIn: ['cancelled', 'no_show'] } } }),
-      prisma.appointment.count({ where: { doctorId, appointmentDate: { gte: tomorrow }, status: { notIn: ['cancelled', 'no_show'] } } }),
-      prisma.appointment.count({ where: { doctorId } }),
-      prisma.appointment.count({ where: { doctorId, status: 'completed' } }),
-      prisma.appointment.findMany({ where: { doctorId, patientId: { not: null } }, select: { patientId: true }, distinct: ['patientId'] }),
+      prisma.appointment.count({ where: { doctorId, companyId, appointmentDate: today, status: { notIn: ['cancelled', 'no_show'] } } }),
+      prisma.appointment.count({ where: { doctorId, companyId, appointmentDate: { gte: tomorrow }, status: { notIn: ['cancelled', 'no_show'] } } }),
+      prisma.appointment.count({ where: { doctorId, companyId } }),
+      prisma.appointment.count({ where: { doctorId, companyId, status: 'completed' } }),
+      prisma.appointment.findMany({ where: { doctorId, companyId, patientId: { not: null } }, select: { patientId: true }, distinct: ['patientId'] }),
       prisma.medicalInvoice.count({
         where: {
+          companyId,
           status: { in: ['UNPAID', 'PARTIAL'] },
-          appointment: { doctorId },
+          appointment: { doctorId, companyId },
         },
       }),
     ]);

@@ -4,7 +4,11 @@ const authController = require('../controller/educationParentAuthController');
 const portalController = require('../controller/educationParentPortalController');
 const { authenticateParentToken } = require('../utils/verifyParentToken');
 const verifyToken = require('../utils/verifyToken');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+// 🌐 Multi-tenant Subdomain Resolution
+router.use(extractSubdomainMiddleware);
 
 // Parent auth routes
 router.post('/login', authController.login);
@@ -31,11 +35,12 @@ router.post('/purchase-package', authenticateParentToken, portalController.purch
 router.get('/children', authenticateParentToken, async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const data = await getSharedPrismaClient().educationStudent.findMany({
-      where: { customerId: parentId, isActive: true },
+      where: { customerId: parentId, companyId, isActive: true },
       include: {
         enrollments: {
-          where: { remainingHours: { gt: 0 } },
+          where: { companyId, remainingHours: { gt: 0 } },
           include: {
             package: { select: { id: true, name: true, hoursCount: true, price: true } },
             teacher: { select: { id: true, name: true } }
@@ -55,15 +60,16 @@ router.get('/children', authenticateParentToken, async (req, res) => {
 router.get('/children/:studentId/sessions', authenticateParentToken, async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const { studentId } = req.params;
 
     const student = await getSharedPrismaClient().educationStudent.findFirst({
-      where: { id: studentId, customerId: parentId }
+      where: { id: studentId, customerId: parentId, companyId }
     });
     if (!student) return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
 
     const data = await getSharedPrismaClient().educationSession.findMany({
-      where: { studentId },
+      where: { studentId, companyId },
       include: {
         subject: { select: { id: true, name: true } },
         teacher: { select: { id: true, name: true } },
@@ -82,15 +88,16 @@ router.get('/children/:studentId/sessions', authenticateParentToken, async (req,
 router.get('/children/:studentId/enrollments', authenticateParentToken, async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const { studentId } = req.params;
 
     const student = await getSharedPrismaClient().educationStudent.findFirst({
-      where: { id: studentId, customerId: parentId }
+      where: { id: studentId, customerId: parentId, companyId }
     });
     if (!student) return res.status(404).json({ success: false, message: 'الطالب غير موجود' });
 
     const enrollments = await getSharedPrismaClient().educationEnrollment.findMany({
-      where: { studentId },
+      where: { studentId, companyId },
       include: {
         package: {
           select: {
@@ -120,19 +127,20 @@ router.get('/children/:studentId/enrollments', authenticateParentToken, async (r
 router.get('/dashboard', authenticateParentToken, async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const prisma = getSharedPrismaClient();
 
     const children = await prisma.educationStudent.findMany({
-      where: { customerId: parentId, isActive: true },
+      where: { customerId: parentId, companyId, isActive: true },
       select: { id: true, firstName: true, lastName: true }
     });
     const childIds = children.map(c => c.id);
 
     const [totalEnrollments, activeEnrollments, upcomingSessions, totalSessions] = await Promise.all([
-      prisma.educationEnrollment.count({ where: { studentId: { in: childIds } } }),
-      prisma.educationEnrollment.count({ where: { studentId: { in: childIds }, remainingHours: { gt: 0 } } }),
-      prisma.educationSession.count({ where: { studentId: { in: childIds }, status: 'SCHEDULED', scheduledAt: { gte: new Date() } } }),
-      prisma.educationSession.count({ where: { studentId: { in: childIds } } })
+      prisma.educationEnrollment.count({ where: { companyId, studentId: { in: childIds } } }),
+      prisma.educationEnrollment.count({ where: { companyId, studentId: { in: childIds }, remainingHours: { gt: 0 } } }),
+      prisma.educationSession.count({ where: { companyId, studentId: { in: childIds }, status: 'SCHEDULED', scheduledAt: { gte: new Date() } } }),
+      prisma.educationSession.count({ where: { companyId, studentId: { in: childIds } } })
     ]);
 
     res.json({

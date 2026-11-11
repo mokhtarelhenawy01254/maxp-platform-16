@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/bookingPatientAuthController');
 const { authenticatePatientToken } = require('../utils/verifyPatientToken');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+// 🌐 Multi-tenant Subdomain Resolution
+router.use(extractSubdomainMiddleware);
 
 router.post('/login', authController.login);
 router.get('/me', authenticatePatientToken, authController.me);
@@ -12,7 +16,7 @@ router.put('/me/password', authenticatePatientToken, authController.changePasswo
 router.get('/appointments', authenticatePatientToken, async (req, res) => {
   try {
     const { status, limit } = req.query;
-    const where = { patientId: req.patient.id };
+    const where = { patientId: req.patient.id, companyId: req.patient.companyId };
     if (status) where.status = status;
 
     const data = await getSharedPrismaClient().appointment.findMany({
@@ -36,7 +40,11 @@ router.get('/appointments', authenticatePatientToken, async (req, res) => {
 router.get('/medical-history', authenticatePatientToken, async (req, res) => {
   try {
     const data = await getSharedPrismaClient().appointment.findMany({
-      where: { patientId: req.patient.id, OR: [{ diagnosis: { not: null } }, { prescription: { not: null } }, { treatmentPlan: { not: null } }] },
+      where: {
+        patientId: req.patient.id,
+        companyId: req.patient.companyId,
+        OR: [{ diagnosis: { not: null } }, { prescription: { not: null } }, { treatmentPlan: { not: null } }],
+      },
       include: {
         branch: { select: { id: true, name: true } },
         doctor: { select: { id: true, title: true, name: true } },
@@ -55,7 +63,7 @@ router.get('/medical-history', authenticatePatientToken, async (req, res) => {
 router.get('/invoices', authenticatePatientToken, async (req, res) => {
   try {
     const data = await getSharedPrismaClient().medicalInvoice.findMany({
-      where: { patientId: req.patient.id },
+      where: { patientId: req.patient.id, companyId: req.patient.companyId },
       include: { appointment: { select: { id: true, appointmentDate: true, serviceName: true } }, payments: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -76,16 +84,16 @@ router.get('/invoices', authenticatePatientToken, async (req, res) => {
 router.get('/dashboard', authenticatePatientToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
-    const patientId = req.patient.id;
+    const { id: patientId, companyId } = req.patient;
     const now = new Date();
     const today = new Date(now); today.setHours(0, 0, 0, 0);
 
     const [upcoming, completed, total, unpaidInvoices, totalSpent] = await Promise.all([
-      prisma.appointment.count({ where: { patientId, appointmentDate: { gte: today }, status: { notIn: ['cancelled', 'no_show'] } } }),
-      prisma.appointment.count({ where: { patientId, status: 'completed' } }),
-      prisma.appointment.count({ where: { patientId } }),
-      prisma.medicalInvoice.count({ where: { patientId, status: { in: ['UNPAID', 'PARTIAL'] } } }),
-      prisma.medicalInvoice.aggregate({ where: { patientId, status: { notIn: ['REFUNDED'] } }, _sum: { amountPaid: true } }),
+      prisma.appointment.count({ where: { patientId, companyId, appointmentDate: { gte: today }, status: { notIn: ['cancelled', 'no_show'] } } }),
+      prisma.appointment.count({ where: { patientId, companyId, status: 'completed' } }),
+      prisma.appointment.count({ where: { patientId, companyId } }),
+      prisma.medicalInvoice.count({ where: { patientId, companyId, status: { in: ['UNPAID', 'PARTIAL'] } } }),
+      prisma.medicalInvoice.aggregate({ where: { patientId, companyId, status: { notIn: ['REFUNDED'] } }, _sum: { amountPaid: true } }),
     ]);
 
     res.json({

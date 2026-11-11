@@ -132,6 +132,100 @@ describe('Courier Portal Service & Revocation Tests', () => {
         courierPortalService.loginCourier({ phone: '01012345678', pin: '9999' })
       ).rejects.toThrow('بيانات الدخول غير صحيحة أو رمز PIN غير صحيح');
     });
+
+    it('rejects wrong PIN across multiple companies without revealing company list', async () => {
+      mockPrisma.courier.findMany.mockResolvedValueOnce([
+        {
+          id: 'cour-1',
+          name: 'مندوب 1',
+          phone: '01012345678',
+          pinHash,
+          isActive: true,
+          companyId: 'comp-1',
+          company: { id: 'comp-1', name: 'شركة 1', slug: 'comp-1', isActive: true }
+        },
+        {
+          id: 'cour-2',
+          name: 'مندوب 2',
+          phone: '01012345678',
+          pinHash: bcrypt.hashSync('5678', 8),
+          isActive: true,
+          companyId: 'comp-2',
+          company: { id: 'comp-2', name: 'شركة 2', slug: 'comp-2', isActive: true }
+        }
+      ]);
+
+      await expect(
+        courierPortalService.loginCourier({ phone: '01012345678', pin: '0000' })
+      ).rejects.toMatchObject({
+        statusCode: 401,
+        code: 'INVALID_CREDENTIALS'
+      });
+    });
+
+    it('returns COMPANY_SELECTION_REQUIRED when phone + valid PIN matches multiple active companies without companyId', async () => {
+      mockPrisma.courier.findMany.mockResolvedValueOnce([
+        {
+          id: 'cour-1',
+          name: 'مندوب القاهرة',
+          phone: '01012345678',
+          pinHash,
+          isActive: true,
+          companyId: 'comp-1',
+          company: { id: 'comp-1', name: 'شركة 1', slug: 'comp-1', logo: null, isActive: true }
+        },
+        {
+          id: 'cour-2',
+          name: 'مندوب الجيزة',
+          phone: '01012345678',
+          pinHash,
+          isActive: true,
+          companyId: 'comp-2',
+          company: { id: 'comp-2', name: 'شركة 2', slug: 'comp-2', logo: null, isActive: true }
+        }
+      ]);
+
+      const result = await courierPortalService.loginCourier({ phone: '+201012345678', pin });
+      expect(result.requiresCompanySelection).toBe(true);
+      expect(result.code).toBe('COMPANY_SELECTION_REQUIRED');
+      expect(result.companies).toHaveLength(2);
+      expect(result.token).toBeUndefined();
+      expect(mockPrisma.courier.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            phone: { in: expect.arrayContaining(['01012345678', '201012345678']) },
+            isActive: true
+          })
+        })
+      );
+    });
+
+    it('scopes query by companyId when specified', async () => {
+      mockPrisma.courier.findMany.mockResolvedValueOnce([
+        {
+          id: 'cour-2',
+          name: 'مندوب الجيزة',
+          phone: '01012345678',
+          pinHash,
+          isActive: true,
+          companyId: 'comp-2',
+          vehicleType: 'CAR',
+          company: { id: 'comp-2', name: 'شركة 2', slug: 'comp-2', isActive: true }
+        }
+      ]);
+
+      const result = await courierPortalService.loginCourier({ phone: '01012345678', pin, companyId: 'comp-2' });
+      expect(result.token).toBeDefined();
+      expect(result.courier.companyId).toBe('comp-2');
+      expect(mockPrisma.courier.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            companyId: 'comp-2',
+            isActive: true
+          })
+        })
+      );
+    });
   });
 
   describe('Verify Link PIN', () => {

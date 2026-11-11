@@ -3,6 +3,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { resolvePortalLoginCandidates, verifySecretHash } = require('../utils/portalAuthFactory');
 const {
   round2,
   toNonNegativeNumber,
@@ -39,49 +40,31 @@ const portalLogin = async (req, res) => {
       return res.status(400).json({ success: false, error: 'رقم الهاتف والرقم السري مطلوبان' });
     }
 
-    const prisma = getSharedPrismaClient();
-    const requestedCompanyId = body.companyId || req.headers['x-company-id'] || req.headers['X-Company-Id'] || null;
-
-    if (!requestedCompanyId) {
-      // ملاحظة: DentalLabDoctor مفيهوش علاقة company في السكيمة — الأسماء بتتجلب من جدول Company بشكل منفصل
-      const candidateDoctors = await prisma.dentalLabDoctor.findMany({
-        where: { phone, isActive: true },
-        select: {
-          id: true,
-          companyId: true,
-          name: true,
-          clinicName: true,
-        },
+    const bodyCompanyId = body.companyId ? String(body.companyId).trim() : null;
+    const rawHeaderCompanyId = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'];
+    const headerCompanyId = rawHeaderCompanyId ? String(rawHeaderCompanyId).trim() : null;
+    if (
+      req.company?.id &&
+      ((bodyCompanyId && bodyCompanyId !== req.company.id) ||
+        (headerCompanyId && headerCompanyId !== req.company.id))
+    ) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_HOST_MISMATCH',
+        error: 'تعارض في معرف المعمل مع النطاق الحالي',
+        message: 'تعارض في معرف المعمل مع النطاق الحالي',
       });
-
-      if (candidateDoctors.length === 0) {
-        return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
-      }
-
-      if (candidateDoctors.length > 1) {
-        const candidateCompanyIds = [...new Set(candidateDoctors.map((d) => d.companyId).filter(Boolean))];
-        const candidateCompanies = candidateCompanyIds.length
-          ? await prisma.company.findMany({ where: { id: { in: candidateCompanyIds } }, select: { id: true, name: true } })
-          : [];
-        const companyNameById = new Map(candidateCompanies.map((c) => [c.id, c.name]));
-        return res.status(400).json({
-          success: false,
-          requireCompanySelection: true,
-          error: 'رقم الهاتف مرتبط بأكثر من معمل أسنان، يرجى تحديد المعمل المطلوب',
-          labs: candidateDoctors.map((doc) => ({
-            companyId: doc.companyId,
-            companyName: companyNameById.get(doc.companyId) || 'معمل أسنان',
-            clinicName: doc.clinicName,
-          })),
-        });
-      }
     }
 
-    const where = { phone, isActive: true };
-    if (requestedCompanyId) where.companyId = requestedCompanyId;
+    const targetCompanyId = req.company?.id || bodyCompanyId || headerCompanyId || null;
 
-    const dentist = await prisma.dentalLabDoctor.findFirst({
-      where,
+    const prisma = getSharedPrismaClient();
+    const result = await resolvePortalLoginCandidates({
+      prisma,
+      model: 'dentalLabDoctor',
+      identifier: phone,
+      companyId: targetCompanyId,
+      whereExtra: { isActive: true },
       select: {
         id: true,
         companyId: true,
@@ -93,22 +76,48 @@ const portalLogin = async (req, res) => {
         creditLimit: true,
         isActive: true,
       },
+      includeCompanyRelation: false,
+      searchFields: { phoneFields: ['phone'], emailFields: [] },
+      verifySecret: (doc) => verifySecretHash(pin, doc.portalPin, { allowPlaintext: true }),
+      formatCompanyOption: (doc, comp) => ({
+        companyId: doc.companyId,
+        companyName: comp?.name || 'معمل أسنان',
+        companySlug: comp?.slug || null,
+        companyLogo: comp?.logo || null,
+        label: doc.clinicName || null,
+      }),
     });
-    if (!dentist) {
+
+    if (result.status === 'select_company') {
+      return res.status(200).json({
+        success: false,
+        requiresCompanySelection: true,
+        requireCompanySelection: true,
+        code: 'COMPANY_SELECTION_REQUIRED',
+        companies: result.companies,
+        labs: result.companies.map((c) => ({
+          companyId: c.companyId,
+          companyName: c.companyName,
+          clinicName: c.label,
+        })),
+        error: 'رقم الهاتف مرتبط بأكثر من معمل أسنان، يرجى تحديد المعمل المطلوب',
+        message: 'رقم الهاتف مرتبط بأكثر من معمل أسنان، يرجى تحديد المعمل المطلوب',
+      });
+    }
+
+    if (result.status === 'inactive_company') {
+      return res.status(403).json({
+        success: false,
+        error: 'حساب المعمل غير نشط حالياً',
+        message: 'حساب المعمل غير نشط حالياً',
+      });
+    }
+
+    if (result.status === 'invalid' || !result.actor) {
       return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
     }
-    const bcrypt = require('bcryptjs');
-    let pinValid = false;
-    if (dentist.portalPin) {
-      if (dentist.portalPin.startsWith('$2a$') || dentist.portalPin.startsWith('$2b$')) {
-        try { pinValid = bcrypt.compareSync(pin, dentist.portalPin); } catch (_) { pinValid = false; }
-      } else {
-        pinValid = dentist.portalPin === pin;
-      }
-    }
-    if (!pinValid) {
-      return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
-    }
+
+    const dentist = result.actor;
 
     // Verify lab company subscription (H8)
     const labCompany = await prisma.company.findUnique({
@@ -148,6 +157,7 @@ const portalLogin = async (req, res) => {
           governorate: dentist.governorate || null,
           creditLimit: dentist.creditLimit || 0,
         },
+        company: result.company || null,
         token,
         expiresIn: '24h',
       },

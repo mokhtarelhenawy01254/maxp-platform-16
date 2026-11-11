@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const verifyToken = require('../utils/verifyToken');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const courierPortalController = require('../controller/courierPortalController');
+
+// 🌐 Multi-tenant subdomain resolution
+router.use(extractSubdomainMiddleware);
 
 // 🚦 Rate limit: 5 attempts per minute per IP + phone
 const courierLoginLimiter = rateLimit({

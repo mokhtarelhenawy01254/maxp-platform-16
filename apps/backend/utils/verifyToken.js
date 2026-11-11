@@ -238,6 +238,14 @@ const authenticateToken = async (req, res, next) => {
 
       const studentId = decoded.id || decoded.userId || `student_${studentPhone}`;
       const studentCompanyId = decoded.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
+      if (req.company?.id && studentCompanyId !== req.company.id) {
+        return res.status(403).json({
+          success: false,
+          code: 'TENANT_MISMATCH',
+          message: 'الجلسة تخص أكاديمية أخرى',
+        });
+      }
+
       req.user = {
         ...decoded,
         id: studentId,
@@ -249,8 +257,9 @@ const authenticateToken = async (req, res, next) => {
         effectiveCompanyId: studentCompanyId,
         userPermissions: ['academy.student.access'],
       };
+      req.companyId = studentCompanyId;
 
-      return next();
+      return require('../services/tenantContext').run(studentCompanyId, () => next());
     }
 
     // Map userId to id for compatibility with code that expects req.user.id
@@ -275,6 +284,14 @@ const authenticateToken = async (req, res, next) => {
           success: false,
           message: 'رمز المصادقة غير صحيح',
           code: 'INVALID_TOKEN_PAYLOAD'
+        });
+      }
+
+      if (req.company?.id && customerCompanyId !== req.company.id) {
+        return res.status(403).json({
+          success: false,
+          code: 'TENANT_MISMATCH',
+          message: 'الجلسة تخص متجر آخر'
         });
       }
 
@@ -318,6 +335,7 @@ const authenticateToken = async (req, res, next) => {
         effectiveCompanyId: customerCompanyId,
         userPermissions: []
       };
+      req.companyId = customerCompanyId;
 
       return require('../services/tenantContext').run(customerCompanyId, () => next());
     }
@@ -332,6 +350,14 @@ const authenticateToken = async (req, res, next) => {
           success: false,
           message: 'رمز مصادقة المندوب غير صالح',
           code: 'INVALID_TOKEN_PAYLOAD'
+        });
+      }
+
+      if (req.company?.id && courierCompanyId !== req.company.id) {
+        return res.status(403).json({
+          success: false,
+          code: 'TENANT_MISMATCH',
+          message: 'الجلسة تخص شركة أخرى'
         });
       }
 
@@ -418,6 +444,7 @@ const authenticateToken = async (req, res, next) => {
         effectiveCompanyId: courierCompanyId,
         userPermissions: ['orders.shipping.view', 'courier.runs.view', 'courier.runs.manage']
       };
+      req.companyId = courierCompanyId;
 
       return require('../services/tenantContext').run(courierCompanyId, () => next());
     }

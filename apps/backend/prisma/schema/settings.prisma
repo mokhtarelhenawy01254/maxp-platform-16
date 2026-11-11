@@ -34,7 +34,10 @@ model NotificationPreference {
 model BrowserPushSubscription {
   id               String   @id @default(cuid())
   companyId        String   @map("company_id")
-  userId           String   @map("user_id")
+  userId           String?  @map("user_id")
+  actorType        String   @default("USER") @map("actor_type")
+  actorId          String?  @map("actor_id")
+  platform         String   @default("WEB_PUSH")
   endpoint         String   @unique
   subscription     Json
   userAgent        String?  @map("user_agent")
@@ -45,10 +48,11 @@ model BrowserPushSubscription {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
   company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId, isActive])
   @@index([companyId, userId, isActive])
+  @@index([companyId, actorType, actorId, isActive])
   @@index([userId, isActive])
   @@map("browser_push_subscriptions")
 }

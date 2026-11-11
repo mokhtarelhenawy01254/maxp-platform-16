@@ -130,6 +130,9 @@ const upsertBrowserPushSubscription = async ({
     update: {
       companyId: String(companyId),
       userId: String(userId),
+      actorType: "USER",
+      actorId: String(userId),
+      platform: "WEB_PUSH",
       subscription: normalizedSubscription,
       userAgent: userAgent || null,
       isActive: true,
@@ -140,6 +143,9 @@ const upsertBrowserPushSubscription = async ({
     create: {
       companyId: String(companyId),
       userId: String(userId),
+      actorType: "USER",
+      actorId: String(userId),
+      platform: "WEB_PUSH",
       endpoint: normalizedSubscription.endpoint,
       subscription: normalizedSubscription,
       userAgent: userAgent || null,
@@ -176,6 +182,149 @@ const deactivateBrowserPushSubscription = async ({
 };
 
 const getBrowserPushPublicKey = () => ensureVapidConfiguration().publicKey;
+
+const getPortalPushPublicKey = () => {
+  loadWebPushEnvironment();
+  const publicKey = String(process.env.WEB_PUSH_PUBLIC_KEY || "").trim();
+  const privateKey = String(process.env.WEB_PUSH_PRIVATE_KEY || "").trim();
+  if (!publicKey || !privateKey) {
+    return null;
+  }
+  return ensureVapidConfiguration().publicKey;
+};
+
+const VALID_PORTAL_PLATFORMS = new Set(["WEB_PUSH", "FCM_ANDROID", "FCM_IOS"]);
+
+const normalizePortalPlatform = (platform = "WEB_PUSH") => {
+  const normalized = String(platform || "WEB_PUSH").trim().toUpperCase();
+  if (normalized === "WEB" || normalized === "WEB_PUSH") return "WEB_PUSH";
+  if (normalized === "ANDROID" || normalized === "FCM_ANDROID") return "FCM_ANDROID";
+  if (normalized === "IOS" || normalized === "FCM_IOS") return "FCM_IOS";
+  if (VALID_PORTAL_PLATFORMS.has(normalized)) return normalized;
+
+  const error = new Error(`Invalid push platform: ${platform}`);
+  error.statusCode = 400;
+  throw error;
+};
+
+const upsertPortalPushSubscription = async ({
+  companyId,
+  actorType = "USER",
+  actorId,
+  platform = "WEB_PUSH",
+  subscription,
+  fcmToken,
+  userAgent = null,
+}) => {
+  const cleanCompanyId = String(companyId || "").trim();
+  const normalizedActorType = String(actorType || "USER").trim().toUpperCase();
+  const cleanActorId = String(actorId || "").trim();
+
+  if (!cleanCompanyId || !normalizedActorType || !cleanActorId) {
+    const error = new Error("companyId, actorType, and actorId are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedPlatform = normalizePortalPlatform(platform);
+  let endpoint;
+  let subscriptionPayload;
+
+  if (normalizedPlatform === "WEB_PUSH") {
+    try {
+      subscriptionPayload = normalizeSubscription(subscription);
+      endpoint = subscriptionPayload.endpoint;
+    } catch (validationError) {
+      validationError.statusCode = 400;
+      throw validationError;
+    }
+  } else {
+    const cleanToken = String(fcmToken || "").trim();
+    if (!cleanToken) {
+      const error = new Error("fcmToken is required for FCM push platforms");
+      error.statusCode = 400;
+      throw error;
+    }
+    endpoint = `fcm:${cleanToken}`;
+    subscriptionPayload = {
+      provider: "fcm",
+      token: cleanToken,
+      platform: normalizedPlatform,
+    };
+  }
+
+  const prisma = getSharedPrismaClient();
+  const resolvedUserId = normalizedActorType === "USER" ? cleanActorId : null;
+  const now = new Date();
+
+  return prisma.browserPushSubscription.upsert({
+    where: { endpoint },
+    update: {
+      companyId: cleanCompanyId,
+      userId: resolvedUserId,
+      actorType: normalizedActorType,
+      actorId: cleanActorId,
+      platform: normalizedPlatform,
+      subscription: subscriptionPayload,
+      userAgent: userAgent || null,
+      isActive: true,
+      lastUsedAt: now,
+      lastErrorAt: null,
+      lastErrorMessage: null,
+    },
+    create: {
+      companyId: cleanCompanyId,
+      userId: resolvedUserId,
+      actorType: normalizedActorType,
+      actorId: cleanActorId,
+      platform: normalizedPlatform,
+      endpoint,
+      subscription: subscriptionPayload,
+      userAgent: userAgent || null,
+      isActive: true,
+      lastUsedAt: now,
+    },
+  });
+};
+
+const deactivatePortalPushSubscription = async ({
+  companyId,
+  actorType,
+  actorId,
+  endpoint,
+  fcmToken,
+}) => {
+  const cleanCompanyId = String(companyId || "").trim();
+  const normalizedActorType = String(actorType || "").trim().toUpperCase();
+  const cleanActorId = String(actorId || "").trim();
+
+  if (!cleanCompanyId || !normalizedActorType || !cleanActorId) {
+    const error = new Error("companyId, actorType, and actorId are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const cleanToken = fcmToken ? String(fcmToken).trim() : "";
+  const resolvedEndpoint = endpoint
+    ? String(endpoint).trim()
+    : cleanToken
+      ? `fcm:${cleanToken}`
+      : null;
+
+  const prisma = getSharedPrismaClient();
+  return prisma.browserPushSubscription.updateMany({
+    where: {
+      companyId: cleanCompanyId,
+      actorType: normalizedActorType,
+      ...(cleanActorId ? { actorId: cleanActorId } : {}),
+      ...(resolvedEndpoint ? { endpoint: resolvedEndpoint } : {}),
+    },
+    data: {
+      isActive: false,
+      lastErrorMessage: "Unsubscribed by portal actor",
+    },
+  });
+};
 
 const isFcmSubscription = (subscription) => {
   return Boolean(
@@ -395,14 +544,17 @@ const sendBrowserPushToCompany = async ({
   }
 
   const userIds = Array.from(
-    new Set(subscriptions.map((subscription) => subscription.userId)),
+    new Set(subscriptions.map((subscription) => subscription.userId).filter(Boolean)),
   );
-  const preferenceRecords = await prisma.notificationPreference.findMany({
-    where: {
-      companyId: String(companyId),
-      userId: { in: userIds },
-    },
-  });
+  const preferenceRecords =
+    userIds.length > 0
+      ? await prisma.notificationPreference.findMany({
+          where: {
+            companyId: String(companyId),
+            userId: { in: userIds },
+          },
+        })
+      : [];
 
   const preferencesByUserId = new Map(
     preferenceRecords.map((record) => [record.userId, record.settings || {}]),
@@ -414,7 +566,7 @@ const sendBrowserPushToCompany = async ({
   let failed = 0;
 
   for (const subscription of subscriptions) {
-    if (!subscription.user) {
+    if (!subscription.userId || !subscription.user) {
       skipped += 1;
       continue;
     }
@@ -623,10 +775,185 @@ const sendBrowserPushToUser = async ({
   };
 };
 
+const sendToPortalActor = async ({
+  companyId,
+  actorType,
+  actorId,
+  typeId = "portal_notification",
+  title,
+  body,
+  icon = DEFAULT_ICON,
+  badge = DEFAULT_BADGE,
+  url = "/",
+  data = {},
+  tag,
+}) => {
+  const cleanCompanyId = String(companyId || "").trim();
+  const normalizedActorType = String(actorType || "").trim().toUpperCase();
+  const cleanActorId = String(actorId || "").trim();
+
+  if (!cleanCompanyId || !normalizedActorType || !cleanActorId) {
+    return {
+      attempted: 0,
+      sent: 0,
+      deliveredCount: 0,
+      failed: 0,
+      webSent: 0,
+      fcmSent: 0,
+    };
+  }
+
+  const prisma = getSharedPrismaClient();
+  const subscriptions = await prisma.browserPushSubscription.findMany({
+    where: {
+      companyId: cleanCompanyId,
+      actorType: normalizedActorType,
+      actorId: cleanActorId,
+      isActive: true,
+    },
+  });
+
+  if (!subscriptions || !subscriptions.length) {
+    return {
+      attempted: 0,
+      sent: 0,
+      deliveredCount: 0,
+      failed: 0,
+      webSent: 0,
+      fcmSent: 0,
+    };
+  }
+
+  const webPushRows = [];
+  const fcmRows = [];
+
+  for (const sub of subscriptions) {
+    const subPlatform = String(sub?.platform || "").trim().toUpperCase();
+    const isFcm = subPlatform.startsWith("FCM") || isFcmSubscription(sub);
+    if (isFcm) {
+      fcmRows.push(sub);
+    } else if (
+      (!subPlatform || subPlatform === "WEB_PUSH") &&
+      !String(sub?.endpoint || "").startsWith("fcm:")
+    ) {
+      webPushRows.push(sub);
+    }
+  }
+
+  const resolvedUrl = url || "/";
+  const resolvedTag =
+    tag || `${typeId}-${normalizedActorType.toLowerCase()}-${cleanActorId}`;
+  const payload = {
+    title,
+    body,
+    icon,
+    badge,
+    tag: resolvedTag,
+    url: resolvedUrl,
+    data: {
+      ...data,
+      typeId,
+      actorType: normalizedActorType,
+      actorId: cleanActorId,
+      companyId: cleanCompanyId,
+      url: resolvedUrl,
+    },
+  };
+
+  let attempted = 0;
+  let webSent = 0;
+  let fcmSent = 0;
+  let failed = 0;
+
+  if (
+    webPushRows.length > 0 &&
+    isPushDeliveryAvailable() &&
+    getOptionalVapidConfiguration()
+  ) {
+    for (const sub of webPushRows) {
+      attempted += 1;
+      const delivered = await sendNotificationToSubscription(sub, payload);
+      if (delivered) {
+        webSent += 1;
+      } else {
+        failed += 1;
+      }
+    }
+  }
+
+  const fcmTokens = Array.from(
+    new Set(
+      fcmRows
+        .map((sub) => {
+          if (
+            sub?.subscription &&
+            typeof sub.subscription === "object" &&
+            sub.subscription.token
+          ) {
+            return String(sub.subscription.token).trim();
+          }
+          if (
+            typeof sub?.endpoint === "string" &&
+            sub.endpoint.startsWith("fcm:")
+          ) {
+            return sub.endpoint.slice(4).trim();
+          }
+          return "";
+        })
+        .filter(Boolean),
+    ),
+  );
+
+  if (fcmTokens.length > 0) {
+    attempted += fcmTokens.length;
+    try {
+      const { sendToFcmTokens } = require("./firebaseMessagingService");
+      const validImageUrl =
+        typeof icon === "string" &&
+        (icon.startsWith("https://") || icon.startsWith("http://"))
+          ? icon
+          : null;
+      const fcmResult = await sendToFcmTokens({
+        tokens: fcmTokens,
+        title,
+        body,
+        data: payload.data,
+        imageUrl: validImageUrl,
+        tag: resolvedTag,
+      });
+
+      const successCount = Number(fcmResult?.successCount || 0);
+      const failureCount = Number(
+        fcmResult?.failureCount ?? Math.max(0, fcmTokens.length - successCount),
+      );
+      fcmSent += successCount;
+      failed += Math.max(0, failureCount);
+    } catch (fcmError) {
+      console.error("[PORTAL-PUSH] FCM delivery failed:", fcmError.message);
+      failed += fcmTokens.length;
+    }
+  }
+
+  const sent = webSent + fcmSent;
+  return {
+    attempted,
+    sent,
+    deliveredCount: sent,
+    failed,
+    webSent,
+    fcmSent,
+  };
+};
+
 module.exports = {
   deactivateBrowserPushSubscription,
+  deactivatePortalPushSubscription,
   getBrowserPushPublicKey,
+  getPortalPushPublicKey,
+  normalizePortalPlatform,
   sendBrowserPushToCompany,
   sendBrowserPushToUser,
+  sendToPortalActor,
   upsertBrowserPushSubscription,
+  upsertPortalPushSubscription,
 };

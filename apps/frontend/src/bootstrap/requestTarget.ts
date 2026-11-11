@@ -1,16 +1,14 @@
-const PUBLIC_SUBDOMAIN_BYPASS_PREFIXES = [
-  "/affiliate-register",
-  "/dental-portal",
-  "/portal",
-  "/academy",
-  "/proposal",
-  "/agency/proposal",
-  "/agency/client-portal",
-];
+import { isPortalOrRegistrationPath } from "../config/portals";
 
-const PUBLIC_SUBDOMAIN_BYPASS_PATHS = new Set([
-  "/register/affiliate",
-  "/register/merchant",
+const RESERVED_PLATFORM_SUBDOMAINS = new Set([
+  "www",
+  "app",
+  "admin",
+  "api",
+  "dashboard",
+  "dev",
+  "staging",
+  "mail",
 ]);
 
 const normalizeHostname = (hostname: string): string =>
@@ -25,14 +23,10 @@ const normalizePathname = (pathname: string): string => {
   return normalized.startsWith("/") ? normalized : `/${normalized}`;
 };
 
-const isPublicSubdomainBypassPath = (pathname: string): boolean =>
-  PUBLIC_SUBDOMAIN_BYPASS_PATHS.has(pathname) ||
-  PUBLIC_SUBDOMAIN_BYPASS_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-
-const ADMIN_PRODUCT_PATH_PATTERN = /\/products\/(?:new|trash|reviews|import-|settings\/upsell)/;
+const ADMIN_PRODUCT_PATH_PATTERN =
+  /\/products\/(?:new|trash|reviews|import-|settings\/upsell)/;
 const ADMIN_PRODUCT_EDIT_PATTERN = /\/products\/[^/]+\/edit$/;
+const IPV4_HOSTNAME_PATTERN = /^\d+(?:\.\d+){3}$/;
 
 export const shouldBootstrapStorefront = (
   hostnameInput: string,
@@ -46,11 +40,15 @@ export const shouldBootstrapStorefront = (
     searchInput.includes("previewTheme=") ||
     searchInput.includes("storefrontSubdomain=");
 
-  // Storefront detection on pure localhost is driven solely by subdomain
-  // (tenant.localhost) or explicit preview query params (?previewTheme=...).
-  // Admin routes such as /products/…, /settings/store/… or /cart MUST NOT
-  // bootstrap the storefront rendering engine on localhost without preview query.
-  if (isLocalhost && !hasStorefrontPreviewParam) {
+  // Portals, customer registration, affiliate registration, and agency proposals
+  // MUST execute inside the platform shell even when hosted on tenant subdomains
+  // (*.maxp.online) or custom domains.
+  if (
+    pathname === "/account" ||
+    pathname.startsWith("/account/") ||
+    pathname.startsWith("/auth/customer-register") ||
+    isPortalOrRegistrationPath(pathname)
+  ) {
     return false;
   }
 
@@ -62,17 +60,11 @@ export const shouldBootstrapStorefront = (
     return false;
   }
 
-  // بوابة العميل وبوابة الطالب تُعرض من تطبيق المنصة حتى على subdomain المتجر
-  if (
-    pathname === "/account" ||
-    pathname.startsWith("/account/") ||
-    pathname === "/auth/customer-register" ||
-    pathname.startsWith("/auth/customer-register/") ||
-    pathname === "/portal" ||
-    pathname.startsWith("/portal/") ||
-    pathname === "/academy" ||
-    pathname.startsWith("/academy/")
-  ) {
+  // Storefront detection on pure localhost is driven solely by subdomain
+  // (tenant.localhost) or explicit preview query params (?previewTheme=...).
+  // Admin routes such as /products/…, /settings/store/… or /cart MUST NOT
+  // bootstrap the storefront rendering engine on localhost without preview query.
+  if (isLocalhost && !hasStorefrontPreviewParam) {
     return false;
   }
 
@@ -92,10 +84,6 @@ export const shouldBootstrapStorefront = (
     return true;
   }
 
-  if (isPublicSubdomainBypassPath(pathname)) {
-    return false;
-  }
-
   if (hasStorefrontPreviewParam) {
     return true;
   }
@@ -104,6 +92,11 @@ export const shouldBootstrapStorefront = (
     return true;
   }
 
+  if (IPV4_HOSTNAME_PATTERN.test(hostname)) {
+    return false;
+  }
+
   const parts = hostname.split(".");
-  return parts.length >= 3 && parts[0] !== "www";
+  const firstSegment = parts[0] ?? "";
+  return parts.length >= 3 && !RESERVED_PLATFORM_SUBDOMAINS.has(firstSegment);
 };

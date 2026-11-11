@@ -2,20 +2,24 @@ const academyService = require('../services/academyService');
 const KashierService = require('../services/kashierService');
 const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
 const { buildSessionDetails } = require('../utils/sessionDetailsHelper');
+const redisCacheService = require('../services/redisCacheService');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/jwtSecret');
 
 function getCompanyId(req) {
-  const explicit =
-    req.headers['x-company-id'] ||
-    req.headers['X-Company-Id'] ||
-    req.query.companyId ||
-    req.body?.companyId;
-  if (explicit) return String(explicit).trim();
-
-  // If instructor or admin is managing courses, use their companyId
-  if (req.user && req.user.role !== 'STUDENT' && req.user.companyId) {
-    return req.user.companyId;
+  if (req.user) {
+    if (req.user.role === 'SUPER_ADMIN') {
+      const explicit =
+        req.headers['x-company-id'] ||
+        req.headers['X-Company-Id'] ||
+        req.query?.companyId ||
+        req.body?.companyId ||
+        req.company?.id;
+      if (explicit) return String(explicit).trim();
+    }
+    if (req.user.companyId) {
+      return req.user.companyId;
+    }
   }
 
   // Multi-tenant subdomain resolution from request host (e.g. swan.maxp.online)
@@ -23,22 +27,82 @@ function getCompanyId(req) {
     return req.company.id;
   }
 
-  if (req.user?.companyId) {
-    return req.user.companyId;
-  }
+  const explicit =
+    req.headers['x-company-id'] ||
+    req.headers['X-Company-Id'] ||
+    req.query?.companyId ||
+    req.body?.companyId;
+  if (explicit) return String(explicit).trim();
 
   return null;
 }
+
+exports.getCompanyId = getCompanyId;
 
 function resolveAcademyCompanyId(req) {
   return getCompanyId(req) || 'cmopgxu3a07i4jujj6f1oh32h';
 }
 
 /**
- * In-memory OTP store for student verification codes.
- * Map<cleanPhone, { code: string, expiresAt: number, attempts: number, lastSentAt: number }>
+ * Distributed Redis OTP store helpers for student verification codes (cluster/PM2 safe).
+ * Falls back to in-memory map ONLY in test env or when Redis is disconnected.
  */
-const studentOtpStore = new Map();
+const OTP_TTL_SECONDS = 600;
+const OTP_COOLDOWN_MS = 30 * 1000;
+const testOtpFallbackMap = new Map();
+
+const buildStudentOtpKey = (companyScope, variant) =>
+  `portal:otp:student:${companyScope}:${variant}`;
+
+async function getStudentOtpRecord(companyScope, variants) {
+  const uniqueVariants = [...new Set((variants || []).filter(Boolean))];
+  for (const v of uniqueVariants) {
+    const key = buildStudentOtpKey(companyScope, v);
+    try {
+      const cached = await redisCacheService.get(key);
+      if (cached && typeof cached === 'object') {
+        return { key, record: cached, scope: companyScope };
+      }
+    } catch (_) {}
+
+    if (process.env.NODE_ENV === 'test' || !redisCacheService.isConnected) {
+      const mem = testOtpFallbackMap.get(key);
+      if (mem) {
+        if (mem.expiresAt && Date.now() > mem.expiresAt) {
+          testOtpFallbackMap.delete(key);
+        } else {
+          return { key, record: { ...mem }, scope: companyScope };
+        }
+      }
+    }
+  }
+  return { key: null, record: null, scope: companyScope };
+}
+
+async function setStudentOtpRecord(companyScope, keys, payload, ttlSeconds = OTP_TTL_SECONDS) {
+  const uniqueKeys = [...new Set((keys || []).filter(Boolean))];
+  for (const v of uniqueKeys) {
+    const key = buildStudentOtpKey(companyScope, v);
+    try {
+      await redisCacheService.set(key, payload, ttlSeconds);
+    } catch (_) {}
+
+    if (process.env.NODE_ENV === 'test' || !redisCacheService.isConnected) {
+      testOtpFallbackMap.set(key, { ...payload });
+    }
+  }
+}
+
+async function deleteStudentOtpRecord(companyScope, keys) {
+  const uniqueKeys = [...new Set((keys || []).filter(Boolean))];
+  for (const v of uniqueKeys) {
+    const key = buildStudentOtpKey(companyScope, v);
+    try {
+      await redisCacheService.del(key);
+    } catch (_) {}
+    testOtpFallbackMap.delete(key);
+  }
+}
 
 const { getPhoneVariants, normalizePhone: toNormalizedLocalPhone } = require('../utils/phoneNormalization');
 
@@ -955,7 +1019,19 @@ exports.isAcademyTestOtpEnabled = isAcademyTestOtpEnabled;
 
 exports.sendStudentLoginCode = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const bodyCompanyId = req.body?.companyId ? String(req.body.companyId).trim() : null;
+    if (req.company?.id && bodyCompanyId && bodyCompanyId !== req.company.id) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_HOST_MISMATCH',
+        message: 'تعارض في معرف الأكاديمية مع النطاق الحالي',
+      });
+    }
+
+    const explicitCompanyId = req.company?.id || bodyCompanyId || null;
+    const companyScope = explicitCompanyId || 'global';
+
+    const { phone } = req.body || {};
     if (!phone || !phone.trim()) {
       return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لإرسال كود التحقق' });
     }
@@ -969,6 +1045,7 @@ exports.sendStudentLoginCode = async (req, res) => {
     const enrollment = await db.academyEnrollment.findFirst({
       where: {
         studentPhone: { in: phoneVariants },
+        ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
         status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       include: {
@@ -976,13 +1053,21 @@ exports.sendStudentLoginCode = async (req, res) => {
       },
     });
 
+    let customerEnrollment = null;
     if (!enrollment) {
       // Check customer table fallback
       const customer = await db.customer.findFirst({
-        where: { phone: { in: phoneVariants } },
+        where: {
+          phone: { in: phoneVariants },
+          ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
+        },
       });
-      const customerEnrollment = customer ? await db.academyEnrollment.findFirst({
-        where: { customerId: customer.id, status: { in: ['ACTIVE', 'COMPLETED'] } },
+      customerEnrollment = customer ? await db.academyEnrollment.findFirst({
+        where: {
+          customerId: customer.id,
+          ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+        },
       }) : null;
 
       if (!customerEnrollment) {
@@ -994,20 +1079,19 @@ exports.sendStudentLoginCode = async (req, res) => {
       }
     }
 
+    const resolvedEnrollment = enrollment || customerEnrollment;
+    const otpCompanyId = explicitCompanyId || resolvedEnrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
+
     // 2. Rate limit check (minimum 30 seconds between resends for the same phone across all variants)
-    let existingOtp = null;
-    let existingKey = cleanPhone;
-    for (const v of phoneVariants) {
-      if (studentOtpStore.has(v)) {
-        existingOtp = studentOtpStore.get(v);
-        existingKey = v;
-        break;
-      }
-    }
+    const { record: existingOtp } = await getStudentOtpRecord(companyScope, [
+      cleanPhone,
+      recipientPhone,
+      ...phoneVariants,
+    ]);
 
     const now = Date.now();
-    if (existingOtp && (now - existingOtp.lastSentAt) < 30 * 1000) {
-      const waitSeconds = Math.ceil((30 * 1000 - (now - existingOtp.lastSentAt)) / 1000);
+    if (existingOtp && (now - existingOtp.lastSentAt) < OTP_COOLDOWN_MS) {
+      const waitSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - existingOtp.lastSentAt)) / 1000);
       return res.status(429).json({
         success: false,
         code: 'RATE_LIMITED',
@@ -1021,17 +1105,15 @@ exports.sendStudentLoginCode = async (req, res) => {
     const isTestFixedOtp = isAcademyTestOtpEnabled(cleanPhone, phoneVariants);
     const code = isTestFixedOtp ? '123456' : Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 4. Save in OTP store (valid for 10 minutes) under cleanPhone and recipientPhone
+    // 4. Save in distributed Redis OTP store (valid for 10 minutes) under cleanPhone and recipientPhone
     const otpPayload = {
       code,
-      expiresAt: now + 10 * 60 * 1000,
+      expiresAt: now + OTP_TTL_SECONDS * 1000,
       attempts: 0,
       lastSentAt: now,
     };
-    studentOtpStore.set(cleanPhone, otpPayload);
-    if (recipientPhone && recipientPhone !== cleanPhone) {
-      studentOtpStore.set(recipientPhone, otpPayload);
-    }
+    const otpStoreKeys = [cleanPhone, recipientPhone].filter(Boolean);
+    await setStudentOtpRecord(companyScope, otpStoreKeys, otpPayload, OTP_TTL_SECONDS);
 
     // 5. Dispatch via WhatsApp
     let dispatchSuccess = false;
@@ -1042,7 +1124,7 @@ exports.sendStudentLoginCode = async (req, res) => {
       // 🧹 Test accounts (01000000099 / 01000000088) have fixed predictable code 123456 only when ALLOW_ACADEMY_TEST_OTP === 'true'
       dispatchSuccess = true;
     } else {
-      const companyId = enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h';
+      const companyId = otpCompanyId;
       try {
         activeSession = await resolveActiveWhatsAppSession(companyId, db);
         if (!activeSession) {
@@ -1161,18 +1243,14 @@ exports.sendStudentLoginCode = async (req, res) => {
 
     // 🔒 Reliability: If dispatch failed for a real student phone, DO NOT falsely claim success!
     if (!dispatchSuccess) {
-      for (const v of phoneVariants) {
-        studentOtpStore.delete(v);
-      }
-      studentOtpStore.delete(cleanPhone);
-      if (recipientPhone) studentOtpStore.delete(recipientPhone);
+      await deleteStudentOtpRecord(companyScope, [cleanPhone, recipientPhone, ...phoneVariants]);
 
       // Operational notification to the team
       try {
         const notificationService = require('../services/notificationService');
         if (notificationService?.createNotification) {
           await notificationService.createNotification({
-            companyId: enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+            companyId: otpCompanyId,
             title: '⚠️ تعذر إرسال كود تحقق دخول الطالب عبر واتساب',
             body: `فشل إرسال كود التحقق للرقم ${cleanPhone}. السبب: ${dispatchError?.message || 'تعذر الإرسال'}`,
             type: 'STUDENT_AUTH_OTP_FAILED',
@@ -1209,7 +1287,7 @@ exports.sendStudentLoginCode = async (req, res) => {
       const notificationService = require('../services/notificationService');
       if (notificationService?.createNotification) {
         await notificationService.createNotification({
-          companyId: enrollment?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+          companyId: otpCompanyId,
           title: 'كود تحقق دخول الطالب',
           body: `تم إصدار وإرسال كود تحقق للطالب ${cleanPhone}`,
           type: 'STUDENT_AUTH_OTP',
@@ -1221,7 +1299,7 @@ exports.sendStudentLoginCode = async (req, res) => {
     res.json({
       success: true,
       message: 'تم إرسال كود التحقق بنجاح إلى هاتفك عبر واتساب',
-      expiresInSeconds: 600,
+      expiresInSeconds: OTP_TTL_SECONDS,
       ...(isTestFixedOtp && process.env.ALLOW_ACADEMY_TEST_OTP === 'true' ? { testCode: '123456' } : {}),
     });
   } catch (err) {
@@ -1231,13 +1309,26 @@ exports.sendStudentLoginCode = async (req, res) => {
 
 exports.studentLogin = async (req, res) => {
   try {
-    const { phone, code } = req.body;
+    const bodyCompanyId = req.body?.companyId ? String(req.body.companyId).trim() : null;
+    if (req.company?.id && bodyCompanyId && bodyCompanyId !== req.company.id) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_HOST_MISMATCH',
+        message: 'تعارض في معرف الأكاديمية مع النطاق الحالي',
+      });
+    }
+
+    const explicitCompanyId = req.company?.id || bodyCompanyId || null;
+    const companyScope = explicitCompanyId || 'global';
+
+    const { phone, code } = req.body || {};
     if (!phone || !phone.trim()) {
       return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتسجيل الدخول' });
     }
 
     const cleanPhone = phone.trim();
     const phoneVariants = getPhoneVariants(cleanPhone);
+    const recipientPhone = normalizeStudentPhoneForWhatsApp(cleanPhone);
 
     // 🔒 P0-3 Security: Code is MANDATORY
     if (!code || !String(code).trim()) {
@@ -1252,20 +1343,16 @@ exports.studentLogin = async (req, res) => {
     // 🔒 حسابات الاختبار بكود ثابت مشروطة حصريًا بـ ALLOW_ACADEMY_TEST_OTP === 'true'
     const isTestFixedOtp = isAcademyTestOtpEnabled(cleanPhone, phoneVariants);
 
-    // Verify OTP
-    let isCodeValid = false;
-    if (isTestFixedOtp && cleanCode === '123456') {
-      isCodeValid = true;
-    } else {
-      let otpRecord = null;
-      let matchingKey = null;
-      for (const v of phoneVariants) {
-        if (studentOtpStore.has(v)) {
-          otpRecord = studentOtpStore.get(v);
-          matchingKey = v;
-          break;
-        }
+    // Verify OTP BEFORE tenant/enrollment inspection (Zero Enumeration!)
+    let matchedScope = null;
+    if (!(isTestFixedOtp && cleanCode === '123456')) {
+      let otpHit = await getStudentOtpRecord(companyScope, [cleanPhone, recipientPhone, ...phoneVariants]);
+      if (!otpHit.record && bodyCompanyId && explicitCompanyId === bodyCompanyId) {
+        otpHit = await getStudentOtpRecord('global', [cleanPhone, recipientPhone, ...phoneVariants]);
       }
+
+      const otpRecord = otpHit.record;
+      matchedScope = otpHit.scope;
 
       if (!otpRecord) {
         return res.status(400).json({
@@ -1276,8 +1363,7 @@ exports.studentLogin = async (req, res) => {
       }
 
       if (Date.now() > otpRecord.expiresAt) {
-        for (const v of phoneVariants) studentOtpStore.delete(v);
-        studentOtpStore.delete(cleanPhone);
+        await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
         return res.status(400).json({
           success: false,
           message: 'انتهت صلاحية كود التحقق. أعد طلب كود جديد.',
@@ -1287,8 +1373,7 @@ exports.studentLogin = async (req, res) => {
 
       otpRecord.attempts = (otpRecord.attempts || 0) + 1;
       if (otpRecord.attempts > 5) {
-        for (const v of phoneVariants) studentOtpStore.delete(v);
-        studentOtpStore.delete(cleanPhone);
+        await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
         return res.status(429).json({
           success: false,
           message: 'تم تجاوز الحد الأقصى للمحاولات الخاطئة. أعد طلب كود جديد.',
@@ -1297,6 +1382,8 @@ exports.studentLogin = async (req, res) => {
       }
 
       if (otpRecord.code !== cleanCode) {
+        const remainingTtl = Math.max(1, Math.ceil((otpRecord.expiresAt - Date.now()) / 1000));
+        await setStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone].filter(Boolean), otpRecord, remainingTtl);
         const remaining = 5 - otpRecord.attempts;
         return res.status(400).json({
           success: false,
@@ -1305,19 +1392,15 @@ exports.studentLogin = async (req, res) => {
           remainingAttempts: remaining,
         });
       }
-
-      isCodeValid = true;
-      // Single-use: delete after successful verification
-      for (const v of phoneVariants) studentOtpStore.delete(v);
-      studentOtpStore.delete(cleanPhone);
     }
 
     const db = academyService.getDb();
 
-    // Look for active enrollments with this phone number across all variants
+    // Look for active enrollments with this phone number across all variants (scoped by explicitCompanyId if set)
     const enrollments = await db.academyEnrollment.findMany({
       where: {
         studentPhone: { in: phoneVariants },
+        ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
         status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       include: {
@@ -1332,16 +1415,22 @@ exports.studentLogin = async (req, res) => {
       },
     });
 
-    if (!enrollments || enrollments.length === 0) {
-      // Also check customer table for fallback
-      const customer = await db.customer.findFirst({
-        where: { phone: { in: phoneVariants } },
+    let activeEnrollments = Array.isArray(enrollments) ? enrollments : [];
+    let customerFallback = null;
+
+    if (activeEnrollments.length === 0) {
+      customerFallback = await db.customer.findFirst({
+        where: {
+          phone: { in: phoneVariants },
+          ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
+        },
       });
 
-      if (customer) {
+      if (customerFallback) {
         const customerEnrollments = await db.academyEnrollment.findMany({
           where: {
-            customerId: customer.id,
+            customerId: customerFallback.id,
+            ...(explicitCompanyId ? { companyId: explicitCompanyId } : {}),
             status: { in: ['ACTIVE', 'COMPLETED'] },
           },
           include: {
@@ -1355,41 +1444,138 @@ exports.studentLogin = async (req, res) => {
             },
           },
         });
-
-        if (customerEnrollments.length > 0) {
-          const studentName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'طالب ماكس بي';
-          const token = jwt.sign(
-            {
-              id: `student_${cleanPhone}`,
-              userId: `student_${cleanPhone}`,
-              studentPhone: cleanPhone,
-              customerId: customer.id,
-              studentName,
-              role: 'STUDENT',
-              companyId: customerEnrollments[0]?.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
-            },
-            getJwtSecret(),
-            { expiresIn: '30d' }
-          );
-          return res.json({
-            success: true,
-            token,
-            student: {
-              phone: cleanPhone,
-              name: studentName,
-              enrollmentsCount: customerEnrollments.length,
-            },
-          });
+        if (Array.isArray(customerEnrollments)) {
+          activeEnrollments = customerEnrollments;
         }
       }
+    }
 
+    if (activeEnrollments.length === 0) {
+      if (matchedScope) {
+        await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
+      }
       return res.status(404).json({
         success: false,
         message: 'لم يتم العثور على أي كورسات نشطة مرتبطة بهذا الرقم.',
       });
     }
 
-    const primaryEnrollment = enrollments[0];
+    const distinctCompanyIds = [...new Set(activeEnrollments.map((e) => e.companyId).filter(Boolean))];
+    let resolvedCompanyId = explicitCompanyId || distinctCompanyIds[0] || 'cmopgxu3a07i4jujj6f1oh32h';
+    let scopedEnrollments = activeEnrollments;
+    let resolvedCompanyMeta = null;
+
+    if (!explicitCompanyId && distinctCompanyIds.length > 0) {
+      if (typeof db.company?.findMany === 'function') {
+        const companyRows = await db.company.findMany({
+          where: { id: { in: distinctCompanyIds } },
+          select: { id: true, name: true, slug: true, logo: true, isActive: true },
+        });
+        const companyById = new Map((companyRows || []).map((c) => [c.id, c]));
+        const activeCompanyIds = distinctCompanyIds.filter((cid) => {
+          const comp = companyById.get(cid);
+          return comp ? comp.isActive !== false : true;
+        });
+
+        if (activeCompanyIds.length === 0) {
+          if (matchedScope) {
+            await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
+          }
+          return res.status(403).json({
+            success: false,
+            message: 'حساب الأكاديمية غير نشط حالياً',
+          });
+        }
+
+        if (activeCompanyIds.length > 1) {
+          return res.status(200).json({
+            success: false,
+            requiresCompanySelection: true,
+            code: 'COMPANY_SELECTION_REQUIRED',
+            companies: activeCompanyIds.map((cid) => {
+              const comp = companyById.get(cid);
+              return {
+                companyId: cid,
+                companyName: comp?.name || '',
+                companySlug: comp?.slug || null,
+                companyLogo: comp?.logo || null,
+                label: comp?.name || '',
+              };
+            }),
+            message: 'يوجد اشتراك مرتبط بأكثر من أكاديمية — اختر الأكاديمية للمتابعة',
+          });
+        }
+
+        resolvedCompanyId = activeCompanyIds[0];
+        scopedEnrollments = activeEnrollments.filter((e) => e.companyId === resolvedCompanyId);
+        resolvedCompanyMeta = companyById.get(resolvedCompanyId) || null;
+      } else if (distinctCompanyIds.length > 1) {
+        return res.status(200).json({
+          success: false,
+          requiresCompanySelection: true,
+          code: 'COMPANY_SELECTION_REQUIRED',
+          companies: distinctCompanyIds.map((cid) => ({
+            companyId: cid,
+            companyName: '',
+            companySlug: null,
+            companyLogo: null,
+            label: '',
+          })),
+          message: 'يوجد اشتراك مرتبط بأكثر من أكاديمية — اختر الأكاديمية للمتابعة',
+        });
+      }
+    } else if (explicitCompanyId && typeof db.company?.findUnique === 'function') {
+      try {
+        const comp = await db.company.findUnique({
+          where: { id: explicitCompanyId },
+          select: { id: true, name: true, slug: true, logo: true, isActive: true },
+        });
+        if (comp && comp.isActive === false) {
+          if (matchedScope) {
+            await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
+          }
+          return res.status(403).json({
+            success: false,
+            message: 'حساب الأكاديمية غير نشط حالياً',
+          });
+        }
+        resolvedCompanyMeta = comp || null;
+      } catch (_) {}
+    }
+
+    // Single-use: delete verified OTP only after resolving target company & issuing JWT
+    if (matchedScope) {
+      await deleteStudentOtpRecord(matchedScope, [cleanPhone, recipientPhone, ...phoneVariants]);
+    }
+
+    if (customerFallback && (!enrollments || enrollments.length === 0)) {
+      const studentName = `${customerFallback.firstName || ''} ${customerFallback.lastName || ''}`.trim() || 'طالب ماكس بي';
+      const token = jwt.sign(
+        {
+          id: `student_${cleanPhone}`,
+          userId: `student_${cleanPhone}`,
+          studentPhone: cleanPhone,
+          customerId: customerFallback.id,
+          studentName,
+          role: 'STUDENT',
+          companyId: resolvedCompanyId,
+        },
+        getJwtSecret(),
+        { expiresIn: '30d' }
+      );
+      return res.json({
+        success: true,
+        token,
+        ...(resolvedCompanyMeta ? { company: resolvedCompanyMeta } : {}),
+        student: {
+          phone: cleanPhone,
+          name: studentName,
+          enrollmentsCount: scopedEnrollments.length,
+        },
+      });
+    }
+
+    const primaryEnrollment = scopedEnrollments[0];
     const studentName = primaryEnrollment.studentName || 'طالب ماكس بي';
 
     // Issue Student JWT token (valid for 30 days)
@@ -1401,7 +1587,7 @@ exports.studentLogin = async (req, res) => {
         enrollmentId: primaryEnrollment.id,
         studentName,
         role: 'STUDENT',
-        companyId: primaryEnrollment.companyId || 'cmopgxu3a07i4jujj6f1oh32h',
+        companyId: resolvedCompanyId,
       },
       getJwtSecret(),
       { expiresIn: '30d' }
@@ -1410,10 +1596,11 @@ exports.studentLogin = async (req, res) => {
     res.json({
       success: true,
       token,
+      ...(resolvedCompanyMeta ? { company: resolvedCompanyMeta } : {}),
       student: {
         phone: cleanPhone,
         name: studentName,
-        enrollmentsCount: enrollments.length,
+        enrollmentsCount: scopedEnrollments.length,
       },
     });
   } catch (err) {
@@ -1432,10 +1619,24 @@ exports.getStudentProfile = async (req, res) => {
       });
     }
 
+    if (req.company?.id && req.user?.companyId && req.company.id !== req.user.companyId) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_MISMATCH',
+        message: 'الجلسة تخص أكاديمية أخرى',
+      });
+    }
+
+    const studentCompanyId = req.user?.companyId || req.company?.id || null;
+    const phoneVariants = getPhoneVariants(studentPhone);
+    const phoneFilter = phoneVariants.length > 0 ? { in: phoneVariants } : studentPhone;
     const db = academyService.getDb();
     const enrollments = await db.academyEnrollment.findMany({
       where: {
-        studentPhone,
+        ...(req.user?.customerId
+          ? { OR: [{ studentPhone: phoneFilter }, { customerId: req.user.customerId }] }
+          : { studentPhone: phoneFilter }),
+        ...(studentCompanyId ? { companyId: studentCompanyId } : {}),
         status: { in: ['ACTIVE', 'COMPLETED'] },
       },
       include: {

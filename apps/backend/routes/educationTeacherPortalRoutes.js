@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controller/educationTeacherAuthController');
 const { authenticateTeacherToken } = require('../utils/verifyTeacherToken');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+// 🌐 Multi-tenant Subdomain Resolution
+router.use(extractSubdomainMiddleware);
 
 // Teacher auth routes
 router.post('/login', authController.login);
@@ -12,9 +16,9 @@ router.put('/me/password', authenticateTeacherToken, authController.changePasswo
 // Teacher's sessions
 router.get('/sessions', authenticateTeacherToken, async (req, res) => {
   try {
-    const teacherId = req.teacher.id;
+    const { id: teacherId, companyId } = req.teacher;
     const data = await getSharedPrismaClient().educationSession.findMany({
-      where: { teacherId },
+      where: { teacherId, companyId },
       include: {
         student: { select: { id: true, firstName: true, lastName: true } },
         subject: { select: { id: true, name: true } },
@@ -32,9 +36,9 @@ router.get('/sessions', authenticateTeacherToken, async (req, res) => {
 // Teacher's payments
 router.get('/payments', authenticateTeacherToken, async (req, res) => {
   try {
-    const teacherId = req.teacher.id;
+    const { id: teacherId, companyId } = req.teacher;
     const data = await getSharedPrismaClient().educationTeacherPayment.findMany({
-      where: { teacherId },
+      where: { teacherId, companyId },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ success: true, data });
@@ -103,7 +107,7 @@ router.put('/availability', authenticateTeacherToken, async (req, res) => {
 // Teacher's schedule (upcoming sessions with week grouping)
 router.get('/schedule', authenticateTeacherToken, async (req, res) => {
   try {
-    const teacherId = req.teacher.id;
+    const { id: teacherId, companyId } = req.teacher;
     const { weekStart } = req.query;
     const startDate = weekStart ? new Date(weekStart) : new Date();
     const endDate = new Date(startDate);
@@ -112,6 +116,7 @@ router.get('/schedule', authenticateTeacherToken, async (req, res) => {
     const data = await getSharedPrismaClient().educationSession.findMany({
       where: {
         teacherId,
+        companyId,
         scheduledAt: { gte: startDate, lte: endDate }
       },
       include: {
@@ -130,7 +135,7 @@ router.get('/schedule', authenticateTeacherToken, async (req, res) => {
 // Teacher dashboard stats
 router.get('/dashboard', authenticateTeacherToken, async (req, res) => {
   try {
-    const teacherId = req.teacher.id;
+    const { id: teacherId, companyId } = req.teacher;
     const prisma = getSharedPrismaClient();
 
     const now = new Date();
@@ -141,11 +146,11 @@ router.get('/dashboard', authenticateTeacherToken, async (req, res) => {
     weekEnd.setDate(weekEnd.getDate() + 7);
 
     const [upcomingSessions, totalSessions, thisWeekSessions, totalPayments, studentCount] = await Promise.all([
-      prisma.educationSession.count({ where: { teacherId, status: 'SCHEDULED', scheduledAt: { gte: now } } }),
-      prisma.educationSession.count({ where: { teacherId } }),
-      prisma.educationSession.count({ where: { teacherId, scheduledAt: { gte: weekStart, lte: weekEnd } } }),
-      prisma.educationTeacherPayment.aggregate({ where: { teacherId, status: 'PAID' }, _sum: { netAmount: true } }),
-      prisma.educationSession.findMany({ where: { teacherId }, select: { studentId: true }, distinct: ['studentId'] })
+      prisma.educationSession.count({ where: { teacherId, companyId, status: 'SCHEDULED', scheduledAt: { gte: now } } }),
+      prisma.educationSession.count({ where: { teacherId, companyId } }),
+      prisma.educationSession.count({ where: { teacherId, companyId, scheduledAt: { gte: weekStart, lte: weekEnd } } }),
+      prisma.educationTeacherPayment.aggregate({ where: { teacherId, companyId, status: 'PAID' }, _sum: { netAmount: true } }),
+      prisma.educationSession.findMany({ where: { teacherId, companyId }, select: { studentId: true }, distinct: ['studentId'] })
     ]);
 
     res.json({

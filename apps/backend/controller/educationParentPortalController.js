@@ -5,15 +5,16 @@ const { computePackagePrice } = require('../utils/educationPricing');
 const getWallet = async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const prisma = getSharedPrismaClient();
-    let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
+    let wallet = await prisma.customerWallet.findFirst({ where: { customerId: parentId, companyId } });
     if (!wallet) {
       wallet = await prisma.customerWallet.create({
-        data: { customerId: parentId, companyId: req.parent.companyId, balance: 0 }
+        data: { customerId: parentId, companyId, balance: 0 }
       });
     }
     const transactions = await prisma.walletTransaction.findMany({
-      where: { walletId: wallet.id },
+      where: { walletId: wallet.id, wallet: { companyId } },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
@@ -27,16 +28,17 @@ const getWallet = async (req, res) => {
 const topupWallet = async (req, res) => {
   try {
     const parentId = req.parent.id;
+    const companyId = req.parent.companyId;
     const { amount } = req.body;
     const numAmount = Number(amount);
     if (!numAmount || numAmount <= 0) return res.status(400).json({ success: false, message: 'المبلغ غير صحيح' });
     if (numAmount > 50000) return res.status(400).json({ success: false, message: 'الحد الأقصى لطلب الشحن لمرة واحدة هو 50,000 ج.م' });
 
     const prisma = getSharedPrismaClient();
-    let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
+    let wallet = await prisma.customerWallet.findFirst({ where: { customerId: parentId, companyId } });
     if (!wallet) {
       wallet = await prisma.customerWallet.create({
-        data: { customerId: parentId, companyId: req.parent.companyId, balance: 0 }
+        data: { customerId: parentId, companyId, balance: 0 }
       });
     }
 
@@ -110,13 +112,27 @@ const purchasePackage = async (req, res) => {
     const pricing = computePackagePrice({ basePrice: pkg.price, siblingCount });
     const payable = pricing.finalPrice;
 
-    let wallet = await prisma.customerWallet.findUnique({ where: { customerId: parentId } });
+    let wallet = await prisma.customerWallet.findFirst({ where: { customerId: parentId, companyId } });
     if (!wallet) return res.status(400).json({ success: false, message: 'لا توجد محفظة. قم بشحن المحفظة أولاً' });
     if (wallet.balance < payable) {
       return res.status(400).json({ success: false, message: `الرصيد غير كافٍ. السعر: ${payable} ج.م، الرصيد: ${wallet.balance} ج.م` });
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const debitResult = await tx.customerWallet.updateMany({
+        where: { id: wallet.id, companyId, balance: { gte: payable } },
+        data: { balance: { decrement: payable }, totalSpent: { increment: payable } }
+      });
+      if (!debitResult || debitResult.count !== 1) {
+        const err = new Error(`الرصيد غير كافٍ. السعر: ${payable} ج.م`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const updatedWallet = await tx.customerWallet.findFirst({
+        where: { id: wallet.id, companyId }
+      });
+
       const enrollment = await tx.educationEnrollment.create({
         data: {
           companyId, studentId, packageId,
@@ -130,23 +146,18 @@ const purchasePackage = async (req, res) => {
         }
       });
 
-      const updatedWallet = await tx.customerWallet.update({
-        where: { id: wallet.id },
-        data: { balance: { decrement: payable }, totalSpent: { increment: payable } }
-      });
-
       await tx.walletTransaction.create({
         data: {
           walletId: wallet.id, type: 'DEBIT', amount: payable,
-          balanceBefore: wallet.balance, balanceAfter: updatedWallet.balance,
+          balanceBefore: wallet.balance, balanceAfter: updatedWallet ? updatedWallet.balance : (wallet.balance - payable),
           description: `شراء باقة "${pkg.name}" للطالب ${student.firstName} ${student.lastName}${pricing.reason ? ` (${pricing.reason} — وفر ${pricing.discountAmount} ج.م)` : ''}`
         }
       });
 
       // ترقية مستوى الطالب ليطابق المستوى المشترى
       if (pkg.levelNumber && (!student.currentLevel || pkg.levelNumber > student.currentLevel)) {
-        await tx.educationStudent.update({
-          where: { id: student.id },
+        await tx.educationStudent.updateMany({
+          where: { id: student.id, companyId },
           data: { currentLevel: pkg.levelNumber }
         });
       }
@@ -181,7 +192,7 @@ const purchasePackage = async (req, res) => {
     res.json({ success: true, data: result, message: `تم شراء الباقة "${pkg.name}" بنجاح` });
   } catch (error) {
     console.error('[ParentPortal] Purchase error:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ في شراء الباقة' });
+    res.status(error.statusCode || 500).json({ success: false, message: error.statusCode ? error.message : 'حدث خطأ في شراء الباقة' });
   }
 };
 

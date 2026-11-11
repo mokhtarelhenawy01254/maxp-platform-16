@@ -2,8 +2,14 @@ const courierPortalService = require('../services/courierPortalService');
 
 const getCourierContext = (req) => {
   const courierId = req.user?.courierId || req.user?.id;
-  const companyId = req.user?.companyId || req.user?.effectiveCompanyId || req.headers['x-company-id'];
-  return { courierId, companyId };
+  const authCompanyId = req.user?.companyId || req.user?.effectiveCompanyId || null;
+  if (authCompanyId) {
+    if (req.company?.id && req.company.id !== authCompanyId) {
+      return { courierId, companyId: null, tenantMismatch: true };
+    }
+    return { courierId, companyId: authCompanyId, tenantMismatch: false };
+  }
+  return { courierId, companyId: req.company?.id || null, tenantMismatch: false };
 };
 
 /**
@@ -11,8 +17,34 @@ const getCourierContext = (req) => {
  */
 async function login(req, res) {
   try {
-    const { phone, pin } = req.body || {};
-    const result = await courierPortalService.loginCourier({ phone, pin });
+    const { phone, pin, companyId: rawBodyCompanyId } = req.body || {};
+    const bodyCompanyId = rawBodyCompanyId ? String(rawBodyCompanyId).trim() : null;
+
+    if (req.company?.id && bodyCompanyId && bodyCompanyId !== req.company.id) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_HOST_MISMATCH',
+        message: 'تعارض في معرف الشركة مع النطاق الحالي',
+      });
+    }
+
+    const targetCompanyId = req.company?.id || bodyCompanyId || null;
+    const result = await courierPortalService.loginCourier({
+      phone,
+      pin,
+      ...(targetCompanyId ? { companyId: targetCompanyId } : {}),
+    });
+
+    if (result?.requiresCompanySelection) {
+      return res.status(200).json({
+        success: false,
+        requiresCompanySelection: true,
+        code: result.code || 'COMPANY_SELECTION_REQUIRED',
+        companies: result.companies || [],
+        message: 'حساب المندوب مرتبط بأكثر من شركة — اختر الشركة للمتابعة',
+      });
+    }
+
     res.json({
       success: true,
       data: result,
@@ -43,7 +75,14 @@ async function logout(req, res) {
  */
 async function getMe(req, res) {
   try {
-    const { courierId, companyId } = getCourierContext(req);
+    const { courierId, companyId, tenantMismatch } = getCourierContext(req);
+    if (tenantMismatch) {
+      return res.status(403).json({
+        success: false,
+        message: 'الجلسة تخص شركة أخرى — يرجى تسجيل الدخول على هذا النطاق',
+        code: 'TENANT_MISMATCH'
+      });
+    }
     if (!courierId || !companyId) {
       return res.status(401).json({
         success: false,
@@ -101,7 +140,30 @@ async function verifyLinkPin(req, res) {
  */
 async function getFailureReasons(req, res) {
   try {
-    const companyId = req.user?.companyId || req.user?.effectiveCompanyId || req.query.companyId || req.headers['x-company-id'];
+    const authCompanyId = req.user?.companyId || req.user?.effectiveCompanyId || null;
+    if (authCompanyId && req.company?.id && req.company.id !== authCompanyId) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_MISMATCH',
+        message: 'الجلسة تخص شركة أخرى — يرجى تسجيل الدخول على هذا النطاق'
+      });
+    }
+
+    const headerCompanyId = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'];
+    const explicitQueryOrHeader = req.query?.companyId || headerCompanyId || null;
+    if (!authCompanyId && req.company?.id && explicitQueryOrHeader && String(explicitQueryOrHeader).trim() !== req.company.id) {
+      return res.status(403).json({
+        success: false,
+        code: 'TENANT_HOST_MISMATCH',
+        message: 'تعارض في معرف الشركة مع النطاق الحالي'
+      });
+    }
+
+    const companyId =
+      authCompanyId ||
+      req.company?.id ||
+      (explicitQueryOrHeader ? String(explicitQueryOrHeader).trim() : null);
+
     if (!companyId) {
       return res.status(400).json({
         success: false,
@@ -128,7 +190,14 @@ async function getFailureReasons(req, res) {
  */
 async function syncOffline(req, res) {
   try {
-    const { courierId, companyId } = getCourierContext(req);
+    const { courierId, companyId, tenantMismatch } = getCourierContext(req);
+    if (tenantMismatch) {
+      return res.status(403).json({
+        success: false,
+        message: 'الجلسة تخص شركة أخرى — يرجى تسجيل الدخول على هذا النطاق',
+        code: 'TENANT_MISMATCH'
+      });
+    }
     if (!courierId || !companyId) {
       return res.status(401).json({
         success: false,

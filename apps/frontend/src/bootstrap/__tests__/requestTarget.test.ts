@@ -9,6 +9,10 @@ describe("shouldBootstrapStorefront", () => {
     expect(shouldBootstrapStorefront("demo-store.lvh.me", "/product/123")).toBe(
       true,
     );
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/")).toBe(true);
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/products/123")).toBe(
+      true,
+    );
   });
 
   test("sends public affiliate and merchant registration routes to the admin/public shell even on subdomains", () => {
@@ -56,10 +60,34 @@ describe("shouldBootstrapStorefront", () => {
     ).toBe(false);
   });
 
+  test("isolates all portal routes away from storefront bootstrap on tenant subdomains", () => {
+    const portalRoutes = [
+      "/parent/login",
+      "/parent/dashboard",
+      "/teacher/schedule",
+      "/doctor/dashboard",
+      "/patient/appointments",
+      "/courier-portal",
+      "/wholesale-portal",
+      "/client-portal",
+      "/account/orders",
+      "/portal/production/abc-token",
+      "/academy/portal",
+      "/auth/customer-register",
+    ];
+
+    for (const route of portalRoutes) {
+      expect(shouldBootstrapStorefront("swan.maxp.online", route)).toBe(false);
+    }
+  });
+
   test("does not treat localhost admin pages as storefront requests", () => {
     expect(
       shouldBootstrapStorefront("127.0.0.1", "/register/merchant"),
     ).toBe(false);
     expect(shouldBootstrapStorefront("localhost", "/dashboard")).toBe(false);
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/products/new")).toBe(
+      false,
+    );
   });
 });

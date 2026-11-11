@@ -2,6 +2,7 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { getPhoneVariants } = require('../utils/phoneNormalization');
 const { recordShipmentEvent } = require('./shipping/shipmentEventService');
 const courierService = require('./courierService');
 
@@ -59,8 +60,9 @@ async function getFailureReasons(companyId) {
 /**
  * Courier login with phone and PIN
  */
-async function loginCourier({ phone, pin }) {
-  const cleanPhone = String(phone || '').trim().replace(/[\s\-\+]/g, '');
+async function loginCourier({ phone, pin, companyId = null }) {
+  const rawPhoneStr = String(phone || '').trim();
+  const cleanPhone = rawPhoneStr.replace(/[\s\-\+]/g, '');
   const rawPin = String(pin || '').trim();
 
   if (!cleanPhone || !rawPin) {
@@ -68,16 +70,23 @@ async function loginCourier({ phone, pin }) {
   }
 
   const prisma = getSharedPrismaClient();
+  const phoneVariants = getPhoneVariants(rawPhoneStr || cleanPhone);
+  const expandedVariants = [...new Set([
+    ...phoneVariants,
+    ...phoneVariants.filter((v) => /^20\d{10}$/.test(v)).map((v) => `+${v}`),
+  ])];
   const phoneTail = cleanPhone.length > 9 ? cleanPhone.slice(-9) : cleanPhone;
+  const phoneFilter = expandedVariants.length > 0 ? { in: expandedVariants } : { contains: phoneTail };
 
   const couriers = await prisma.courier.findMany({
     where: {
-      phone: { contains: phoneTail },
-      isActive: true
+      phone: phoneFilter,
+      isActive: true,
+      ...(companyId ? { companyId } : {}),
     },
     include: {
       company: {
-        select: { id: true, name: true, isActive: true, logo: true, currency: true }
+        select: { id: true, name: true, slug: true, isActive: true, logo: true, currency: true }
       }
     }
   });
@@ -86,21 +95,44 @@ async function loginCourier({ phone, pin }) {
     throw serviceError('بيانات الدخول غير صحيحة أو الحساب غير نشط', 401, 'INVALID_CREDENTIALS');
   }
 
-  let matchedCourier = null;
-  for (const c of couriers) {
-    if (c.pinHash && bcrypt.compareSync(rawPin, c.pinHash)) {
-      matchedCourier = c;
-      break;
-    }
-  }
+  const pinMatchedCouriers = couriers.filter(
+    (c) => c.pinHash && bcrypt.compareSync(rawPin, c.pinHash)
+  );
 
-  if (!matchedCourier) {
+  if (pinMatchedCouriers.length === 0) {
     throw serviceError('بيانات الدخول غير صحيحة أو رمز PIN غير صحيح', 401, 'INVALID_CREDENTIALS');
   }
 
-  if (matchedCourier.company && !matchedCourier.company.isActive) {
+  const activeCompanyCouriers = pinMatchedCouriers.filter(
+    (c) => !c.company || c.company.isActive !== false
+  );
+
+  if (activeCompanyCouriers.length === 0) {
     throw serviceError('حساب الشركة غير نشط', 403, 'COMPANY_INACTIVE');
   }
+
+  const distinctByCompany = new Map();
+  for (const c of activeCompanyCouriers) {
+    if (c.companyId && !distinctByCompany.has(c.companyId)) {
+      distinctByCompany.set(c.companyId, c);
+    }
+  }
+
+  if (!companyId && distinctByCompany.size > 1) {
+    return {
+      requiresCompanySelection: true,
+      code: 'COMPANY_SELECTION_REQUIRED',
+      companies: Array.from(distinctByCompany.values()).map((c) => ({
+        companyId: c.companyId,
+        companyName: c.company?.name || '',
+        companySlug: c.company?.slug || null,
+        companyLogo: c.company?.logo || null,
+        label: c.name || c.company?.name || '',
+      })),
+    };
+  }
+
+  const matchedCourier = activeCompanyCouriers[0];
 
   const tokenPayload = {
     role: 'COURIER',
@@ -124,7 +156,18 @@ async function loginCourier({ phone, pin }) {
       vehicleType: matchedCourier.vehicleType,
       companyId: matchedCourier.companyId,
       companyName: matchedCourier.company?.name || null
-    }
+    },
+    ...(matchedCourier.company
+      ? {
+          company: {
+            id: matchedCourier.company.id,
+            name: matchedCourier.company.name,
+            slug: matchedCourier.company.slug || null,
+            logo: matchedCourier.company.logo || null,
+            currency: matchedCourier.company.currency,
+          }
+        }
+      : {})
   };
 }
 

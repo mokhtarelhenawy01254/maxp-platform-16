@@ -1,10 +1,57 @@
 (function () {
-  var hostname = window.location.hostname;
+  var hostname = (window.location.hostname || "").toLowerCase();
   var pathname = window.location.pathname || "/";
+  var search = window.location.search || "";
   var isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  var hasPreviewParam =
+    search.indexOf("previewTheme=") !== -1 ||
+    search.indexOf("storefrontSubdomain=") !== -1;
+
+  // Portals, registration, and proposal routes MUST run inside the main platform shell
+  // even when accessed from a tenant subdomain (*.maxp.online) or custom domain.
+  var nonStorefrontPrefixes = [
+    "/parent",
+    "/teacher",
+    "/portal",
+    "/academy",
+    "/doctor",
+    "/patient",
+    "/dental-portal",
+    "/account",
+    "/wholesale-portal",
+    "/courier-portal",
+    "/client-portal",
+    "/agency/client-portal",
+    "/auth/customer-register",
+    "/register/affiliate",
+    "/register/merchant",
+    "/affiliate-register",
+    "/proposal",
+    "/agency/proposal",
+  ];
+
+  function matchesPrefix(path, prefix) {
+    return path === prefix || path.indexOf(prefix + "/") === 0;
+  }
+
+  var isNonStorefront = false;
+  for (var i = 0; i < nonStorefrontPrefixes.length; i++) {
+    if (matchesPrefix(pathname, nonStorefrontPrefixes[i])) {
+      isNonStorefront = true;
+      break;
+    }
+  }
+
+  var isAdminProduct =
+    /\/products\/(?:new|trash|reviews|import-|settings\/upsell)/.test(pathname) ||
+    /\/products\/[^/]+\/edit$/.test(pathname);
 
   var isStorefront = false;
-  if (
+  if (isNonStorefront || isAdminProduct) {
+    isStorefront = false;
+  } else if (isLocalhost && !hasPreviewParam) {
+    isStorefront = false;
+  } else if (
     pathname === "/store" ||
     pathname.indexOf("/store/") === 0 ||
     pathname.indexOf("/product/") === 0 ||
@@ -12,19 +59,14 @@
     pathname.indexOf("/shop/") === 0 ||
     pathname.indexOf("/cart") === 0 ||
     pathname.indexOf("/checkout") === 0 ||
+    pathname.indexOf("/order-offer") === 0 ||
     pathname.indexOf("/thank-you") === 0 ||
     pathname.indexOf("/collections/") === 0 ||
     pathname.indexOf("/pages/") === 0
   ) {
     isStorefront = true;
-  } else if (
-    pathname === "/register/affiliate" ||
-    pathname === "/register/merchant" ||
-    pathname.indexOf("/affiliate-register") === 0
-  ) {
-    isStorefront = false;
-  } else if (isLocalhost) {
-    isStorefront = false;
+  } else if (hasPreviewParam) {
+    isStorefront = true;
   } else if (hostname.slice(-10) === ".localhost") {
     isStorefront = true;
   } else {

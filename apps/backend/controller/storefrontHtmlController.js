@@ -8,10 +8,80 @@ const {
 } = require("../services/sharedDatabase");
 const {
   buildStorefrontSeoMetadata,
+  extractPortalThemeColor,
   injectStorefrontSeoTags,
   isHtmlRouteRequest,
   resolveRouteContext,
 } = require("../services/storefrontSeoService");
+
+const PORTAL_SSR_ROUTES = [
+  { prefix: "/agency/client-portal", portalType: "client", portalTitle: "بوابة العميل" },
+  { prefix: "/client-portal", portalType: "client", portalTitle: "بوابة العميل" },
+  { prefix: "/parent", portalType: "parent", portalTitle: "بوابة ولي الأمر" },
+  { prefix: "/teacher", portalType: "teacher", portalTitle: "بوابة المدرس" },
+  { prefix: "/doctor", portalType: "doctor", portalTitle: "بوابة الطبيب" },
+  { prefix: "/patient", portalType: "patient", portalTitle: "بوابة المريض" },
+  { prefix: "/dental-portal", portalType: "dental", portalTitle: "بوابة معامل الأسنان" },
+  { prefix: "/courier-portal", portalType: "courier", portalTitle: "بوابة المندوب" },
+  { prefix: "/wholesale-portal", portalType: "wholesale", portalTitle: "بوابة الموزع" },
+  { prefix: "/account", portalType: "customer", portalTitle: "حسابي" },
+  { prefix: "/portal", portalType: "student", portalTitle: "الأكاديمية" },
+  { prefix: "/academy/portal", portalType: "student", portalTitle: "الأكاديمية" },
+  { prefix: "/academy/course", portalType: "student", portalTitle: "الأكاديمية" },
+  { prefix: "/academy/my-courses", portalType: "student", portalTitle: "الأكاديمية" },
+  { prefix: "/academy/student", portalType: "student", portalTitle: "الأكاديمية" },
+];
+
+const matchesPortalPrefix = (pathname, prefix) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+function resolvePortalSsrContext(pathname = "/") {
+  const cleanPath = String(pathname || "/").split("?")[0] || "/";
+  const normalizedPath = (cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`).toLowerCase();
+
+  // Public tracking share links & ERP admin dashboards are outside external member portals
+  if (
+    matchesPortalPrefix(normalizedPath, "/portal/production") ||
+    matchesPortalPrefix(normalizedPath, "/client-portal/shipping")
+  ) {
+    return {
+      isPortalRoute: false,
+      portalType: null,
+      portalTitle: null,
+      prefix: null,
+    };
+  }
+
+  if (
+    normalizedPath.startsWith("/academy/courses/") &&
+    normalizedPath.length > "/academy/courses/".length
+  ) {
+    return {
+      isPortalRoute: true,
+      portalType: "student",
+      portalTitle: "الأكاديمية",
+      prefix: "/academy/courses",
+    };
+  }
+
+  for (const entry of PORTAL_SSR_ROUTES) {
+    if (matchesPortalPrefix(normalizedPath, entry.prefix)) {
+      return {
+        isPortalRoute: true,
+        portalType: entry.portalType,
+        portalTitle: entry.portalTitle,
+        prefix: entry.prefix,
+      };
+    }
+  }
+
+  return {
+    isPortalRoute: false,
+    portalType: null,
+    portalTitle: null,
+    prefix: null,
+  };
+}
 const { getPublicProductSlug } = require("../utils/productSlugValidation");
 
 const INDEX_HTML_CANDIDATES = [
@@ -195,6 +265,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
 
   try {
     const prisma = await getSharedPrismaClientAsync();
+    const portalSsrContext = resolvePortalSsrContext(req.path);
     const routeContext = resolveRouteContext(req.path);
     const compatibleProductSelect = buildCompatibleSelect(prisma, "Product", [
       "name",
@@ -214,6 +285,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
     ]);
 
     const isHomepage =
+      !portalSsrContext.isPortalRoute &&
       !routeContext.productKey &&
       !routeContext.categorySlug &&
       !routeContext.articleSlug &&
@@ -221,9 +293,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
       !routeContext.landingSlug;
 
     const isShopRoute =
-      routeContext.pageSegment === "shop" ||
-      routeContext.pageSegment === "store" ||
-      (routeContext.pageSegment === "collections" && !routeContext.categorySlug);
+      !portalSsrContext.isPortalRoute &&
+      (routeContext.pageSegment === "shop" ||
+        routeContext.pageSegment === "store" ||
+        (routeContext.pageSegment === "collections" && !routeContext.categorySlug));
 
     const [template, storefrontSettings, product, category, article, storePage, landing, shopProducts] =
       await Promise.all([
@@ -250,7 +323,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
             },
           }),
         ),
-        routeContext.productKey
+        !portalSsrContext.isPortalRoute && routeContext.productKey
           ? safeQuery(() => {
               const key = routeContext.productKey;
               let decodedKey = key;
@@ -303,7 +376,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
               });
             })
           : Promise.resolve(null),
-        routeContext.categorySlug
+        !portalSsrContext.isPortalRoute && routeContext.categorySlug
           ? safeQuery(async () => {
               const cat = await prisma.category.findFirst({
                 where: {
@@ -347,7 +420,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
               }
             })
           : Promise.resolve(null),
-        routeContext.articleSlug
+        !portalSsrContext.isPortalRoute && routeContext.articleSlug
           ? safeQuery(() =>
               prisma.article.findFirst({
                 where: {
@@ -370,7 +443,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
               }),
             )
           : Promise.resolve(null),
-        routeContext.storePageSlug
+        !portalSsrContext.isPortalRoute && routeContext.storePageSlug
           ? safeQuery(() =>
               prisma.storePage.findFirst({
                 where: {
@@ -386,7 +459,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
               }),
             )
           : Promise.resolve(null),
-        routeContext.landingSlug
+        !portalSsrContext.isPortalRoute && routeContext.landingSlug
           ? safeQuery(() =>
               prisma.productLandingPage.findFirst({
                 where: {
@@ -495,7 +568,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
 
     // If a single slug was requested (e.g. /car-sunshades) and it didn't match a custom store page,
     // check if it matches an active product or published landing page for this store and redirect seamlessly.
-    if (routeContext.storePageSlug && !storePage) {
+    if (!portalSsrContext.isPortalRoute && routeContext.storePageSlug && !storePage) {
       const spKey = routeContext.storePageSlug;
       let decodedSpKey = spKey;
       try {
@@ -559,10 +632,11 @@ exports.handleStorefrontShell = async (req, res, next) => {
     }
 
     const isNotFound =
-      (routeContext.productKey && !product) ||
-      (routeContext.categorySlug && !category) ||
-      (routeContext.articleSlug && !article) ||
-      (routeContext.storePageSlug && !storePage);
+      !portalSsrContext.isPortalRoute &&
+      ((routeContext.productKey && !product) ||
+        (routeContext.categorySlug && !category) ||
+        (routeContext.articleSlug && !article) ||
+        (routeContext.storePageSlug && !storePage));
 
     let reviews = null;
     if (Array.isArray(product?.productReviews) && product.productReviews.length > 0) {
@@ -611,7 +685,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
     const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const host = (req.get("host") || "").toLowerCase().split(":")[0];
     const isApexHost = host === "maxp.online" || host === "www.maxp.online";
-    const isPortalRoute = req.path.startsWith("/portal") || req.path.startsWith("/academy");
+    const isPortalRoute = portalSsrContext.isPortalRoute;
     const isPublicApexPortal = isApexHost && (
       req.path === "/portal" ||
       req.path === "/portal/catalog" ||
@@ -692,6 +766,18 @@ exports.handleStorefrontShell = async (req, res, next) => {
       }
     }
 
+    let portalSeoOptions = {};
+    if (isPortalRoute && req.company) {
+      const tenantSlugOrId = encodeURIComponent(req.company.slug || req.company.id);
+      portalSeoOptions = {
+        portalTitle: !isCoursePublicPage ? portalSsrContext.portalTitle : null,
+        manifestUrl: `/api/v1/public/portal/manifest.webmanifest?portal=${encodeURIComponent(portalSsrContext.portalType)}&slug=${tenantSlugOrId}`,
+        appleTouchIconUrl: `/api/v1/public/portal/icon-180.png?slug=${tenantSlugOrId}`,
+        themeColor: extractPortalThemeColor(storefrontSettings?.designTokens),
+        appTitle: req.company.name || portalSsrContext.portalTitle,
+      };
+    }
+
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
       currentUrl,
@@ -710,6 +796,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
       reviews,
       noIndex: isNotFound || landingMissing || (isPortalRoute && !isIndexablePortal),
       robots: courseMeta?.robots || (isPortalRoute && !isIndexablePortal ? "noindex, follow" : null),
+      ...portalSeoOptions,
     });
 
     const indexHtml = await loadIndexHtml();
@@ -776,3 +863,4 @@ exports.handleStorefrontShell = async (req, res, next) => {
 module.exports.clearStorefrontHtmlCache = clearStorefrontHtmlCache;
 module.exports.invalidateCompanyStorefrontHtmlCache = invalidateCompanyStorefrontHtmlCache;
 module.exports.loadIndexHtml = loadIndexHtml;
+module.exports.resolvePortalSsrContext = resolvePortalSsrContext;

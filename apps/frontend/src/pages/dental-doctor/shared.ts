@@ -1,4 +1,8 @@
 import { getApiUrl } from "@/config/environment";
+import {
+  portalSessionManager,
+  type PortalCompanyOption,
+} from "@/utils/portalSessionManager";
 
 export const PORTAL_TOKEN_KEY = "dental_portal_token";
 export const PORTAL_DENTIST_KEY = "dental_portal_dentist";
@@ -140,15 +144,26 @@ export interface DentalOrderResult {
   totalAll?: number;
 }
 
-export interface DentalLoginResult {
-  token: string;
-  dentist: Dentist;
-}
+export type DentalLoginResult =
+  | {
+      requiresCompanySelection?: false;
+      token: string;
+      dentist: Dentist;
+      company?: {
+        id?: string;
+        name?: string;
+        slug?: string | null;
+        logo?: string | null;
+      } | null;
+    }
+  | {
+      requiresCompanySelection: true;
+      companies: PortalCompanyOption[];
+      message?: string;
+    };
 
 export function getPortalToken(): string | null {
-  return typeof window !== "undefined"
-    ? window.localStorage.getItem(PORTAL_TOKEN_KEY)
-    : null;
+  return portalSessionManager.getActivePortalToken("dental");
 }
 
 export function getStoredDentist(): Dentist | null {
@@ -163,14 +178,27 @@ export function getStoredDentist(): Dentist | null {
   }
 }
 
-export function savePortalAuth(token: string, dentist: Dentist): void {
-  window.localStorage.setItem(PORTAL_TOKEN_KEY, token);
-  window.localStorage.setItem(PORTAL_DENTIST_KEY, JSON.stringify(dentist));
+export function savePortalAuth(
+  token: string,
+  dentist: Dentist,
+  company?: {
+    id?: string | null;
+    name?: string | null;
+    slug?: string | null;
+  } | null,
+): void {
+  portalSessionManager.savePortalSession({
+    role: "dental",
+    companyId: company?.id ?? null,
+    companySlug: company?.slug ?? null,
+    companyName: company?.name ?? null,
+    token,
+    profile: dentist,
+  });
 }
 
 export function clearPortalAuth(): void {
-  window.localStorage.removeItem(PORTAL_TOKEN_KEY);
-  window.localStorage.removeItem(PORTAL_DENTIST_KEY);
+  portalSessionManager.clearPortalSession("dental");
 }
 
 export const CART_STORAGE_KEY = "dental_cart";
@@ -303,6 +331,10 @@ async function portalFetch<T>(
   if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+  const subdomainHeaders = portalSessionManager.getPortalSubdomainHeaders();
+  for (const [k, v] of Object.entries(subdomainHeaders)) {
+    if (!headers.has(k)) headers.set(k, v);
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -321,18 +353,54 @@ async function portalFetch<T>(
 export async function dentalLogin(
   phone: string,
   pin: string,
+  companyId?: string,
 ): Promise<DentalLoginResult> {
   const res = await fetch(`${PORTAL_BASE}/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, pin }),
+    headers: {
+      "Content-Type": "application/json",
+      ...portalSessionManager.getPortalSubdomainHeaders(),
+    },
+    body: JSON.stringify({
+      phone,
+      pin,
+      ...(companyId ? { companyId } : {}),
+    }),
   });
-  const json = await res.json().catch(() => ({}));
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   const payload = unwrapEnvelope<Record<string, unknown>>(json);
+
+  const needsSelection = Boolean(
+    json["requiresCompanySelection"] ||
+      json["requireCompanySelection"] ||
+      payload?.["requiresCompanySelection"] ||
+      payload?.["requireCompanySelection"],
+  );
+  if (needsSelection) {
+    const companies = portalSessionManager.normalizePortalCompanyOptions(
+      json["companies"] ??
+        json["labs"] ??
+        payload?.["companies"] ??
+        payload?.["labs"],
+    );
+    if (companies.length > 0) {
+      const msg = json["message"] ?? json["error"];
+      return {
+        requiresCompanySelection: true,
+        companies,
+        message: typeof msg === "string" ? msg : undefined,
+      };
+    }
+  }
+
   const token = payload?.["token"];
   const dentist = payload?.["dentist"] as unknown;
+  const company = payload?.["company"] as
+    | { id?: string; name?: string; slug?: string | null; logo?: string | null }
+    | null
+    | undefined;
   if (!res.ok || typeof token !== "string") {
-    const msg = payload?.["message"] ?? payload?.["error"];
+    const msg = json["message"] ?? json["error"] ?? payload?.["message"] ?? payload?.["error"];
     throw new Error(
       typeof msg === "string" && msg ? msg : "بيانات الدخول غلط",
     );
@@ -343,6 +411,7 @@ export async function dentalLogin(
       dentist && typeof dentist === "object"
         ? (dentist as Dentist)
         : { id: "", name: "" },
+    company: company ?? null,
   };
 }
 

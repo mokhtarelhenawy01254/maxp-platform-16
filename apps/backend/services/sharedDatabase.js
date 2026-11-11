@@ -11,6 +11,7 @@ try {
 require('../utils/patchPrismaDecimal');
 const tenantContext = require('./tenantContext');
 const companyCacheService = require('./companyCacheService');
+const redisCacheService = require('./redisCacheService');
 const { ensureLocalPostgres } = require('./ensureLocalPostgres');
 const { AsyncLocalStorage } = require('async_hooks');
 const transactionStorage = new AsyncLocalStorage();
@@ -120,6 +121,67 @@ function getPrismaClientPathsForDatabaseUrl(databaseUrl) {
     path.join(__dirname, '..', 'prisma', 'generated', 'postgresql_v2'),
     '@prisma/client'
   ];
+}
+
+function invalidateTenantBrandingCaches(targetCompanyId) {
+  if (!targetCompanyId) return;
+
+  try {
+    companyCacheService.invalidateCompanyCache(targetCompanyId).catch((err) => {
+      if (process.env.NODE_ENV !== 'test') {
+        console.warn(`⚠️ [CompanyCache] invalidation error: ${err.message}`);
+      }
+    });
+  } catch (_) {}
+
+  try {
+    redisCacheService.del(`portal:branding:${targetCompanyId}`).catch(() => {});
+    redisCacheService.del(`storefront_settings:${targetCompanyId}`).catch(() => {});
+  } catch (_) {}
+
+  try {
+    const {
+      invalidateCompanyStorefrontHtmlCache,
+    } = require('../controller/storefrontHtmlController');
+    if (typeof invalidateCompanyStorefrontHtmlCache === 'function') {
+      invalidateCompanyStorefrontHtmlCache(targetCompanyId);
+    }
+  } catch (_) {}
+
+  try {
+    const {
+      invalidatePortalIconCache,
+    } = require('../controller/publicPortalPwaController');
+    if (typeof invalidatePortalIconCache === 'function') {
+      invalidatePortalIconCache(targetCompanyId);
+    }
+  } catch (_) {}
+}
+
+function resolveBrandingInvalidationCompanyId(model, operation, args, result, contextCompanyId) {
+  if (model === 'Company' && ['update', 'updateMany', 'upsert'].includes(operation)) {
+    return (
+      (result && result.id) ||
+      (args && args.where && (args.where.id || args.where.slug)) ||
+      (args && args.data && (args.data.id || args.data.slug)) ||
+      contextCompanyId ||
+      null
+    );
+  }
+  if (
+    model === 'StorefrontSettings' &&
+    ['create', 'update', 'updateMany', 'upsert'].includes(operation)
+  ) {
+    return (
+      (result && result.companyId) ||
+      (args && args.where && args.where.companyId) ||
+      (args && args.data && args.data.companyId) ||
+      (args && args.create && args.create.companyId) ||
+      contextCompanyId ||
+      null
+    );
+  }
+  return null;
 }
 
 /**
@@ -263,18 +325,16 @@ function createStablePrismaClient() {
           if (isBypassed || !companyId || GLOBAL_MODELS.has(model) || !MODELS_WITH_COMPANY_ID.has(model)) {
             const result = await query(args);
 
-            // 🧹 Company cache invalidation on company updates
-            if (model === 'Company' && ['update', 'updateMany', 'upsert'].includes(operation)) {
-              const updatedCompanyId =
-                (result && result.id) ||
-                (args && args.where && (args.where.id || args.where.slug)) ||
-                (args && args.data && (args.data.id || args.data.slug)) ||
-                null;
-              if (updatedCompanyId) {
-                companyCacheService.invalidateCompanyCache(updatedCompanyId).catch((err) => {
-                  console.warn(`⚠️ [CompanyCache] invalidation error: ${err.message}`);
-                });
-              }
+            // 🧹 Tenant branding & portal PWA cache invalidation
+            const affectedCompanyId = resolveBrandingInvalidationCompanyId(
+              model,
+              operation,
+              args,
+              result,
+              companyId
+            );
+            if (affectedCompanyId) {
+              invalidateTenantBrandingCaches(affectedCompanyId);
             }
 
             return result;
@@ -361,6 +421,18 @@ function createStablePrismaClient() {
             } catch (_) {
               // Swallow errors
             }
+          }
+
+          // 3. Tenant branding & portal PWA cache invalidation
+          const affectedCompanyId = resolveBrandingInvalidationCompanyId(
+            model,
+            operation,
+            args,
+            result,
+            companyId
+          );
+          if (affectedCompanyId) {
+            invalidateTenantBrandingCaches(affectedCompanyId);
           }
 
           return result;

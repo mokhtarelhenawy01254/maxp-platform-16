@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { config } from '../../../config';
 import courierService, { DeliveryRun } from '../../../services/courierService';
+import {
+  portalSessionManager,
+  type PortalCompanyOption,
+} from '../../../utils/portalSessionManager';
 
 export interface CourierUser {
   id: string;
@@ -48,15 +52,27 @@ export interface CustodySummary {
   runs: DeliveryRunSummary[];
 }
 
+export interface CourierLoginResult {
+  success: boolean;
+  token?: string;
+  courier?: CourierUser;
+  company?: {
+    id?: string;
+    name?: string;
+    slug?: string | null;
+    logo?: string | null;
+  } | null;
+  requiresCompanySelection?: boolean;
+  companies?: PortalCompanyOption[];
+  code?: string;
+  message?: string;
+}
+
 const TOKEN_KEY = 'courier_portal_token';
 const USER_KEY = 'courier_portal_user';
 
 export const getCourierToken = (): string | null => {
-  try {
-    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return portalSessionManager.getActivePortalToken('courier');
 };
 
 export const setCourierToken = (token: string, persist = true): void => {
@@ -71,14 +87,7 @@ export const setCourierToken = (token: string, persist = true): void => {
 };
 
 export const clearCourierToken = (): void => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem(USER_KEY);
-  } catch {
-    // fallback ignore
-  }
+  portalSessionManager.clearPortalSession('courier');
 };
 
 export const getCourierUser = (): CourierUser | null => {
@@ -114,6 +123,12 @@ courierClient.interceptors.request.use((reqConfig) => {
   if (reqConfig.url?.startsWith('api/v1/')) {
     reqConfig.url = reqConfig.url.substring(7);
   }
+  const subdomainHeaders = portalSessionManager.getPortalSubdomainHeaders();
+  for (const [headerKey, headerValue] of Object.entries(subdomainHeaders)) {
+    if (!reqConfig.headers[headerKey]) {
+      reqConfig.headers[headerKey] = headerValue;
+    }
+  }
   const token = getCourierToken();
   if (token && !reqConfig.headers.Authorization) {
     reqConfig.headers.Authorization = `Bearer ${token}`;
@@ -133,14 +148,57 @@ export const FALLBACK_FAILURE_REASONS: FailureReason[] = [
 ];
 
 export const courierPortalApi = {
-  login: async (phone: string, pin: string): Promise<{ success: boolean; token: string; courier: CourierUser }> => {
-    const res = await courierClient.post('/courier-portal/login', { phone, pin });
-    const payload = res.data?.data || res.data || {};
-    const token = payload.token || res.data?.token;
-    const courier = payload.courier || res.data?.courier;
-    if (token) setCourierToken(token);
-    if (courier) setCourierUser(courier);
-    return { success: true, token, courier };
+  login: async (
+    phone: string,
+    pin: string,
+    companyId?: string,
+  ): Promise<CourierLoginResult> => {
+    const res = await courierClient.post('/courier-portal/login', {
+      phone,
+      pin,
+      ...(companyId ? { companyId } : {}),
+    });
+    const root = res.data || {};
+    const payload = root.data || root || {};
+
+    if (
+      (root.requiresCompanySelection || payload.requiresCompanySelection) &&
+      Array.isArray(root.companies || payload.companies)
+    ) {
+      const companies = portalSessionManager.normalizePortalCompanyOptions(
+        root.companies || payload.companies,
+      );
+      return {
+        success: false,
+        requiresCompanySelection: true,
+        companies,
+        code: root.code || payload.code,
+        message: root.message || payload.message,
+      };
+    }
+
+    const token: string | undefined = payload.token || root.token;
+    const courier: CourierUser | undefined = payload.courier || root.courier;
+    const company = payload.company || root.company || null;
+
+    if (!root.success || !token) {
+      return {
+        success: false,
+        code: root.code || payload.code,
+        message: root.message || root.error || payload.message || 'تعذر تسجيل الدخول',
+      };
+    }
+
+    portalSessionManager.savePortalSession({
+      role: 'courier',
+      companyId: company?.id || courier?.companyId || companyId || null,
+      companySlug: company?.slug || null,
+      companyName: company?.name || courier?.companyName || null,
+      token,
+      profile: courier ?? null,
+    });
+
+    return { success: true, token, courier, company };
   },
 
   logout: async (): Promise<{ success: boolean }> => {

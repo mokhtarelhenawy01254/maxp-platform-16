@@ -48,6 +48,15 @@ const createPrisma = (overrides = {}) => {
         name: 'معمل النور',
         installedApps: [{ app: { slug: 'dental-lab-app' } }],
       }),
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: 'company-1',
+          name: 'معمل النور',
+          slug: 'nour-lab',
+          logo: null,
+          isActive: true,
+        },
+      ]),
     },
     dentalLabDoctor: {
       findFirst: jest.fn(),
@@ -162,7 +171,7 @@ describe('dentalLabPortalController', () => {
   describe('portalLogin', () => {
     test('returns a token and dentist info on valid phone + pin', async () => {
       const prisma = createPrisma();
-      prisma.dentalLabDoctor.findFirst.mockResolvedValue(makeDentist());
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([makeDentist()]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -180,7 +189,7 @@ describe('dentalLabPortalController', () => {
 
     test('rejects a wrong pin', async () => {
       const prisma = createPrisma();
-      prisma.dentalLabDoctor.findFirst.mockResolvedValue(makeDentist({ portalPin: '9999' }));
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([makeDentist({ portalPin: '9999' })]);
       getSharedPrismaClient.mockReturnValue(prisma);
 
       const res = createResponse();
@@ -188,6 +197,70 @@ describe('dentalLabPortalController', () => {
 
       expect(res.statusCode).toBe(401);
       expect(res.payload.error).toBe('رقم الهاتف أو الرقم السري غير صحيح');
+    });
+
+    test('rejects wrong pin across 2 labs with 401 and never leaks labs or companies', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([
+        makeDentist({ id: 'dent-1', companyId: 'company-1', portalPin: '9999', clinicName: 'عيادة 1' }),
+        makeDentist({ id: 'dent-2', companyId: 'company-2', portalPin: '8888', clinicName: 'عيادة 2' }),
+      ]);
+      prisma.company.findMany.mockResolvedValue([
+        { id: 'company-1', name: 'معمل 1', slug: 'lab-1', logo: null, isActive: true },
+        { id: 'company-2', name: 'معمل 2', slug: 'lab-2', logo: null, isActive: true },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.portalLogin(req({ body: { phone: '01001234567', pin: '0000' } }), res);
+
+      expect(res.statusCode).toBe(401);
+      expect(res.payload.labs).toBeUndefined();
+      expect(res.payload.companies).toBeUndefined();
+      expect(res.payload.requiresCompanySelection).toBeUndefined();
+      expect(res.payload.requireCompanySelection).toBeUndefined();
+    });
+
+    test('returns 200 company selection when same phone + valid PIN matches 2 labs without companyId', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([
+        makeDentist({ id: 'dent-1', companyId: 'company-1', portalPin: '1234', clinicName: 'عيادة 1' }),
+        makeDentist({ id: 'dent-2', companyId: 'company-2', portalPin: '1234', clinicName: 'عيادة 2' }),
+      ]);
+      prisma.company.findMany.mockResolvedValue([
+        { id: 'company-1', name: 'معمل 1', slug: 'lab-1', logo: null, isActive: true },
+        { id: 'company-2', name: 'معمل 2', slug: 'lab-2', logo: null, isActive: true },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.portalLogin(req({ body: { phone: '01001234567', pin: '1234' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.requiresCompanySelection).toBe(true);
+      expect(res.payload.requireCompanySelection).toBe(true);
+      expect(res.payload.code).toBe('COMPANY_SELECTION_REQUIRED');
+      expect(res.payload.companies).toHaveLength(2);
+      expect(res.payload.labs).toEqual([
+        { companyId: 'company-1', companyName: 'معمل 1', clinicName: 'عيادة 1' },
+        { companyId: 'company-2', companyName: 'معمل 2', clinicName: 'عيادة 2' },
+      ]);
+    });
+
+    test('rejects host/body companyId mismatch with 403 TENANT_HOST_MISMATCH', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.portalLogin(
+        req({ company: { id: 'company-1' }, body: { phone: '01001234567', pin: '1234', companyId: 'company-2' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(403);
+      expect(res.payload.code).toBe('TENANT_HOST_MISMATCH');
+      expect(prisma.dentalLabDoctor.findMany).not.toHaveBeenCalled();
     });
 
     test('rejects an unknown phone', async () => {
@@ -208,6 +281,7 @@ describe('dentalLabPortalController', () => {
       const res = createResponse();
       await controller.portalLogin(req({ body: {} }), res);
       expect(res.statusCode).toBe(400);
+      expect(prisma.dentalLabDoctor.findMany).not.toHaveBeenCalled();
       expect(prisma.dentalLabDoctor.findFirst).not.toHaveBeenCalled();
     });
   });

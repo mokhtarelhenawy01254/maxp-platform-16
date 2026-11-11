@@ -5,6 +5,8 @@ const COMPANY_SELECT = {
   id: true,
   name: true,
   slug: true,
+  publicCode: true,
+  customDomain: true,
   email: true,
   logo: true,
   currency: true,
@@ -15,6 +17,16 @@ const COMPANY_SELECT = {
 const PLATFORM_BASE_DOMAINS = new Set([
   'maxp.online',
   'mokhtarelhenawy.online',
+]);
+
+const RESERVED_INFRA_SUBDOMAINS = new Set([
+  'www',
+  'app',
+  'admin',
+  'api',
+  'dev',
+  'staging',
+  'mail',
 ]);
 
 const normalizeHostname = (value) =>
@@ -70,47 +82,62 @@ const inferSubdomainSlug = (hostname, configuredMainDomain) => {
     return null;
   }
 
+  const baseDomains = new Set(PLATFORM_BASE_DOMAINS);
   if (mainDomain) {
+    baseDomains.add(mainDomain);
+  }
+
+  for (const domain of baseDomains) {
     if (
-      normalizedHostname === mainDomain ||
-      normalizedHostname === `www.${mainDomain}`
+      normalizedHostname === domain ||
+      normalizedHostname === `www.${domain}`
     ) {
       return null;
     }
+  }
 
-    if (normalizedHostname.endsWith(`.${mainDomain}`)) {
-      const prefix = normalizedHostname.slice(0, -(`.${mainDomain}`.length));
-      const inferred = prefix.split('.').find((part) => part && part !== 'www');
-      return inferred || null;
+  let candidate = null;
+
+  if (mainDomain && normalizedHostname.endsWith(`.${mainDomain}`)) {
+    const prefix = normalizedHostname.slice(0, -(`.${mainDomain}`.length));
+    candidate = prefix.split('.').find((part) => part && part !== 'www') || null;
+  }
+
+  if (!candidate) {
+    for (const domain of baseDomains) {
+      if (normalizedHostname.endsWith(`.${domain}`)) {
+        const prefix = normalizedHostname.slice(0, -(`.${domain}`.length));
+        candidate = prefix.split('.').find((part) => part && part !== 'www') || null;
+        break;
+      }
     }
   }
 
-  const parts = normalizedHostname.split('.');
-  if (parts.length === 2 && parts[1] === 'localhost') {
-    return parts[0];
+  if (!candidate) {
+    const parts = normalizedHostname.split('.');
+    if (parts.length === 2 && parts[1] === 'localhost') {
+      candidate = parts[0];
+    } else if (
+      parts.length === 3 &&
+      parts[1] === 'lvh' &&
+      parts[2] === 'me'
+    ) {
+      candidate = parts[0];
+    } else if (
+      parts.length >= 3 &&
+      parts[parts.length - 1] === 'localhost'
+    ) {
+      candidate = parts.find((part) => part && part !== 'www' && part !== 'localhost') || null;
+    } else if (parts.length >= 3 && !isLocalHostname(normalizedHostname)) {
+      candidate = parts[0];
+    }
   }
 
-  if (
-    parts.length === 3 &&
-    parts[1] === 'lvh' &&
-    parts[2] === 'me'
-  ) {
-    return parts[0];
+  if (!candidate || RESERVED_INFRA_SUBDOMAINS.has(candidate)) {
+    return null;
   }
 
-  if (
-    parts.length >= 3 &&
-    parts[parts.length - 1] === 'localhost'
-  ) {
-    const inferred = parts.find((part) => part && part !== 'www' && part !== 'localhost');
-    return inferred || null;
-  }
-
-  if (parts.length >= 3 && !isLocalHostname(normalizedHostname)) {
-    return parts[0];
-  }
-
-  return null;
+  return candidate;
 };
 
 /**
@@ -212,6 +239,174 @@ const resolveStoreShadowAndLog = async (req, company, getPrisma, exactHostname, 
   }
 };
 
+const getHeaderValues = (req, names) => {
+  const values = [];
+  for (const name of names) {
+    const raw = req.headers?.[name];
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        if (item !== undefined && item !== null && String(item).trim()) {
+          values.push(String(item).trim());
+        }
+      }
+    } else if (raw !== undefined && raw !== null && String(raw).trim()) {
+      values.push(String(raw).trim());
+    }
+  }
+  return values;
+};
+
+const getParamValues = (raw) => {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((v) => v !== undefined && v !== null && String(v).trim())
+      .map((v) => String(v).trim());
+  }
+  if (raw !== undefined && raw !== null && String(raw).trim()) {
+    return [String(raw).trim()];
+  }
+  return [];
+};
+
+const lookupCompanyByCustomDomain = async (exactHostname, getPrisma) => {
+  if (!exactHostname) return null;
+  return companyCacheService.getCompanyLookup('customDomain', exactHostname, async () => {
+    const prisma = await getPrisma();
+    return prisma.company.findUnique({
+      where: { customDomain: exactHostname },
+      select: COMPANY_SELECT,
+    });
+  });
+};
+
+const lookupCompanyBySlug = async (slug, getPrisma) => {
+  if (!slug) return null;
+  return companyCacheService.getCompanyLookup('slug', slug, async () => {
+    const prisma = await getPrisma();
+    return prisma.company.findUnique({
+      where: { slug },
+      select: COMPANY_SELECT,
+    });
+  });
+};
+
+const lookupCompanyByLandingSlug = async (slug, getPrisma) => {
+  if (!slug) return null;
+  try {
+    const prisma = await getPrisma();
+    if (typeof prisma?.productLandingPage?.findFirst !== 'function') {
+      return null;
+    }
+    const landing = await prisma.productLandingPage.findFirst({
+      where: { slug, status: 'PUBLISHED' },
+      select: { companyId: true },
+    });
+    if (!landing?.companyId) return null;
+    return companyCacheService.getCompanyLookup('id', landing.companyId, async () => {
+      return prisma.company.findUnique({
+        where: { id: landing.companyId },
+        select: COMPANY_SELECT,
+      });
+    });
+  } catch (_) {
+    return null;
+  }
+};
+
+const lookupCompanyById = async (id, getPrisma) => {
+  if (!id) return null;
+  try {
+    return await companyCacheService.getCompanyLookup('id', id, async () => {
+      const prisma = await getPrisma();
+      return prisma.company.findUnique({
+        where: { id },
+        select: COMPANY_SELECT,
+      });
+    });
+  } catch (_) {
+    return null;
+  }
+};
+
+const lookupCompanyByPublicCode = async (code, getPrisma) => {
+  const trimmed = String(code || '').trim();
+  if (!trimmed) return null;
+  try {
+    const prisma = await getPrisma();
+    if (typeof prisma?.company?.findFirst !== 'function') {
+      return null;
+    }
+    return await companyCacheService.getCompanyLookup('publicCode', trimmed.toLowerCase(), async () => {
+      return prisma.company.findFirst({
+        where: { publicCode: { equals: trimmed, mode: 'insensitive' } },
+        select: COMPANY_SELECT,
+      });
+    });
+  } catch (_) {
+    return null;
+  }
+};
+
+const doesSlugHintMatchCompany = (rawHint, hostCompany, hostResolvedLandingSlug, mainDomain) => {
+  const normalizedHint = normalizeHostname(rawHint);
+  if (!normalizedHint) return true;
+
+  const companySlug = hostCompany.slug ? String(hostCompany.slug).trim().toLowerCase() : null;
+  const companyPublicCode = hostCompany.publicCode ? String(hostCompany.publicCode).trim().toLowerCase() : null;
+  const companyCustomDomain = hostCompany.customDomain ? normalizeHostname(hostCompany.customDomain) : null;
+  const companyCustomDomainBare =
+    companyCustomDomain && companyCustomDomain.startsWith('www.')
+      ? companyCustomDomain.slice(4)
+      : companyCustomDomain;
+  const landingSlug = hostResolvedLandingSlug ? String(hostResolvedLandingSlug).trim().toLowerCase() : null;
+
+  if (normalizedHint.includes('.')) {
+    const bareHintDomain = normalizedHint.startsWith('www.') ? normalizedHint.slice(4) : normalizedHint;
+    if (
+      companyCustomDomain &&
+      (normalizedHint === companyCustomDomain || bareHintDomain === companyCustomDomainBare)
+    ) {
+      return true;
+    }
+
+    const inferredFromHint = inferSubdomainSlug(normalizedHint, mainDomain);
+    if (!inferredFromHint) {
+      return false;
+    }
+
+    return Boolean(
+      (companySlug && inferredFromHint === companySlug) ||
+      (landingSlug && inferredFromHint === landingSlug) ||
+      (companyPublicCode && inferredFromHint === companyPublicCode)
+    );
+  }
+
+  return Boolean(
+    (companySlug && normalizedHint === companySlug) ||
+    (landingSlug && normalizedHint === landingSlug) ||
+    (companyPublicCode && normalizedHint === companyPublicCode)
+  );
+};
+
+const doesIdHintMatchCompany = (rawIdHint, hostCompany) => {
+  const trimmed = String(rawIdHint || '').trim();
+  if (!trimmed) return true;
+
+  if (trimmed === String(hostCompany.id)) {
+    return true;
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (hostCompany.slug && lower === String(hostCompany.slug).trim().toLowerCase()) {
+    return true;
+  }
+  if (hostCompany.publicCode && lower === String(hostCompany.publicCode).trim().toLowerCase()) {
+    return true;
+  }
+
+  return false;
+};
+
 const extractSubdomainMiddleware = async (req, res, next) => {
   try {
     let company = null;
@@ -219,6 +414,7 @@ const extractSubdomainMiddleware = async (req, res, next) => {
     let exactHostname = null;
     let inferredSlug = null;
     let matchedBareSlug = null;
+    let hostResolvedLandingSlug = null;
     const mainDomain = process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online';
     const getPrisma = async () => {
       if (!prisma) {
@@ -228,153 +424,169 @@ const extractSubdomainMiddleware = async (req, res, next) => {
       return prisma;
     };
 
-    // 1️⃣ محاولة استخراج الـ subdomain من header
-    const hostHeader = req.headers['x-subdomain'] || req.headers['host'];
-    
+    // Step A: Resolve hostCompany strictly from req.headers['host'] (Host-first priority)
+    const rawHostHeader = getHeaderValues(req, ['host', 'Host'])[0] || '';
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [SubdomainMW] Incoming Header:', hostHeader);
+      console.log('🔍 [SubdomainMW] Incoming Host:', rawHostHeader || '(none)');
     }
 
-    if (hostHeader) {
-      // استخراج الـ subdomain
-      const hostname = normalizeHostname(hostHeader);
-      
+    let hostCompany = null;
+    if (rawHostHeader) {
+      const hostHostname = normalizeHostname(rawHostHeader);
+      exactHostname = hostHostname.startsWith('www.') ? hostHostname.slice(4) : hostHostname;
+
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔍 [SubdomainMW] Hostname:', hostname, 'Parts:', hostname.split('.'));
+        console.log('🔍 [SubdomainMW] Hostname:', hostHostname, 'Parts:', hostHostname.split('.'));
       }
 
-      // 1. محاولة البحث أولاً بالدومين الكامل (Custom Domain)
-      // يتم تخطي هذا الاستعلام إذا كان النطاق فرعياً تابعاً لمنصة MaxP لتجنب استعلامات غير ضرورية
-      exactHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
-
+      // 1. Custom Domain lookup
       if (shouldLookupCustomDomain(exactHostname, mainDomain)) {
-        company = await companyCacheService.getCompanyLookup('customDomain', exactHostname, async () => {
-          const prisma = await getPrisma();
-          return prisma.company.findUnique({
-            where: { customDomain: exactHostname },
-            select: COMPANY_SELECT,
-          });
-        });
+        hostCompany = await lookupCompanyByCustomDomain(exactHostname, getPrisma);
       }
 
-      // 2. إذا لم ينجح، جرب الـ Subdomain (Slug)
-      if (!company) {
-        inferredSlug = inferSubdomainSlug(hostname, mainDomain);
-
+      // 2. Subdomain Slug / Published Landing Page lookup
+      if (!hostCompany) {
+        inferredSlug = inferSubdomainSlug(hostHostname, mainDomain);
         if (inferredSlug) {
-          company = await companyCacheService.getCompanyLookup('slug', inferredSlug, async () => {
-            const prisma = await getPrisma();
-            return prisma.company.findUnique({
-              where: { slug: inferredSlug },
-              select: COMPANY_SELECT,
-            });
-          });
+          hostCompany = await lookupCompanyBySlug(inferredSlug, getPrisma);
 
-          // 2.1 إذا لم تكن شركة، تحقق مما إذا كان الـ slug يخص صفحة هبوط منشورة
-          if (!company) {
-            try {
-              const prisma = await getPrisma();
-              const landing = await prisma.productLandingPage.findFirst({
-                where: { slug: inferredSlug, status: 'PUBLISHED' },
-                select: { companyId: true },
-              });
-              if (landing?.companyId) {
-                company = await companyCacheService.getCompanyLookup('id', landing.companyId, async () => {
-                  return prisma.company.findUnique({
-                    where: { id: landing.companyId },
-                    select: COMPANY_SELECT,
-                  });
-                });
-                if (company) {
-                  req.inferredLandingSlug = inferredSlug;
-                }
-              }
-            } catch (_) {}
+          if (!hostCompany) {
+            hostCompany = await lookupCompanyByLandingSlug(inferredSlug, getPrisma);
+            if (hostCompany) {
+              hostResolvedLandingSlug = inferredSlug;
+              req.inferredLandingSlug = inferredSlug;
+            }
           }
         }
       }
+    }
 
-      // 2.5️⃣ دعم الـ bare slug المرسل عبر الهيدرز (بدون نقاط)
-      // الفرونت بيبعت X-Subdomain / X-Company-Slug بقيمة الـ slug فقط
-      // (مثال: "mlabs-kajwal") وهو مينفعش يتُفسّر كـ hostname، فلازم
-      // نبحث به مباشرة كسلاگ
-      if (!company) {
-        const bareSlugCandidates = [
-          hostname,
-          req.headers['x-company-slug'],
-          req.headers['x-company-subdomain'],
-        ]
-          .map((value) => normalizeHostname(value))
-          .filter(
-            (value) =>
-              value &&
-              !value.includes('.') &&
-              !isLocalHostname(value) &&
-              !value.startsWith('www.')
-          );
+    // Step B: Inspect explicit slug hints & explicit ID hints
+    const explicitSlugHints = [
+      ...getHeaderValues(req, ['x-subdomain', 'X-Subdomain']),
+      ...getHeaderValues(req, ['x-company-slug', 'X-Company-Slug']),
+      ...getHeaderValues(req, ['x-company-subdomain', 'X-Company-Subdomain']),
+    ];
 
-        for (const slugCandidate of [...new Set(bareSlugCandidates)]) {
-          company = await companyCacheService.getCompanyLookup('slug', slugCandidate, async () => {
-            const prisma = await getPrisma();
-            return prisma.company.findUnique({
-              where: { slug: slugCandidate },
-              select: COMPANY_SELECT,
-            });
+    const explicitIdHints = [
+      ...getHeaderValues(req, ['x-company-id', 'X-Company-Id']),
+      ...getParamValues(req.query?.companyId),
+      ...getParamValues(req.body?.companyId),
+    ];
+
+    // Conflict Guard: when Host resolved a company, reject conflicting spoofing headers/params
+    if (hostCompany) {
+      for (const slugHint of explicitSlugHints) {
+        if (!doesSlugHintMatchCompany(slugHint, hostCompany, hostResolvedLandingSlug, mainDomain)) {
+          return res.status(403).json({
+            success: false,
+            code: 'TENANT_HOST_MISMATCH',
+            message: 'تعارض في نطاق الشركة المطلوبة',
           });
+        }
+      }
 
+      for (const idHint of explicitIdHints) {
+        if (!doesIdHintMatchCompany(idHint, hostCompany)) {
+          return res.status(403).json({
+            success: false,
+            code: 'TENANT_HOST_MISMATCH',
+            message: 'تعارض في معرف الشركة مع النطاق الحالي',
+          });
+        }
+      }
+
+      company = hostCompany;
+    }
+
+    // Step C: Fallback when Host does NOT resolve a company (apex, infra, localhost, Capacitor, tests)
+    if (!company && explicitSlugHints.length > 0) {
+      for (const rawHint of [...new Set(explicitSlugHints)]) {
+        const hintNormalized = normalizeHostname(rawHint);
+        if (!hintNormalized) continue;
+
+        if (hintNormalized.includes('.')) {
+          const hintExact = hintNormalized.startsWith('www.') ? hintNormalized.slice(4) : hintNormalized;
+          if (shouldLookupCustomDomain(hintExact, mainDomain)) {
+            company = await lookupCompanyByCustomDomain(hintExact, getPrisma);
+            if (company) {
+              exactHostname = hintExact;
+              break;
+            }
+          }
+
+          const hintInferred = inferSubdomainSlug(hintNormalized, mainDomain);
+          if (hintInferred) {
+            company = await lookupCompanyBySlug(hintInferred, getPrisma);
+            if (company) {
+              inferredSlug = hintInferred;
+              break;
+            }
+
+            company = await lookupCompanyByLandingSlug(hintInferred, getPrisma);
+            if (company) {
+              inferredSlug = hintInferred;
+              req.inferredLandingSlug = hintInferred;
+              break;
+            }
+
+            company = await lookupCompanyByPublicCode(hintInferred, getPrisma);
+            if (company) {
+              matchedBareSlug = hintInferred;
+              break;
+            }
+          }
+        } else if (
+          !isLocalHostname(hintNormalized) &&
+          !hintNormalized.startsWith('www.') &&
+          !RESERVED_INFRA_SUBDOMAINS.has(hintNormalized)
+        ) {
+          company = await lookupCompanyBySlug(hintNormalized, getPrisma);
           if (company) {
-            matchedBareSlug = slugCandidate;
+            matchedBareSlug = hintNormalized;
+            break;
+          }
+
+          company = await lookupCompanyByLandingSlug(hintNormalized, getPrisma);
+          if (company) {
+            matchedBareSlug = hintNormalized;
+            req.inferredLandingSlug = hintNormalized;
+            break;
+          }
+
+          company = await lookupCompanyByPublicCode(rawHint, getPrisma);
+          if (company) {
+            matchedBareSlug = hintNormalized;
             break;
           }
         }
       }
+    }
 
-      if (company && !company.isActive) {
-        return res.status(403).json({
-          success: false,
-          message: 'هذا المتجر غير نشط حالياً'
-        });
+    if (!company) {
+      const fallbackCompanyId =
+        getParamValues(req.query?.companyId)[0] ||
+        getParamValues(req.body?.companyId)[0] ||
+        getHeaderValues(req, ['x-company-id', 'X-Company-Id'])[0];
+
+      if (fallbackCompanyId) {
+        company = await lookupCompanyById(fallbackCompanyId, getPrisma);
+
+        if (!company) {
+          company = await lookupCompanyBySlug(fallbackCompanyId, getPrisma);
+        }
+
+        if (!company) {
+          company = await lookupCompanyByPublicCode(fallbackCompanyId, getPrisma);
+        }
       }
     }
 
-    // 2️⃣ إذا لم يتم العثور على الشركة من subdomain، جرب query parameter أو header X-Company-Id
-    const fallbackCompanyId =
-      req.query.companyId ||
-      req.body?.companyId ||
-      req.headers['x-company-id'] ||
-      req.headers['X-Company-Id'];
-
-    if (!company && fallbackCompanyId) {
-      // محاولة البحث بالـ ID أولاً (UUID/CUID)
-      try {
-        company = await companyCacheService.getCompanyLookup('id', fallbackCompanyId, async () => {
-          const prisma = await getPrisma();
-          return prisma.company.findUnique({
-            where: { id: fallbackCompanyId },
-            select: COMPANY_SELECT,
-          });
-        });
-      } catch (e) {
-        // إذا فشل البحث بالـ ID (كما في حالة إرسال slug كـ ID)، سنحاول بالـ slug أدناه
-      }
-
-      // إذا لم ينجح، محاولة البحث كـ slug (مفيد جداً في بيئة التطوير)
-      if (!company) {
-        company = await companyCacheService.getCompanyLookup('slug', fallbackCompanyId, async () => {
-          const prisma = await getPrisma();
-          return prisma.company.findUnique({
-            where: { slug: fallbackCompanyId },
-            select: COMPANY_SELECT,
-          });
-        });
-      }
-
-      if (company && !company.isActive) {
-        return res.status(403).json({
-          success: false,
-          message: 'هذا المتجر غير نشط حالياً'
-        });
-      }
+    if (company && !company.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'هذا المتجر غير نشط حالياً'
+      });
     }
 
     // 3️⃣ إضافة معلومات الشركة إلى request وإعداد سياق البيانات (RLS Context)

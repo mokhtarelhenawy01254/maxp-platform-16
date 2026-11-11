@@ -8,6 +8,7 @@ const EDUCATION_NOTIFICATION_EVENTS = {
   SESSION_REMINDER: 'education_session_reminder',
   ENROLLMENT_LOW_HOURS: 'education_enrollment_low_hours',
   ENROLLMENT_EXPIRING: 'education_enrollment_expiring',
+  PARENT_ACTIVATED: 'education_parent_activated',
 };
 
 const NOTIFICATION_TEMPLATES = {
@@ -94,6 +95,13 @@ const NOTIFICATION_TEMPLATES = {
 
 رصيدك المتبقي: {remainingHours} ساعة
 تواصل معنا لتجديد الباقة.`,
+  },
+  [EDUCATION_NOTIFICATION_EVENTS.PARENT_ACTIVATED]: {
+    parent: `أهلاً {parentName} 🎉
+
+تم تفعيل حساب ولي الأمر بنجاح ✅
+
+يمكنك الآن متابعة الحصص ورصيد الساعات مباشرة عبر بوابة ولي الأمر.`,
   },
 };
 
@@ -215,6 +223,165 @@ async function sendEducationNotification({
   }
 }
 
+async function isPushFirstEnabled(companyId) {
+  if (!companyId) return true;
+  try {
+    const prisma = getSharedPrismaClient();
+    if (!prisma?.company || typeof prisma.company.findUnique !== 'function') {
+      return true;
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true },
+    });
+
+    if (!company?.settings) return true;
+
+    const parsed =
+      typeof company.settings === 'string'
+        ? JSON.parse(company.settings)
+        : company.settings;
+
+    return parsed?.educationSettings?.pushFirstSaveWhatsApp !== false;
+  } catch (_) {
+    // Fail open to true so push optimization remains resilient on transient read errors
+    return true;
+  }
+}
+
+async function sendEducationalEventWithPushRouting({
+  companyId,
+  actorType,
+  actorId,
+  eventType,
+  title,
+  templates,
+  variables = {},
+  recipientPhone,
+  recipientName,
+  recipientType = 'CUSTOMER',
+  url = '/',
+  pushFirst = true,
+  forceWhatsApp = false,
+}) {
+  const renderedText = replaceVariables(resolveBaseTemplate(eventType, templates), variables);
+  let pushResult = { attempted: 0, sent: 0, deliveredCount: 0, failed: 0 };
+
+  if (actorType && actorId) {
+    try {
+      const browserPushService = require('./browserPushService');
+      if (typeof browserPushService.sendToPortalActor === 'function') {
+        const rawResult = await browserPushService.sendToPortalActor({
+          companyId,
+          actorType,
+          actorId,
+          typeId: eventType,
+          title: title || 'إشعار تعليمي',
+          body: renderedText || title || 'لديك إشعار جديد',
+          url: url || '/',
+          data: {
+            eventType,
+            ...(variables || {}),
+          },
+        });
+        const deliveredCount = Number(rawResult?.deliveredCount ?? rawResult?.sent ?? 0);
+        pushResult = {
+          attempted: Number(rawResult?.attempted || 0),
+          sent: Number(rawResult?.sent ?? deliveredCount),
+          deliveredCount,
+          failed: Number(rawResult?.failed || 0),
+          webSent: Number(rawResult?.webSent || 0),
+          fcmSent: Number(rawResult?.fcmSent || 0),
+        };
+      }
+    } catch (pushError) {
+      console.error(`[EducationPush] Error dispatching ${eventType}:`, pushError.message);
+    }
+  }
+
+  if (pushFirst && !forceWhatsApp) {
+    const usePushFirst = await isPushFirstEnabled(companyId);
+    if (usePushFirst && pushResult.deliveredCount > 0) {
+      try {
+        const { logEducationEvent } = require('./educationAuditService');
+        logEducationEvent({
+          companyId,
+          action: 'SEND_NOTIFICATION',
+          entityType: 'NOTIFICATION',
+          entityName: recipientName || recipientPhone || `${actorType}:${actorId}`,
+          description: `إرسال إشعار تعليمي عبر Push (${eventType}) وتوفير رسالة واتساب`,
+          details: {
+            eventType,
+            actorType,
+            actorId,
+            channel: 'PUSH',
+            savedWhatsApp: true,
+            deliveredCount: pushResult.deliveredCount,
+            recipientType,
+          },
+          actorType: 'SYSTEM',
+        }).catch((e) => console.error('[NotificationAudit]', e.message));
+      } catch (_) {}
+
+      return {
+        success: true,
+        channel: 'PUSH',
+        savedWhatsApp: true,
+        pushResult,
+      };
+    }
+
+    if (!recipientPhone) {
+      return {
+        success: false,
+        channel: 'PUSH',
+        savedWhatsApp: false,
+        pushResult,
+        reason: 'no_recipient_phone',
+      };
+    }
+
+    return sendEducationNotification({
+      companyId,
+      eventType,
+      templates,
+      variables,
+      recipientPhone,
+      recipientName,
+      recipientType,
+    });
+  }
+
+  let whatsappResult = null;
+  if (recipientPhone) {
+    whatsappResult = await sendEducationNotification({
+      companyId,
+      eventType,
+      templates,
+      variables,
+      recipientPhone,
+      recipientName,
+      recipientType,
+    });
+  }
+
+  return {
+    success: Boolean(
+      (whatsappResult && whatsappResult.success !== false) || pushResult.deliveredCount > 0
+    ),
+    channel:
+      pushResult.deliveredCount > 0 && whatsappResult
+        ? 'DUAL'
+        : whatsappResult
+          ? 'WHATSAPP'
+          : 'PUSH',
+    savedWhatsApp: false,
+    pushResult,
+    whatsappResult,
+  };
+}
+
 async function notifyEnrollmentCreated(companyId, enrollment) {
   const prisma = getSharedPrismaClient();
   const student = await prisma.educationStudent.findUnique({ where: { id: enrollment.studentId }, include: { customer: true } });
@@ -232,14 +399,161 @@ async function notifyEnrollmentCreated(companyId, enrollment) {
     parentPhone: student.customer.phone || '',
   };
 
-  if (student.customer.phone) {
-    await sendEducationNotification({
-      companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED,
+  if (student.customerId || student.customer.id || student.customer.phone) {
+    return sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'PARENT',
+      actorId: student.customerId || student.customer.id,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED,
+      title: 'تم تأكيد الاشتراك بنجاح',
       templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED].parent,
-      variables: vars, recipientPhone: student.customer.phone,
-      recipientName: vars.parentName, recipientType: 'CUSTOMER',
+      variables: vars,
+      recipientPhone: student.customer.phone,
+      recipientName: vars.parentName,
+      recipientType: 'CUSTOMER',
+      url: '/parent/enrollments',
+      pushFirst: false,
+      forceWhatsApp: true,
     });
   }
+}
+
+async function hydrateEnrollment(prisma, companyId, enrollmentOrId) {
+  if (
+    enrollmentOrId &&
+    typeof enrollmentOrId === 'object' &&
+    enrollmentOrId.student &&
+    (enrollmentOrId.student.customer || enrollmentOrId.student.customerId) &&
+    enrollmentOrId.package
+  ) {
+    return enrollmentOrId;
+  }
+
+  const enrollmentId =
+    typeof enrollmentOrId === 'string' ? enrollmentOrId : enrollmentOrId?.id;
+  if (enrollmentId && prisma?.educationEnrollment?.findUnique) {
+    const full = await prisma.educationEnrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        student: { include: { customer: true } },
+        package: { include: { subject: true } },
+      },
+    });
+    if (full) return full;
+  }
+
+  if (enrollmentOrId && typeof enrollmentOrId === 'object' && enrollmentOrId.studentId && enrollmentOrId.packageId) {
+    const [student, pkg] = await Promise.all([
+      prisma?.educationStudent?.findUnique
+        ? prisma.educationStudent.findUnique({ where: { id: enrollmentOrId.studentId }, include: { customer: true } })
+        : null,
+      prisma?.educationPackage?.findUnique
+        ? prisma.educationPackage.findUnique({ where: { id: enrollmentOrId.packageId }, include: { subject: true } })
+        : null,
+    ]);
+    return { ...enrollmentOrId, companyId, student, package: pkg };
+  }
+
+  return null;
+}
+
+async function notifyEnrollmentLowHours(companyId, enrollment) {
+  const prisma = getSharedPrismaClient();
+  const full = await hydrateEnrollment(prisma, companyId, enrollment);
+  if (!full?.student) return;
+
+  const customerId = full.student.customerId || full.student.customer?.id || null;
+  const parentPhone = full.student.customer?.phone || null;
+  if (!customerId && !parentPhone) return;
+
+  const parentName =
+    full.student.customer?.firstName || full.student.customer?.lastName || 'وليّ الأمر';
+  const vars = {
+    parentName,
+    studentName: `${full.student.firstName || ''} ${full.student.lastName || ''}`.trim(),
+    packageName: full.package?.name || '',
+    subjectName: full.package?.subject?.name || full.package?.name || '',
+    remainingHours: full.remainingHours ?? 0,
+  };
+
+  return sendEducationalEventWithPushRouting({
+    companyId,
+    actorType: 'PARENT',
+    actorId: customerId,
+    eventType: EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_LOW_HOURS,
+    title: 'تنبيه: رصيد الساعات منخفض',
+    templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_LOW_HOURS].parent,
+    variables: vars,
+    recipientPhone: parentPhone,
+    recipientName: parentName,
+    recipientType: 'CUSTOMER',
+    url: '/parent/enrollments',
+    pushFirst: false,
+    forceWhatsApp: true,
+  });
+}
+
+async function notifyEnrollmentExpiring(companyId, enrollment) {
+  const prisma = getSharedPrismaClient();
+  const full = await hydrateEnrollment(prisma, companyId, enrollment);
+  if (!full?.student) return;
+
+  const customerId = full.student.customerId || full.student.customer?.id || null;
+  const parentPhone = full.student.customer?.phone || null;
+  if (!customerId && !parentPhone) return;
+
+  const parentName =
+    full.student.customer?.firstName || full.student.customer?.lastName || 'وليّ الأمر';
+  const vars = {
+    parentName,
+    studentName: `${full.student.firstName || ''} ${full.student.lastName || ''}`.trim(),
+    packageName: full.package?.name || '',
+    subjectName: full.package?.subject?.name || full.package?.name || '',
+    remainingHours: full.remainingHours ?? 0,
+    expiryDate: full.expiresAt
+      ? new Date(full.expiresAt).toLocaleDateString('ar-EG')
+      : '',
+  };
+
+  return sendEducationalEventWithPushRouting({
+    companyId,
+    actorType: 'PARENT',
+    actorId: customerId,
+    eventType: EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_EXPIRING,
+    title: 'تنبيه: الباقة على وشك الانتهاء',
+    templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_EXPIRING].parent,
+    variables: vars,
+    recipientPhone: parentPhone,
+    recipientName: parentName,
+    recipientType: 'CUSTOMER',
+    url: '/parent/enrollments',
+    pushFirst: false,
+    forceWhatsApp: true,
+  });
+}
+
+async function notifyParentActivated({ companyId, customerId, parentPhone, parentName }) {
+  if (!companyId || (!customerId && !parentPhone)) return null;
+
+  const resolvedName = parentName || 'وليّ الأمر';
+  return sendEducationalEventWithPushRouting({
+    companyId,
+    actorType: 'PARENT',
+    actorId: customerId || null,
+    eventType: EDUCATION_NOTIFICATION_EVENTS.PARENT_ACTIVATED,
+    title: 'تم تفعيل حساب ولي الأمر',
+    templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.PARENT_ACTIVATED].parent,
+    variables: {
+      parentName: resolvedName,
+      parentPhone: parentPhone || '',
+    },
+    recipientPhone: parentPhone || null,
+    recipientName: resolvedName,
+    recipientType: 'CUSTOMER',
+    url: '/parent',
+    pushFirst: false,
+    forceWhatsApp: true,
+  });
 }
 
 async function notifySessionScheduled(companyId, session) {
@@ -251,29 +565,48 @@ async function notifySessionScheduled(companyId, session) {
 
   const d = new Date(full.scheduledAt);
   const vars = {
-    parentName: full.student.customer?.firstName || 'وليّ الأمر',
-    studentName: `${full.student.firstName} ${full.student.lastName}`,
-    subjectName: full.subject.name,
+    parentName: full.student?.customer?.firstName || 'وليّ الأمر',
+    studentName: `${full.student?.firstName || ''} ${full.student?.lastName || ''}`.trim(),
+    subjectName: full.subject?.name || '',
     teacherName: full.teacher?.name || 'المدرس',
     sessionDate: d.toLocaleDateString('ar-EG'),
     sessionTime: d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     duration: full.plannedDuration,
   };
 
-  if (full.student.customer?.phone) {
-    await sendEducationNotification({
-      companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
+  const parentActorId = full.student?.customerId || full.student?.customer?.id || null;
+  if (parentActorId || full.student?.customer?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'PARENT',
+      actorId: parentActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
+      title: 'موعد حصة جديدة',
       templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED].parent,
-      variables: vars, recipientPhone: full.student.customer.phone,
+      variables: vars,
+      recipientPhone: full.student?.customer?.phone,
       recipientName: vars.parentName,
+      recipientType: 'CUSTOMER',
+      url: '/parent/sessions',
+      pushFirst: true,
     });
   }
-  if (full.teacher?.phone) {
-    await sendEducationNotification({
-      companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
+
+  const teacherActorId = full.teacherId || full.teacher?.id || null;
+  if (teacherActorId || full.teacher?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'TEACHER',
+      actorId: teacherActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
+      title: 'حصة جديدة في جدولك',
       templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED].teacher,
-      variables: vars, recipientPhone: full.teacher.phone,
-      recipientName: full.teacher.name, recipientType: 'EMPLOYEE',
+      variables: vars,
+      recipientPhone: full.teacher?.phone,
+      recipientName: full.teacher?.name || vars.teacherName,
+      recipientType: 'EMPLOYEE',
+      url: '/teacher/schedule',
+      pushFirst: true,
     });
   }
 }
@@ -283,22 +616,34 @@ async function notifySessionConfirmed(companyId, sessionId) {
     where: { id: sessionId },
     include: { student: { include: { customer: true } }, subject: true, enrollment: true },
   });
-  if (!full?.student?.customer?.phone) return;
+  if (!full?.student) return;
+
+  const parentActorId = full.student.customerId || full.student.customer?.id || null;
+  const parentPhone = full.student.customer?.phone || null;
+  if (!parentActorId && !parentPhone) return;
 
   const d = new Date(full.scheduledAt);
-  await sendEducationNotification({
-    companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED,
+  const parentName = full.student?.customer?.firstName || 'وليّ الأمر';
+  return sendEducationalEventWithPushRouting({
+    companyId,
+    actorType: 'PARENT',
+    actorId: parentActorId,
+    eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED,
+    title: 'تم تأكيد الحصة',
     templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED].parent,
     variables: {
-      parentName: full.student?.customer?.firstName || 'وليّ الأمر',
+      parentName,
       studentName: `${full.student?.firstName || ''} ${full.student?.lastName || ''}`.trim(),
       subjectName: full.subject?.name || '',
       sessionDate: d.toLocaleDateString('ar-EG'),
       actualDuration: full.actualDuration || full.plannedDuration,
       remainingHours: full.enrollment?.remainingHours ?? 0,
     },
-    recipientPhone: full.student.customer.phone,
-    recipientName: full.student.customer.firstName || 'وليّ الأمر',
+    recipientPhone: parentPhone,
+    recipientName: parentName,
+    recipientType: 'CUSTOMER',
+    url: '/parent/sessions',
+    pushFirst: true,
   });
 }
 
@@ -311,26 +656,109 @@ async function notifySessionCancelled(companyId, session) {
 
   const d = new Date(full.scheduledAt);
   const vars = {
-    parentName: full.student.customer?.firstName || 'وليّ الأمر',
-    studentName: `${full.student.firstName} ${full.student.lastName}`,
-    subjectName: full.subject.name,
+    parentName: full.student?.customer?.firstName || 'وليّ الأمر',
+    studentName: `${full.student?.firstName || ''} ${full.student?.lastName || ''}`.trim(),
+    subjectName: full.subject?.name || '',
     sessionDate: d.toLocaleDateString('ar-EG'),
   };
 
-  if (full.student.customer?.phone) {
-    await sendEducationNotification({
-      companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
+  const parentActorId = full.student?.customerId || full.student?.customer?.id || null;
+  if (parentActorId || full.student?.customer?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'PARENT',
+      actorId: parentActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
+      title: 'تم إلغاء الحصة',
       templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED].parent,
-      variables: vars, recipientPhone: full.student.customer.phone,
+      variables: vars,
+      recipientPhone: full.student?.customer?.phone,
       recipientName: vars.parentName,
+      recipientType: 'CUSTOMER',
+      url: '/parent/sessions',
+      pushFirst: true,
     });
   }
-  if (full.teacher?.phone) {
-    await sendEducationNotification({
-      companyId, eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
+
+  const teacherActorId = full.teacherId || full.teacher?.id || null;
+  if (teacherActorId || full.teacher?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'TEACHER',
+      actorId: teacherActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
+      title: 'تم إلغاء الحصة',
       templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED].teacher,
-      variables: vars, recipientPhone: full.teacher.phone,
-      recipientName: full.teacher.name, recipientType: 'EMPLOYEE',
+      variables: vars,
+      recipientPhone: full.teacher?.phone,
+      recipientName: full.teacher?.name,
+      recipientType: 'EMPLOYEE',
+      url: '/teacher/schedule',
+      pushFirst: true,
+    });
+  }
+}
+
+async function notifySessionReminder(companyId, sessionOrId) {
+  const prisma = getSharedPrismaClient();
+  let full = null;
+
+  if (sessionOrId && typeof sessionOrId === 'object' && sessionOrId.student && sessionOrId.subject) {
+    full = sessionOrId;
+  } else {
+    const targetId = typeof sessionOrId === 'string' ? sessionOrId : sessionOrId?.id;
+    if (!targetId) return;
+    full = await prisma.educationSession.findUnique({
+      where: { id: targetId },
+      include: { student: { include: { customer: true } }, teacher: true, subject: true },
+    });
+  }
+
+  if (!full) return;
+
+  const d = new Date(full.scheduledAt);
+  const vars = {
+    parentName: full.student?.customer?.firstName || 'وليّ الأمر',
+    studentName: `${full.student?.firstName || ''} ${full.student?.lastName || ''}`.trim(),
+    subjectName: full.subject?.name || '',
+    teacherName: full.teacher?.name || 'المدرس',
+    sessionDate: d.toLocaleDateString('ar-EG'),
+    sessionTime: d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+  };
+
+  const parentActorId = full.student?.customerId || full.student?.customer?.id || null;
+  if (parentActorId || full.student?.customer?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'PARENT',
+      actorId: parentActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER,
+      title: 'تذكير بموعد الحصة',
+      templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER].parent,
+      variables: vars,
+      recipientPhone: full.student?.customer?.phone,
+      recipientName: vars.parentName,
+      recipientType: 'CUSTOMER',
+      url: '/parent/sessions',
+      pushFirst: true,
+    });
+  }
+
+  const teacherActorId = full.teacherId || full.teacher?.id || null;
+  if (teacherActorId || full.teacher?.phone) {
+    await sendEducationalEventWithPushRouting({
+      companyId,
+      actorType: 'TEACHER',
+      actorId: teacherActorId,
+      eventType: EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER,
+      title: 'تذكير بموعد الحصة',
+      templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER].teacher,
+      variables: vars,
+      recipientPhone: full.teacher?.phone,
+      recipientName: full.teacher?.name || vars.teacherName,
+      recipientType: 'EMPLOYEE',
+      url: '/teacher/schedule',
+      pushFirst: true,
     });
   }
 }
@@ -416,10 +844,16 @@ async function getFunnelStats(companyId, options = {}) {
 module.exports = {
   EDUCATION_NOTIFICATION_EVENTS,
   NOTIFICATION_TEMPLATES,
+  isPushFirstEnabled,
+  sendEducationalEventWithPushRouting,
   notifyEnrollmentCreated,
+  notifyEnrollmentLowHours,
+  notifyEnrollmentExpiring,
   notifySessionScheduled,
   notifySessionConfirmed,
   notifySessionCancelled,
+  notifySessionReminder,
+  notifyParentActivated,
   getFunnelStats,
   sendEducationNotification,
 };

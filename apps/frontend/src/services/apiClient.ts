@@ -14,6 +14,14 @@ import {
 } from "../utils/sessionRefresh";
 import { isCapacitorNative } from "../config/environment";
 import { getDeviceFingerprint } from "../utils/deviceFingerprint";
+import {
+  getPortalRoleFromPath,
+  isIsolatedPortalContextPath,
+} from "../config/portals";
+import {
+  decodeJwtPayload,
+  extractCompanyIdFromToken,
+} from "../utils/portalSessionManager";
 
 /**
  * API Client
@@ -103,8 +111,28 @@ class ApiClient {
           }
         }
 
-        // Add auth token to requests
+        const currentPathname =
+          typeof window !== "undefined" ? window.location.pathname : "";
+        const isIsolatedPortalRoute =
+          isIsolatedPortalContextPath(currentPathname);
+        const portalRole = getPortalRoleFromPath(currentPathname);
+        const isCustomerPortalRoute =
+          portalRole === "customer" || portalRole === "wholesale";
+
+        // Add auth token to requests (preserve explicit Authorization headers on portal/custom calls)
         const token = tokenManager.getAccessToken();
+        const explicitAuthHeader =
+          config.headers?.Authorization ?? config.headers?.["authorization"];
+        const hasExplicitAuth = Boolean(explicitAuthHeader);
+        const tokenPayload = token ? decodeJwtPayload(token) : null;
+        const isCustomerToken = tokenPayload?.["role"] === "CUSTOMER";
+        const shouldAttachTokenManagerAuth =
+          Boolean(token) &&
+          !config._skipAuthHeader &&
+          !hasExplicitAuth &&
+          (!isIsolatedPortalRoute ||
+            (isCustomerPortalRoute && isCustomerToken));
+
         const shouldDebugApiLogs =
           import.meta.env.DEV &&
           typeof window !== "undefined" &&
@@ -123,7 +151,10 @@ class ApiClient {
             token?.length,
           );
         }
-        if (token && !config._skipAuthHeader) {
+        if (hasExplicitAuth) {
+          // Portal callers passing their own Bearer token must not be hijacked by ERP refresh.
+          (config as ApiRequestConfig)._skipAuthRefresh = true;
+        } else if (shouldAttachTokenManagerAuth && token) {
           config.headers.Authorization = `Bearer ${token}`;
           if (shouldDebugApiLogs) {
             console.debug("🔐 [API] Using real token");
@@ -193,44 +224,60 @@ class ApiClient {
           }
         }
 
+        const hasExplicitCompanyHeader = Boolean(
+          config.headers?.["X-Company-Id"] ?? config.headers?.["x-company-id"],
+        );
+
         if (config._companyId) {
           config.headers["X-Company-Id"] = config._companyId;
-        } else {
+        } else if (!hasExplicitCompanyHeader) {
           let resolvedCompanyId: string | null = null;
-          // 1. Read companyId from JWT token
-          try {
-            const token = tokenManager.getAccessToken();
-            if (token) {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              if (payload?.companyId) {
-                resolvedCompanyId = payload.companyId;
-              }
-            }
-          } catch {
-            // Token decode failed silently
+
+          // 1. If caller provided an explicit Bearer token (e.g. a portal token), resolve companyId from it.
+          if (hasExplicitAuth && typeof explicitAuthHeader === "string") {
+            const rawBearer = explicitAuthHeader.replace(/^Bearer\s+/i, "").trim();
+            resolvedCompanyId = extractCompanyIdFromToken(rawBearer);
           }
 
-          // 2. Fallback for SuperAdmin / switched tenant context where JWT has companyId=null
-          if (!resolvedCompanyId && typeof window !== "undefined") {
-            try {
-              const rawUser = localStorage.getItem("user");
-              if (rawUser) {
-                const parsedUser = JSON.parse(rawUser);
-                if (parsedUser?.companyId) {
-                  resolvedCompanyId = parsedUser.companyId;
-                } else if (parsedUser?.company?.id) {
-                  resolvedCompanyId = parsedUser.company.id;
+          if (isIsolatedPortalRoute) {
+            // Isolated portal routes MUST NEVER inherit ERP user/currentCompanyId from storage or ERP JWT.
+            // Only read companyId from a CUSTOMER token when on /account or /wholesale-portal.
+            if (!resolvedCompanyId && isCustomerPortalRoute && isCustomerToken && tokenPayload) {
+              const customerCid = tokenPayload["companyId"];
+              if (typeof customerCid === "string" && customerCid.trim()) {
+                resolvedCompanyId = customerCid.trim();
+              }
+            }
+          } else {
+            // Standard ERP flow: resolve from ERP JWT, then SuperAdmin/switched tenant storage.
+            if (!resolvedCompanyId && tokenPayload) {
+              const jwtCid = tokenPayload["companyId"];
+              if (typeof jwtCid === "string" && jwtCid.trim()) {
+                resolvedCompanyId = jwtCid.trim();
+              }
+            }
+
+            if (!resolvedCompanyId && typeof window !== "undefined") {
+              try {
+                const rawUser = localStorage.getItem("user");
+                if (rawUser) {
+                  const parsedUser = JSON.parse(rawUser);
+                  if (parsedUser?.companyId) {
+                    resolvedCompanyId = parsedUser.companyId;
+                  } else if (parsedUser?.company?.id) {
+                    resolvedCompanyId = parsedUser.company.id;
+                  }
                 }
+                if (!resolvedCompanyId) {
+                  resolvedCompanyId =
+                    localStorage.getItem("currentCompanyId") ||
+                    localStorage.getItem("companyId") ||
+                    sessionStorage.getItem("currentCompanyId") ||
+                    null;
+                }
+              } catch {
+                // ignore
               }
-              if (!resolvedCompanyId) {
-                resolvedCompanyId =
-                  localStorage.getItem("currentCompanyId") ||
-                  localStorage.getItem("companyId") ||
-                  sessionStorage.getItem("currentCompanyId") ||
-                  null;
-              }
-            } catch {
-              // ignore
             }
           }
 
@@ -459,6 +506,7 @@ class ApiClient {
     const currentPath = window.location.pathname;
     const isPublicRoute =
       currentPath === "/" ||
+      isIsolatedPortalContextPath(currentPath) ||
       currentPath.startsWith("/proposal") ||
       currentPath.startsWith("/agency/proposal") ||
       currentPath.startsWith("/agency/client-portal") ||
