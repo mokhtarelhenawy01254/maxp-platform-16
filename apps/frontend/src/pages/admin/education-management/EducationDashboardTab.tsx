@@ -862,7 +862,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                               id: teacher.id,
                             })
                           }
-                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate " + (isEn ? "text-left" : "text-right") + " block"
+                          className={`font-bold text-xs text-foreground hover:text-primary hover:underline truncate ${isEn ? "text-left" : "text-right"} block`}
                         >
                           {teacher.name}
                         </button>
@@ -1043,7 +1043,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                               id: student.id,
                             })
                           }
-                          className="font-bold text-xs text-foreground hover:text-primary hover:underline truncate " + (isEn ? "text-left" : "text-right") + " block"
+                          className={`font-bold text-xs text-foreground hover:text-primary hover:underline truncate ${isEn ? "text-left" : "text-right"} block`}
                         >
                           {student.firstName} {student.lastName || ""}
                         </button>
