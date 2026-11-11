@@ -44,7 +44,21 @@ describe("ShippingCompanyLogo Component", () => {
     render(<ShippingCompanyLogo company={company} size={40} />);
     const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute("src")).toContain("/brands/v2/qp_express.svg");
+    expect(img.getAttribute("src")).toContain("/brands/v2/qp-express.svg");
+  });
+
+  it("uses unified default canvas dimensions (96x32) with object-contain", () => {
+    const company = {
+      name: "Bosta Logistics",
+      providerKey: "BOSTA",
+    };
+
+    render(<ShippingCompanyLogo company={company} />);
+    const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img.getAttribute("width")).toBe("96");
+    expect(img.getAttribute("height")).toBe("32");
+    expect(img.className).toContain("object-contain");
   });
 
   it("renders official SVG brand logo for MAXP_NETWORK", () => {
@@ -104,5 +118,18 @@ describe("ShippingCompanyLogo Component", () => {
     expect(fallback).toBeInTheDocument();
     // initials = first letter of each of the first two words ("شركة التوصيل الفوري" -> "شا")
     expect(fallback.textContent).toContain("شا");
+    expect(fallback.textContent).toContain("شركة التوصيل الفوري");
+  });
+
+  it("normalizes duplicate qp_express.svg asset paths to qp-express.svg", () => {
+    const company = {
+      name: "QP Express",
+      providerKey: "MANUAL",
+      logoUrl: "/brands/v2/qp_express.svg",
+    };
+
+    render(<ShippingCompanyLogo company={company} />);
+    const img = screen.getByTestId("shipping-company-logo") as HTMLImageElement;
+    expect(img.getAttribute("src")).toBe("/brands/v2/qp-express.svg");
   });
 });

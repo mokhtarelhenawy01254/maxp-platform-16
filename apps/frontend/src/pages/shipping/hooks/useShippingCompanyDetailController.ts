@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { envConfig } from '../../../config/environment';
+import { isBuiltInShippingCompany } from '../types';
 
 export interface ShippingCompany {
   id: string;
   name: string;
+  slug?: string;
   phone?: string;
   email?: string;
   website?: string;
@@ -70,6 +72,10 @@ export const useShippingCompanyDetailController = () => {
 
   const handleDelete = async () => {
     if (!id) return;
+    if (isBuiltInShippingCompany(company)) {
+      alert('شركات الشحن المدمجة لا يمكن حذفها');
+      return;
+    }
     if (confirm(t('shipping.k_8'))) {
       try {
         const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
@@ -83,7 +89,7 @@ export const useShippingCompanyDetailController = () => {
         if (data.success) {
           navigate('/shipping-companies');
         } else {
-          alert(data.error || t('shipping.k_9'));
+          alert(data.message || data.error || t('shipping.k_9'));
         }
       } catch (err) {
         console.error('Error deleting shipping company:', err);

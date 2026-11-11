@@ -116,14 +116,14 @@ describe('Shipping Companies & Auto-Create Trigger Suite', () => {
       if (INTEGRATED_PROVIDER_KEYS.has(normKey)) {
         res.status(403).json({
           success: false,
-          message: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.',
-          error: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.',
+          message: 'شركات الشحن المدمجة لا يمكن حذفها',
+          error: 'شركات الشحن المدمجة لا يمكن حذفها',
         });
       }
 
       expect(statusCalled).toBe(403);
       expect(jsonCalled.success).toBe(false);
-      expect(jsonCalled.message).toBe('لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.');
+      expect(jsonCalled.message).toBe('شركات الشحن المدمجة لا يمكن حذفها');
     });
   });
 });

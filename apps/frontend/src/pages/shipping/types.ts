@@ -53,3 +53,28 @@ export const parseSettings = (value?: string | null): Record<string, any> => {
     return {};
   }
 };
+
+export const BUILTIN_SHIPPING_PROVIDER_KEYS = new Set([
+  'TURBO',
+  'BOSTA',
+  'QP_EXPRESS',
+  'BOSTA_DEMO',
+  'MYLERZ_DEMO',
+  'ARAMEX_DEMO',
+]);
+
+export const BUILTIN_SHIPPING_SLUGS = new Set([
+  'turbo',
+  'bosta',
+  'qp-express',
+  'qp_express',
+]);
+
+export const isBuiltInShippingCompany = (
+  company?: { providerKey?: string | null; slug?: string | null } | null
+): boolean => {
+  if (!company) return false;
+  const key = String(company.providerKey || '').trim().toUpperCase();
+  const slug = String(company.slug || '').trim().toLowerCase();
+  return BUILTIN_SHIPPING_PROVIDER_KEYS.has(key) || BUILTIN_SHIPPING_SLUGS.has(slug);
+};

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { ShippingCompanyLogo } from './ShippingCompanyLogo';
+import { isBuiltInShippingCompany } from '../types';
 import i18n from '../../../i18n';
 import type { ShippingCompany } from '../hooks/useShippingCompanyDetailController';
 
@@ -34,7 +35,7 @@ export const ShippingCompanyDetailHeader: React.FC<ShippingCompanyDetailHeaderPr
           >
             {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
           </Link>
-          <ShippingCompanyLogo company={company} size={40} />
+          <ShippingCompanyLogo company={company} />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight">{company.name}</h1>
@@ -62,9 +63,7 @@ export const ShippingCompanyDetailHeader: React.FC<ShippingCompanyDetailHeaderPr
             <Pencil size={13} />
             <span>{t('shipping.k_22')}</span>
           </Link>
-          {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
-            String(company.providerKey || '').trim().toUpperCase()
-          ) ? (
+          {isBuiltInShippingCompany(company) ? (
             <span className="text-xs text-muted-foreground px-3 py-1.5 rounded-lg bg-muted/40 border border-border/50">
               شركة مدمجة — استخدم إيقاف العمل
             </span>

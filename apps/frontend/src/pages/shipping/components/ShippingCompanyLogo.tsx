@@ -1,4 +1,6 @@
 export const BRAND_ASSET_VERSION = '20261105';
+export const BRAND_CANVAS_WIDTH = 96;
+export const BRAND_CANVAS_HEIGHT = 32;
 
 import React, { useState, useMemo } from 'react';
 
@@ -12,19 +14,25 @@ export interface ShippingCompanyLogoProps {
     settings?: string | null | Record<string, any>;
   } | null;
   size?: number;
+  width?: number | string;
+  height?: number | string;
   className?: string;
   alt?: string;
 }
+
+const normalizeBrandAssetPath = (assetPath: string): string => {
+  return assetPath.replace(/qp_express\.svg/g, 'qp-express.svg');
+};
 
 const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string | null => {
   if (!company) return null;
 
   // 1. Direct logo or logoUrl from company object
   if (company.logoUrl && typeof company.logoUrl === 'string' && company.logoUrl.trim()) {
-    return company.logoUrl.trim();
+    return normalizeBrandAssetPath(company.logoUrl.trim());
   }
   if (company.logo && typeof company.logo === 'string' && company.logo.trim()) {
-    return company.logo.trim();
+    return normalizeBrandAssetPath(company.logo.trim());
   }
 
   // 2. Explicit custom logo from settings
@@ -43,10 +51,10 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
   }
 
   if (parsedSettings?.logoUrl && typeof parsedSettings.logoUrl === 'string' && parsedSettings.logoUrl.trim()) {
-    return parsedSettings.logoUrl.trim();
+    return normalizeBrandAssetPath(parsedSettings.logoUrl.trim());
   }
   if (parsedSettings?.logo && typeof parsedSettings.logo === 'string' && parsedSettings.logo.trim()) {
-    return parsedSettings.logo.trim();
+    return normalizeBrandAssetPath(parsedSettings.logo.trim());
   }
 
   // 3. Built-in provider logos
@@ -66,7 +74,7 @@ const resolveBrandLogo = (company?: ShippingCompanyLogoProps['company']): string
     return withVersion('bosta.svg');
   }
   if (key === 'QP_EXPRESS' || key === 'QP' || slug.includes('qp') || name.includes('qp') || name.includes('كيو بي')) {
-    return withVersion('qp_express.svg');
+    return withVersion('qp-express.svg');
   }
   if (key === 'MYLERZ' || key === 'MYLERZ_DEMO' || slug.includes('mylerz') || name.includes('mylerz') || name.includes('مايلرز')) {
     return withVersion('mylerz.svg');
@@ -91,7 +99,9 @@ const getCompanyInitials = (name?: string): string => {
 
 export const ShippingCompanyLogo: React.FC<ShippingCompanyLogoProps> = ({
   company,
-  size = 40,
+  size,
+  width,
+  height,
   className = '',
   alt,
 }) => {
@@ -102,6 +112,9 @@ export const ShippingCompanyLogo: React.FC<ShippingCompanyLogoProps> = ({
   const altText = alt || companyName;
   const initials = useMemo(() => getCompanyInitials(company?.name), [company?.name]);
 
+  const renderedWidth = width !== undefined ? width : size !== undefined ? size : BRAND_CANVAS_WIDTH;
+  const renderedHeight = height !== undefined ? height : size !== undefined ? size : BRAND_CANVAS_HEIGHT;
+
   // Reset error if company changes
   React.useEffect(() => {
     setHasError(false);
@@ -111,27 +124,28 @@ export const ShippingCompanyLogo: React.FC<ShippingCompanyLogoProps> = ({
     return (
       <div
         data-testid="shipping-company-logo-fallback"
-        className={`rounded-xl border border-border/80 bg-muted/60 text-foreground flex items-center justify-center font-bold font-mono shrink-0 select-none shadow-2xs ${className}`}
-        style={{ width: size, height: size, fontSize: Math.max(11, Math.floor(size * 0.35)) }}
+        className={`rounded-lg border border-border/80 bg-muted/60 text-foreground flex items-center justify-center font-medium shrink-0 select-none shadow-2xs overflow-hidden px-1.5 text-center ${className}`}
+        style={{ width: renderedWidth, height: renderedHeight }}
         title={companyName}
         aria-label={altText}
       >
-        <span>{initials}</span>
+        <span className="truncate text-xs font-semibold leading-tight">{companyName}</span>
+        <span className="sr-only">{initials}</span>
       </div>
     );
   }
 
   return (
     <div
-      className={`relative rounded-xl border border-border/70 dark:border-border/60 bg-white shadow-2xs flex items-center justify-center p-1 shrink-0 overflow-hidden ${className}`}
-      style={{ width: size, height: size }}
+      className={`relative rounded-lg border border-border/70 dark:border-border/60 bg-white shadow-2xs flex items-center justify-center p-1 shrink-0 overflow-hidden ${className}`}
+      style={{ width: renderedWidth, height: renderedHeight }}
     >
       <img
         data-testid="shipping-company-logo"
         src={logoSrc}
         alt={altText}
-        width={size}
-        height={size}
+        width={renderedWidth}
+        height={renderedHeight}
         className="w-full h-full object-contain select-none"
         onError={() => setHasError(true)}
         loading="lazy"

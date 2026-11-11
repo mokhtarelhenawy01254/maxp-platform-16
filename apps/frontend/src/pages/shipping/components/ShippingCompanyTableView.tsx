@@ -1,7 +1,7 @@
 import React from "react";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { ShippingCompanyLogo } from "./ShippingCompanyLogo";
-import type { ShippingCompany } from "../types";
+import { isBuiltInShippingCompany, type ShippingCompany } from "../types";
 
 export interface ShippingCompanyTableViewProps {
   displayedCompanies: ShippingCompany[];
@@ -35,7 +35,7 @@ export const ShippingCompanyTableView: React.FC<ShippingCompanyTableViewProps> =
             <tr key={company.id} className="hover:bg-muted/20 transition-colors">
               <td className="px-4 py-3 font-semibold text-foreground">
                 <div className="flex items-center gap-2.5">
-                  <ShippingCompanyLogo company={company} size={28} />
+                  <ShippingCompanyLogo company={company} />
                   <div>
                     <span>{company.name}</span>
                     <span className="font-mono text-[11px] text-muted-foreground mr-1.5">
@@ -84,9 +84,7 @@ export const ShippingCompanyTableView: React.FC<ShippingCompanyTableViewProps> =
                   >
                     إعدادات
                   </button>
-                  {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
-                    String(company.providerKey || '').trim().toUpperCase()
-                  ) ? (
+                  {isBuiltInShippingCompany(company) ? (
                     <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
                       شركة مدمجة — استخدم إيقاف العمل
                     </span>

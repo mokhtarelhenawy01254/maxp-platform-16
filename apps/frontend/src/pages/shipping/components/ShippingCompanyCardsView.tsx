@@ -6,7 +6,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { ShippingCompanyLogo } from "./ShippingCompanyLogo";
-import type { ShippingCompany } from "../types";
+import { isBuiltInShippingCompany, type ShippingCompany } from "../types";
 
 export interface ShippingCompanyCardsViewProps {
   displayedCompanies: ShippingCompany[];
@@ -43,7 +43,7 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
               {/* Top Row: Name, Slug & Active Switch */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <ShippingCompanyLogo company={company} size={40} />
+                  <ShippingCompanyLogo company={company} />
                   <div>
                     <h3 className="text-sm font-bold text-foreground">
                       {company.name}
@@ -132,9 +132,7 @@ export const ShippingCompanyCardsView: React.FC<ShippingCompanyCardsViewProps> =
                 </button>
               )}
 
-              {['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO'].includes(
-                String(company.providerKey || '').trim().toUpperCase()
-              ) ? (
+              {isBuiltInShippingCompany(company) ? (
                 <span className="text-[11px] text-muted-foreground bg-muted/30 border border-border/40 px-2 py-1 rounded-md shrink-0">
                   شركة مدمجة — استخدم إيقاف العمل
                 </span>

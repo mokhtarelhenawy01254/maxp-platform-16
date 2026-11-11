@@ -11,6 +11,37 @@ const buildSlug = (value) =>
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
+const VALID_SHIPMENT_CREATE_TRIGGERS = Object.freeze(['ON_ORDER', 'ON_CONFIRM', 'ON_READY']);
+
+const validateShipmentCreateTrigger = (body) => {
+  const candidates = [];
+  if (body?.shipmentCreateTrigger !== undefined) {
+    candidates.push(body.shipmentCreateTrigger);
+  }
+  if (body?.settings !== undefined) {
+    const parsedSettings = shippingProviderService.safeJsonParse(body.settings, null);
+    if (parsedSettings && typeof parsedSettings === 'object' && parsedSettings.shipmentCreateTrigger !== undefined) {
+      candidates.push(parsedSettings.shipmentCreateTrigger);
+    }
+  }
+
+  // Empty or absent -> keep old behavior as-is (do not alter default)
+  for (const rawTrigger of candidates) {
+    if (rawTrigger === undefined || rawTrigger === null || String(rawTrigger).trim() === '') {
+      continue;
+    }
+    const normalized = String(rawTrigger).trim().toUpperCase();
+    if (!VALID_SHIPMENT_CREATE_TRIGGERS.includes(normalized)) {
+      return {
+        isValid: false,
+        message: 'قيمة توقيت إنشاء البوليصة غير صحيحة',
+      };
+    }
+  }
+
+  return { isValid: true };
+};
+
 const buildProviderFields = (body, carrier = {}) => {
   const providerKey = shippingProviderService.normalizeProviderKey(body.providerKey || carrier.providerKey, {
     ...carrier,
@@ -30,8 +61,25 @@ const buildProviderFields = (body, carrier = {}) => {
   if (body.autoCreateShipments !== undefined) {
     settings.autoCreateShipments = Boolean(body.autoCreateShipments);
   }
-  if (body.shipmentCreateTrigger !== undefined) {
-    settings.shipmentCreateTrigger = String(body.shipmentCreateTrigger).trim().toUpperCase();
+  if (body.shipmentCreateTrigger !== undefined && body.shipmentCreateTrigger !== null && String(body.shipmentCreateTrigger).trim() !== '') {
+    const normalizedTrigger = String(body.shipmentCreateTrigger).trim().toUpperCase();
+    if (VALID_SHIPMENT_CREATE_TRIGGERS.includes(normalizedTrigger)) {
+      settings.shipmentCreateTrigger = normalizedTrigger;
+    }
+  } else if (body.settings !== undefined) {
+    const rawBodySettings = shippingProviderService.safeJsonParse(body.settings, null);
+    if (
+      rawBodySettings &&
+      typeof rawBodySettings === 'object' &&
+      rawBodySettings.shipmentCreateTrigger !== undefined &&
+      rawBodySettings.shipmentCreateTrigger !== null &&
+      String(rawBodySettings.shipmentCreateTrigger).trim() !== ''
+    ) {
+      const normalizedSettingsTrigger = String(rawBodySettings.shipmentCreateTrigger).trim().toUpperCase();
+      if (VALID_SHIPMENT_CREATE_TRIGGERS.includes(normalizedSettingsTrigger)) {
+        settings.shipmentCreateTrigger = normalizedSettingsTrigger;
+      }
+    }
   }
   if (body.logoUrl !== undefined) {
     settings.logoUrl = String(body.logoUrl).trim();
@@ -431,6 +479,15 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'اسم الشركة مطلوب' });
     }
 
+    const triggerValidation = validateShipmentCreateTrigger(req.body);
+    if (!triggerValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: triggerValidation.message,
+        error: triggerValidation.message,
+      });
+    }
+
     // Auto-generate slug if not provided
     const companySlug = slug || buildSlug(name);
     const providerFields = buildProviderFields({ ...req.body, slug: companySlug });
@@ -553,6 +610,15 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ success: false, error: 'Company not found' });
+    }
+
+    const triggerValidation = validateShipmentCreateTrigger(req.body);
+    if (!triggerValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: triggerValidation.message,
+        error: triggerValidation.message,
+      });
     }
 
     // Auto-generate slug if name changed and no slug provided
@@ -910,14 +976,16 @@ router.delete('/:id', verifyToken.authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Company not found' });
     }
 
-    // 403 Forbidden for integrated providers
-    const INTEGRATED_PROVIDER_KEYS = new Set(['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO']);
+    // 403 Forbidden for built-in / integrated providers
+    const BUILTIN_PROVIDER_KEYS = new Set(['TURBO', 'BOSTA', 'QP_EXPRESS', 'BOSTA_DEMO', 'MYLERZ_DEMO', 'ARAMEX_DEMO']);
+    const BUILTIN_SLUGS = new Set(['turbo', 'bosta', 'qp-express', 'qp_express']);
     const normKey = String(existing.providerKey || '').trim().toUpperCase();
-    if (INTEGRATED_PROVIDER_KEYS.has(normKey)) {
+    const normSlug = String(existing.slug || '').trim().toLowerCase();
+    if (BUILTIN_PROVIDER_KEYS.has(normKey) || BUILTIN_SLUGS.has(normSlug)) {
       return res.status(403).json({
         success: false,
-        message: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.',
-        error: 'لا يمكن حذف شركة شحن مدمجة. يرجى استخدام إيقاف العمل بدلاً من الحذف.'
+        message: 'شركات الشحن المدمجة لا يمكن حذفها',
+        error: 'شركات الشحن المدمجة لا يمكن حذفها'
       });
     }
 

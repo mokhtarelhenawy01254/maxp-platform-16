@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { apiClient } from '../../../services/apiClient';
 import { envConfig } from '../../../config/environment';
-import { type ShippingCompany } from '../types';
+import { isBuiltInShippingCompany, type ShippingCompany } from '../types';
 import { useShippingCompanyForm } from './useShippingCompanyForm';
 
 export const useShippingCompaniesData = () => {
@@ -64,6 +64,10 @@ export const useShippingCompaniesData = () => {
 
   const handleDelete = async (company: ShippingCompany, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isBuiltInShippingCompany(company)) {
+      toast.error('شركات الشحن المدمجة لا يمكن حذفها');
+      return;
+    }
     if (confirm(`هل أنت متأكد من حذف شركة الشحن "${company.name}"؟`)) {
       try {
         const res: any = await apiClient.delete(`/shipping-companies/${company.id}`);
@@ -71,10 +75,10 @@ export const useShippingCompaniesData = () => {
           toast.success('تم حذف شركة الشحن بنجاح');
           await fetchCompanies();
         } else {
-          toast.error(res.data?.error || 'فشل الحذف');
+          toast.error(res.data?.message || res.data?.error || 'فشل الحذف');
         }
       } catch (err: any) {
-        toast.error(err?.response?.data?.error || 'تعذر الحذف');
+        toast.error(err?.response?.data?.message || err?.response?.data?.error || 'تعذر الحذف');
       }
     }
   };

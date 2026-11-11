@@ -81,6 +81,11 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
     setEditingCompany(company);
     setShowAdvanced(false);
     setTestedProfile(null);
+    const rawTrigger = String(settings.shipmentCreateTrigger || '').trim().toUpperCase();
+    const validLoadedTrigger = ['ON_ORDER', 'ON_CONFIRM', 'ON_READY'].includes(rawTrigger)
+      ? rawTrigger
+      : 'ON_ORDER';
+
     setFormData({
       name: company.name,
       slug: company.slug || '',
@@ -99,7 +104,7 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
       integrationMode: company.integrationMode || 'MANUAL',
       linkedCompanyId: company.linkedCompanyId || settings.linkedCompanyId || '',
       autoCreateShipments: Boolean(settings.autoCreateShipments),
-      shipmentCreateTrigger: settings.shipmentCreateTrigger || (settings.autoCreateShipments ? 'ON_ORDER' : 'ON_ORDER'),
+      shipmentCreateTrigger: validLoadedTrigger,
       logoUrl: settings.logoUrl || '',
       isActive: autoActivate ? true : company.isActive,
       username: settings.username || '',
@@ -127,9 +132,15 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
       const url = `/shipping-companies${editingCompany ? `/${editingCompany.id}` : ''}`;
       const method = editingCompany ? 'put' : 'post';
 
+      const validTrigger = ['ON_ORDER', 'ON_CONFIRM', 'ON_READY'].includes(
+        String(formData.shipmentCreateTrigger || '').trim().toUpperCase()
+      )
+        ? String(formData.shipmentCreateTrigger).trim().toUpperCase()
+        : 'ON_ORDER';
+
       const settingsPayload = {
         autoCreateShipments: formData.autoCreateShipments,
-        shipmentCreateTrigger: formData.shipmentCreateTrigger || 'ON_ORDER',
+        ...(formData.autoCreateShipments ? { shipmentCreateTrigger: validTrigger } : {}),
         logoUrl: formData.logoUrl || undefined,
         username: formData.username || undefined,
         password: formData.password || undefined,
@@ -155,7 +166,7 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
 
       const payload = {
         ...formData,
-        shipmentCreateTrigger: formData.shipmentCreateTrigger || 'ON_ORDER',
+        shipmentCreateTrigger: formData.autoCreateShipments ? validTrigger : undefined,
         logoUrl: formData.logoUrl || undefined,
         integrationMode: resolvedIntegrationMode,
         settings: JSON.stringify(settingsPayload),
@@ -169,10 +180,10 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
         setShowModal(false);
         onSuccess();
       } else {
-        toast.error(res.data?.error || 'تعذر حفظ إعدادات الشركة');
+        toast.error(res.data?.message || res.data?.error || 'تعذر حفظ إعدادات الشركة');
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'حدث خطأ أثناء الحفظ');
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'حدث خطأ أثناء الحفظ');
     }
   };
 
@@ -204,7 +215,7 @@ export const useShippingCompanyForm = (onSuccess: () => void) => {
           toast.success('تم حفظ توقيت إنشاء البوليصة فوراً');
           onSuccess();
         } catch (err: any) {
-          toast.error('تعذر الحفظ الفوري لتوقيت البوليصة');
+          toast.error(err?.response?.data?.message || err?.response?.data?.error || 'تعذر الحفظ الفوري لتوقيت البوليصة');
         }
       }
     },
