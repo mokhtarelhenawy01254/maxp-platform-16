@@ -495,7 +495,40 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
       parsedSettings = {};
     }
 
-    const sidebarSettings = parsedSettings.sidebarSettings || {};
+    let sidebarSettings = parsedSettings.sidebarSettings || {};
+
+    // Harmonize education subjects visibility based on company's educationSettings
+    const eduSettings = parsedSettings.educationSettings || {};
+    const eduMode = eduSettings.educationMode || (eduSettings.enableSubjects ? 'ACADEMIC' : 'COURSES');
+    const enableSubjects = eduSettings.enableSubjects !== undefined
+      ? Boolean(eduSettings.enableSubjects)
+      : (eduMode === 'ACADEMIC');
+
+    const subjectsKeys = new Set([
+      'education-subjects',
+      '/admin/education/subjects',
+      'admin/education/subjects',
+      'education/subjects',
+      'subjects'
+    ]);
+
+    if (Array.isArray(sidebarSettings)) {
+      sidebarSettings = sidebarSettings.map((item) => {
+        if (item && item.key && subjectsKeys.has(String(item.key).toLowerCase())) {
+          return { ...item, visible: enableSubjects };
+        }
+        return item;
+      });
+      const hasSubjects = sidebarSettings.some((it) => it && it.key && subjectsKeys.has(String(it.key).toLowerCase()));
+      if (!hasSubjects) {
+        sidebarSettings.push({ key: 'education-subjects', visible: enableSubjects, order: 1 });
+        sidebarSettings.push({ key: '/admin/education/subjects', visible: enableSubjects, order: 1 });
+      }
+    } else if (sidebarSettings && typeof sidebarSettings === 'object') {
+      if (!sidebarSettings.items) sidebarSettings.items = {};
+      sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
+      sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
+    }
 
     let appsMap = {};
     try {

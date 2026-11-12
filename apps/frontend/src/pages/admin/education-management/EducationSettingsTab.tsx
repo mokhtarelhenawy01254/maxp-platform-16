@@ -182,6 +182,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [tabs, setTabs] = useState<EducationTabConfig[]>([]);
   const [initialData, setInitialData] = useState<EducationSettingsData | null>(null);
 
+  const [savingMode, setSavingMode] = useState<"COURSES" | "ACADEMIC" | null>(null);
+
   // Load existing settings
   const fetchSettings = async () => {
     setLoading(true);
@@ -204,23 +206,70 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     }
   };
 
-  const handleModeChange = (mode: "COURSES" | "ACADEMIC") => {
-    setEducationMode(mode);
+  const handleModeChange = async (mode: "COURSES" | "ACADEMIC") => {
+    if (saving || savingMode) return;
     const subjectsOn = mode === "ACADEMIC";
+    setEducationMode(mode);
     setEnableSubjects(subjectsOn);
-    setTabs((prev) =>
-      prev.map((t) => {
-        if (t.id.toLowerCase() === "subjects") {
-          return { ...t, visible: subjectsOn };
-        }
-        return t;
-      })
-    );
-    toast.info(
-      mode === "COURSES"
-        ? (isEn ? "Courses & packages mode selected (subjects hidden by default)" : "تم اختيار نمط الكورسات والباقات (المواد مخفية كوضع افتراضي)")
-        : (isEn ? "Academic center mode selected (subjects enabled)" : "تم اختيار نمط السناتر والمواد الدراسية (المواد مفعلة)")
-    );
+
+    const updatedTabs = tabs.map((t) => {
+      if (t.id.toLowerCase() === "subjects") {
+        return { ...t, visible: subjectsOn };
+      }
+      return t;
+    });
+    setTabs(updatedTabs);
+
+    setSavingMode(mode);
+    try {
+      const payload = {
+        systemTitle: systemTitle.trim(),
+        systemTitleEn: systemTitleEn.trim(),
+        educationMode: mode,
+        enableSubjects: subjectsOn,
+        tabs: updatedTabs.map((t, idx) => ({
+          id: t.id,
+          key: t.key,
+          labelAr: t.labelAr.trim() || t.defaultLabelAr,
+          labelEn: t.labelEn.trim() || t.defaultLabelEn,
+          order: idx,
+          visible: t.id.toLowerCase() === "subjects" ? subjectsOn : (t.locked ? true : t.visible),
+        })),
+      };
+
+      await fetchJson(api("settings"), {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      toast.success(
+        mode === "COURSES"
+          ? (isEn ? "Courses & packages mode activated (subjects hidden)" : "تم تفعيل نمط الأكاديمية والكورسات بنجاح (المواد مخفية)")
+          : (isEn ? "Academic center mode activated (subjects enabled)" : "تم تفعيل نمط السنتر والمواد الدراسية بنجاح (المواد مفعلة)")
+      );
+
+      if (refreshSettings) {
+        await refreshSettings();
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("education-settings-updated", { detail: payload }));
+      }
+
+      if (onSaved) {
+        onSaved({
+          systemTitle: payload.systemTitle,
+          systemTitleEn: payload.systemTitleEn,
+          educationMode: mode,
+          enableSubjects: subjectsOn,
+          tabs: payload.tabs as EducationTabConfig[],
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message || (isEn ? "Failed to apply mode change" : "فشل تطبيق وحفظ نمط النظام"));
+    } finally {
+      setSavingMode(null);
+    }
   };
 
   useEffect(() => {
@@ -355,6 +404,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
 
       if (refreshSettings) {
         refreshSettings();
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("education-settings-updated", { detail: payload }));
       }
 
       if (onSaved) {
@@ -499,7 +552,11 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted-foreground/40"
                 }`}>
-                  {educationMode === "COURSES" && <Check className="w-3 h-3 stroke-[3]" />}
+                  {savingMode === "COURSES" ? (
+                    <div className="w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    educationMode === "COURSES" && <Check className="w-3 h-3 stroke-[3]" />
+                  )}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -547,7 +604,11 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted-foreground/40"
                 }`}>
-                  {educationMode === "ACADEMIC" && <Check className="w-3 h-3 stroke-[3]" />}
+                  {savingMode === "ACADEMIC" ? (
+                    <div className="w-3 h-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    educationMode === "ACADEMIC" && <Check className="w-3 h-3 stroke-[3]" />
+                  )}
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">

@@ -13,6 +13,7 @@ import {
   EducationSettingsTab,
   EducationLogsTab,
   EducationSettingsData,
+  TABS,
 } from "./education-management";
 import { api, fetchJson } from "./education-management/api";
 import EducationGroupsPage from "./EducationGroupsPage";
@@ -97,8 +98,17 @@ export default function EducationManagementPage() {
       .finally(() => {
         if (isMounted) setLoadingSettings(false);
       });
+
+    const handleSettingsUpdated = (e: any) => {
+      if (isMounted && e.detail) {
+        setEducationSettings(e.detail);
+      }
+    };
+    window.addEventListener("education-settings-updated", handleSettingsUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("education-settings-updated", handleSettingsUpdated);
     };
   }, []);
 
@@ -163,6 +173,32 @@ export default function EducationManagementPage() {
             {t("education.settings", isEn ? "Settings" : "إعدادات وتخصيص السكاشن")}
           </button>
         </div>
+      </div>
+
+      {/* Education In-Page Navigation Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-border/60">
+        {TABS.filter((tab) => {
+          if (tab.id === "subjects" && !enableSubjects) return false;
+          return true;
+        }).map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {isEn ? (tab.id === "dashboard" ? "Dashboard" : tab.id === "subjects" ? "Subjects" : tab.id === "packages" ? "Packages" : tab.id === "groups" ? "Groups" : tab.id === "students" ? "Students" : tab.id === "teachers" ? "Instructors" : tab.id === "enrollments" ? "Enrollments" : tab.id === "sessions" ? "Sessions" : tab.id === "settings" ? "Settings" : "Logs") : tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "settings" ? (
@@ -279,12 +315,13 @@ export default function EducationManagementPage() {
             />
           )}
           {activeTab === "groups" && (
-            <EducationGroupsPage embedded />
+            <EducationGroupsPage embedded enableSubjects={enableSubjects} />
           )}
           {activeTab === "students" && (
             <EducationStudentsTab
               students={students}
               subjects={subjects}
+              enableSubjects={enableSubjects}
               customers={customers}
               customerResults={customerResults}
               studentSearch={studentSearch}
@@ -301,6 +338,7 @@ export default function EducationManagementPage() {
             <EducationTeachersTab
               teachers={teachers}
               subjects={subjects}
+              enableSubjects={enableSubjects}
               teacherSearch={teacherSearch}
               setTeacherSearch={setTeacherSearch}
               teacherModal={teacherModal}
@@ -317,6 +355,7 @@ export default function EducationManagementPage() {
               packages={packages}
               teachers={teachers}
               subjects={subjects}
+              enableSubjects={enableSubjects}
               enrollmentModal={enrollmentModal}
               setEnrollmentModal={setEnrollmentModal}
               handleSaveEnrollment={handleSaveEnrollment}

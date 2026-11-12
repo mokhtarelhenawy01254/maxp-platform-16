@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const settingsController = require('../../controller/educationSettingsController');
 const packagesController = require('../../controller/educationPackagesController');
+const groupsController = require('../../controller/educationGroupsController');
 const sharedDb = require('../../services/sharedDatabase');
 
 test('Comprehensive Scenario Test: Default vs Changed Mode + Strict Multi-Tenant Isolation', async (t) => {
@@ -55,7 +56,9 @@ test('Comprehensive Scenario Test: Default vs Changed Mode + Strict Multi-Tenant
     educationSubject: {
       findFirst: async ({ where }) => {
         return database.subjects.find(s => {
-          if (s.companyId !== where.companyId) return false;
+          if (where.id && s.id !== where.id) return false;
+          if (where.name && s.name !== where.name) return false;
+          if (where.companyId && s.companyId !== where.companyId) return false;
           if (where.isActive !== undefined && s.isActive !== where.isActive) return false;
           return true;
         }) || null;
@@ -88,6 +91,20 @@ test('Comprehensive Scenario Test: Default vs Changed Mode + Strict Multi-Tenant
           subject: database.subjects.find(s => s.id === newPkg.subjectId) || null
         };
       }
+    },
+    educationTeacher: {
+      findFirst: async ({ where }) => null
+    },
+    $executeRawUnsafe: async (sql, ...params) => {
+      if (sql.includes('INSERT INTO "education_groups"')) {
+        const [id, companyId, name, code, subjectId] = params;
+        if (!database.groups) database.groups = [];
+        database.groups.push({ id, companyId, name, code, subjectId });
+      }
+      return 1;
+    },
+    $queryRawUnsafe: async (sql, ...params) => {
+      return [{ count: 0 }];
     }
   };
 
@@ -251,6 +268,68 @@ test('Comprehensive Scenario Test: Default vs Changed Mode + Strict Multi-Tenant
     const resSuperBeta = createMockRes();
     await settingsController.getSettings(reqSuperBeta, resSuperBeta);
     assert.strictEqual(resSuperBeta.getData().data.educationMode, 'ACADEMIC');
+  });
+
+  await t.test('Scenario 4: Education Groups auto-resolve subject in COURSES mode and isolate across tenants', async () => {
+    // 1. Alpha (COURSES mode) creates a group without subjectId
+    const reqCreateGroupAlpha = {
+      user: { id: 'user-alpha', role: 'OWNER', companyId: 'comp-alpha' },
+      body: {
+        name: 'مجموعة بايثون متقدم',
+        code: 'GRP-PY-01',
+        capacity: 20
+      }
+    };
+    const resCreateGroupAlpha = createMockRes();
+    await groupsController.create(reqCreateGroupAlpha, resCreateGroupAlpha);
+
+    assert.strictEqual(resCreateGroupAlpha.getStatusCode(), 200, 'Alpha group should be created without subjectId');
+    assert.strictEqual(resCreateGroupAlpha.getData().success, true);
+
+    const createdAlphaGroup = database.groups?.find(g => g.name === 'مجموعة بايثون متقدم');
+    assert.ok(createdAlphaGroup, 'Alpha group must exist in database');
+    assert.strictEqual(createdAlphaGroup.companyId, 'comp-alpha');
+
+    // Default subject 'عام' should have been created for Alpha
+    const alphaDefaultSubject = database.subjects.find(s => s.companyId === 'comp-alpha' && s.name === 'عام');
+    assert.ok(alphaDefaultSubject, 'Default subject عام must be created for Alpha');
+    assert.strictEqual(createdAlphaGroup.subjectId, alphaDefaultSubject.id);
+
+    // 2. Beta (ACADEMIC mode) creates a group with its subject (Physics)
+    const betaPhysics = database.subjects.find(s => s.companyId === 'comp-beta');
+    assert.ok(betaPhysics, 'Beta physics subject must exist');
+
+    const reqCreateGroupBeta = {
+      user: { id: 'user-beta', role: 'OWNER', companyId: 'comp-beta' },
+      body: {
+        name: 'مجموعة فيزياء الأحد والثلاثاء',
+        code: 'GRP-PHY-01',
+        subjectId: betaPhysics.id,
+        capacity: 15
+      }
+    };
+    const resCreateGroupBeta = createMockRes();
+    await groupsController.create(reqCreateGroupBeta, resCreateGroupBeta);
+
+    assert.strictEqual(resCreateGroupBeta.getStatusCode(), 200);
+    const createdBetaGroup = database.groups?.find(g => g.name === 'مجموعة فيزياء الأحد والثلاثاء');
+    assert.ok(createdBetaGroup);
+    assert.strictEqual(createdBetaGroup.companyId, 'comp-beta');
+    assert.strictEqual(createdBetaGroup.subjectId, betaPhysics.id);
+
+    // 3. Alpha tries to use Beta's subject: must fail with 400 (Cross-tenant security guard)
+    const reqCrossTenant = {
+      user: { id: 'user-alpha', role: 'OWNER', companyId: 'comp-alpha' },
+      body: {
+        name: 'مجموعة اختراق غير شرعي',
+        subjectId: betaPhysics.id
+      }
+    };
+    const resCrossTenant = createMockRes();
+    await groupsController.create(reqCrossTenant, resCrossTenant);
+
+    assert.strictEqual(resCrossTenant.getStatusCode(), 400, 'Cross-tenant subjectId must be rejected');
+    assert.strictEqual(resCrossTenant.getData().success, false);
   });
 
   sharedDb.getSharedPrismaClient = originalGetSharedPrisma;

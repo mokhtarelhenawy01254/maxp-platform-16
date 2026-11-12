@@ -360,7 +360,7 @@ const updateSettings = async (req, res) => {
 
     const resolvedEnableSubjects = enableSubjects !== undefined
       ? Boolean(enableSubjects)
-      : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : (resolvedMode === 'ACADEMIC'));
+      : (resolvedMode === 'COURSES' ? false : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : true));
 
     let validatedTabs = [];
     if (Array.isArray(tabs)) {
@@ -467,6 +467,30 @@ const updateSettings = async (req, res) => {
       const cleanRelKey = tab.key.replace(/^\//, '');
       educationSidebarItems.push({
         key: cleanRelKey,
+        order: tab.order,
+        visible: tab.visible,
+        labelAr: tab.labelAr,
+        labelEn: tab.labelEn
+      });
+      // Also register itemId key (e.g. education-subjects)
+      educationSidebarItems.push({
+        key: `education-${tab.id.toLowerCase()}`,
+        order: tab.order,
+        visible: tab.visible,
+        labelAr: tab.labelAr,
+        labelEn: tab.labelEn
+      });
+      // Also register relative sub-key (e.g. education/subjects)
+      educationSidebarItems.push({
+        key: `education/${tab.id.toLowerCase()}`,
+        order: tab.order,
+        visible: tab.visible,
+        labelAr: tab.labelAr,
+        labelEn: tab.labelEn
+      });
+      // Also register bare tab id (e.g. subjects)
+      educationSidebarItems.push({
+        key: tab.id.toLowerCase(),
         order: tab.order,
         visible: tab.visible,
         labelAr: tab.labelAr,

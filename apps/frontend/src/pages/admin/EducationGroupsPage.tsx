@@ -122,10 +122,40 @@ export const getWeekDays = (isEn: boolean) => [
 
 export const WEEK_DAYS = getWeekDays(false);
 
-export default function EducationGroupsPage({ embedded = false }: { embedded?: boolean }) {
+export default function EducationGroupsPage({
+  embedded = false,
+  enableSubjects: propEnableSubjects,
+}: {
+  embedded?: boolean;
+  enableSubjects?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
   const weekDays = useMemo(() => getWeekDays(isEn), [isEn]);
+
+  const [internalEnableSubjects, setInternalEnableSubjects] = useState<boolean>(true);
+  const enableSubjects = propEnableSubjects !== undefined ? propEnableSubjects : internalEnableSubjects;
+
+  useEffect(() => {
+    if (propEnableSubjects === undefined) {
+      fetch(api("settings"), { headers: getAuthHeaders() })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res?.data?.enableSubjects !== undefined) {
+            setInternalEnableSubjects(Boolean(res.data.enableSubjects));
+          }
+        })
+        .catch(() => {});
+    }
+
+    const onSettingsUpdate = (e: any) => {
+      if (e.detail?.enableSubjects !== undefined) {
+        setInternalEnableSubjects(Boolean(e.detail.enableSubjects));
+      }
+    };
+    window.addEventListener("education-settings-updated", onSettingsUpdate);
+    return () => window.removeEventListener("education-settings-updated", onSettingsUpdate);
+  }, [propEnableSubjects]);
 
   const [groups, setGroups] = useState<EducationGroup[]>([]);
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
@@ -269,7 +299,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
       toast.error(isEn ? "Group name is required" : "اسم المجموعة مطلوب");
       return;
     }
-    if (!editingGroup?.subjectId) {
+    if (enableSubjects && !editingGroup?.subjectId) {
       toast.error(isEn ? "Please select a subject" : "يرجى اختيار المادة الدراسية");
       return;
     }
@@ -659,18 +689,20 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
             />
           </div>
 
-          <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            className="bg-background border border-input rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">{t("education.groups.allSubjects", isEn ? "All Subjects" : "جميع المواد")}</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          {enableSubjects && (
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="bg-background border border-input rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">{t("education.groups.allSubjects", isEn ? "All Subjects" : "جميع المواد")}</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           <select
             value={selectedTeacher}
@@ -830,10 +862,12 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
 
                   {/* Subject & Teacher Info */}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <span className="inline-flex items-center gap-1 bg-primary/5 text-primary px-2 py-0.5 rounded-md font-medium">
-                      <BookOpen className="w-3 h-3" />
-                      {group.subjectName || (isEn ? "Subject" : "مادة دراسية")}
-                    </span>
+                    {enableSubjects && (
+                      <span className="inline-flex items-center gap-1 bg-primary/5 text-primary px-2 py-0.5 rounded-md font-medium">
+                        <BookOpen className="w-3 h-3" />
+                        {group.subjectName || (isEn ? "Subject" : "مادة دراسية")}
+                      </span>
+                    )}
                     {group.teacherName && (
                       <span className="inline-flex items-center gap-1 bg-muted px-2 py-0.5 rounded-md text-foreground font-medium">
                         <GraduationCap className="w-3 h-3 text-muted-foreground" />
@@ -945,7 +979,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
               <thead className="bg-muted/70 text-muted-foreground font-semibold border-b border-border">
                 <tr>
                   <th className="py-3 px-4">{t("education.groups.colGroup", isEn ? "Code / Group Name" : "كود / اسم المجموعة")}</th>
-                  <th className="py-3 px-4">{t("education.groups.colSubject", isEn ? "Subject" : "المادة")}</th>
+                  {enableSubjects && <th className="py-3 px-4">{t("education.groups.colSubject", isEn ? "Subject" : "المادة")}</th>}
                   <th className="py-3 px-4">{t("education.groups.colTeacher", isEn ? "Instructor" : "المعلم")}</th>
                   <th className="py-3 px-4">{t("education.groups.colSchedule", isEn ? "Schedule" : "المواعيد الثابتة")}</th>
                   <th className="py-3 px-4">{t("education.groups.colOccupancy", isEn ? "Occupancy" : "الإشغال")}</th>
@@ -960,7 +994,7 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                       <div className="font-bold text-foreground">{g.name}</div>
                       <div className="text-[11px] text-muted-foreground font-mono">{g.code || "—"}</div>
                     </td>
-                    <td className="py-3 px-4 font-medium text-foreground">{g.subjectName || "—"}</td>
+                    {enableSubjects && <td className="py-3 px-4 font-medium text-foreground">{g.subjectName || "—"}</td>}
                     <td className="py-3 px-4 text-muted-foreground">{g.teacherName || (isEn ? "Unassigned" : "غير معين")}</td>
                     <td className="py-3 px-4">
                       <div className="text-foreground">
@@ -1455,29 +1489,31 @@ export default function EducationGroupsPage({ embedded = false }: { embedded?: b
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-foreground">
-                    {t("education.groups.fieldSubject", isEn ? "Subject *" : "المادة الدراسية *")}
-                  </label>
-                  <select
-                    required
-                    value={editingGroup.subjectId || ""}
-                    onChange={(e) => setEditingGroup({ ...editingGroup, subjectId: e.target.value })}
-                    className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">{t("education.groups.selectSubjectPrompt", isEn ? "Select Subject..." : "اختر المادة...")}</option>
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                  {subjects.length === 0 && (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
-                      ⚠️ {t("education.groups.noSubjectsAlert", isEn ? "No subjects registered yet. Add a subject first." : "لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.")}
-                    </span>
-                  )}
-                </div>
+                {enableSubjects && (
+                  <div className="space-y-1">
+                    <label className="font-semibold text-foreground">
+                      {t("education.groups.fieldSubject", isEn ? "Subject *" : "المادة الدراسية *")}
+                    </label>
+                    <select
+                      required={enableSubjects}
+                      value={editingGroup.subjectId || ""}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, subjectId: e.target.value })}
+                      className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">{t("education.groups.selectSubjectPrompt", isEn ? "Select Subject..." : "اختر المادة...")}</option>
+                      {subjects.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    {subjects.length === 0 && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
+                        ⚠️ {t("education.groups.noSubjectsAlert", isEn ? "No subjects registered yet. Add a subject first." : "لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.")}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="font-semibold text-foreground">

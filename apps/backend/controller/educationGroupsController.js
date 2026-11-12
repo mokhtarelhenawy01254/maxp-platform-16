@@ -1,4 +1,5 @@
-const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const sharedDatabase = require('../services/sharedDatabase');
+const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 const {
   ensureTablesExist,
   generateGroupId,
@@ -209,12 +210,36 @@ const create = async (req, res) => {
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, error: 'اسم المجموعة مطلوب' });
     }
-    if (!subjectId) {
-      return res.status(400).json({ success: false, error: 'المادة الدراسية مطلوبة' });
-    }
 
     const prisma = getSharedPrismaClient();
     await ensureTablesExist(prisma);
+
+    // In Courses/Packages mode, subjectId might be omitted. Auto-resolve to default company subject.
+    let resolvedSubjectId = subjectId;
+    if (!resolvedSubjectId) {
+      let defaultSubject = await prisma.educationSubject.findFirst({
+        where: { companyId, name: 'عام' }
+      });
+      if (!defaultSubject) {
+        defaultSubject = await prisma.educationSubject.create({
+          data: {
+            companyId,
+            name: 'عام',
+            description: 'تصنيف عام للكورسات والمجموعات',
+            color: '#6366f1',
+            isActive: true
+          }
+        });
+      }
+      resolvedSubjectId = defaultSubject.id;
+    } else {
+      const validSubject = await prisma.educationSubject.findFirst({
+        where: { id: subjectId, companyId }
+      });
+      if (!validSubject) {
+        return res.status(400).json({ success: false, error: 'المادة المحددة غير صالحة أو غير تابعة لهذه الشركة' });
+      }
+    }
 
     const id = generateGroupId();
     const daysJson = JSON.stringify(Array.isArray(scheduleDays) ? scheduleDays : []);
@@ -236,7 +261,7 @@ const create = async (req, res) => {
       companyId,
       name.trim(),
       code ? code.trim() : null,
-      subjectId,
+      resolvedSubjectId,
       teacherId || null,
       level || null,
       capacity ? parseInt(capacity, 10) : 15,
@@ -292,6 +317,15 @@ const update = async (req, res) => {
     } = req.body;
 
     const daysJson = JSON.stringify(Array.isArray(scheduleDays) ? scheduleDays : []);
+
+    if (subjectId) {
+      const validSubject = await prisma.educationSubject.findFirst({
+        where: { id: subjectId, companyId }
+      });
+      if (!validSubject) {
+        return res.status(400).json({ success: false, error: 'المادة المحددة غير صالحة أو غير تابعة لهذه الشركة' });
+      }
+    }
 
     await prisma.$executeRawUnsafe(`
       UPDATE "education_groups" SET
