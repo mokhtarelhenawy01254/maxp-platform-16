@@ -3,18 +3,39 @@
  * into the new real columns (leadStage / leadPriority / leadSource / nextFollowUpDate).
  *
  * One-time, additive, non-destructive — metadata is NOT modified.
- * Run from apps/backend (so PrismaClient picks up .env):
- *   node ../../scripts/backfill-lead-fields.cjs --dry-run
- *   node ../../scripts/backfill-lead-fields.cjs            # real run
- * Options: --dry-run  --batch=500
+ * Runs locally (node scripts/backfill-lead-fields.cjs --dry-run from apps/backend)
+ * or on the server via the backfill-lead-fields.yml workflow (env DRY_RUN=true/false).
  */
 const path = require('path');
-const { PrismaClient } = require(path.join(__dirname, '..', 'apps', 'backend', 'prisma', 'generated', 'postgresql_v2'));
+const fs = require('fs');
 
-const prisma = new PrismaClient();
+try {
+  require('dotenv').config({ path: path.join(process.cwd(), '.env') });
+} catch (e) {
+  // dotenv optional — env may already carry DATABASE_URL
+}
+
+function loadPrismaClient() {
+  const candidates = [
+    path.join(process.cwd(), 'prisma', 'generated', 'postgresql_v2'),
+    path.join(__dirname, '..', 'apps', 'backend', 'prisma', 'generated', 'postgresql_v2'),
+    path.join(__dirname, '..', '..', 'prisma', 'generated', 'postgresql_v2'),
+    path.join(__dirname, '..', 'prisma', 'generated', 'postgresql_v2')
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const { PrismaClient } = require(candidate);
+      return new PrismaClient();
+    }
+  }
+  const { PrismaClient } = require('@prisma/client');
+  return new PrismaClient();
+}
+
+const prisma = loadPrismaClient();
 
 const args = process.argv.slice(2);
-const dryRun = args.includes('--dry-run');
+const dryRun = args.includes('--dry-run') || process.env.DRY_RUN === 'true';
 const batchArg = args.find((a) => a.startsWith('--batch='));
 const BATCH = batchArg ? parseInt(batchArg.split('=')[1], 10) || 500 : 500;
 
