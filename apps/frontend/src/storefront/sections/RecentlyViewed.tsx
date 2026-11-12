@@ -1,9 +1,9 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { buildStorefrontPath } from '../utils/paths';
+import React, { useMemo } from 'react';
+import ProductCard from '../components/ProductCard';
 import { useRecentlyViewed } from '../hooks/useRecentlyViewedProducts';
-import { formatStorefrontCurrency } from '../utils/currency';
-import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
+import { useStorefrontTheme } from '../engine/ThemeProvider';
+import type { Product } from '../hooks/useProducts';
+import type { ProductCardVariant } from '../components/product-card/productCardTypes';
 
 interface RecentlyViewedProps {
   section?: { variant?: string };
@@ -11,76 +11,82 @@ interface RecentlyViewedProps {
     title?: string;
     subtitle?: string;
     limit?: number;
+    variant?: string;
+    cardVariant?: string;
+    quickViewLabel?: string;
+    addToWishlistLabel?: string;
     [key: string]: unknown;
   };
 }
 
 /**
- * Recently viewed rail: renders the product snapshots the PDP recorded in local storage, in the
- * same compact row-card shape as the marketplace rails.
+ * Recently viewed rail: renders the product snapshots the PDP recorded in local storage.
+ * Automatically aligns with the active theme card variant (e.g. marketplace-tile in Marketplace Avenue)
+ * and displays in a clean responsive grid matching the original template design.
  */
-export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ settings }) => {
-  const location = useLocation();
+export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ section, settings }) => {
   const { items } = useRecentlyViewed();
-  const { data: storefrontSettings } = useStorefrontSettings();
-  const currency =
-    storefrontSettings?.storefront?.settings?.currency ||
-    storefrontSettings?.company?.currency;
-  const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+  const { theme } = useStorefrontTheme();
+  const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false;
 
   const limit = Number(settings?.limit) || 6;
-  const products = items.slice(0, limit);
   const title = (settings?.['title'] as string) || (isRtl ? 'شوهدت مؤخرًا' : 'Recently Viewed');
+
+  const isMarketplace =
+    theme.id.startsWith('marketplace') ||
+    theme.id === 'tpl-002-marketplace-multi-women-fashion';
+
+  const cardVariant: ProductCardVariant =
+    (settings?.cardVariant as ProductCardVariant) ||
+    (settings?.variant as ProductCardVariant) ||
+    (section?.variant as ProductCardVariant) ||
+    (isMarketplace ? 'marketplace-tile' : 'standard');
+
+  const isRowLayout = cardVariant === 'marketplace-row' || cardVariant === 'list';
+  const gridClassName = isRowLayout
+    ? 'grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3'
+    : 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-5 lg:grid-cols-6';
+
+  const products: Product[] = useMemo(() => {
+    return items.slice(0, limit).map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: '',
+      price: item.price,
+      comparePrice:
+        typeof item.comparePrice === 'number' && item.comparePrice > item.price
+          ? item.comparePrice
+          : undefined,
+      images: item.image ? [item.image] : [],
+      image: item.image,
+      mainImage: item.image,
+      slug: item.slug || item.id,
+      rating: item.rating,
+      category: item.category ? { id: '', name: item.category } : undefined,
+    }));
+  }, [items, limit]);
 
   if (!products.length) return null;
 
   return (
     <section className="w-full bg-white py-6 md:py-8">
       <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
-        <h2 className="mb-4 font-heading text-[18px] font-semibold text-[#333333] md:text-[22px]">{title}</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-6">
-          {products.map((product) => {
-            const href = buildStorefrontPath(
-              location.pathname,
-              product.slug ? `/product/${product.slug}` : '/shop',
-              location.search,
-            );
-            const hasCompare =
-              typeof product.comparePrice === 'number' && product.comparePrice > product.price;
-            return (
-              <Link
-                key={product.id}
-                to={href}
-                className="group flex items-center gap-3 bg-white p-2 transition-colors hover:bg-[#fafafa]"
-              >
-                <span className="block h-[74px] w-[74px] shrink-0 overflow-hidden bg-[#f5f5f5]">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : null}
-                </span>
-                <span className="min-w-0 flex-1 text-start">
-                  <span className="line-clamp-2 block text-[13px] font-semibold leading-[1.5] text-[#333333] group-hover:text-[#ad7d61] md:text-[15px]">
-                    {product.name}
-                  </span>
-                  <span className="mt-1 flex flex-wrap items-center gap-2">
-                    {hasCompare ? (
-                      <span className="text-[12px] font-medium text-[#a3a3a3] line-through">
-                        {formatStorefrontCurrency(product.comparePrice as number, currency)}
-                      </span>
-                    ) : null}
-                    <span className="text-[13px] font-semibold text-[#e14a5c] md:text-[15px]">
-                      {formatStorefrontCurrency(product.price, currency)}
-                    </span>
-                  </span>
-                </span>
-              </Link>
-            );
-          })}
+        <div className="mb-4 flex items-center justify-between gap-4 border-b border-[#e7e7e7] pb-3">
+          <h2 className="font-heading text-[20px] font-semibold text-[#242424] md:text-[24px]">
+            {title}
+          </h2>
+        </div>
+        <div className={gridClassName}>
+          {products.map((product, index) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              variant={cardVariant}
+              quickViewLabel={settings?.['quickViewLabel'] as string}
+              addToWishlistLabel={settings?.['addToWishlistLabel'] as string}
+              imageLoading={index < 6 ? 'eager' : 'lazy'}
+            />
+          ))}
         </div>
       </div>
     </section>

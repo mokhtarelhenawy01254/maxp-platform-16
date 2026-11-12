@@ -3479,7 +3479,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "recently-viewed": {
     label: "شوهدت مؤخرًا",
     component: "recently-viewed",
-    note: "يعرض آخر المنتجات التي فتحها الزائر، محفوظة محليًا في المتصفح، بنفس شكل كروت الرفوف المضغوطة.",
+    note: "يعرض آخر المنتجات التي فتحها الزائر، محفوظة محليًا في المتصفح، بتصميم شبكة كروت المنتجات المطابقة للقالب.",
     pages: ["home", "shop", "pdp", "cart"],
     fields: [
       { key: "title", label: "العنوان", type: "text" },

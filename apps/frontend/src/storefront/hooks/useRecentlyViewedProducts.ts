@@ -8,6 +8,7 @@ export interface RecentlyViewedSnapshot {
   comparePrice?: number | null;
   image?: string;
   category?: string;
+  rating?: number;
 }
 
 const STORAGE_KEY = 'maxp_recently_viewed_products';
@@ -57,7 +58,14 @@ export const useRecordRecentlyViewed = (product: unknown) => {
             : ''
         : typeof record['imageUrl'] === 'string'
           ? (record['imageUrl'] as string)
-          : '';
+          : typeof record['mainImage'] === 'string'
+            ? (record['mainImage'] as string)
+            : typeof (record['mainImage'] as Record<string, unknown>)?.['url'] === 'string'
+              ? ((record['mainImage'] as Record<string, unknown>)['url'] as string)
+              : '';
+
+    const ratingValue = Number(record['rating']);
+    const rating = Number.isFinite(ratingValue) && ratingValue > 0 ? ratingValue : undefined;
 
     const snapshot: RecentlyViewedSnapshot = {
       id,
@@ -71,6 +79,7 @@ export const useRecordRecentlyViewed = (product: unknown) => {
             ? (record['compareAtPrice'] as number)
             : null,
       image: firstImage,
+      rating,
       category:
         typeof (record['category'] as Record<string, unknown>)?.['name'] === 'string'
           ? ((record['category'] as Record<string, unknown>)['name'] as string)
