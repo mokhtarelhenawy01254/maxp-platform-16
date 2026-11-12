@@ -42,6 +42,7 @@ interface BuildActivitiesOptions {
   statusNameMap?: Record<string, string>;
   currentUserId?: string;
   formatScheduledDateTime: (dateStr: string, notes?: string | null) => string;
+  serverEvents?: any[] | null;
 }
 
 export function buildOrderActivities({
@@ -50,6 +51,7 @@ export function buildOrderActivities({
   statusNameMap,
   currentUserId,
   formatScheduledDateTime,
+  serverEvents,
 }: BuildActivitiesOptions): ActivityItem[] {
   const canModifyNote = (n: any): boolean => {
     if (!currentUserId) return false;
@@ -236,6 +238,130 @@ export function buildOrderActivities({
           },
         ]
       : [];
+
+  if (Array.isArray(serverEvents)) {
+    const rawNotesById = new Map<string, any>(
+      (order.orderNotes || []).filter((n: any) => n?.id).map((n: any) => [String(n.id), n])
+    );
+    const seenEventKeys = new Set<string>();
+    const seenNoteIds = new Set<string>();
+    const seenNoteSignatures = new Set<string>();
+    const serverItems: ActivityItem[] = [];
+
+    for (const ev of serverEvents) {
+      if (!ev) continue;
+      const key = String(ev.eventKey || `${ev.source || "server"}:${ev.id || serverItems.length}`);
+      if (seenEventKeys.has(key)) continue;
+      seenEventKeys.add(key);
+
+      const evType = String(ev.type || "").toLowerCase();
+      const actorName = ev.actor?.name || t("orderDetails.system");
+
+      if (evType === "note") {
+        const noteId = String(ev.meta?.noteId || ev.id || "");
+        const matchedNote = noteId ? rawNotesById.get(noteId) : undefined;
+        const content = String(matchedNote?.content ?? ev.meta?.content ?? ev.title ?? "");
+        if (noteId) seenNoteIds.add(noteId);
+        seenNoteSignatures.add(`${content.trim()}::${actorName}`);
+
+        serverItems.push({
+          id: key,
+          type: "note",
+          category: "notes",
+          title: t("orderDetails.notes"),
+          details: content,
+          content,
+          date: ev.at,
+          updatedAt: matchedNote?.updatedAt,
+          author: actorName,
+          authorAvatar: ev.actor?.avatar || (matchedNote ? getAuthorAvatar(matchedNote) : undefined),
+          icon: MessageSquare,
+          color: "bg-slate-500",
+          noteId: noteId || undefined,
+          canModify: matchedNote ? canModifyNote(matchedNote) : false,
+          rawNote: matchedNote,
+        });
+        continue;
+      }
+
+      const statusUpper = String(ev.meta?.status || "").toUpperCase();
+      let category: ActivityCategory = "status";
+      let itemIcon: any = CheckCircle2;
+      let itemColor = "bg-primary";
+
+      if (evType === "payment" || evType === "discount") {
+        category = "products";
+        itemColor = ev.action === "order.payment.failed" || ev.action === "order.discount.rejected" ? "bg-rose-500" : "bg-emerald-600";
+        itemIcon = ev.action === "order.payment.failed" || ev.action === "order.discount.rejected" ? XCircle : CheckCircle2;
+      } else if (evType === "assign" || evType === "call") {
+        category = "customer";
+        itemIcon = User;
+        itemColor = "bg-indigo-500";
+      } else if (evType === "edit") {
+        const lowerTitle = String(ev.title || "").toLowerCase();
+        category = lowerTitle.includes("منتج") || lowerTitle.includes("سعر") ? "products" : "customer";
+        itemIcon = category === "products" ? ShoppingBag : Edit;
+        itemColor = category === "products" ? "bg-indigo-500" : "bg-teal-500";
+      } else if (statusUpper === "TRASH" || statusUpper === "DELETED") {
+        itemIcon = Trash2;
+        itemColor = "bg-destructive";
+      } else if (isCancellationStatus(statusUpper)) {
+        itemIcon = XCircle;
+        itemColor = "bg-rose-500";
+      } else if (isReturnStatusCode(statusUpper) || statusUpper.includes("RETURN")) {
+        itemIcon = RotateCcw;
+        itemColor = statusUpper === "PARTIALLY_RETURNED" ? "bg-amber-500" : "bg-rose-600";
+      } else if (evType === "create") {
+        itemColor = "bg-emerald-600";
+      }
+
+      const rawReason = typeof ev.meta?.reason === "string" ? ev.meta.reason.trim() : "";
+      const hasMappedStatusTitle = evType === "status" && Boolean(statusUpper && statusNameMap?.[statusUpper]);
+      const title = hasMappedStatusTitle
+        ? t("orderDetails.statusChangeTo", { status: statusNameMap![statusUpper] })
+        : String(ev.title || ev.action || "");
+
+      const isCancelled = isCancellationStatus(statusUpper);
+      const isReturned = isReturnStatusCode(statusUpper) || statusUpper.includes("RETURN");
+      const reasonLine =
+        evType === "status" && rawReason && (hasMappedStatusTitle || title !== rawReason)
+          ? isCancelled || statusUpper === "TRASH" || statusUpper === "DELETED"
+            ? t("orderDetails.cancellationReasonLine", { reason: rawReason })
+            : isReturned
+              ? t("orderDetails.returnReasonLine", {
+                  reason: rawReason,
+                  defaultValue: `سبب المرتجع: ${rawReason}`,
+                } as any)
+              : t("orderDetails.statusReasonLine", { reason: rawReason })
+          : rawReason;
+      const content = evType === "status" && reasonLine && title !== reasonLine ? [title, reasonLine].filter(Boolean).join("\n") : title;
+
+      serverItems.push({
+        id: key,
+        type: "status",
+        category,
+        title,
+        details: reasonLine,
+        content,
+        date: ev.at,
+        author: actorName,
+        authorAvatar: ev.actor?.avatar || undefined,
+        icon: itemIcon,
+        color: itemColor,
+        canModify: false,
+      });
+    }
+
+    const optimisticNotes = noteActivities.filter((n) => {
+      if (n.noteId && seenNoteIds.has(String(n.noteId))) return false;
+      const sig = `${String(n.content || "").trim()}::${n.author}`;
+      return !seenNoteSignatures.has(sig);
+    });
+
+    return [...serverItems, ...optimisticNotes, ...scheduledActivities].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }
 
   return [...statusActivities, ...noteActivities, ...scheduledActivities].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()

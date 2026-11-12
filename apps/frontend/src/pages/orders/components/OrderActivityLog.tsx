@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Clock } from "lucide-react";
 import { useDateFormat } from "../../../hooks/useDateFormat";
@@ -47,6 +47,53 @@ export const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
   const [editingContent, setEditingContent] = useState("");
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [filter, setFilter] = useState<ActivityFilter>("all");
+  const [serverEvents, setServerEvents] = useState<any[] | null>(null);
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+
+  const notesFingerprint = (order?.orderNotes || [])
+    .map((n: any) => `${n?.id || ""}:${n?.updatedAt || ""}:${n?.content || ""}`)
+    .join("|");
+
+  useEffect(() => {
+    let cancelled = false;
+    const orderKey = order?.orderNumber || order?.id;
+    if (!orderKey) return;
+
+    const loadTimeline = async () => {
+      try {
+        const { apiClient } = await import("../../../services/apiClient");
+        const response = await apiClient.get<any>(`/orders-v2/${encodeURIComponent(String(orderKey))}/timeline`, {
+          _skipErrorToast: true,
+        } as any);
+        if (cancelled) return;
+        const payload = response?.data;
+        if (payload?.success && Array.isArray(payload.data)) {
+          setServerEvents(payload.data);
+          setLastCheckedAt(payload?.meta?.checkedAt || new Date().toISOString());
+        } else {
+          setServerEvents(null);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setServerEvents(null);
+          setLastCheckedAt(new Date().toISOString());
+        }
+      }
+    };
+
+    loadTimeline();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    order?.orderNumber,
+    order?.id,
+    order?.status,
+    order?.updatedAt,
+    order?.orderNotes?.length,
+    order?.statusHistory?.length,
+    notesFingerprint,
+  ]);
 
   const handleAddNote = () => {
     if (!note.trim()) return;
@@ -110,8 +157,9 @@ export const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
       statusNameMap,
       currentUserId,
       formatScheduledDateTime,
+      serverEvents,
     });
-  }, [order, t, statusNameMap, currentUserId]);
+  }, [order, t, statusNameMap, currentUserId, serverEvents]);
 
   const categoryCounts = useMemo(() => {
     return {
@@ -204,10 +252,28 @@ export const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
           ))}
 
           {activities.length === 0 && (
-            <li className="text-center py-8">
+            <li className="text-center py-8" data-testid="order-activity-empty">
               <p className="text-xs text-muted-foreground">
                 {filter === "all"
-                  ? t("orderDetails.noActivity")
+                  ? (() => {
+                      const checkTime = formatDateTime(lastCheckedAt || order.updatedAt || order.createdAt);
+                      const rawNoEvents = t("orderDetails.noEventsYet", {
+                        defaultValue: "مفيش أحداث مسجلة لهذا الأوردر",
+                      } as any);
+                      const noEventsMsg =
+                        rawNoEvents === "orderDetails.noEventsYet"
+                          ? "مفيش أحداث مسجلة لهذا الأوردر"
+                          : rawNoEvents;
+                      const rawLastChecked = t("orderDetails.lastCheckedAt", {
+                        time: checkTime,
+                        defaultValue: `آخر فحص: ${checkTime}`,
+                      } as any);
+                      const lastCheckedMsg =
+                        rawLastChecked === "orderDetails.lastCheckedAt"
+                          ? `آخر فحص: ${checkTime}`
+                          : rawLastChecked;
+                      return `${noEventsMsg} — ${lastCheckedMsg}`;
+                    })()
                   : t("orderDetails.noActivitiesInCategory")}
               </p>
             </li>

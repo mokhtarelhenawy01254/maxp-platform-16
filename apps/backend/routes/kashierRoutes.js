@@ -1,6 +1,7 @@
 const express = require('express');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const orderService = require('../services/orderService');
+const { logOrderEvent, ORDER_EVENT_ACTIONS } = require('../services/orderEventLogger');
 const KashierService = require('../services/kashierService');
 const { extractSubdomainMiddleware, requireCompany } = require('../middleware/subdomainMiddleware');
 const { resolvePublicShippingQuote } = require('../controller/shippingZoneController');
@@ -803,6 +804,39 @@ router.post('/kashier/webhook', async (req, res) => {
         console.warn('[KASHIER-WEBHOOK] Could not create order note:', noteErr.message);
       }
     }
+
+    const isRefunded =
+      rawStatus === 'REFUNDED' ||
+      rawStatus === 'REFUND' ||
+      String(eventData.event || rawBody.event || '').toUpperCase().includes('REFUND');
+    const paymentEventAction = isRefunded
+      ? ORDER_EVENT_ACTIONS.PAYMENT_REFUNDED
+      : isSuccess
+        ? ORDER_EVENT_ACTIONS.PAYMENT_SUCCEEDED
+        : ORDER_EVENT_ACTIONS.PAYMENT_FAILED;
+    await logOrderEvent({
+      prisma,
+      companyId: order.companyId,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      action: paymentEventAction,
+      userName: 'Kashier Gateway',
+      description: `${paymentEventAction}${transactionId ? ` (${transactionId})` : ''}`,
+      before: { paymentStatus: order.paymentStatus },
+      after: { paymentStatus: isRefunded ? 'REFUNDED' : paymentStatus, transactionId },
+      metadata: {
+        transactionId,
+        sessionId,
+        orderReference,
+        paymentMethod: resolvedPaymentMethod,
+        amount: kashierPayment.amount,
+        currency: kashierPayment.currency,
+        rawStatus,
+        isGuest,
+        kashierPayment,
+      },
+      isSuccess: isSuccess || isRefunded,
+    });
 
     // 🎓 أكاديمية: تسجيل تلقائي فوري بعد إتمام السداد الإلكتروني عبر كاشير
     if (isSuccess) {

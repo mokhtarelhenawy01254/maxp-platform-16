@@ -7,6 +7,7 @@ const { isProductVisibleToAffiliate } = require('../utils/affiliateProductVisibi
 const { isMerchantUser } = require('../utils/merchantAccountScope');
 const customerBlocklistService = require('../services/customerBlocklistService');
 const exchangeChainGuard = require('../services/exchangeChainGuard');
+const { logOrderEvent, ORDER_EVENT_ACTIONS } = require('../services/orderEventLogger');
 
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
@@ -490,6 +491,17 @@ router.post('/migrate-from-files', async (req, res) => {
             conversationId: orderData.items?.[0]?.metadata?.conversationId || null,
             createdAt: new Date(orderData.createdAt || Date.now())
           }
+        });
+
+        await logOrderEvent({
+          prisma: getSharedPrismaClient(),
+          companyId: newOrder.companyId,
+          orderId: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          action: ORDER_EVENT_ACTIONS.ORDER_CREATED,
+          description: `استيراد طلب ${newOrder.orderNumber}`,
+          after: { status: newOrder.status, total: newOrder.total, sourceType: newOrder.sourceType },
+          metadata: { sourceType: newOrder.sourceType || 'migrated', extractionMethod: newOrder.extractionMethod || 'file_migration' },
         });
 
         // إضافة عناصر الطلب

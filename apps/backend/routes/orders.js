@@ -15,6 +15,8 @@ const { EFFECTIVE_ORDER_STATUS_SQL, effectiveOrderStatusSql } = require('../util
 
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
+const orderTimelineService = require('../services/orderTimelineService');
+const { logOrderEvent, ORDER_EVENT_ACTIONS } = require('../services/orderEventLogger');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
@@ -6871,6 +6873,20 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
           }
         });
 
+        await logOrderEvent({
+          prisma,
+          companyId,
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          action: ORDER_EVENT_ACTIONS.DISCOUNT_APPROVED,
+          userId,
+          userName,
+          description: `اعتماد الخصم بقيمة ${currentDiscount} ج.م${reason ? `: ${reason}` : ''}`,
+          before: { discountApprovalStatus: 'PENDING', discount: currentDiscount },
+          after: { discountApprovalStatus: 'APPROVED', discount: currentDiscount, total: updatedOrder.total },
+          metadata: { reason: reason || null }
+        });
+
         try {
           if (socketService?.getIO()) {
             socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
@@ -6932,6 +6948,20 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
           }
         });
 
+        await logOrderEvent({
+          prisma,
+          companyId,
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          action: ORDER_EVENT_ACTIONS.DISCOUNT_REJECTED,
+          userId,
+          userName,
+          description: `رفض وإلغاء الخصم (كان ${currentDiscount} ج.م)${reason ? `: ${reason}` : ''}`,
+          before: { discountApprovalStatus: 'PENDING', discount: currentDiscount, total: regularOrder.total },
+          after: { discountApprovalStatus: 'REJECTED', discount: 0, total: newTotal },
+          metadata: { reason: reason || null }
+        });
+
         try {
           if (socketService?.getIO()) {
             socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
@@ -6985,6 +7015,20 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
           }
         });
 
+        await logOrderEvent({
+          prisma,
+          companyId,
+          orderId: updatedGuest.id,
+          orderNumber: updatedGuest.orderNumber,
+          action: ORDER_EVENT_ACTIONS.DISCOUNT_APPROVED,
+          userId,
+          userName,
+          description: `اعتماد الخصم بقيمة ${currentDiscount} ج.م${reason ? `: ${reason}` : ''}`,
+          before: { discountApprovalStatus: 'PENDING', discount: currentDiscount },
+          after: { discountApprovalStatus: 'APPROVED', discount: currentDiscount, total: updatedGuest.finalTotal },
+          metadata: { isGuest: true, reason: reason || null }
+        });
+
         try {
           if (socketService?.getIO()) {
             socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
@@ -7034,6 +7078,20 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
             finalTotal: newFinalTotal,
             metadata: JSON.stringify(metadata)
           }
+        });
+
+        await logOrderEvent({
+          prisma,
+          companyId,
+          orderId: updatedGuest.id,
+          orderNumber: updatedGuest.orderNumber,
+          action: ORDER_EVENT_ACTIONS.DISCOUNT_REJECTED,
+          userId,
+          userName,
+          description: `رفض وإلغاء الخصم (كان ${currentDiscount} ج.م)${reason ? `: ${reason}` : ''}`,
+          before: { discountApprovalStatus: 'PENDING', discount: currentDiscount, total: guestOrder.finalTotal },
+          after: { discountApprovalStatus: 'REJECTED', discount: 0, total: newFinalTotal },
+          metadata: { isGuest: true, reason: reason || null }
         });
 
         try {
@@ -8842,6 +8900,64 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('❌ Error exporting orders:', error);
     res.status(500).json({ success: false, message: 'Export failed', error: error.message });
+  }
+});
+
+// سجل نشاط الطلب الموحّد (Timeline)
+router.get('/:orderNumber/timeline', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { type, actorId, cursor, limit } = req.query;
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const { targetCompanyIds, isAuthorized } = await resolveUserTargetCompanies(req, merchant);
+
+    if (!isAuthorized || targetCompanyIds.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح بالوصول لسجل هذا الطلب'
+      });
+    }
+
+    const companyScope = targetCompanyIds.length === 1 ? targetCompanyIds[0] : targetCompanyIds;
+    const parsedLimit = limit !== undefined && String(limit).trim() !== '' ? Number(limit) : undefined;
+    const result = await runWithCompanyScope(targetCompanyIds, () =>
+      orderTimelineService.getOrderTimeline(companyScope, orderNumber, {
+        type,
+        actorId,
+        cursor,
+        limit: parsedLimit
+      })
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: result.events,
+      total: result.total,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+      meta: {
+        orderId: result.orderId,
+        orderNumber: result.orderNumber,
+        isGuest: result.isGuest,
+        checkedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching order timeline:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب سجل نشاط الطلب',
+      error: error.message
+    });
   }
 });
 

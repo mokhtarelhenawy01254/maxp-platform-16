@@ -38,6 +38,7 @@ async function pruneActivityLogs() {
       WHERE id IN (
         SELECT id FROM activity_logs
          WHERE category <> 'PULSE'
+           AND category <> 'orders'
            AND severity <> 'CRITICAL'
            AND "createdAt" < NOW() - ($1 || ' days')::interval
          LIMIT ${BATCH_LIMIT}

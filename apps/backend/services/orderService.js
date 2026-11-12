@@ -11,6 +11,7 @@ const {
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
 const { PAID_PAYMENT_STATUSES } = require('../utils/orderDiscountUtils');
+const { logOrderEvent, ORDER_EVENT_ACTIONS } = require('./orderEventLogger');
 
 const parseOrderMetadata = (raw) => {
   if (!raw) return {};
@@ -785,6 +786,19 @@ class OrderService {
           }
         });
       }, 5);
+
+      await logOrderEvent({
+        prisma: this.getPrisma(),
+        companyId,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        action: ORDER_EVENT_ACTIONS.ORDER_CREATED,
+        userId: createdBy || null,
+        userName: createdByName || null,
+        description: `إنشاء الطلب ${order.orderNumber}`,
+        after: { status: order.status, total: order.total, sourceType: order.sourceType },
+        metadata: { sourceType: order.sourceType, extractionMethod: order.extractionMethod },
+      });
 
       // تنبيه الفريق عند وجود مكرر
       if (isDuplicate && (duplicateSettings?.notifyTeam ?? duplicateSettings?.alertTeam)) {
@@ -2503,6 +2517,25 @@ class OrderService {
         await this.logWorkflowAuditIfNeeded(companyId, order.id, workflowAuditLog, userId, notes || null);
       }
 
+      const hasNonStatusChange =
+        status === currentStatus ||
+        Boolean(options?.updatedFields) ||
+        Boolean(options?.overwriteNotes && finalOrderNotes !== order.notes);
+      if (hasNonStatusChange) {
+        await logOrderEvent({
+          prisma: this.getPrisma(),
+          companyId: order.companyId,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          action: ORDER_EVENT_ACTIONS.ORDER_UPDATED,
+          userId: userId || null,
+          userName: userName || null,
+          description: `تحديث بيانات الطلب ${order.orderNumber}`,
+          before: { notes: order.notes, customStatusCode: order.customStatusCode },
+          after: { notes: finalOrderNotes ?? order.notes, customStatusCode: updatedOrder.customStatusCode, ...(options?.updatedFields || {}) },
+        });
+      }
+
       // 🛡️ CRITICAL FIX: Synchronize status to twin guest order if it exists
       if (order.orderNumber) {
         try {
@@ -3348,6 +3381,7 @@ class OrderService {
   // تأكيد الطلب
   async confirmOrder(orderNumber, companyId, shippingAddress = null) {
     try {
+      let prevShippingAddress = null;
       const order = await safeQuery(async () => {
         const prisma = this.getPrisma();
 
@@ -3364,6 +3398,7 @@ class OrderService {
         if (!existingOrder) {
           throw new Error('الطلب غير موجود أو غير تابع لهذه الشركة');
         }
+        prevShippingAddress = existingOrder.shippingAddress || null;
 
         return await prisma.order.update({
           where: { id: existingOrder.id },
@@ -3400,6 +3435,19 @@ class OrderService {
           }
         });
       }, 5);
+
+      if (shippingAddress && shippingAddress !== prevShippingAddress) {
+        await logOrderEvent({
+          prisma: this.getPrisma(),
+          companyId,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          action: ORDER_EVENT_ACTIONS.ORDER_UPDATED,
+          description: `تحديث عنوان الشحن للطلب ${order.orderNumber}`,
+          before: { shippingAddress: prevShippingAddress },
+          after: { shippingAddress },
+        });
+      }
 
       // 🚚 Turbo Integration: Auto-create shipment via unified method
       try {
