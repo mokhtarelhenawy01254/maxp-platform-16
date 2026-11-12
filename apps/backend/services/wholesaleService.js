@@ -530,45 +530,127 @@ const wholesaleService = {
 
   // ── Auto-Invoice on Confirmation (Atomic & Idempotent) ──
   async recordOrderInvoice(order, tx = null) {
+    if (!order || typeof order !== 'object') return null;
     const prisma = tx || getSharedPrismaClient();
-    const orderId = String(order.id || order.orderId || '');
-    const companyId = order.companyId;
+    const rawOrderId = order.id !== undefined && order.id !== null ? order.id : order.orderId;
+    const orderId =
+      typeof rawOrderId === 'string' || typeof rawOrderId === 'number'
+        ? String(rawOrderId).trim()
+        : '';
+    const companyId = typeof order.companyId === 'string' ? order.companyId.trim() : '';
     if (!orderId || !companyId) return null;
 
+    const blockedStatuses = new Set([
+      'CANCELLED',
+      'CANCELED',
+      'REFUNDED',
+      'RETURNED',
+      'REJECTED',
+      'TRASH',
+      'DUPLICATE_ORDER',
+      'LOST',
+    ]);
+    if (blockedStatuses.has(String(order.status || '').trim().toUpperCase())) {
+      return null;
+    }
+
     let wc = null;
-    if (order.wholesaleCustomerId) {
+    if (typeof order.wholesaleCustomerId === 'string' && order.wholesaleCustomerId.trim()) {
       wc = await prisma.wholesaleCustomer.findFirst({
-        where: { id: order.wholesaleCustomerId, companyId },
+        where: { id: order.wholesaleCustomerId.trim(), companyId },
       });
-    } else if (order.customerId) {
+    } else if (typeof order.customerId === 'string' && order.customerId.trim()) {
       wc = await prisma.wholesaleCustomer.findFirst({
-        where: { customerId: order.customerId, companyId },
+        where: { customerId: order.customerId.trim(), companyId },
       });
     }
 
     if (!wc) return null;
 
-    // Strict idempotency: check if an invoice transaction already exists for this order
-    const existing = await prisma.wholesaleTransaction.findFirst({
-      where: {
-        wholesaleCustomerId: wc.id,
-        referenceType: 'ORDER',
-        referenceId: orderId,
-        type: 'INVOICE',
-      },
-    });
-    if (existing) {
-      return existing;
+    // Fast-path idempotency check when outside an existing transaction
+    if (!tx) {
+      const existing = await prisma.wholesaleTransaction.findFirst({
+        where: {
+          wholesaleCustomerId: wc.id,
+          companyId,
+          referenceType: 'ORDER',
+          referenceId: orderId,
+          type: 'INVOICE',
+        },
+      });
+      if (existing) {
+        return existing;
+      }
     }
 
-    const amount = Number(order.total !== undefined ? order.total : (order.finalTotal || 0));
+    const hasValidAmount = (v) =>
+      v !== undefined && v !== null && v !== '' && typeof v !== 'boolean';
+    const rawAmount = hasValidAmount(order.total)
+      ? order.total
+      : (hasValidAmount(order.finalTotal) ? order.finalTotal : 0);
+    const amount = Number(rawAmount);
 
     const executeRecord = async (client) => {
+      // Serialize concurrent invoice creations for the same wholesale customer row
+      if (typeof client.$queryRawUnsafe === 'function') {
+        const lockedRows = await client.$queryRawUnsafe(
+          `SELECT "id" FROM "wholesale_customers" WHERE "id" = $1 AND "companyId" = $2 FOR UPDATE`,
+          wc.id,
+          companyId
+        );
+        if (Array.isArray(lockedRows) && lockedRows.length === 0) {
+          return null;
+        }
+      }
+
+      if (client.order && typeof client.order.findUnique === 'function') {
+        const dbOrder = await client.order.findUnique({
+          where: { id: orderId },
+          select: {
+            id: true,
+            companyId: true,
+            status: true,
+            wholesaleCustomerId: true,
+            customerId: true,
+          },
+        });
+        if (dbOrder) {
+          if (dbOrder.companyId !== companyId) return null;
+          if (blockedStatuses.has(String(dbOrder.status || '').trim().toUpperCase())) {
+            return null;
+          }
+          if (dbOrder.wholesaleCustomerId && dbOrder.wholesaleCustomerId !== wc.id) {
+            return null;
+          }
+          if (!dbOrder.wholesaleCustomerId && dbOrder.customerId && wc.customerId && dbOrder.customerId !== wc.customerId) {
+            return null;
+          }
+        }
+      }
+
+      // Re-check inside transaction after acquiring FOR UPDATE lock
+      const existingInsideTx = await client.wholesaleTransaction.findFirst({
+        where: {
+          wholesaleCustomerId: wc.id,
+          companyId,
+          referenceType: 'ORDER',
+          referenceId: orderId,
+          type: 'INVOICE',
+        },
+      });
+      if (existingInsideTx) {
+        return existingInsideTx;
+      }
+
+      if (!Number.isFinite(amount) || amount < 0) {
+        throw new Error('قيمة الفاتورة غير صالحة');
+      }
+
       const freshWc = await client.wholesaleCustomer.findUnique({
         where: { id: wc.id },
       });
       const balanceBefore = Number(freshWc?.currentBalance || 0);
-      const balanceAfter = balanceBefore + amount;
+      const balanceAfter = Math.round((balanceBefore + amount) * 100) / 100;
 
       const createdTx = await client.wholesaleTransaction.create({
         data: {
@@ -804,6 +886,15 @@ const wholesaleService = {
 
   // ── Daily Workspace Queue (4 Blocks + Counts) ──
   async getManageQueue({ companyId, distributorId, period = 'today', limit = 50 }) {
+    if (typeof companyId !== 'string' || !companyId.trim()) {
+      const err = new Error('معرف الشركة مطلوب');
+      err.statusCode = 400;
+      throw err;
+    }
+    const cleanCompanyId = companyId.trim();
+    const cleanDistributorId =
+      typeof distributorId === 'string' && distributorId.trim() ? distributorId.trim() : null;
+
     const prisma = getSharedPrismaClient();
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
 
@@ -820,17 +911,17 @@ const wholesaleService = {
 
     // 1. Pending Wholesale Orders (Block 1) - uses compound index [companyId, status, createdAt]
     const pendingWhere = {
-      companyId,
+      companyId: cleanCompanyId,
       status: 'PENDING',
       OR: [
-        { wholesaleCustomerId: distributorId || { not: null } },
+        { wholesaleCustomerId: cleanDistributorId || { not: null } },
         { orderSource: 'WHOLESALE' },
       ],
     };
-    if (distributorId) {
+    if (cleanDistributorId) {
       pendingWhere.OR = [
-        { wholesaleCustomerId: distributorId },
-        { customerId: distributorId, orderSource: 'WHOLESALE' },
+        { wholesaleCustomerId: cleanDistributorId },
+        { customerId: cleanDistributorId, orderSource: 'WHOLESALE' },
       ];
     }
     if (periodStartDate) {
@@ -839,40 +930,60 @@ const wholesaleService = {
 
     // 2. Active Wholesale Customers for Over-Limit detection (Block 2)
     const customerWhere = {
-      companyId,
+      companyId: cleanCompanyId,
       currentBalance: { gt: 0 },
     };
-    if (distributorId) {
-      customerWhere.id = distributorId;
+    if (cleanDistributorId) {
+      customerWhere.OR = [
+        { id: cleanDistributorId },
+        { customerId: cleanDistributorId },
+      ];
     }
 
     // 3. Suspended Wholesale Customers (Block 3) - uses index [companyId, isActive]
     const suspendedWhere = {
-      companyId,
+      companyId: cleanCompanyId,
       isActive: false,
     };
-    if (distributorId) {
-      suspendedWhere.id = distributorId;
+    if (cleanDistributorId) {
+      suspendedWhere.OR = [
+        { id: cleanDistributorId },
+        { customerId: cleanDistributorId },
+      ];
     }
 
     // 4. Processing / Active Fulfillment Orders (Block 4) - uses compound index [companyId, status, createdAt]
     const fulfillmentWhere = {
-      companyId,
+      companyId: cleanCompanyId,
       status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED'] },
       OR: [
-        { wholesaleCustomerId: distributorId || { not: null } },
+        { wholesaleCustomerId: cleanDistributorId || { not: null } },
         { orderSource: 'WHOLESALE' },
       ],
     };
-    if (distributorId) {
+    if (cleanDistributorId) {
       fulfillmentWhere.OR = [
-        { wholesaleCustomerId: distributorId },
-        { customerId: distributorId, orderSource: 'WHOLESALE' },
+        { wholesaleCustomerId: cleanDistributorId },
+        { customerId: cleanDistributorId, orderSource: 'WHOLESALE' },
       ];
     }
     if (periodStartDate) {
       fulfillmentWhere.createdAt = { gte: periodStartDate };
     }
+
+    const overLimitAggregatePromise =
+      typeof prisma.$queryRawUnsafe === 'function'
+        ? prisma.$queryRawUnsafe(
+            cleanDistributorId
+              ? `SELECT COUNT(*)::int AS "count", COALESCE(ROUND(SUM("currentBalance" - "creditLimit"), 2), 0)::float8 AS "totalOverLimitAmount"
+                 FROM "wholesale_customers"
+                 WHERE "companyId" = $1 AND ("id" = $2 OR "customerId" = $2) AND "creditLimit" > 0 AND "currentBalance" > "creditLimit"`
+              : `SELECT COUNT(*)::int AS "count", COALESCE(ROUND(SUM("currentBalance" - "creditLimit"), 2), 0)::float8 AS "totalOverLimitAmount"
+                 FROM "wholesale_customers"
+                 WHERE "companyId" = $1 AND "creditLimit" > 0 AND "currentBalance" > "creditLimit"`,
+            ...(cleanDistributorId ? [cleanCompanyId, cleanDistributorId] : [cleanCompanyId])
+          )
+        : Promise.resolve(null);
 
     // Execute queries in parallel to avoid N+1 bottlenecks
     const [
@@ -880,6 +991,7 @@ const wholesaleService = {
       pendingCount,
       pendingSum,
       allBalanceCustomers,
+      overLimitAggregateRows,
       suspendedWc,
       fulfillmentOrders,
       fulfillmentCount,
@@ -909,6 +1021,7 @@ const wholesaleService = {
         orderBy: { currentBalance: 'desc' },
         take: 200,
       }),
+      overLimitAggregatePromise,
       prisma.wholesaleCustomer.findMany({
         where: suspendedWhere,
         include: {
@@ -1040,7 +1153,15 @@ const wholesaleService = {
       };
     });
 
-    const totalOverLimitAmount = overLimitList.reduce((acc, c) => acc + c.excessAmount, 0);
+    const overLimitAggregateRow = Array.isArray(overLimitAggregateRows)
+      ? overLimitAggregateRows[0]
+      : null;
+    const overLimitDistributorsCount = overLimitAggregateRow
+      ? Number(overLimitAggregateRow.count || 0)
+      : overLimitList.length;
+    const totalOverLimitAmount = overLimitAggregateRow
+      ? Number(overLimitAggregateRow.totalOverLimitAmount || 0)
+      : overLimitList.reduce((acc, c) => acc + c.excessAmount, 0);
     const pendingOrdersAmount = Number(pendingSum?._sum?.total || 0);
     const fulfillmentOrdersAmount = Number(fulfillmentSum?._sum?.total || 0);
 
@@ -1048,7 +1169,7 @@ const wholesaleService = {
       counts: {
         pendingOrdersCount: pendingCount,
         pendingOrdersAmount,
-        overLimitDistributorsCount: overLimitList.length,
+        overLimitDistributorsCount,
         totalOverLimitAmount,
         suspendedDistributorsCount: suspendedList.length,
         processingOrdersCount: fulfillmentCount,
@@ -1061,8 +1182,8 @@ const wholesaleService = {
         processingOrders: mappedFulfillment,
       },
       filters: {
-        companyId,
-        distributorId: distributorId || null,
+        companyId: cleanCompanyId,
+        distributorId: cleanDistributorId,
         period,
         periodStartDate: periodStartDate ? periodStartDate.toISOString() : null,
       },
