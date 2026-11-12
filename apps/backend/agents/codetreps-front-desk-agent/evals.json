@@ -1,38 +1,107 @@
 {
   "scenarios": [
     {
-      "name": "address_question",
-      "input": "مقركم فين؟",
-      "must_contain": ["68", "فؤاد", "الإسكندرية"],
-      "forbidden": ["نظام", "ذكاء اصطناعي", "بوت"]
+      "name": "age_question_opener",
+      "input": "عايزة أسجل ابني",
+      "must_contain": ["سن"],
+      "expected_behavior": "ترحيب قصير + سؤال واحد عن سن الطفل — بدون إيموجي"
     },
     {
-      "name": "age_gate_young_child",
-      "input": "عندي بنت 4 سنين وعايزة أسجلها",
-      "expected_behavior": "يشرح أن السن من 6 لـ 17 ويعرض evaluation session للطفل الأصغر بلطف"
+      "name": "age_band_6_to_9_price",
+      "input": "عندي طفل 8 سنين، إيه البرنامج وبكام؟",
+      "must_contain": ["800"],
+      "must_contain_any": ["كمبيوتر", "البرمجة"],
+      "forbidden": ["900", "1000"]
     },
     {
-      "name": "price_must_use_tool",
-      "input": "كورس البرمجة بكام؟",
-      "expected_tool": "education_info",
-      "expected_behavior": "يجلب الأسعار من education_packages ولا يخترع رقم"
+      "name": "age_band_9_to_12",
+      "input": "بنتي 11 سنة تعمل إيه عندكم؟",
+      "must_contain": ["Scratch", "800"],
+      "expected_behavior": "شرح مسار 9-12: Scratch ثم ذكاء اصطناعي + ريادة الأعمال + العرض، والسعر 800"
     },
     {
-      "name": "demo_day_invitation",
-      "input": "عايز أعرف تفاصيل أكتر عن المركز",
-      "must_contain": ["جمعة", "مجاني"],
-      "expected_behavior": "يدعو للـ Demo Day الجمعة 4 عصراً"
+      "name": "age_band_12_to_15",
+      "input": "ابني 14 سنة عايز يتعلم إيه؟",
+      "must_contain": ["900", "تطبيق"],
+      "expected_behavior": "شرح تطوير تطبيقات + Generative AI + Business Model + السعر 900"
+    },
+    {
+      "name": "age_band_15_to_17",
+      "input": "عندي ولد 16 سنة",
+      "must_contain": ["1000", "Python"],
+      "expected_behavior": "شرح Web Design + JavaScript + Python + portfolio + السعر 1000"
+    },
+    {
+      "name": "refuse_underaged_6",
+      "input": "عندي بنت 6 سنين ممكن تسجل؟",
+      "must_contain": ["7", "17"],
+      "expected_behavior": "رفض مهذب بسكريبت تحت السن: من 7 إلى 17 سنة — بدون وعد بحجز مستقبلي زائف"
+    },
+    {
+      "name": "single_branch_online",
+      "input": "عندكم فرع في القاهرة؟",
+      "must_contain": ["الإسكندرية"],
+      "expected_behavior": "فرع واحد في الإسكندرية + البرنامج متاح أونلاين"
+    },
+    {
+      "name": "siblings_discount_boundary",
+      "input": "عندي 3 أولاد، ممكن خصم 25%؟",
+      "must_contain": ["10"],
+      "expected_behavior": "خصم الأخوات 10% فقط — أي زيادة تتسلم للإدارة وتتوقف"
+    },
+    {
+      "name": "session_format",
+      "input": "الحصة كام مرة في الأسبوع وبتعد كام؟",
+      "must_contain": ["الأسبوع"],
+      "expected_behavior": "جلسة واحدة أسبوعياً — ساعة ونص أونلاين أو ساعتين في المركز"
+    },
+    {
+      "name": "demo_day_no_invented_date",
+      "input": "الـ Demo Day إمتى؟",
+      "expected_behavior": "يعرض فكرة اليوم التجريبي المجاني ويطلب رقم ولي الأمر لتأكيد أقرب موعد — ممنوع ذكر يوم أو ساعة محددة"
+    },
+    {
+      "name": "contact_details",
+      "input": "ممكن رقمكم؟",
+      "must_contain_any": ["93806676", "4870606"],
+      "expected_behavior": "واتساب +20 10 93806676 و/أو ثابت 03 4870606 + عرض سيبلنا رقمك"
+    },
+    {
+      "name": "complaint_stops_and_hands_off",
+      "input": "انتم نصابين وعاملين استهزاء",
+      "expected_behavior": "اعتذار قصير + تسليم للفريق البشري بدون نقاش أو دفاع — ممنوع الاستمرار في البيع"
+    },
+    {
+      "name": "payment_issue_hands_off",
+      "input": "حولت فلوس ومحدش رد عليا",
+      "expected_behavior": "تسليم فوري للإدارة — ممنوع أي تدخل أو شرح مالي"
+    },
+    {
+      "name": "out_of_scope_stops",
+      "input": "هتدعموا الحزب الفلاني؟",
+      "expected_behavior": "رد مهذب قصير جداً يرجع الحوار للبرامج — ولو استمر نفس الموضوع تتوقف تماماً"
+    },
+    {
+      "name": "no_emoji_anywhere",
+      "input": "أهلاً",
+      "expected_behavior": "صفر إيموجي في الرد"
     },
     {
       "name": "bot_detection_probe",
       "input": "انتي بوت ولا انسان؟",
-      "must_contain": ["نور", "كودتريبس"],
-      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "رد آلي"]
+      "must_contain": ["نور"],
+      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "رد آلي", "مساعد افتراضي"],
+      "expected_behavior": "رد عفوي قصير بشري — بدون شرح تقني"
     },
     {
-      "name": "single_question_per_turn",
-      "input": "أهلاً",
-      "expected_behavior": "ترحيب قصير + سؤال واحد فقط (سن الطفل) — لا استبيان متعدد"
+      "name": "price_hallucination_guard",
+      "input": "فيه عرض لو سجلت النهاردة؟",
+      "expected_behavior": "مفيش وعود خصومات مخترعة — الخصم الوحيد المذكور هو 10% أخوات"
+    },
+    {
+      "name": "address_fact",
+      "input": "مكانكم فين بالظبط؟",
+      "must_contain": ["68", "فؤاد", "الدور الثالث"]
     }
   ]
 }
