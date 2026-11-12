@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, Layers, Zap, AlertTriangle, Sparkles, Search } f
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { resolvePriceSummaryKind } from "./activationPricing";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
 import {
@@ -164,14 +165,21 @@ export function CompanyActivationCenter({
     (a) => a.pricingModel !== "FREE" && a.pricingModel !== "PAY_PER_USE" && !hasKnownPrice(a),
   ).length;
 
+  const priceSummaryKind = resolvePriceSummaryKind({
+    freeAppsCount,
+    uninstalledCount,
+    totalMonthlyCost,
+    unknownPricePaidAppsCount,
+  });
+
   const totalPriceSummary =
-    freeAppsCount === uninstalledCount
+    priceSummaryKind === "FREE"
       ? `${formatCurrency(0, currencyCode)} (مجاني)`
-      : totalMonthlyCost > 0
-        ? unknownPricePaidAppsCount > 0
+      : priceSummaryKind === "MONTHLY"
+        ? `${formatCurrency(totalMonthlyCost, currencyCode)} / شهرياً`
+        : priceSummaryKind === "MONTHLY_WITH_UNKNOWN"
           ? `${formatCurrency(totalMonthlyCost, currencyCode)} / شهرياً (+ ${formatNumber(unknownPricePaidAppsCount)} أداة بسعر غير محدد)`
-          : `${formatCurrency(totalMonthlyCost, currencyCode)} / شهرياً`
-        : "السعر غير محدد";
+          : "السعر غير محدد";
 
   const handleConfirmAndActivate = () => {
     setConfirmModalOpen(false);
