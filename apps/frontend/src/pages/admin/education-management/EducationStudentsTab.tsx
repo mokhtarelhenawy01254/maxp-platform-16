@@ -233,6 +233,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
           key={studentModal?.id || "new"}
           student={studentModal}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           customers={customers}
           customerResults={customerResults}
           onCustomerSearch={searchCustomers}

@@ -302,7 +302,7 @@ const applySidebarOverrides = (
                     }
                     if (savedSec.visible === false && !LOCKED_SIDEBAR_KEYS.has(sectionKey)) {
                         sectionHidden = true;
-                    } else if (savedSec.visible === true) {
+                    } else if (savedSec.visible === true && !section.hidden) {
                         sectionHidden = false;
                     }
                 }
@@ -339,6 +339,12 @@ const applySidebarOverrides = (
                             const isLocked = LOCKED_SIDEBAR_KEYS.has(itemKey) || LOCKED_SIDEBAR_KEYS.has(item.to.toLowerCase());
                             if (savedItem.visible === false && !isLocked) {
                                 itemHidden = true;
+                            } else if (
+                                savedItem.visible === true &&
+                                itemAccess &&
+                                (!item.hidden || itemKey === 'education-subjects')
+                            ) {
+                                itemHidden = false;
                             }
                         }
 
@@ -1887,7 +1893,7 @@ export const getSidebarConfig = (
             hidden: !isAppInstalled('education-app'),
             items: [
                 { to: '/admin/education/dashboard', itemId: 'education-dashboard', icon: BarChart3, label: t('sidebar.educationDashboard') },
-                { to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, label: t('sidebar.educationSubjects') },
+                { to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, label: t('sidebar.educationSubjects'), hidden: true },
                 { to: '/admin/education/packages', itemId: 'education-packages', icon: Gift, label: t('sidebar.educationPackages') },
                 { to: '/admin/education/groups', itemId: 'education-groups', icon: Users, label: t('sidebar.educationGroups', 'المجموعات الدراسية (الجروبات)') },
                 { to: '/admin/education/students', itemId: 'education-students', icon: Users, label: t('sidebar.educationStudents') },

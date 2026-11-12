@@ -176,9 +176,12 @@ const sanitize = (str) => {
   return str.replace(/<[^>]*>?/gm, '').trim();
 };
 
+const DISALLOWED_ROLES = new Set(['SHIPPING_CLIENT', 'STUDENT', 'CUSTOMER', 'COURIER']);
+
 const resolveCompanyId = (req) => {
-  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
   const userRole = String(req.user?.role || '').toUpperCase();
+  if (DISALLOWED_ROLES.has(userRole)) return null;
+  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
   if (headerCid) {
     if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
     if (req.user?.companyId === headerCid) return String(headerCid).trim();
@@ -445,11 +448,14 @@ const updateSettings = async (req, res) => {
     // Map of keys to update/add
     const educationSidebarItems = [];
 
-    // Top-level education section title
+    // Top-level education section title (preserve existing order/visible if set)
+    const existingEduSection = currentSidebar.find(
+      (it) => it && String(it.key || '').toLowerCase() === 'education'
+    );
     educationSidebarItems.push({
       key: 'education',
-      order: 10,
-      visible: true,
+      order: typeof existingEduSection?.order === 'number' ? existingEduSection.order : 10,
+      visible: existingEduSection?.visible !== undefined ? existingEduSection.visible : true,
       labelAr: sanitizedTitle,
       labelEn: sanitizedTitleEn
     });
@@ -483,14 +489,6 @@ const updateSettings = async (req, res) => {
       // Also register relative sub-key (e.g. education/subjects)
       educationSidebarItems.push({
         key: `education/${tab.id.toLowerCase()}`,
-        order: tab.order,
-        visible: tab.visible,
-        labelAr: tab.labelAr,
-        labelEn: tab.labelEn
-      });
-      // Also register bare tab id (e.g. subjects)
-      educationSidebarItems.push({
-        key: tab.id.toLowerCase(),
         order: tab.order,
         visible: tab.visible,
         labelAr: tab.labelAr,

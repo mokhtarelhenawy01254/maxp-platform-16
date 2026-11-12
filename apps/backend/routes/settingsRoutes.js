@@ -457,10 +457,23 @@ router.post('/recommendation-settings', verifyToken.authenticateToken, async (re
 // 📋 Sidebar Management Settings Endpoints
 // ============================================
 
+const resolveSidebarCompanyId = (req) => {
+  const userRole = String(req.user?.role || '').toUpperCase();
+  if (['SHIPPING_CLIENT', 'STUDENT', 'CUSTOMER', 'COURIER'].includes(userRole)) return null;
+  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
+  if (headerCid) {
+    if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
+    if (req.user?.companyId === headerCid) return String(headerCid).trim();
+    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === headerCid || uc.company?.id === headerCid);
+    if (hasCompany) return String(headerCid).trim();
+  }
+  return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
+};
+
 // Get sidebar settings for current company
 router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
+    const companyId = resolveSidebarCompanyId(req);
     if (!companyId) {
       // 👑 SUPER_ADMIN without a specific company: return default sidebar settings
       if (req.user?.role === 'SUPER_ADMIN') {
@@ -497,39 +510,6 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
 
     let sidebarSettings = parsedSettings.sidebarSettings || {};
 
-    // Harmonize education subjects visibility based on company's educationSettings
-    const eduSettings = parsedSettings.educationSettings || {};
-    const eduMode = eduSettings.educationMode || (eduSettings.enableSubjects ? 'ACADEMIC' : 'COURSES');
-    const enableSubjects = eduSettings.enableSubjects !== undefined
-      ? Boolean(eduSettings.enableSubjects)
-      : (eduMode === 'ACADEMIC');
-
-    const subjectsKeys = new Set([
-      'education-subjects',
-      '/admin/education/subjects',
-      'admin/education/subjects',
-      'education/subjects',
-      'subjects'
-    ]);
-
-    if (Array.isArray(sidebarSettings)) {
-      sidebarSettings = sidebarSettings.map((item) => {
-        if (item && item.key && subjectsKeys.has(String(item.key).toLowerCase())) {
-          return { ...item, visible: enableSubjects };
-        }
-        return item;
-      });
-      const hasSubjects = sidebarSettings.some((it) => it && it.key && subjectsKeys.has(String(it.key).toLowerCase()));
-      if (!hasSubjects) {
-        sidebarSettings.push({ key: 'education-subjects', visible: enableSubjects, order: 1 });
-        sidebarSettings.push({ key: '/admin/education/subjects', visible: enableSubjects, order: 1 });
-      }
-    } else if (sidebarSettings && typeof sidebarSettings === 'object') {
-      if (!sidebarSettings.items) sidebarSettings.items = {};
-      sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
-      sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
-    }
-
     let appsMap = {};
     try {
       const installedApps = await getSharedPrismaClient().companyApp.findMany({
@@ -556,6 +536,42 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
       });
     } catch (appsErr) {
       console.warn('⚠️ [SIDEBAR-SETTINGS] Could not fetch installed apps:', appsErr.message);
+    }
+
+    // Harmonize education subjects visibility when education-app is active or educationSettings exists
+    if (parsedSettings.educationSettings || appsMap['education-app']) {
+      const eduSettings = parsedSettings.educationSettings || {};
+      const eduMode = eduSettings.educationMode
+        ? (eduSettings.educationMode === 'ACADEMIC' ? 'ACADEMIC' : 'COURSES')
+        : (eduSettings.enableSubjects ? 'ACADEMIC' : 'COURSES');
+      const enableSubjects = eduMode === 'COURSES'
+        ? false
+        : (eduSettings.enableSubjects !== undefined ? Boolean(eduSettings.enableSubjects) : true);
+
+      const subjectsKeys = new Set([
+        'education-subjects',
+        '/admin/education/subjects',
+        'admin/education/subjects',
+        'education/subjects'
+      ]);
+
+      if (Array.isArray(sidebarSettings)) {
+        sidebarSettings = sidebarSettings.map((item) => {
+          if (item && item.key && subjectsKeys.has(String(item.key).toLowerCase())) {
+            return { ...item, visible: enableSubjects };
+          }
+          return item;
+        });
+        const hasSubjects = sidebarSettings.some((it) => it && it.key && subjectsKeys.has(String(it.key).toLowerCase()));
+        if (!hasSubjects) {
+          sidebarSettings.push({ key: 'education-subjects', visible: enableSubjects, order: 1 });
+          sidebarSettings.push({ key: '/admin/education/subjects', visible: enableSubjects, order: 1 });
+        }
+      } else if (sidebarSettings && typeof sidebarSettings === 'object') {
+        if (!sidebarSettings.items) sidebarSettings.items = {};
+        sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
+        sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
+      }
     }
 
     res.json({
@@ -591,7 +607,7 @@ router.put('/sidebar', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
+    const companyId = resolveSidebarCompanyId(req);
     if (!companyId) {
       return res.status(403).json({
         success: false,

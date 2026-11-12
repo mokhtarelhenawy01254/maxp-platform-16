@@ -158,6 +158,46 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(updatedData.enableSubjects, true);
     const updatedSubjectsTab = updatedData.tabs.find(t => t.id === 'subjects');
     assert.strictEqual(updatedSubjectsTab.visible, true);
+
+    // 3. Switch back to COURSES even if stale enableSubjects: true is supplied -> forced false, no bare settings/dashboard keys
+    const reqBackToCourses = {
+      user: { id: 'u1', role: 'COMPANY_ADMIN', companyId: 'comp-123' },
+      body: {
+        educationMode: 'COURSES',
+        enableSubjects: true,
+        tabs: updatedData.tabs
+      }
+    };
+    const resBackToCourses = createMockRes();
+    await controller.updateSettings(reqBackToCourses, resBackToCourses);
+
+    const coursesData = resBackToCourses.getData().data;
+    assert.strictEqual(coursesData.educationMode, 'COURSES');
+    assert.strictEqual(coursesData.enableSubjects, false);
+    assert.strictEqual(coursesData.tabs.find(t => t.id === 'subjects').visible, false);
+
+    const savedAfterCourses = JSON.parse(mockCompany.settings);
+    const bareSettingsKey = savedAfterCourses.sidebarSettings.find(x => x.key === 'settings');
+    const bareDashboardKey = savedAfterCourses.sidebarSettings.find(x => x.key === 'dashboard');
+    assert.strictEqual(bareSettingsKey, undefined, 'Must not emit colliding bare key "settings"');
+    assert.strictEqual(bareDashboardKey, undefined, 'Must not emit colliding bare key "dashboard"');
+    const eduSubjectsEntry = savedAfterCourses.sidebarSettings.find(x => x.key === 'education-subjects');
+    assert.ok(eduSubjectsEntry);
+    assert.strictEqual(eduSubjectsEntry.visible, false);
+  });
+
+  await t.test('rejects disallowed roles (SHIPPING_CLIENT, STUDENT, CUSTOMER, COURIER) with 403', async () => {
+    for (const role of ['SHIPPING_CLIENT', 'STUDENT', 'CUSTOMER', 'COURIER']) {
+      const reqGet = { user: { id: 'u-bad', role, companyId: 'comp-123' } };
+      const resGet = createMockRes();
+      await controller.getSettings(reqGet, resGet);
+      assert.strictEqual(resGet.getStatusCode(), 403, `getSettings should reject ${role}`);
+
+      const reqPut = { user: { id: 'u-bad', role, companyId: 'comp-123' }, body: { educationMode: 'ACADEMIC' } };
+      const resPut = createMockRes();
+      await controller.updateSettings(reqPut, resPut);
+      assert.strictEqual(resPut.getStatusCode(), 403, `updateSettings should reject ${role}`);
+    }
   });
 
   await t.test('multi-tenant isolation: modifying settings for Company A does not affect Company B', async () => {

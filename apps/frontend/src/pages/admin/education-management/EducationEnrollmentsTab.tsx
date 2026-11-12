@@ -17,6 +17,7 @@ export interface EducationEnrollmentsTabProps {
   packages: EducationPackage[];
   teachers: EducationTeacher[];
   subjects: EducationSubject[];
+  enableSubjects?: boolean;
   enrollmentModal: Partial<EducationEnrollment> | null | undefined;
   setEnrollmentModal: (
     e: Partial<EducationEnrollment> | null | undefined
@@ -32,6 +33,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
   packages,
   teachers,
   subjects,
+  enableSubjects = true,
   enrollmentModal,
   setEnrollmentModal,
   handleSaveEnrollment,
@@ -85,7 +87,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {e.package?.name} {e.package?.subject?.name ? `• ${e.package.subject.name}` : ""}
+                    {e.package?.name} {enableSubjects && e.package?.subject?.name ? `• ${e.package.subject.name}` : ""}
                   </div>
                 </div>
                 <span
@@ -218,7 +220,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                 {[
                   t("education.enrollments.student", isEn ? "Student" : "الطالب"),
                   t("education.enrollments.package", isEn ? "Package" : "الباقة"),
-                  t("education.enrollments.subject", isEn ? "Subject" : "المادة"),
+                  ...(enableSubjects ? [t("education.enrollments.subject", isEn ? "Subject" : "المادة")] : []),
                   t("education.enrollments.teacher", isEn ? "Instructor" : "المهندس"),
                   t("education.enrollments.remainingHours", isEn ? "Remaining Hours" : "الساعات المتبقية"),
                   t("education.enrollments.paidAmount", isEn ? "Paid Amount" : "المدفوع"),
@@ -257,9 +259,11 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                     <td className={CELL_CLS + " text-muted-foreground"}>
                       {e.package?.name || "—"}
                     </td>
-                    <td className={CELL_CLS + " text-muted-foreground"}>
-                      {e.package?.subject?.name || "—"}
-                    </td>
+                    {enableSubjects && (
+                      <td className={CELL_CLS + " text-muted-foreground"}>
+                        {e.package?.subject?.name || "—"}
+                      </td>
+                    )}
                     <td className={CELL_CLS}>
                       {e.teacher?.name || (
                         <span className="text-amber-500 text-[11px] font-medium">
@@ -391,6 +395,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
           packages={packages}
           teachers={teachers}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           onClose={() => setEnrollmentModal(undefined)}
           onSave={handleSaveEnrollment}
           onAddNewStudent={handleSaveStudent}

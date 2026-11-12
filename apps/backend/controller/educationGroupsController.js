@@ -15,8 +15,19 @@ try {
   // Optional notification service
 }
 
+const DISALLOWED_ROLES = new Set(['SHIPPING_CLIENT', 'STUDENT', 'CUSTOMER', 'COURIER']);
+
 const getCompanyId = (req) => {
-  return req.user?.companyId || req.user?.effectiveCompanyId || req.headers['x-company-id'];
+  const userRole = String(req.user?.role || '').toUpperCase();
+  if (DISALLOWED_ROLES.has(userRole)) return null;
+  const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
+  if (headerCid) {
+    if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
+    if (req.user?.companyId === headerCid) return String(headerCid).trim();
+    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === headerCid || uc.company?.id === headerCid);
+    if (hasCompany) return String(headerCid).trim();
+  }
+  return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
 };
 
 const getAll = async (req, res) => {
@@ -39,8 +50,8 @@ const getAll = async (req, res) => {
         COALESCE(m.active_members, 0) AS "activeMembers",
         COALESCE(m.waiting_members, 0) AS "waitingMembers"
       FROM "education_groups" g
-      LEFT JOIN "education_subjects" s ON s.id = g."subjectId"
-      LEFT JOIN "education_teachers" t ON t.id = g."teacherId"
+      LEFT JOIN "education_subjects" s ON s.id = g."subjectId" AND s."companyId" = g."companyId"
+      LEFT JOIN "education_teachers" t ON t.id = g."teacherId" AND t."companyId" = g."companyId"
       LEFT JOIN (
         SELECT 
           "groupId",
@@ -111,8 +122,8 @@ const getById = async (req, res) => {
         t.name AS "teacherName",
         t.phone AS "teacherPhone"
       FROM "education_groups" g
-      LEFT JOIN "education_subjects" s ON s.id = g."subjectId"
-      LEFT JOIN "education_teachers" t ON t.id = g."teacherId"
+      LEFT JOIN "education_subjects" s ON s.id = g."subjectId" AND s."companyId" = g."companyId"
+      LEFT JOIN "education_teachers" t ON t.id = g."teacherId" AND t."companyId" = g."companyId"
       WHERE g.id = $1 AND g."companyId" = $2
     `, id, companyId);
 
@@ -137,8 +148,8 @@ const getById = async (req, res) => {
         c."lastName" AS "guardianLastName",
         c.phone AS "guardianPhone"
       FROM "education_group_members" m
-      INNER JOIN "education_students" st ON st.id = m."studentId"
-      LEFT JOIN "customers" c ON c.id = st."customerId"
+      INNER JOIN "education_students" st ON st.id = m."studentId" AND st."companyId" = m."companyId"
+      LEFT JOIN "customers" c ON c.id = st."customerId" AND c."companyId" = m."companyId"
       WHERE m."groupId" = $1 AND m."companyId" = $2
       ORDER BY m."status" ASC, m."joinedAt" ASC
     `, id, companyId);
@@ -151,7 +162,7 @@ const getById = async (req, res) => {
         COUNT(a.id) FILTER (WHERE a.status = 'ABSENT') AS "absentCount",
         COUNT(a.id) AS "totalCount"
       FROM "education_group_sessions" s
-      LEFT JOIN "education_group_attendance" a ON a."sessionId" = s.id
+      LEFT JOIN "education_group_attendance" a ON a."sessionId" = s.id AND a."companyId" = s."companyId"
       WHERE s."groupId" = $1 AND s."companyId" = $2
       GROUP BY s.id
       ORDER BY s."sessionDate" DESC
@@ -427,11 +438,20 @@ const addMember = async (req, res) => {
     const prisma = getSharedPrismaClient();
     await ensureTablesExist(prisma);
 
+    // Verify student belongs to this tenant
+    const validStudent = await prisma.educationStudent.findFirst({
+      where: { id: studentId, companyId },
+      select: { id: true }
+    });
+    if (!validStudent) {
+      return res.status(404).json({ success: false, error: 'الطالب غير موجود أو غير تابع لهذه الشركة' });
+    }
+
     // Check if group exists and check capacity
     const groupRows = await prisma.$queryRawUnsafe(`
       SELECT g.id, g.capacity, COALESCE(COUNT(m.id) FILTER (WHERE m.status = 'ACTIVE'), 0) AS active_count
       FROM "education_groups" g
-      LEFT JOIN "education_group_members" m ON m."groupId" = g.id
+      LEFT JOIN "education_group_members" m ON m."groupId" = g.id AND m."companyId" = g."companyId"
       WHERE g.id = $1 AND g."companyId" = $2
       GROUP BY g.id, g.capacity
     `, groupId, companyId);
@@ -521,8 +541,8 @@ const removeMember = async (req, res) => {
         UPDATE "education_group_members" SET
           "status" = 'ACTIVE',
           "updatedAt" = NOW()
-        WHERE "id" = $1
-      `, waitingStudent[0].id);
+        WHERE "id" = $1 AND "companyId" = $2
+      `, waitingStudent[0].id, companyId);
     } else {
       await prisma.$executeRawUnsafe(`
         UPDATE "education_groups" SET "status" = 'OPEN' WHERE "id" = $1 AND "companyId" = $2 AND "status" = 'FULL'
@@ -581,20 +601,24 @@ const transferMember = async (req, res) => {
         UPDATE "education_group_members" SET
           "status" = 'ACTIVE',
           "updatedAt" = NOW()
-        WHERE "id" = $1
-      `, waitingStudent[0].id);
+        WHERE "id" = $1 AND "companyId" = $2
+      `, waitingStudent[0].id, companyId);
     }
 
-    // Check target group capacity
+    // Check target group exists in same tenant and check capacity
     const targetGroupRows = await prisma.$queryRawUnsafe(`
       SELECT g.id, g.capacity, COALESCE(COUNT(m.id) FILTER (WHERE m.status = 'ACTIVE'), 0) AS active_count
       FROM "education_groups" g
-      LEFT JOIN "education_group_members" m ON m."groupId" = g.id
+      LEFT JOIN "education_group_members" m ON m."groupId" = g.id AND m."companyId" = g."companyId"
       WHERE g.id = $1 AND g."companyId" = $2
       GROUP BY g.id, g.capacity
     `, targetGroupId, companyId);
 
-    const isTargetFull = targetGroupRows.length > 0 && Number(targetGroupRows[0].active_count) >= Number(targetGroupRows[0].capacity);
+    if (!targetGroupRows || targetGroupRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'المجموعة المستهدفة غير موجودة' });
+    }
+
+    const isTargetFull = Number(targetGroupRows[0].active_count) >= Number(targetGroupRows[0].capacity);
     const targetStatus = isTargetFull ? 'WAITING_LIST' : 'ACTIVE';
 
     // Add into target group with carried over payment
@@ -648,6 +672,14 @@ const recordSession = async (req, res) => {
     const prisma = getSharedPrismaClient();
     await ensureTablesExist(prisma);
 
+    // Verify group belongs to this tenant before recording session
+    const groupCheck = await prisma.$queryRawUnsafe(`
+      SELECT id FROM "education_groups" WHERE id = $1 AND "companyId" = $2 LIMIT 1
+    `, groupId, companyId);
+    if (!groupCheck || groupCheck.length === 0) {
+      return res.status(404).json({ success: false, error: 'المجموعة غير موجودة' });
+    }
+
     const sessionId = generateSessionId();
     const date = sessionDate ? new Date(sessionDate) : new Date();
 
@@ -679,7 +711,7 @@ const recordSession = async (req, res) => {
           try {
             // Find student & parent info
             const st = await prisma.educationStudent.findFirst({
-              where: { id: item.studentId },
+              where: { id: item.studentId, companyId },
               include: { customer: true }
             });
             const phone = st?.customer?.phone || st?.phone;
