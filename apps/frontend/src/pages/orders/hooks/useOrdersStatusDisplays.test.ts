@@ -128,7 +128,8 @@ describe("useOrdersStatusDisplays", () => {
     expect(result.current.getOrderSourceText({ sourceType: "storefront" } as Order)).toBe("المتجر");
     expect(result.current.getOrderSourceText({ sourceType: "woocommerce" } as Order)).toBe("وو كومرس");
     expect(result.current.getOrderSourceText({ sourceType: "pos" } as Order)).toBe("نقطة بيع");
-    expect(result.current.getOrderSourceText({ sourceType: "affiliate_direct" } as Order)).toBe("مسوق مباشر");
+    expect(result.current.getOrderSourceText({ sourceType: "affiliate_direct" } as Order)).toBe("أوردر من شركة مرتبطة");
+    expect(result.current.getOrderSourceText({ sourceType: "regular" } as Order)).toBe("أوردر عادي");
     expect(result.current.getOrderSourceText({ sourceType: "manual" } as Order)).toBe("يدوي");
     expect(result.current.getOrderSourceText({ sourceType: "import" } as Order)).toBe("استيراد");
     expect(result.current.getOrderSourceText({ extractionMethod: "ai_enhanced" } as Order)).toBe("استخراج محسن");

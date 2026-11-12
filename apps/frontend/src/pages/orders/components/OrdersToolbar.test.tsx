@@ -210,4 +210,44 @@ describe("OrdersToolbar", () => {
     fireEvent.click(clearButtons[0]);
     expect(onClearAdvancedFilters).toHaveBeenCalled();
   });
+
+  it("renders the export Excel button and triggers onExportExcel when clicked", () => {
+    const onExportExcel = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar {...makeProps({ onExportExcel, hasOrders: true })} />
+      </MemoryRouter>,
+    );
+
+    const exportBtn = screen.getByLabelText("orders.exportExcel");
+    expect(exportBtn).toBeEnabled();
+    fireEvent.click(exportBtn);
+    expect(onExportExcel).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the export Excel button when there are no orders or export is in progress", () => {
+    const onExportExcel = jest.fn();
+    const { rerender } = render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({ onExportExcel, hasOrders: false, ordersCount: 0 })}
+        />
+      </MemoryRouter>,
+    );
+
+    const exportBtn = screen.getByLabelText("orders.exportExcel");
+    expect(exportBtn).toBeDisabled();
+    fireEvent.click(exportBtn);
+    expect(onExportExcel).not.toHaveBeenCalled();
+
+    rerender(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({ onExportExcel, hasOrders: true, isExporting: true })}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText("orders.exportExcel")).toBeDisabled();
+  });
 });

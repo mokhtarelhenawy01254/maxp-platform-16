@@ -1,11 +1,10 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react";
 import { FilterChips } from "./FilterChips";
 import { OrdersFilterDrawer } from "./OrdersFilterDrawer";
 import { OrdersSearchBar } from "./toolbar/OrdersSearchBar";
 import { OrdersActionButtons } from "./toolbar/OrdersActionButtons";
-import { OrdersExportButton } from "./toolbar/OrdersExportButton";
 import { OrdersQuickViewsBar } from "./toolbar/OrdersQuickViewsBar";
 import type {
   OrdersFilters,
@@ -53,6 +52,10 @@ export interface OrdersToolbarProps {
   onSetQuickDate: (range: string) => void;
   onRetry: () => void;
   onRefresh?: () => void;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
+  hasOrders?: boolean;
+  ordersCount?: number;
 }
 
 export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
@@ -81,8 +84,19 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   onSetQuickDate,
   onRetry,
   onRefresh,
+  onExportExcel,
+  isExporting = false,
+  hasOrders,
+  ordersCount,
 }) => {
   const { t } = useTranslation();
+
+  const canExportExcel =
+    hasOrders !== undefined
+      ? hasOrders
+      : ordersCount !== undefined
+        ? ordersCount > 0
+        : true;
 
   const quickViews = useMemo(
     () => buildQuickViews(t, onSetQuickDate, onFilterChange),
@@ -147,7 +161,26 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               onRefresh={onRefresh}
             />
 
-            <OrdersExportButton filters={filters} />
+            {onExportExcel && (
+              <button
+                type="button"
+                onClick={onExportExcel}
+                disabled={Boolean(isExporting) || !canExportExcel}
+                aria-label={String(t("orders.exportExcel"))}
+                title={String(t("orders.exportExcel"))}
+                data-testid="orders-export-excel-button"
+                className="inline-flex h-9 sm:h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-background/80 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold text-foreground transition hover:bg-muted active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                )}
+                <span className="hidden sm:inline whitespace-nowrap">
+                  {t("orders.exportExcel")}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Row 2: Status Pill Capsule Rail & Saved Views */}

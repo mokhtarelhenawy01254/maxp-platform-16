@@ -51,7 +51,8 @@ export function useOrdersStatusDisplays({
   );
 
   const getUnifiedStatusDisplay = useCallback(
-    (order: Order, translate: (key: string) => string) => {
+    (order: Order, translate?: (key: string) => string) => {
+      const tr = translate || t;
       const isCarrierReturn = isTurboReturnStatus(order.turboShipmentStatus);
       const display = getOrderStatusDisplay(order);
 
@@ -78,7 +79,7 @@ export function useOrdersStatusDisplays({
         normalizeStatusCode(effectiveStatusKey),
       );
       const registryText = display.primary.labelKey
-        ? translate(display.primary.labelKey) || display.primary.label
+        ? tr(display.primary.labelKey) || display.primary.label
         : display.primary.label;
       const text =
         !display.primary.labelKey && configuredStatus?.name
@@ -92,7 +93,7 @@ export function useOrdersStatusDisplays({
         style: customStyle,
       };
     },
-    [getStatusBadgeStyle, orderStatusMap, normalizeStatusCode],
+    [getStatusBadgeStyle, orderStatusMap, normalizeStatusCode, t],
   );
 
   const getPaymentStatusColor = useCallback((status: string) => {
@@ -235,9 +236,10 @@ export function useOrdersStatusDisplays({
 
       if (
         order.sourceType === "affiliate_direct" ||
-        order.orderSource === "AFFILIATE_DIRECT"
+        order.orderSource === "AFFILIATE_DIRECT" ||
+        (typeof order.orderNumber === "string" && order.orderNumber.includes("-AFF-"))
       ) {
-        return t("orders.sourceAffiliateDirect", "مسوق مباشر");
+        return t("orders.sourceAffiliateDirect", "أوردر من شركة مرتبطة");
       }
 
       if (
@@ -257,6 +259,18 @@ export function useOrdersStatusDisplays({
       if (order.extractionMethod === "ai_basic") return t("orders.basicExtraction", "استخراج بسيط");
       if (order.sourceType === "ai_conversation" || order.conversationId) {
         return t("orders.sourceAutoConversation", "محادثة تلقائية");
+      }
+
+      if (
+        order.isWholesale ||
+        order.orderSource === "WHOLESALE" ||
+        order.sourceType === "wholesale"
+      ) {
+        return "موزع جملة";
+      }
+
+      if (order.sourceType === "regular" || order.orderSource === "REGULAR") {
+        return t("orders.sourceRegular", "أوردر عادي");
       }
 
       if (typeof order.metadata?.source === "string" && order.metadata.source) {

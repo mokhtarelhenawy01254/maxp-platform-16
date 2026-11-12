@@ -36,6 +36,9 @@ export interface UseOrdersSectionsPropsOptions {
   showAffiliateOperationFilter: boolean;
   hasCustomDateFilters: boolean;
   fetchOrders: () => void;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
+  hasOrders?: boolean;
 
   isAdmin: boolean;
   isMerchant: boolean;
@@ -98,6 +101,9 @@ export function useOrdersSectionsProps({
   showAffiliateOperationFilter,
   hasCustomDateFilters,
   fetchOrders,
+  onExportExcel,
+  isExporting,
+  hasOrders,
   isAdmin,
   isMerchant,
   merchantSettlementSummary,
@@ -155,6 +161,9 @@ export function useOrdersSectionsProps({
     clearAdvancedFilters: operations.clearAdvancedFilters,
     setQuickDate: operations.setQuickDate,
     fetchOrders,
+    onExportExcel,
+    isExporting,
+    hasOrders: hasOrders ?? (Array.isArray(operations.displayedOrders) ? operations.displayedOrders.length > 0 : false),
     isAdmin,
     isMerchant,
     merchantSettlementSummary,

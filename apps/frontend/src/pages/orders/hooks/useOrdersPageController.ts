@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../../hooks/useCurrency";
@@ -18,6 +19,8 @@ import { useOrdersSocketListeners } from "./useOrdersSocketListeners";
 import { useOrdersFilterStats } from "./useOrdersFilterStats";
 import { useOrdersViewDecorators } from "./useOrdersViewDecorators";
 import { useOrdersSectionsProps } from "./useOrdersSectionsProps";
+import { exportOrdersToExcel } from "../utils/ordersExport";
+import { getOrderAmount } from "../utils/ordersTableHelpers";
 
 import {
   normalizeStatusCode,
@@ -237,6 +240,52 @@ export const useOrdersPageController = () => {
     setOrders,
   });
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const {
+    getCustomerDisplayName,
+    getUnifiedStatusDisplay,
+    getPaymentStatusText,
+    getAffiliateDisplayName,
+    getOrderSourceText,
+  } = decorators;
+
+  const handleExportExcel = useCallback(() => {
+    if (isExporting || operations.displayedOrders.length === 0) return;
+    setIsExporting(true);
+    try {
+      exportOrdersToExcel(operations.displayedOrders, {
+        formatDate,
+        getCustomerDisplayName,
+        getOrderStatusText: (order) =>
+          getUnifiedStatusDisplay(order, t).text || order.status || "",
+        getPaymentStatusText: (order) =>
+          getPaymentStatusText(
+            (order.paymentStatus || "pending").toLowerCase(),
+          ) ||
+          order.paymentStatus ||
+          "",
+        getAffiliateDisplayName,
+        getOrderSourceText,
+        getOrderAmount,
+      });
+    } catch (error) {
+      console.error("Failed to export orders to Excel:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [
+    isExporting,
+    operations.displayedOrders,
+    formatDate,
+    getCustomerDisplayName,
+    getUnifiedStatusDisplay,
+    getPaymentStatusText,
+    getAffiliateDisplayName,
+    getOrderSourceText,
+    t,
+  ]);
+
   const { toolbarSectionProps, tableSectionProps, modalsContainerProps } =
     useOrdersSectionsProps({
       filters,
@@ -257,6 +306,9 @@ export const useOrdersPageController = () => {
       showAffiliateOperationFilter,
       hasCustomDateFilters,
       fetchOrders,
+      onExportExcel: handleExportExcel,
+      isExporting,
+      hasOrders: operations.displayedOrders.length > 0,
       isAdmin,
       isMerchant,
       merchantSettlementSummary,

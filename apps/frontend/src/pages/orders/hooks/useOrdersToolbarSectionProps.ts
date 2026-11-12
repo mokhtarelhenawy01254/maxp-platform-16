@@ -36,6 +36,9 @@ export interface UseOrdersToolbarSectionPropsParams {
   clearAdvancedFilters: () => void;
   setQuickDate: (days: number) => void;
   fetchOrders: () => void;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
+  hasOrders?: boolean;
 
   isAdmin: boolean;
   isMerchant: boolean;
@@ -80,6 +83,9 @@ export function useOrdersToolbarSectionProps(
       onSetQuickDate: params.setQuickDate,
       onRetry: params.fetchOrders,
       onRefresh: params.fetchOrders,
+      onExportExcel: params.onExportExcel,
+      isExporting: params.isExporting,
+      hasOrders: params.hasOrders,
       isAdmin: params.isAdmin,
       isMerchant: params.isMerchant,
       merchantSettlementSummary: params.merchantSettlementSummary,
@@ -121,6 +127,9 @@ export function useOrdersToolbarSectionProps(
       params.clearAdvancedFilters,
       params.setQuickDate,
       params.fetchOrders,
+      params.onExportExcel,
+      params.isExporting,
+      params.hasOrders,
       params.isAdmin,
       params.isMerchant,
       params.merchantSettlementSummary,

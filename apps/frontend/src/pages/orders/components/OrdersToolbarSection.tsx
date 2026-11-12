@@ -39,6 +39,9 @@ export interface OrdersToolbarSectionProps {
   onSetQuickDate: (days: number) => void;
   onRetry: () => void;
   onRefresh: () => void;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
+  hasOrders?: boolean;
 
   isAdmin: boolean;
   isMerchant: boolean;
@@ -80,6 +83,9 @@ export const OrdersToolbarSection: React.FC<OrdersToolbarSectionProps> = ({
   onSetQuickDate,
   onRetry,
   onRefresh,
+  onExportExcel,
+  isExporting,
+  hasOrders,
 
   isAdmin,
   isMerchant,
@@ -121,6 +127,9 @@ export const OrdersToolbarSection: React.FC<OrdersToolbarSectionProps> = ({
         onSetQuickDate={onSetQuickDate}
         onRetry={onRetry}
         onRefresh={onRefresh}
+        onExportExcel={onExportExcel}
+        isExporting={isExporting}
+        hasOrders={hasOrders}
       />
 
       <OrdersStatsBar
