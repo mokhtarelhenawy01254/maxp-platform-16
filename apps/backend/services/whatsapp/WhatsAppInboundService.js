@@ -15,6 +15,7 @@ const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppReactionService = require('./WhatsAppReactionService');
 const aiSdkClient = require('../aiSdkClient');
 const { getEffectiveAiAutoReplySetting } = require('../aiSettingsResolver');
+const { logDuplicateSkipped } = require('../inboundDeduplicationGuard');
 
 const getIO = () => socketService.getIO();
 
@@ -164,8 +165,9 @@ async function saveIncomingMessage(payload) {
 
   let syncedCustomer = null;
   let syncedConversation = null;
+  let syncResult = null;
   try {
-    const syncResult = await WhatsAppSyncService.syncMessage(
+    syncResult = await WhatsAppSyncService.syncMessage(
       companyId,
       sessionId,
       normalizedJid,
@@ -186,6 +188,18 @@ async function saveIncomingMessage(payload) {
     syncedConversation = syncResult?.conversation;
   } catch (error) {
     console.error('❌ Failed to sync inbound message to CRM:', error.message);
+  }
+
+  if (syncResult?.wasCreated === false) {
+    if (!syncResult.duplicateLogged) {
+      logDuplicateSkipped({
+        channel: 'whatsapp',
+        externalMessageId: messageId,
+        companyId,
+        conversationId: syncedConversation?.id || null
+      });
+    }
+    return { duplicate: true };
   }
 
   const contact = await upsertContact(sessionId, normalizedJid, {

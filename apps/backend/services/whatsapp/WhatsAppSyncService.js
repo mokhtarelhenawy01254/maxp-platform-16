@@ -11,6 +11,12 @@ const {
   resolveConversationAssignee
 } = require('../whatsappConversationRoutingService');
 const whatsappAssignmentEngineService = require('../whatsappAssignmentEngineService');
+const {
+  claimInboundMessage,
+  commitInboundClaim,
+  releaseInboundClaim,
+  logDuplicateSkipped
+} = require('../inboundDeduplicationGuard');
 
 const escapeMetadataValue = (value) =>
   String(value || '')
@@ -288,49 +294,73 @@ const WhatsAppSyncService = {
         remoteJid
       });
 
-      // Idempotent CRM message write: يحفظ الـ WhatsApp messageId في الـ metadata
-      // عشان retry/إعادة إرسال (reconnect replay) متعملش duplicate.
+      // Idempotent CRM message write: يحفظ الـ WhatsApp messageId في الـ metadata + عمود externalMessageId
+      // ويستخدم claim ذري عشان retry/إعادة إرسال (reconnect replay) متعملش duplicate.
       const waMessageId = messageData.messageId || null;
       const baseMetadata = (typeof messageData.metadata === 'string' ? JSON.parse(messageData.metadata) : (messageData.metadata || {})) || {};
-      const crmMetadata = { ...baseMetadata, whatsAppMessageId: waMessageId };
+      const crmMetadata = { ...baseMetadata, whatsAppMessageId: waMessageId, channel: 'whatsapp', externalMessageId: waMessageId };
+
+      let claim = null;
+      if (waMessageId) {
+        const claimResult = await claimInboundMessage({
+          companyId,
+          channel: 'whatsapp',
+          externalMessageId: waMessageId,
+          conversationId: conversation.id,
+          prisma
+        });
+        if (claimResult.duplicate) {
+          logDuplicateSkipped({
+            channel: 'whatsapp',
+            externalMessageId: waMessageId,
+            companyId,
+            conversationId: conversation.id
+          });
+          return { customer, conversation, message: null, wasCreated: false, duplicateLogged: true };
+        }
+        claim = claimResult.claim;
+      }
 
       let wasCreated = false;
-      const message = await executeWithRetry(async () => {
-        if (waMessageId) {
-          const existing = await prisma.message.findFirst({
-            where: {
+      let message = null;
+      try {
+        message = await executeWithRetry(async () => {
+          wasCreated = true;
+          return prisma.message.create({
+            data: {
               conversationId: conversation.id,
-              metadata: { contains: `"whatsAppMessageId":"${waMessageId}"` }
-            },
-            select: { id: true }
+              channel: 'whatsapp',
+              externalMessageId: waMessageId,
+              type: this.mapMessageType(messageData.type),
+              content: messageData.content || '',
+              attachments: messageData.mediaUrl ? JSON.stringify({
+                url: messageData.mediaUrl,
+                type: messageData.mediaType,
+                mime: messageData.mediaMimeType,
+                name: messageData.mediaFileName
+              }) : null,
+              metadata: JSON.stringify(crmMetadata),
+              isFromCustomer: isIncoming,
+              senderId: isIncoming ? null : (messageData.senderId || null),
+              createdAt: messageData.timestamp || new Date(),
+              isRead: !isIncoming
+            }
           });
-          if (existing) return existing;
-        }
-        wasCreated = true;
-        return prisma.message.create({
-          data: {
-            conversationId: conversation.id,
-            type: this.mapMessageType(messageData.type),
-            content: messageData.content || '',
-            attachments: messageData.mediaUrl ? JSON.stringify({
-              url: messageData.mediaUrl,
-              type: messageData.mediaType,
-              mime: messageData.mediaMimeType,
-              name: messageData.mediaFileName
-            }) : null,
-            metadata: JSON.stringify(crmMetadata),
-            isFromCustomer: isIncoming,
-            senderId: isIncoming ? null : (messageData.senderId || null),
-            createdAt: messageData.timestamp || new Date(),
-            isRead: !isIncoming
-          }
         });
-      });
+        if (claim?.id && message?.id) {
+          await commitInboundClaim(claim.id, message.id, prisma);
+        }
+      } catch (createErr) {
+        if (claim?.id) {
+          await releaseInboundClaim(claim.id, prisma);
+        }
+        throw createErr;
+      }
 
       // إعادة إرسال (isNewMessage=false بس الـ CRM ملقاش الصف) → نكتب بس من غير
       // نزوّد الـ unread ولا نعطي assignment ولا notify (دول مش idempotent).
       if (!wasCreated) {
-        return { customer, conversation, message };
+        return { customer, conversation, message, wasCreated: false };
       }
 
       let activeConversation = conversation;
@@ -401,7 +431,7 @@ const WhatsAppSyncService = {
         );
       }
 
-      return { customer, conversation: updatedConversation, message };
+      return { customer, conversation: updatedConversation, message, wasCreated: true };
     } catch (error) {
       console.error('❌ Error syncing to central DB:', error);
       return null;

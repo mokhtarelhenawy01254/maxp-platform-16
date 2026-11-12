@@ -11,6 +11,12 @@ const {
 } = require('./facebookPageTokenUtils');
 const { proxySocketMessageData } = require('./facebookMediaProxy');
 const { resolveSystemUserPageToken } = require('../services/facebookSystemUserTokenService');
+const {
+  claimInboundMessage,
+  commitInboundClaim,
+  releaseInboundClaim,
+  logDuplicateSkipped
+} = require('../services/inboundDeduplicationGuard');
 
 // ✅ FIX: Don't create prisma instance at module load time
 // Always use getPrisma() inside async functions with async/await
@@ -1898,21 +1904,26 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         }
       }
 
-      // ⚡ CRITICAL DEDUPLICATION: Check if message already exists in DB
-      // This handles duplicates that might have bypassed the in-memory check
-      const existingMessage = await safeQuery(async () => {
-        const prisma = getSharedPrismaClient();
-        return await prisma.message.findFirst({
-          where: {
-            conversationId: conversation.id,
-            metadata: { contains: fbMessageId }
-          }
+      // ⚡ CRITICAL DEDUPLICATION: Atomic DB claim on (companyId, channel, externalMessageId)
+      let inboundClaim = null;
+      if (fbMessageId) {
+        const claimResult = await claimInboundMessage({
+          companyId: customer.companyId,
+          channel: 'facebook',
+          externalMessageId: fbMessageId,
+          conversationId: conversation.id
         });
-      }, 3);
 
-      if (existingMessage) {
-        console.log(`♻️ [DEDUPLICATION] Message ${fbMessageId} already exists (ID: ${existingMessage.id}). Skipping save.`);
-        return;
+        if (claimResult.duplicate) {
+          logDuplicateSkipped({
+            channel: 'facebook',
+            externalMessageId: fbMessageId,
+            companyId: customer.companyId,
+            conversationId: conversation.id
+          });
+          return;
+        }
+        inboundClaim = claimResult.claim;
       }
 
       // Save message to database
@@ -1921,11 +1932,15 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         content: content,
         type: messageType,
         conversationId: conversation.id,
+        channel: 'facebook',
+        externalMessageId: fbMessageId || null,
         isFromCustomer: true,
         isRead: false, // ⚡ رسالة جديدة من العميل = غير مقروءة
         attachments: attachmentsData ? JSON.stringify(attachmentsData) : null,
         metadata: JSON.stringify({
           platform: 'facebook',
+          channel: 'facebook',
+          externalMessageId: fbMessageId || null,
           source: 'messenger',
           senderId: senderId,
           hasAttachments: !!attachments,
@@ -1941,12 +1956,23 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       };
 
       const saveStartTime = Date.now();
-      const newMessage = await safeQuery(async () => {
-        const prisma = getSharedPrismaClient();
-        return await prisma.message.create({
-          data: messageData
-        });
-      }, 5); // High priority
+      let newMessage;
+      try {
+        newMessage = await safeQuery(async () => {
+          const prisma = getSharedPrismaClient();
+          return await prisma.message.create({
+            data: messageData
+          });
+        }, 5); // High priority
+        if (inboundClaim?.id && newMessage?.id) {
+          await commitInboundClaim(inboundClaim.id, newMessage.id);
+        }
+      } catch (saveErr) {
+        if (inboundClaim?.id) {
+          await releaseInboundClaim(inboundClaim.id);
+        }
+        throw saveErr;
+      }
       const afterSaveTime = Date.now();
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${afterSaveTime - saveStartTime}ms] 💾 [HANDLE] Message saved to DB: ${newMessage.id} from ${customer.firstName} ${customer.lastName}`);
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${afterSaveTime - handleStartTime}ms] ⏱️ [HANDLE] Total time to save message`);

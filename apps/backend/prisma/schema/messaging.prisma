@@ -103,6 +103,8 @@ model Message {
   isFromCustomer Boolean      @default(true)
   isRead         Boolean      @default(false)
   readAt         DateTime?
+  channel        String?
+  externalMessageId String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -111,10 +113,29 @@ model Message {
   @@index([conversationId, isFromCustomer, createdAt])
   @@index([conversationId])
   @@index([conversationId, createdAt])
+  @@index([conversationId, externalMessageId])
   @@index([createdAt])
   @@index([isFromCustomer])
   @@index([senderId])
   @@map("messages")
+}
+
+/// سجل منع تكرار الرسائل الواردة الذري عبر القنوات والشركات
+model MessageInboundDedupe {
+  id                String   @id @default(cuid())
+  companyId         String
+  channel           String
+  externalMessageId String
+  conversationId    String?
+  messageId         String?
+  duplicateCount    Int      @default(0)
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+
+  @@unique([companyId, channel, externalMessageId])
+  @@index([conversationId])
+  @@index([firstSeenAt])
+  @@map("message_inbound_dedupe")
 }
 
 model SentMessageStat {
