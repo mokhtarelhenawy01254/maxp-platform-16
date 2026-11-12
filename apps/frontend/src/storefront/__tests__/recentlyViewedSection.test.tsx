@@ -32,7 +32,7 @@ describe('RecentlyViewed Section', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders recently viewed products in a responsive grid using marketplace tile cards', () => {
+  it('renders recently viewed products in a compact horizontal grid with clean 2-line clamping', () => {
     const mockItems = [
       {
         id: 'prod-1',
@@ -69,8 +69,10 @@ describe('RecentlyViewed Section', () => {
     // Title should be visible
     expect(screen.getByText('شوهدت مؤخرًا')).toBeDefined();
 
-    // Products should be rendered
-    expect(screen.getByText('مجفف طعام كهربائي احترافي')).toBeDefined();
+    // Products should be rendered with working line-clamp-2 (no conflicting `block`)
+    const firstTitle = screen.getByText('مجفف طعام كهربائي احترافي');
+    expect(firstTitle.className).toContain('line-clamp-2');
+    expect(firstTitle.className.split(/\s+/)).not.toContain('block');
     expect(screen.getByText('حلة ضغط 7 لتر سيتي')).toBeDefined();
 
     // Formatted prices should be visible

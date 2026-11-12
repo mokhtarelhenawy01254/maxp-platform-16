@@ -57,7 +57,7 @@
 }
 
 /* 6. Product cards: edge-to-edge image, no card chrome */
-.storefront-page-composer [class*="group"] [class*="rounded-"][class*="overflow-hidden"] {
+.storefront-page-composer [class*="group"] [class*="rounded-"]:not([class*="rounded-full"])[class*="overflow-hidden"] {
   border-radius: 0 !important;
   box-shadow: none !important;
   border: none !important;
