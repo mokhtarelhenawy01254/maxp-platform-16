@@ -1790,6 +1790,24 @@ try {
   console.error("❌ [QP-EXPRESS-CRON] Failed to start QP Express sync scheduler:", error);
 }
 
+// 🆕 Lead CRM follow-up reminder scheduler — every 30 minutes
+try {
+  const { startLeadFollowUpReminderScheduler } = require("./cron/leadFollowUpReminderCron");
+  startLeadFollowUpReminderScheduler();
+  console.log("✅ [LEAD-REMINDER-CRON] Lead follow-up reminder scheduler started (runs every 30 min)");
+} catch (error) {
+  console.error("❌ [LEAD-REMINDER-CRON] Failed to start lead follow-up reminder scheduler:", error);
+}
+
+// 🆕 Abandoned guest-cart recovery via WhatsApp — hourly
+try {
+  const { startAbandonedCartRecoveryScheduler } = require("./cron/abandonedCartRecoveryCron");
+  startAbandonedCartRecoveryScheduler();
+  console.log("✅ [CART-RECOVERY-CRON] Abandoned cart recovery scheduler started (runs hourly)");
+} catch (error) {
+  console.error("❌ [CART-RECOVERY-CRON] Failed to start abandoned cart recovery scheduler:", error);
+}
+
 // Start WhatsApp Journey scheduler — follow-up messages
 try {
   const { startWhatsAppJourneyScheduler } = require("./cron/whatsappJourneyCron");

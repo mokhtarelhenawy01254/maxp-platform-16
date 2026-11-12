@@ -18,6 +18,14 @@ model Customer {
   telegramId                     String?
   tiktokId                       String?
   status                         CustomersStatus                 @default(LEAD)
+  leadStage                      LeadStage                       @default(NEW_LEAD)
+  leadPriority                   LeadPriority                    @default(WARM)
+  leadSource                     LeadSource                      @default(OTHER)
+  assignedToId                   String?
+  assignedTo                     User?                           @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  nextFollowUpDate               DateTime?
+  followUpReminderSentAt         DateTime?
+  firstContactAt                 DateTime?
   tags                           String?
   notes                          String?
   metadata                       String?
@@ -71,6 +79,9 @@ model Customer {
   @@unique([companyId, phoneNormalized])
   @@index([companyId])
   @@index([companyId, status])
+  @@index([companyId, leadStage])
+  @@index([companyId, assignedToId])
+  @@index([companyId, nextFollowUpDate])
   @@index([facebookId])
   @@index([instagramId])
   @@index([tiktokId])

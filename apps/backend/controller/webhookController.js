@@ -12,6 +12,8 @@ const {
 const { getFacebookAppSecret, getFacebookWebhookVerifyTokens } = require('../config/facebookAppConfig');
 const whatsappMetaWebhookController = require('./whatsappMetaWebhookController');
 const { logDuplicateSkipped } = require('../services/inboundDeduplicationGuard');
+const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 // ⚠️ CRITICAL: Always use safeQuery() instead of direct prisma calls
 // This ensures proper connection management and retry logic
@@ -160,6 +162,162 @@ async function getCachedFacebookPage(pageId) {
   });
 
   return pageData;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🆕 Wave 1 — Facebook Lead Ads (leadgen webhook) → CRM lead capture
+// Previously: pages subscribed to the leadgen field but no handler branch existed,
+// so every paid-ads lead was silently dropped. Now: dedupe → Graph API fetch →
+// Customer(status=LEAD, leadSource=FACEBOOK) → admin notifications + socket event.
+// ═══════════════════════════════════════════════════════════════════════════════
+const LEADGEN_FIELD_ALIASES = {
+  full_name: 'fullName',
+  name: 'fullName',
+  first_name: 'firstName',
+  last_name: 'lastName',
+  email: 'email',
+  email_address: 'email',
+  phone_number: 'phone',
+  phone: 'phone',
+  mobile_number: 'phone',
+  city: 'city',
+  governorate: 'city'
+};
+
+function mapLeadgenFieldData(fieldData) {
+  const mapped = { raw: [] };
+  for (const item of Array.isArray(fieldData) ? fieldData : []) {
+    const rawName = String(item?.name || '').trim();
+    const value = Array.isArray(item?.values)
+      ? item.values.filter((v) => v !== undefined && v !== null).join(' ').trim()
+      : '';
+    if (!rawName) continue;
+    mapped.raw.push({ name: rawName, value });
+    const key = rawName.toLowerCase().replace(/\s+/g, '_');
+    const alias = LEADGEN_FIELD_ALIASES[key];
+    if (alias && value && !mapped[alias]) mapped[alias] = value;
+  }
+  if (!mapped.firstName && mapped.fullName) {
+    mapped.firstName = mapped.fullName.split(/\s+/)[0];
+    mapped.lastName = mapped.lastName || mapped.fullName.split(/\s+/).slice(1).join(' ');
+  }
+  return mapped;
+}
+
+async function processLeadgenChange(value, pageId) {
+  const leadgenId = value.leadgen_id || value.leadgenId;
+  const formId = value.form_id || value.formId;
+  const adId = value.ad_id || value.adId;
+  if (!leadgenId) return;
+
+  const prisma = getPrisma();
+  const facebookPage = await getCachedFacebookPage(pageId);
+  if (!facebookPage || !facebookPage.companyId) {
+    console.log(`⚠️ [LEADGEN] No connected company page for ${pageId} — lead ${leadgenId} skipped`);
+    return;
+  }
+  const companyId = facebookPage.companyId;
+
+  // Dedupe: Meta may retry the same leadgen webhook delivery
+  const existing = await safeQuery(async () => prisma.customer.findFirst({
+    where: { companyId, metadata: { contains: leadgenId } },
+    select: { id: true }
+  }), 2);
+  if (existing) return;
+
+  // Fetch full lead answers from Graph API using the page token
+  let answers = { raw: [] };
+  const pageToken = facebookPage.pageAccessToken;
+  if (pageToken) {
+    try {
+      const version = getMetaGraphApiVersion();
+      const response = await axios.get(`https://graph.facebook.com/${version}/${leadgenId}`, {
+        params: { access_token: pageToken, fields: 'id,created_time,field_data' },
+        timeout: 8000
+      });
+      answers = mapLeadgenFieldData(response.data?.field_data);
+    } catch (fetchError) {
+      console.error(`❌ [LEADGEN] Failed to fetch lead ${leadgenId} from Graph API:`, fetchError.message);
+    }
+  }
+
+  const firstName = String(answers.firstName || answers.fullName || 'ليد إعلان').trim().slice(0, 80);
+  const lastName = String(answers.lastName || '').trim().slice(0, 80);
+  const phone = (answers.phone || '').trim() || null;
+  const email = (answers.email || '').trim() || null;
+  const phoneNormalized = phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null;
+
+  const metadata = {
+    source: 'facebook_lead_ads',
+    leadgenId,
+    formId: formId || null,
+    adId: adId || null,
+    city: answers.city || null,
+    formAnswers: answers.raw
+  };
+
+  let customer = null;
+  try {
+    customer = await safeQuery(async () => prisma.customer.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        phoneNormalized,
+        status: 'LEAD',
+        leadSource: 'FACEBOOK',
+        leadStage: 'NEW_LEAD',
+        companyId,
+        tags: JSON.stringify(['lead_ad', ...(formId ? [`form_${formId}`] : [])]),
+        metadata: JSON.stringify(metadata)
+      }
+    }), 2);
+  } catch (createError) {
+    if (createError?.code === 'P2002' && phoneNormalized) {
+      customer = await prisma.customer.findFirst({ where: { companyId, phoneNormalized } });
+    } else {
+      throw createError;
+    }
+  }
+  if (!customer && phoneNormalized) {
+    customer = await prisma.customer.findFirst({ where: { companyId, phoneNormalized } }).catch(() => null);
+  }
+  if (!customer) return;
+
+  // 🔔 Notify admins + live socket event (same pattern as conversation:assignment)
+  try {
+    const admins = await prisma.userCompany.findMany({
+      where: {
+        companyId,
+        role: { in: ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'] },
+        isActive: true
+      },
+      select: { userId: true }
+    });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          companyId,
+          userId: admin.userId,
+          title: 'ليد جديد من إعلان فيسبوك',
+          message: `${firstName}${lastName ? ` ${lastName}` : ''}${phone ? ` — ${phone}` : ''} مسجّل من نموذج إعلان`,
+          type: 'SYSTEM',
+          data: { customerId: customer.id, leadgenId, source: 'facebook_lead_ads' }
+        }))
+      });
+    }
+    socketService.emitToCompany(companyId, 'lead:new', {
+      customerId: customer.id,
+      name: `${firstName} ${lastName}`.trim(),
+      phone,
+      source: 'FACEBOOK_LEAD_ADS'
+    });
+  } catch (notifyError) {
+    console.error('❌ [LEADGEN] Notify admins failed:', notifyError.message);
+  }
+
+  console.log(`✅ [LEADGEN] Captured lead ${customer.id} (${firstName}) from page ${pageId}`);
 }
 
 // دالة للتحقق من صحة محتوى الرسالة
@@ -476,6 +634,13 @@ const postWebhook = async (req, res) => {
                       await handleComment(change.value, entry.id);
                     }
                     // We can add more feed event types here in the future
+                  }
+                  // 🆕 Wave 1: Facebook Lead Ads (leadgen) → CRM lead — previously silently dropped.
+                  // Fire-and-forget so the webhook answers 200 fast (Meta 5s timeout), same as messaging.
+                  if (change.field === 'leadgen' && change.value) {
+                    processLeadgenChange(change.value, entry.id).catch((leadgenError) => {
+                      console.error('❌ [LEADGEN] Handler error:', leadgenError.message);
+                    });
                   }
                 } catch (changeError) {
                   // Continue to next change instead of crashing
@@ -1586,4 +1751,5 @@ module.exports = {
   handleReadReceipt,
   handlePageReply,
   invalidateFacebookPageCache,
+  mapLeadgenFieldData,
 };

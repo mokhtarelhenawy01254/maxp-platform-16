@@ -1392,7 +1392,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 facebookId: senderId,
                 firstName: firstName,
                 lastName: lastName,
-                email: `facebook_${senderId}@example.com`,
+                email: null,
                 phone: '',
                 companyId: targetCompanyId,
                 metadata: JSON.stringify({
@@ -3153,7 +3153,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
               instagramId: senderId,
               firstName: 'عميل',
               lastName: 'إنستجرام',
-              email: `instagram_${senderId}@example.com`,
+              email: null,
               phone: '',
               companyId,
               metadata: JSON.stringify({ source: 'instagram_dm', senderId })
@@ -3693,7 +3693,7 @@ async function handleTikTokMessage(inbound, companyId) {
               tiktokId: senderId,
               firstName: 'عميل',
               lastName: 'تيك توك',
-              email: `tiktok_${senderId}@example.com`,
+              email: null,
               phone: '',
               companyId,
               metadata: JSON.stringify({ source: 'tiktok_dm', senderId })

@@ -6,6 +6,23 @@ const WalletService = require('../services/walletService');
 const customerBlocklistService = require('../services/customerBlocklistService');
 const autoDiscountService = require('../services/autoDiscountService');
 
+// ── Lead CRM fields (wave 0): real columns with legacy metadata fallback ──
+const LEAD_STAGE_VALUES = ['NEW_LEAD', 'CONTACTED', 'INTERESTED', 'FOLLOW_UP_SCHEDULED', 'PROPOSAL_SENT', 'NEGOTIATION', 'CONVERTED', 'NOT_INTERESTED', 'LOST'];
+const LEAD_PRIORITY_VALUES = ['HOT', 'WARM', 'COLD'];
+const LEAD_SOURCE_VALUES = ['WHATSAPP', 'FACEBOOK', 'INSTAGRAM', 'TIKTOK', 'CALL', 'WEBSITE', 'REFERRAL', 'WALK_IN', 'OTHER'];
+
+const normalizeLeadEnum = (value, allowed) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const normalized = String(value).trim().toUpperCase();
+  return allowed.includes(normalized) ? normalized : undefined;
+};
+
+const parseLeadDate = (value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
 const getAllCustomer = async (req, res) => {
   try {
     // التحقق من المصادقة والشركة
@@ -1542,15 +1559,16 @@ const getCustomerDetails = async (req, res) => {
       birthday: parsedCustomerMeta.birthday || '',
       phone2: customer.phone2 || parsedCustomerMeta.phone2 || '',
       whatsappPhone: parsedCustomerMeta.whatsappPhone || customer.whatsappId || '',
-      leadStage: parsedCustomerMeta.leadStage || 'NEW_LEAD',
-      leadPriority: parsedCustomerMeta.leadPriority || 'WARM',
-      leadSource: parsedCustomerMeta.leadSource || 'OTHER',
+      leadStage: customer.leadStage || parsedCustomerMeta.leadStage || 'NEW_LEAD',
+      leadPriority: customer.leadPriority || parsedCustomerMeta.leadPriority || 'WARM',
+      leadSource: customer.leadSource || parsedCustomerMeta.leadSource || 'OTHER',
+      assignedToId: customer.assignedToId || parsedCustomerMeta.assignedToId || null,
       customerJob: parsedCustomerMeta.customerJob || '',
       customerInterests: parsedCustomerMeta.customerInterests || '',
       inquiryDetails: parsedCustomerMeta.inquiryDetails || '',
       expectedBudget: parsedCustomerMeta.expectedBudget || '',
       preferredContactMethod: parsedCustomerMeta.preferredContactMethod || 'WHATSAPP',
-      nextFollowUpDate: parsedCustomerMeta.nextFollowUpDate || '',
+      nextFollowUpDate: parsedCustomerMeta.nextFollowUpDate || customer.nextFollowUpDate || '',
       followUpLog: Array.isArray(parsedCustomerMeta.followUpLog) ? parsedCustomerMeta.followUpLog : []
     };
 
@@ -2647,6 +2665,26 @@ const updateCustomer = async (req, res) => {
       }
     }
 
+    // Wave 0: mirror CRM lead fields into real columns (metadata stays as legacy cache)
+    const leadColumns = {};
+    const leadStageColumn = normalizeLeadEnum(leadStage, LEAD_STAGE_VALUES);
+    if (leadStageColumn) leadColumns.leadStage = leadStageColumn;
+    const leadPriorityColumn = normalizeLeadEnum(leadPriority, LEAD_PRIORITY_VALUES);
+    if (leadPriorityColumn) leadColumns.leadPriority = leadPriorityColumn;
+    const leadSourceColumn = normalizeLeadEnum(leadSource, LEAD_SOURCE_VALUES);
+    if (leadSourceColumn) leadColumns.leadSource = leadSourceColumn;
+    if (nextFollowUpDate !== undefined) {
+      leadColumns.nextFollowUpDate = parseLeadDate(nextFollowUpDate) || null;
+      leadColumns.followUpReminderSentAt = null;
+    }
+    if (newFollowUpEntry && newFollowUpEntry.nextFollowUpDate) {
+      const entryNextDateColumn = parseLeadDate(newFollowUpEntry.nextFollowUpDate);
+      if (entryNextDateColumn) {
+        leadColumns.nextFollowUpDate = entryNextDateColumn;
+        leadColumns.followUpReminderSentAt = null;
+      }
+    }
+
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
@@ -2657,6 +2695,7 @@ const updateCustomer = async (req, res) => {
         ...phone2Fields,
         ...ratingFields,
         ...(hashedPassword !== undefined ? { password: hashedPassword } : {}),
+        ...leadColumns,
         status: status !== undefined ? status : customer.status,
         notes: notes !== undefined ? (notes || null) : customer.notes,
         metadata: newMetadata,
@@ -2804,6 +2843,12 @@ const createCustomer = async (req, res) => {
       }
     }
 
+    // Wave 0: mirror CRM lead fields into real columns (metadata cache kept below)
+    const leadStageColumn = normalizeLeadEnum(leadStage, LEAD_STAGE_VALUES);
+    const leadPriorityColumn = normalizeLeadEnum(leadPriority, LEAD_PRIORITY_VALUES);
+    const leadSourceColumn = normalizeLeadEnum(leadSource, LEAD_SOURCE_VALUES);
+    const nextFollowUpColumn = parseLeadDate(nextFollowUpDate);
+
     const newCustomer = await getSharedPrismaClient().customer.create({
       data: {
         firstName: firstName.trim(),
@@ -2814,6 +2859,10 @@ const createCustomer = async (req, res) => {
         phoneNormalized: phone ? require('../utils/phoneNormalization').toCanonicalE164(phone) : null,
         password: hashedPassword,
         status: status || 'LEAD',
+        ...(leadStageColumn ? { leadStage: leadStageColumn } : {}),
+        ...(leadPriorityColumn ? { leadPriority: leadPriorityColumn } : {}),
+        ...(leadSourceColumn ? { leadSource: leadSourceColumn } : {}),
+        ...(nextFollowUpColumn ? { nextFollowUpDate: nextFollowUpColumn } : {}),
         notes: notes || null,
         tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]',
         metadata: JSON.stringify(parsedMetadata),

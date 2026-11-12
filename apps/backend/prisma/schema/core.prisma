@@ -517,6 +517,7 @@ model User {
   employeeDevices                                   EmployeeDevice[]
   overtimeSessions                                  OvertimeSession[]
   shiftHandovers                                    ShiftHandover[]
+  assignedLeads                                     Customer[]               @relation("LeadAssignee")
 
   @@index([companyId])
   @@index([departmentId])

@@ -1634,6 +1634,42 @@ enum CustomersCustomerRating {
   @@map("customers_customerRating")
 }
 
+enum LeadStage {
+  NEW_LEAD
+  CONTACTED
+  INTERESTED
+  FOLLOW_UP_SCHEDULED
+  PROPOSAL_SENT
+  NEGOTIATION
+  CONVERTED
+  NOT_INTERESTED
+  LOST
+
+  @@map("lead_stage")
+}
+
+enum LeadPriority {
+  HOT
+  WARM
+  COLD
+
+  @@map("lead_priority")
+}
+
+enum LeadSource {
+  WHATSAPP
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  CALL
+  WEBSITE
+  REFERRAL
+  WALK_IN
+  OTHER
+
+  @@map("lead_source")
+}
+
 enum DevTasksPriority {
   LOW
   MEDIUM
