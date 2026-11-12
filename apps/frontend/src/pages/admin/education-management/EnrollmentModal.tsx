@@ -18,6 +18,7 @@ export interface EnrollmentModalProps {
   packages: EducationPackage[];
   teachers: EducationTeacher[];
   subjects: EducationSubject[];
+  enableSubjects?: boolean;
   onClose: () => void;
   onSave: (d: Partial<EducationEnrollment>) => Promise<void>;
   onAddNewStudent?: (d: Partial<EducationStudent>) => Promise<EducationStudent | null>;
@@ -28,6 +29,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   students,
   packages,
   teachers,
+  enableSubjects = false,
   onClose,
   onSave,
   onAddNewStudent,
@@ -338,7 +340,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 .filter((p) => p.isActive)
                 .map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} - {p.subject?.name} ({p.hoursCount}{isEn ? "h" : "س"} - {p.price} {isEn ? "EGP" : "ج.م"})
+                    {p.name}{enableSubjects && p.subject?.name ? ` - ${p.subject.name}` : ""} ({p.hoursCount}{isEn ? "h" : "س"} - {p.price} {isEn ? "EGP" : "ج.م"})
                   </option>
                 ))}
             </select>
@@ -372,7 +374,9 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
             </select>
             {filteredTeachers.length === 0 && form.packageId && (
               <p className="text-[11px] text-amber-500 mt-1">
-                {t("education.enrollments.unassignedNotice", isEn ? "No instructors for this subject. Please add an instructor with a rate for this subject first." : "لا يوجد مهندسين لهذه المادة. أضف مهندساً مع سعر للمادة أولاً.")}
+                {enableSubjects
+                  ? t("education.enrollments.unassignedNotice", isEn ? "No instructors for this subject. Please add an instructor with a rate for this subject first." : "لا يوجد مهندسين لهذه المادة. أضف مهندساً مع سعر للمادة أولاً.")
+                  : t("education.enrollments.noActiveInstructors", isEn ? "No active instructors found. Please add an instructor first." : "لا يوجد مدربين نشطين حالياً. أضف مدرباً أولاً.")}
               </p>
             )}
           </div>

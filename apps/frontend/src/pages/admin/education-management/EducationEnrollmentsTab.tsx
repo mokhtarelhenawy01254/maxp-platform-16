@@ -33,7 +33,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
   packages,
   teachers,
   subjects,
-  enableSubjects = true,
+  enableSubjects = false,
   enrollmentModal,
   setEnrollmentModal,
   handleSaveEnrollment,

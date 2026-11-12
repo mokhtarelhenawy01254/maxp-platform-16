@@ -239,10 +239,12 @@ const getSettings = async (req, res) => {
     const systemTitleEn = savedEducation.systemTitleEn || "Education System";
 
     // Mode: COURSES (Default) vs ACADEMIC
-    const educationMode = savedEducation.educationMode || (savedEducation.enableSubjects ? 'ACADEMIC' : 'COURSES');
-    const enableSubjects = savedEducation.enableSubjects !== undefined
-      ? Boolean(savedEducation.enableSubjects)
-      : (educationMode === 'ACADEMIC');
+    const educationMode = savedEducation.educationMode
+      ? (savedEducation.educationMode === 'ACADEMIC' ? 'ACADEMIC' : 'COURSES')
+      : (savedEducation.enableSubjects ? 'ACADEMIC' : 'COURSES');
+    const enableSubjects = educationMode === 'COURSES'
+      ? false
+      : (savedEducation.enableSubjects !== undefined ? Boolean(savedEducation.enableSubjects) : true);
 
     // Merge saved tabs with default tabs to guarantee all tabs exist
     const savedTabs = Array.isArray(savedEducation.tabs) ? savedEducation.tabs : [];
@@ -361,9 +363,11 @@ const updateSettings = async (req, res) => {
       ? (educationMode === 'ACADEMIC' ? 'ACADEMIC' : 'COURSES')
       : (existingEdu.educationMode || (existingEdu.enableSubjects ? 'ACADEMIC' : 'COURSES'));
 
-    const resolvedEnableSubjects = enableSubjects !== undefined
-      ? Boolean(enableSubjects)
-      : (resolvedMode === 'COURSES' ? false : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : true));
+    const resolvedEnableSubjects = resolvedMode === 'COURSES'
+      ? false
+      : (enableSubjects !== undefined
+        ? Boolean(enableSubjects)
+        : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : true));
 
     let validatedTabs = [];
     if (Array.isArray(tabs)) {

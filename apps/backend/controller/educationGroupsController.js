@@ -252,6 +252,16 @@ const create = async (req, res) => {
       }
     }
 
+    if (teacherId) {
+      const validTeacher = await prisma.educationTeacher.findFirst({
+        where: { id: teacherId, companyId },
+        select: { id: true }
+      });
+      if (!validTeacher) {
+        return res.status(400).json({ success: false, error: 'المدرب المحدد غير صالح أو غير تابع لهذه الشركة' });
+      }
+    }
+
     const id = generateGroupId();
     const daysJson = JSON.stringify(Array.isArray(scheduleDays) ? scheduleDays : []);
 
@@ -335,6 +345,16 @@ const update = async (req, res) => {
       });
       if (!validSubject) {
         return res.status(400).json({ success: false, error: 'المادة المحددة غير صالحة أو غير تابعة لهذه الشركة' });
+      }
+    }
+
+    if (teacherId) {
+      const validTeacher = await prisma.educationTeacher.findFirst({
+        where: { id: teacherId, companyId },
+        select: { id: true }
+      });
+      if (!validTeacher) {
+        return res.status(400).json({ success: false, error: 'المدرب المحدد غير صالح أو غير تابع لهذه الشركة' });
       }
     }
 
@@ -571,14 +591,17 @@ const transferMember = async (req, res) => {
     const prisma = getSharedPrismaClient();
     await ensureTablesExist(prisma);
 
-    // Fetch previous payment details
+    // Fetch previous payment details (and verify membership in source group for this tenant)
     const oldMember = await prisma.$queryRawUnsafe(`
       SELECT "paymentStatus", "amountPaid" FROM "education_group_members"
-      WHERE "groupId" = $1 AND "studentId" = $2 AND "companyId" = $3
+      WHERE "groupId" = $1 AND "studentId" = $2 AND "companyId" = $3 AND "status" IN ('ACTIVE', 'WAITING_LIST')
       ORDER BY "joinedAt" DESC LIMIT 1
     `, fromGroupId, studentId, companyId);
-    const prevPaymentStatus = oldMember[0]?.paymentStatus || 'PAID';
-    const prevAmountPaid = oldMember[0]?.amountPaid || 0;
+    if (!oldMember || oldMember.length === 0) {
+      return res.status(404).json({ success: false, error: 'الطالب غير مسجل في المجموعة الأصلية' });
+    }
+    const prevPaymentStatus = oldMember[0].paymentStatus || 'PAID';
+    const prevAmountPaid = oldMember[0].amountPaid || 0;
 
     // Update old membership to TRANSFERRED
     await prisma.$executeRawUnsafe(`
@@ -700,20 +723,30 @@ const recordSession = async (req, res) => {
       notes || null
     );
 
-    // Insert attendance records
+    // Insert attendance records (tenant-verified students only)
     if (Array.isArray(attendanceList) && attendanceList.length > 0) {
+      const requestedStudentIds = Array.from(
+        new Set(attendanceList.map(it => it && it.studentId).filter(Boolean))
+      );
+      const tenantStudents = requestedStudentIds.length > 0
+        ? await prisma.educationStudent.findMany({
+            where: { id: { in: requestedStudentIds }, companyId },
+            include: { customer: true }
+          })
+        : [];
+      const studentMap = new Map(tenantStudents.map(st => [st.id, st]));
+
       for (const item of attendanceList) {
+        if (!item || !item.studentId || !studentMap.has(item.studentId)) {
+          continue;
+        }
         const attId = generateAttId();
         let notifiedAt = null;
 
         // Notify absent parent if requested
         if (notifyAbsentWhatsApp && item.status === 'ABSENT' && sendNotification) {
           try {
-            // Find student & parent info
-            const st = await prisma.educationStudent.findFirst({
-              where: { id: item.studentId, companyId },
-              include: { customer: true }
-            });
+            const st = studentMap.get(item.studentId);
             const phone = st?.customer?.phone || st?.phone;
             if (phone) {
               const studentName = `${st.firstName || ''} ${st.lastName || ''}`.trim();

@@ -8,6 +8,7 @@ import { StudentModal } from "./StudentModal";
 export interface EducationStudentsTabProps {
   students: EducationStudent[];
   subjects: EducationSubject[];
+  enableSubjects?: boolean;
   customers: Customer[];
   customerResults: Customer[];
   studentSearch: string;
@@ -15,7 +16,7 @@ export interface EducationStudentsTabProps {
   studentModal: Partial<EducationStudent> | null | undefined;
   setStudentModal: (s: Partial<EducationStudent> | null | undefined) => void;
   searchCustomers: (q: string) => Promise<void>;
-  handleSaveStudent: (d: Partial<EducationStudent>) => Promise<void>;
+  handleSaveStudent: (d: Partial<EducationStudent>) => Promise<EducationStudent | null | void>;
   handleToggleStudent: (id: string, current: boolean) => Promise<void>;
   handleDeleteStudent: (id: string) => Promise<void>;
 }
@@ -23,6 +24,7 @@ export interface EducationStudentsTabProps {
 export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
   students,
   subjects,
+  enableSubjects = false,
   customers,
   customerResults,
   studentSearch,
@@ -160,7 +162,8 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
             </div>
 
             {/* Subjects Tags */}
-            {(s as any).subjects &&
+            {enableSubjects &&
+              (s as any).subjects &&
               Array.isArray((s as any).subjects) &&
               (s as any).subjects.length > 0 && (
                 <div className="flex flex-wrap gap-1 pt-1 border-t border-border/40">

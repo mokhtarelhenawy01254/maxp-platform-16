@@ -7,16 +7,18 @@ import { MODAL_CLS, INPUT_CLS } from "./types";
 export interface StudentModalProps {
   student?: Partial<EducationStudent> | null;
   subjects?: EducationSubject[];
+  enableSubjects?: boolean;
   customers: Customer[];
   customerResults: Customer[];
   onCustomerSearch: (q: string) => void;
   onClose: () => void;
-  onSave: (d: Partial<EducationStudent>) => Promise<void>;
+  onSave: (d: Partial<EducationStudent>) => Promise<EducationStudent | null | void>;
 }
 
 export const StudentModal: React.FC<StudentModalProps> = ({
   student,
   subjects = [],
+  enableSubjects = false,
   customers,
   customerResults,
   onCustomerSearch,
@@ -357,6 +359,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           </div>
 
           {/* Subjects Section: المواد المتاحة لدينا */}
+          {enableSubjects && (
           <div className="space-y-2 p-3 rounded-xl border border-border/80 bg-muted/15">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -403,6 +406,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Guardian / Parent Section */}
           <div className="space-y-2" ref={searchContainerRef}>

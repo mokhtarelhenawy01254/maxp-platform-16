@@ -567,7 +567,7 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
           sidebarSettings.push({ key: 'education-subjects', visible: enableSubjects, order: 1 });
           sidebarSettings.push({ key: '/admin/education/subjects', visible: enableSubjects, order: 1 });
         }
-      } else if (sidebarSettings && typeof sidebarSettings === 'object') {
+      } else if (sidebarSettings && typeof sidebarSettings === 'object' && (sidebarSettings.items || !sidebarSettings.sections)) {
         if (!sidebarSettings.items) sidebarSettings.items = {};
         sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
         sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
