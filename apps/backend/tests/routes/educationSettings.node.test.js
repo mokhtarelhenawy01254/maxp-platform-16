@@ -1,8 +1,15 @@
 const test = require('node:test');
 const assert = require('node:assert');
+const sharedDb = require('../../services/sharedDatabase');
+const originalGetSharedPrisma = sharedDb.getSharedPrismaClient;
+let activePrismaGetter = originalGetSharedPrisma;
+sharedDb.getSharedPrismaClient = () => activePrismaGetter();
+
 const controller = require('../../controller/educationSettingsController');
+const { getTeacherLabel, invalidateTeacherLabelCache } = require('../../services/educationLabelService');
 
 test('educationSettingsController unit test', async (t) => {
+  let activityLogs = [];
   let mockCompany = {
     id: 'comp-123',
     settings: JSON.stringify({
@@ -36,12 +43,16 @@ test('educationSettingsController unit test', async (t) => {
         }
         return { count: 1 };
       }
+    },
+    activityLog: {
+      create: async ({ data }) => {
+        activityLogs.push(data);
+        return { id: `log-${activityLogs.length}`, ...data };
+      }
     }
   };
 
-  const sharedDb = require('../../services/sharedDatabase');
-  const originalGetSharedPrisma = sharedDb.getSharedPrismaClient;
-  sharedDb.getSharedPrismaClient = () => mockPrisma;
+  activePrismaGetter = () => mockPrisma;
 
   const createMockRes = () => {
     let responseData = null;
@@ -252,5 +263,107 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(resMulti.getData().data.educationMode, 'COURSES'); // read from comp-B via header!
   });
 
+  await t.test('uses Teachers defaults, normalizes legacy values on read/put, writes itemId keys, and logs audit events', async () => {
+    const defaultTeachers = controller.DEFAULT_EDUCATION_TABS.find(tab => tab.id === 'teachers');
+    const defaultSchedule = controller.DEFAULT_EDUCATION_TABS.find(tab => tab.id === 'teacher-schedule');
+    const defaultPayments = controller.DEFAULT_EDUCATION_TABS.find(tab => tab.id === 'teacher-payments');
+    assert.strictEqual(defaultTeachers.defaultLabelAr, 'المدرسين');
+    assert.strictEqual(defaultTeachers.defaultLabelEn, 'Teachers');
+    assert.strictEqual(defaultSchedule.defaultLabelAr, 'جدول المدرسين');
+    assert.strictEqual(defaultSchedule.defaultLabelEn, 'Teacher Schedule');
+    assert.strictEqual(defaultPayments.defaultLabelAr, 'مرتبات المدرسين');
+    assert.strictEqual(defaultPayments.defaultLabelEn, 'Teacher Payments');
+
+    const legacyCompany = {
+      id: 'comp-legacy',
+      settings: JSON.stringify({
+        educationSettings: {
+          tabs: [
+            { id: 'teachers', labelAr: 'المهندسين', labelEn: 'Instructors', visible: true, order: 4 },
+            { id: 'teacher-schedule', labelAr: 'جدول المهندسين', labelEn: 'Instructor Schedule', visible: true, order: 5 },
+            { id: 'teacher-payments', labelAr: 'مرتبات المهندسين', labelEn: 'Instructor Payments', visible: true, order: 6 }
+          ]
+        }
+      })
+    };
+    let updateCalled = false;
+    mockPrisma.company.findUnique = async () => ({ ...legacyCompany });
+    mockPrisma.company.update = async ({ data }) => {
+      updateCalled = true;
+      legacyCompany.settings = data.settings;
+      return { ...legacyCompany };
+    };
+
+    // Read normalizes legacy values without writing to DB
+    const resRead = createMockRes();
+    await controller.getSettings({ user: { id: 'u1', role: 'OWNER', companyId: 'comp-legacy' } }, resRead);
+    assert.strictEqual(updateCalled, false);
+    const readTabs = resRead.getData().data.tabs;
+    assert.strictEqual(readTabs.find(x => x.id === 'teachers').labelAr, 'المدرسين');
+    assert.strictEqual(readTabs.find(x => x.id === 'teachers').labelEn, 'Teachers');
+    assert.strictEqual(readTabs.find(x => x.id === 'teacher-schedule').labelAr, 'جدول المدرسين');
+    assert.strictEqual(readTabs.find(x => x.id === 'teacher-payments').labelAr, 'مرتبات المدرسين');
+
+    // Unauthorized PUT logs failed audit row with severity HIGH
+    activityLogs = [];
+    const resForbidden = createMockRes();
+    await controller.updateSettings({
+      user: { id: 'u-emp', role: 'EMPLOYEE', permissions: [], companyId: 'comp-legacy' },
+      body: { systemTitle: 'x' }
+    }, resForbidden);
+    assert.strictEqual(resForbidden.getStatusCode(), 403);
+    assert.strictEqual(activityLogs.length, 1);
+    assert.strictEqual(activityLogs[0].action, 'UPDATE_EDUCATION_SETTINGS');
+    assert.strictEqual(activityLogs[0].isSuccess, false);
+    assert.strictEqual(activityLogs[0].severity, 'HIGH');
+
+    // Authorized PUT cleans legacy values, writes education-<tabId> keys, and logs success audit
+    activityLogs = [];
+    const resPut = createMockRes();
+    await controller.updateSettings({
+      user: { id: 'u1', role: 'OWNER', companyId: 'comp-legacy' },
+      body: {
+        tabs: [
+          { id: 'teachers', labelAr: 'المهندسين', labelEn: 'Instructors', visible: true, order: 0 },
+          { id: 'teacher-schedule', labelAr: 'جدول المدربين', labelEn: 'Trainer Schedule', visible: true, order: 1 }
+        ]
+      }
+    }, resPut);
+    assert.strictEqual(resPut.getStatusCode(), 200);
+    const saved = JSON.parse(legacyCompany.settings);
+    assert.strictEqual(saved.educationSettings.tabs.find(x => x.id === 'teachers').labelAr, 'المدرسين');
+    assert.strictEqual(saved.educationSettings.tabs.find(x => x.id === 'teacher-schedule').labelAr, 'جدول المدربين');
+    assert.ok(saved.sidebarSettings.find(x => x.key === 'education-teachers' && x.labelAr === 'المدرسين'));
+    assert.ok(saved.sidebarSettings.find(x => x.key === 'education-teacher-schedule' && x.labelAr === 'جدول المدربين'));
+    assert.strictEqual(activityLogs.length, 1);
+    assert.strictEqual(activityLogs[0].action, 'UPDATE_EDUCATION_SETTINGS');
+    assert.strictEqual(activityLogs[0].isSuccess, true);
+    assert.strictEqual(activityLogs[0].targetType, 'SETTINGS');
+
+    // educationLabelService caches per companyId:lang and falls back cleanly
+    invalidateTeacherLabelCache('comp-cache');
+    let dbReads = 0;
+    mockPrisma.company.findUnique = async () => {
+      dbReads += 1;
+      return {
+        id: 'comp-cache',
+        settings: JSON.stringify({
+          educationSettings: { tabs: [{ id: 'teachers', labelAr: 'المدربين', labelEn: 'Trainers' }] }
+        })
+      };
+    };
+    assert.strictEqual(await getTeacherLabel('comp-cache', 'ar'), 'المدربين');
+    assert.strictEqual(await getTeacherLabel('comp-cache', 'ar'), 'المدربين');
+    assert.strictEqual(dbReads, 1);
+    assert.strictEqual(await getTeacherLabel('comp-cache', 'en'), 'Trainers');
+    assert.strictEqual(dbReads, 2);
+
+    invalidateTeacherLabelCache('comp-err');
+    mockPrisma.company.findUnique = async () => { throw new Error('DB down'); };
+    assert.strictEqual(await getTeacherLabel('comp-err', 'ar'), 'المدرسين');
+    assert.strictEqual(await getTeacherLabel('comp-err', 'en'), 'Teachers');
+  });
+
+  activePrismaGetter = originalGetSharedPrisma;
   sharedDb.getSharedPrismaClient = originalGetSharedPrisma;
 });

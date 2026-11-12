@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const educationNotificationService = require('../services/educationNotificationService');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getTeacherLabel } = require('../services/educationLabelService');
 
 const getAll = async (req, res) => {
   try {
@@ -158,13 +159,14 @@ const create = async (req, res) => {
     const teacherName = data.teacher?.name || 'مدرس غير محدد';
     const subjectName = data.subject?.name || '';
     const dateFormatted = new Date(data.scheduledAt).toLocaleString('ar-EG');
+    const teacherLabel = await getTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'SCHEDULE_SESSION',
       entityType: 'SESSION',
       entityId: data.id,
       entityName: `${subjectName} - ${studentName}`,
-      description: `تم جدولة حصة ${subjectName} للطالب ${studentName} مع المهندس ${teacherName} في ${dateFormatted}`,
+      description: `تم جدولة حصة ${subjectName} للطالب ${studentName} مع ${teacherLabel} ${teacherName} في ${dateFormatted}`,
       details: {
         scheduledAt: data.scheduledAt,
         plannedDuration: data.plannedDuration,
@@ -336,13 +338,14 @@ const confirm = async (req, res) => {
     const studentName = `${session.student?.firstName || ''} ${session.student?.lastName || ''}`.trim();
     const teacherName = session.teacher?.name || '';
     const subjectName = session.subject?.name || '';
+    const teacherLabel = await getTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CONFIRM_SESSION',
       entityType: 'SESSION',
       entityId: session.id,
       entityName: `${subjectName} - ${studentName}`,
-      description: `تم تأكيد إتمام الحصة (${subjectName}) للطالب ${studentName} مع المهندس ${teacherName}، خصم ${hours} ساعة واحتساب ${sessionAmount} ج.م استحقاق`,
+      description: `تم تأكيد إتمام الحصة (${subjectName}) للطالب ${studentName} مع ${teacherLabel} ${teacherName}، خصم ${hours} ساعة واحتساب ${sessionAmount} ج.م استحقاق`,
       details: {
         actualDuration: duration,
         hoursDeducted: hours,
@@ -388,13 +391,14 @@ const cancel = async (req, res) => {
     });
 
     const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
+    const teacherLabel = await getTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CANCEL_SESSION',
       entityType: 'SESSION',
       entityId: data.id,
       entityName: `${data.subject?.name || 'حصة'} - ${studentName}`,
-      description: `تم إلغاء الحصة الدراسية للطالب ${studentName} (${data.subject?.name || ''}) مع المهندس ${data.teacher?.name || ''}`,
+      description: `تم إلغاء الحصة الدراسية للطالب ${studentName} (${data.subject?.name || ''}) مع ${teacherLabel} ${data.teacher?.name || ''}`,
       details: {
         scheduledAt: data.scheduledAt,
         studentName,

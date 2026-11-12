@@ -1,4 +1,6 @@
 const sharedDatabase = require('../services/sharedDatabase');
+const { logEducationEvent } = require('../services/educationAuditService');
+const { isLegacyDefaultLabel, invalidateTeacherLabelCache } = require('../services/educationLabelService');
 
 const DEFAULT_EDUCATION_TABS = [
   {
@@ -64,10 +66,10 @@ const DEFAULT_EDUCATION_TABS = [
   {
     id: "teachers",
     key: "/admin/education/teachers",
-    defaultLabelAr: "المهندسين",
-    defaultLabelEn: "Instructors",
-    labelAr: "المهندسين",
-    labelEn: "Instructors",
+    defaultLabelAr: "المدرسين",
+    defaultLabelEn: "Teachers",
+    labelAr: "المدرسين",
+    labelEn: "Teachers",
     order: 4,
     visible: true,
     locked: false,
@@ -76,10 +78,10 @@ const DEFAULT_EDUCATION_TABS = [
   {
     id: "teacher-schedule",
     key: "/admin/education/teacher-schedule",
-    defaultLabelAr: "جدول المهندسين",
-    defaultLabelEn: "Instructor Schedule",
-    labelAr: "جدول المهندسين",
-    labelEn: "Instructor Schedule",
+    defaultLabelAr: "جدول المدرسين",
+    defaultLabelEn: "Teacher Schedule",
+    labelAr: "جدول المدرسين",
+    labelEn: "Teacher Schedule",
     order: 5,
     visible: true,
     locked: false,
@@ -88,10 +90,10 @@ const DEFAULT_EDUCATION_TABS = [
   {
     id: "teacher-payments",
     key: "/admin/education/teacher-payments",
-    defaultLabelAr: "مرتبات المهندسين",
-    defaultLabelEn: "Instructor Payments",
-    labelAr: "مرتبات المهندسين",
-    labelEn: "Instructor Payments",
+    defaultLabelAr: "مرتبات المدرسين",
+    defaultLabelEn: "Teacher Payments",
+    labelAr: "مرتبات المدرسين",
+    labelEn: "Teacher Payments",
     order: 6,
     visible: true,
     locked: false,
@@ -259,10 +261,12 @@ const getSettings = async (req, res) => {
       const saved = savedTabsMap.get(defTab.id.toLowerCase());
       const isSubjectsTab = defTab.id.toLowerCase() === 'subjects';
       if (saved) {
+        const rawSavedAr = typeof saved.labelAr === 'string' ? saved.labelAr.trim() : '';
+        const rawSavedEn = typeof saved.labelEn === 'string' ? saved.labelEn.trim() : '';
         return {
           ...defTab,
-          labelAr: typeof saved.labelAr === 'string' && saved.labelAr.trim() ? saved.labelAr.trim() : defTab.labelAr,
-          labelEn: typeof saved.labelEn === 'string' && saved.labelEn.trim() ? saved.labelEn.trim() : defTab.labelEn,
+          labelAr: rawSavedAr && !isLegacyDefaultLabel(defTab.id, 'ar', rawSavedAr) ? rawSavedAr : defTab.labelAr,
+          labelEn: rawSavedEn && !isLegacyDefaultLabel(defTab.id, 'en', rawSavedEn) ? rawSavedEn : defTab.labelEn,
           visible: defTab.locked ? true : (isSubjectsTab ? (enableSubjects && saved.visible !== false) : (saved.visible !== false)),
           order: typeof saved.order === 'number' ? saved.order : idx
         };
@@ -298,9 +302,22 @@ const getSettings = async (req, res) => {
 
 const updateSettings = async (req, res) => {
   try {
+    const companyId = resolveCompanyId(req);
     const userRole = String(req.user?.role || '').toUpperCase();
     const userPerms = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
     if (!['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole) && !userPerms.includes('settings.manage')) {
+      if (companyId) {
+        await logEducationEvent({
+          companyId,
+          req,
+          action: 'UPDATE_EDUCATION_SETTINGS',
+          entityType: 'SETTINGS',
+          entityId: companyId,
+          isSuccess: false,
+          severity: 'HIGH',
+          errorMessage: 'FORBIDDEN'
+        });
+      }
       return res.status(403).json({
         success: false,
         message: 'غير مصرح لك بتعديل إعدادات النظام التعليمي. هذه العملية مخصصة للمالك والمسؤولين فقط',
@@ -308,7 +325,6 @@ const updateSettings = async (req, res) => {
       });
     }
 
-    const companyId = resolveCompanyId(req);
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
     const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects } = req.body || {};
@@ -385,10 +401,12 @@ const updateSettings = async (req, res) => {
         const locked = def?.locked === true;
 
         const rawLabelAr = item.labelAr !== undefined ? item.labelAr : defaultLabelAr;
-        const labelAr = sanitize(String(rawLabelAr || defaultLabelAr)).slice(0, 60);
+        const cleanedLabelAr = (sanitize(String(rawLabelAr || defaultLabelAr)) || defaultLabelAr).slice(0, 60);
+        const labelAr = isLegacyDefaultLabel(id, 'ar', cleanedLabelAr) ? defaultLabelAr : cleanedLabelAr;
 
         const rawLabelEn = item.labelEn !== undefined ? item.labelEn : defaultLabelEn;
-        const labelEn = sanitize(String(rawLabelEn || defaultLabelEn)).slice(0, 60);
+        const cleanedLabelEn = (sanitize(String(rawLabelEn || defaultLabelEn)) || defaultLabelEn).slice(0, 60);
+        const labelEn = isLegacyDefaultLabel(id, 'en', cleanedLabelEn) ? defaultLabelEn : cleanedLabelEn;
 
         const order = typeof item.order === 'number' && Number.isFinite(item.order) ? item.order : i;
         const isSubjectsTab = id.toLowerCase() === 'subjects';
@@ -527,6 +545,17 @@ const updateSettings = async (req, res) => {
     await prisma.company.update({
       where: { id: companyId },
       data: { settings: JSON.stringify(currentSettings) }
+    });
+
+    invalidateTeacherLabelCache(companyId);
+
+    await logEducationEvent({
+      companyId,
+      req,
+      action: 'UPDATE_EDUCATION_SETTINGS',
+      entityType: 'SETTINGS',
+      entityId: companyId,
+      details: { before: existingEdu, after: currentSettings.educationSettings }
     });
 
     res.json({

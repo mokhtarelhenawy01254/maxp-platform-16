@@ -57,6 +57,9 @@ const ACTION_DEFINITIONS = {
   DISPATCH_REMINDER: { label: 'إرسال تذكير بالحصة', severity: 'LOW', entity: 'NOTIFICATION' },
   FUNNEL_UPDATE: { label: 'تحديث إعدادات الفانل التعليمي', severity: 'LOW', entity: 'FUNNEL' },
 
+  // Settings
+  UPDATE_EDUCATION_SETTINGS: { label: 'تحديث إعدادات النظام التعليمي', severity: 'MEDIUM', entity: 'SETTINGS' },
+
   // AI & Automation
   AI_ACTION: { label: 'إجراء آلي من المساعد الذكي', severity: 'LOW', entity: 'AI_AGENT' },
 };
