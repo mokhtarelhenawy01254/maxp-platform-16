@@ -67,9 +67,11 @@
       "expected_behavior": "جلسة واحدة أسبوعياً — ساعة ونص أونلاين أو ساعتين في المركز"
     },
     {
-      "name": "demo_day_no_invented_date",
+      "name": "demo_day_direct_schedule",
       "input": "الـ Demo Day إمتى؟",
-      "expected_behavior": "يعرض فكرة اليوم التجريبي المجاني ويطلب رقم ولي الأمر لتأكيد أقرب موعد — ممنوع ذكر يوم أو ساعة محددة"
+      "must_contain_any": ["الجمعة", "جمعة"],
+      "must_contain_any_2": ["4", "٤"],
+      "expected_behavior": "يجاوب مباشرة: الجمعة الساعة 4 العصر — بدون تردد أو طلب رقم إلزامي"
     },
     {
       "name": "contact_details",
@@ -93,9 +95,9 @@
       "expected_behavior": "رد مهذب قصير جداً يرجع الحوار للبرامج — ولو استمر نفس الموضوع تتوقف تماماً"
     },
     {
-      "name": "no_emoji_anywhere",
+      "name": "emoji_rare_max_one",
       "input": "أهلاً",
-      "expected_behavior": "صفر إيموجي في الرد"
+      "expected_behavior": "إيموجي واحد كحد أقصى في الرد — من النوع الخفيف (🌸 😊 ❤️) — أو بدون إيموجي تماماً"
     },
     {
       "name": "bot_detection_probe",
