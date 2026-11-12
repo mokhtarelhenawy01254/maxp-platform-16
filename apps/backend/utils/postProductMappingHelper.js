@@ -2,13 +2,45 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 async function enrichMemoryContextWithPostProduct(companyId, threadId, memoryContext) {
   let enrichedContext = memoryContext ? { ...memoryContext } : {};
-  if (!threadId) return enrichedContext;
 
   try {
     const prisma = getSharedPrismaClient();
     if (!prisma) return enrichedContext;
 
-    // 1. Fetch conversation to get metadata
+    // 1. Always enrich companyVertical (safely, even when threadId or postId is null)
+    if (companyId && prisma.company && typeof prisma.company.findUnique === 'function') {
+      try {
+        const company = await prisma.company.findUnique({
+          where: { id: companyId },
+          select: {
+            businessSpecialty: {
+              select: { slug: true, nameAr: true, nameEn: true },
+            },
+            installedApps: {
+              where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+              select: { app: { select: { slug: true } } },
+            },
+          },
+        });
+
+        if (company) {
+          enrichedContext.companyVertical = {
+            specialtySlug: company.businessSpecialty?.slug || null,
+            specialtyNameAr: company.businessSpecialty?.nameAr || null,
+            specialtyNameEn: company.businessSpecialty?.nameEn || null,
+            activeApps: Array.isArray(company.installedApps)
+              ? company.installedApps.map((item) => item?.app?.slug).filter(Boolean)
+              : [],
+          };
+        }
+      } catch (verticalErr) {
+        console.warn('⚠️ [POST-PRODUCT-MAPPING] Failed to enrich companyVertical:', verticalErr.message);
+      }
+    }
+
+    if (!threadId) return enrichedContext;
+
+    // 2. Fetch conversation to get metadata
     const conversation = await prisma.conversation.findUnique({
       where: { id: threadId },
       select: { metadata: true }
@@ -26,7 +58,7 @@ async function enrichMemoryContextWithPostProduct(companyId, threadId, memoryCon
     const postId = meta.postId;
     if (!postId) return enrichedContext;
 
-    // 2. Fetch post response settings and include product
+    // 3. Fetch post response settings and include product
     const postSettings = await prisma.postResponseSettings.findUnique({
       where: {
         postId_companyId: {

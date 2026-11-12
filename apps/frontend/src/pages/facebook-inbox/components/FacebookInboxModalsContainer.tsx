@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { WifiOff } from 'lucide-react';
-import { NoSymbolIcon } from '@heroicons/react/24/outline';
+import { Ban, WifiOff } from 'lucide-react';
 import StatsDashboard from '@/components/facebook-inbox/StatsDashboard/StatsDashboard';
 import ForwardModal from '@/components/facebook-inbox/Modals/ForwardModal';
 import SnoozeModal from '@/components/facebook-inbox/Modals/SnoozeModal';
@@ -9,7 +8,8 @@ import TextGalleryModal from '@/components/facebook-inbox/TextGallery/TextGaller
 import ImageGalleryModal from '@/components/facebook-inbox/ImageGallery/ImageGalleryModal';
 import ProductImagePickerModal from '@/components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
 import QuickOrderModal from '@/components/facebook-inbox/Modals/QuickOrderModal';
-import type { InboxConversation, InboxMessage } from '@/types/inbox.types';
+import VerticalActionModals from './VerticalActionModals';
+import type { InboxConversation } from '@/types/inbox.types';
 
 interface FacebookInboxModalsContainerProps {
   showStats: boolean;
@@ -48,6 +48,15 @@ interface FacebookInboxModalsContainerProps {
   isBlocked: boolean;
   showQuickOrderModal: boolean;
   onCloseQuickOrderModal: () => void;
+  showServiceOrderModal: boolean;
+  onCloseServiceOrderModal: () => void;
+  showQuickTaskModal: boolean;
+  onCloseQuickTaskModal: () => void;
+  showDentalCaseModal: boolean;
+  onCloseDentalCaseModal: () => void;
+  showAppointmentModal: boolean;
+  onCloseAppointmentModal: () => void;
+  onVerticalRecordCreated?: () => void;
   platform: string;
   onOrderCreated: (orderId: string, order: any, confirmationMessage?: any) => void;
 }
@@ -83,6 +92,15 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
   isBlocked,
   showQuickOrderModal,
   onCloseQuickOrderModal,
+  showServiceOrderModal,
+  onCloseServiceOrderModal,
+  showQuickTaskModal,
+  onCloseQuickTaskModal,
+  showDentalCaseModal,
+  onCloseDentalCaseModal,
+  showAppointmentModal,
+  onCloseAppointmentModal,
+  onVerticalRecordCreated,
   platform,
   onOrderCreated,
 }) => {
@@ -135,41 +153,32 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
       {/* Block Customer Modal */}
       {showBlockModal && selectedConversation && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="business-modal-surface p-6 w-full max-w-md rounded-2xl shadow-2xl">
-            <h3
-              className="text-lg font-semibold mb-2"
-              style={{ color: 'var(--color-foreground)' }}
-            >
+          <div className="bg-card border border-border/60 text-foreground p-6 w-full max-w-md rounded-2xl shadow-2xl">
+            <h3 className="text-lg font-semibold mb-2 text-foreground">
               {t('facebookInbox.blockOnFacebook')}
             </h3>
-            <p
-              className="text-sm mb-4"
-              style={{ color: 'var(--color-muted-foreground)' }}
-            >
+            <p className="text-sm mb-4 text-muted-foreground">
               {t('facebookInbox.blockOnFacebookDesc')}
             </p>
 
             <div className="mb-4">
-              <label
-                className="block text-sm font-medium mb-2"
-                style={{ color: 'var(--color-foreground)' }}
-              >
+              <label className="block text-sm font-medium mb-2 text-foreground">
                 {t('facebookInbox.blockReason')}
               </label>
               <textarea
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
-                className="business-chat-input w-full p-2.5 rounded-xl border text-sm"
+                className="w-full p-2.5 rounded-xl border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 rows={3}
                 placeholder={t('facebookInbox.blockReasonPlaceholder')}
               />
             </div>
 
-            <div className="flex justify-end space-x-2 rtl:space-x-reverse">
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={onCloseBlockModal}
-                className="business-chip-button px-4 py-2 rounded-xl text-sm"
+                className="px-4 py-2 rounded-xl text-sm border border-border/60 bg-muted/40 text-foreground hover:bg-muted transition-colors active:scale-[0.97]"
               >
                 {t('facebookInbox.cancel')}
               </button>
@@ -177,10 +186,7 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
                 type="button"
                 onClick={handleBlockCustomer}
                 disabled={blocking}
-                className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm"
-                style={{
-                  background: 'var(--business-danger)',
-                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed bg-destructive text-destructive-foreground shadow-sm active:scale-[0.97]"
               >
                 {blocking
                   ? t('facebookInbox.blocking')
@@ -193,20 +199,9 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
 
       {/* Blocked Customer Alert */}
       {isBlocked && selectedConversation && (
-        <div
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 rounded-xl p-4 shadow-lg max-w-md business-page-panel flex items-center gap-3"
-          style={{
-            background:
-              'color-mix(in srgb, var(--business-danger) 12%, var(--color-card, #ffffff))',
-            borderColor:
-              'color-mix(in srgb, var(--business-danger) 22%, transparent)',
-          }}
-        >
-          <NoSymbolIcon
-            className="w-5 h-5 flex-shrink-0"
-            style={{ color: 'var(--business-danger)' }}
-          />
-          <p className="text-sm font-medium" style={{ color: 'var(--business-danger)' }}>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 shadow-lg max-w-md flex items-center gap-3 text-destructive backdrop-blur-sm">
+          <Ban className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-medium">
             {t('facebookInbox.customerBlocked')}
           </p>
         </div>
@@ -228,18 +223,23 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
         />
       )}
 
-      {/* Offline Alert (Clean Lucide Icon, Zero Emojis) */}
+      {/* Vertical Action Modals (Services, Tasks, Appointments, Dental Lab) */}
+      <VerticalActionModals
+        selectedConversation={selectedConversation}
+        showServiceOrderModal={showServiceOrderModal}
+        onCloseServiceOrderModal={onCloseServiceOrderModal}
+        showQuickTaskModal={showQuickTaskModal}
+        onCloseQuickTaskModal={onCloseQuickTaskModal}
+        showDentalCaseModal={showDentalCaseModal}
+        onCloseDentalCaseModal={onCloseDentalCaseModal}
+        showAppointmentModal={showAppointmentModal}
+        onCloseAppointmentModal={onCloseAppointmentModal}
+        onVerticalRecordCreated={onVerticalRecordCreated}
+      />
+
+      {/* Offline Alert */}
       {typeof navigator !== 'undefined' && !navigator.onLine && (
-        <div
-          className="fixed bottom-4 right-4 z-50 px-3.5 py-1.5 rounded-lg shadow-lg text-xs font-medium flex items-center gap-2"
-          style={{
-            background:
-              'color-mix(in srgb, var(--business-warning) 14%, var(--color-card, #ffffff))',
-            border:
-              '1px solid color-mix(in srgb, var(--business-warning) 30%, transparent)',
-            color: 'var(--business-warning)',
-          }}
-        >
+        <div className="fixed bottom-4 right-4 z-50 px-3.5 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300 shadow-lg text-xs font-medium flex items-center gap-2 backdrop-blur-sm">
           <WifiOff className="h-3.5 w-3.5 stroke-[2]" />
           <span>{t('facebookInbox.disconnected', 'لا يوجد اتصال بالإنترنت')}</span>
         </div>

@@ -66,6 +66,7 @@ export interface InboxConversation {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string | null;
   customerAvatar?: string;
   lastMessage: string;
   lastMessageTime: Date;

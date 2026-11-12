@@ -18,6 +18,7 @@ import type {
 interface QuickCreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: () => void;
 }
 
 const createInitialTaskDraft = (userId: string, userName: string): TaskDraft => ({
@@ -47,7 +48,7 @@ const ensureArray = <T,>(value: unknown): T[] =>
 
 const getAccessToken = (): string | null => tokenManager.getAccessToken();
 
-const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onClose }) => {
+const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onClose, onCreated }) => {
   const [newTask, setNewTask] = useState<TaskDraft>(() =>
     createInitialTaskDraft(
       localStorage.getItem("userId") || "",
@@ -235,6 +236,7 @@ const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onC
           ),
         );
         tToast.success("QuickCreateTaskModal.success_create_7fd6");
+        onCreated?.();
         onClose();
       } else {
         toast.error(data.error || i18n.t("QuickCreateTaskModal.failed_create_9b04"));
@@ -242,7 +244,7 @@ const QuickCreateTaskModal: React.FC<QuickCreateTaskModalProps> = ({ isOpen, onC
     } catch {
       tToast.error("QuickCreateTaskModal.failed_create_9b04");
     }
-  }, [newTask, onClose]);
+  }, [newTask, onClose, onCreated]);
 
   if (!isOpen) return null;
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const conversationController = require('../controller/conversationController');
 const messagingController = require('../controller/conversation/messagingController');
+const verticalContextController = require('../controller/conversation/verticalContextController');
 const path = require("path")
 const fs = require("fs")
 const multer = require("multer")
@@ -70,6 +71,7 @@ router.put('/:id/mark-unread', verifyToken.authenticateToken, verifyToken.requir
 
 // Conversation routes
 router.get('/:id/post-details', verifyToken.authenticateToken, conversationController.getConversationPostDetails); // Get post details (lazy loading)
+router.get('/:id/vertical-context', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verticalContextController.getConversationVerticalContext);
 
 // New GET routes
 router.get('/', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, conversationController.getConversations);

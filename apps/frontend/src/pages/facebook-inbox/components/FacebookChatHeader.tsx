@@ -9,14 +9,17 @@ import {
   PanelRightClose,
   PanelRightOpen,
   StickyNote,
+  UserCircle2,
 } from 'lucide-react';
-import {
-  ShoppingCartIcon,
-  UserCircleIcon,
-} from '@heroicons/react/24/outline';
 import ConversationActionsBar from '@/components/facebook-inbox/ConversationActionsBar/ConversationActionsBar';
 import type { InboxConversation } from '@/types/inbox.types';
-import FacebookChatHeaderDesktopMenu from './FacebookChatHeaderDesktopMenu';
+import type {
+  InboxVerticalAction,
+  InboxVerticalActionId,
+} from '../hooks/useInboxVerticalCapabilities';
+import FacebookChatHeaderDesktopMenu, {
+  renderVerticalActionIcon,
+} from './FacebookChatHeaderDesktopMenu';
 import FacebookChatHeaderMobileMenu from './FacebookChatHeaderMobileMenu';
 
 interface FacebookChatHeaderProps {
@@ -37,7 +40,10 @@ interface FacebookChatHeaderProps {
   setShowDesktopMoreMenu: React.Dispatch<React.SetStateAction<boolean>>;
   copiedLink: boolean;
   onCopyConversationLink: (id: string) => void;
-  onOpenQuickOrderModal: () => void;
+  primaryAction?: InboxVerticalAction;
+  availableActions?: InboxVerticalAction[];
+  onTriggerVerticalAction?: (actionId: InboxVerticalActionId) => void;
+  onOpenQuickOrderModal?: () => void;
   showNotes: boolean;
   onToggleNotesPanel: () => void;
   onOpenSnoozeModal: () => void;
@@ -64,6 +70,9 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
   setShowDesktopMoreMenu,
   copiedLink,
   onCopyConversationLink,
+  primaryAction,
+  availableActions,
+  onTriggerVerticalAction,
   onOpenQuickOrderModal,
   showNotes,
   onToggleNotesPanel,
@@ -75,27 +84,80 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const resolvedPrimaryAction: InboxVerticalAction = primaryAction || {
+    id: 'order',
+    label: t('facebookInbox.createQuickOrder'),
+  };
+
+  const handlePrimaryClick = () => {
+    if (onTriggerVerticalAction) {
+      onTriggerVerticalAction(resolvedPrimaryAction.id);
+    } else if (onOpenQuickOrderModal) {
+      onOpenQuickOrderModal();
+    }
+  };
+
+  const iconBtnCls =
+    'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer';
+
+  const renderAiToggleButton = () => (
+    <button
+      type="button"
+      onClick={onToggleAi}
+      className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+        isAiActive
+          ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15'
+      }`}
+      title={
+        isAiActive
+          ? t(
+              'facebookInbox.stopAiTooltip',
+              'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة',
+            )
+          : t(
+              'facebookInbox.startAiTooltip',
+              'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي',
+            )
+      }
+      aria-label={
+        isAiActive
+          ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
+          : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
+      }
+    >
+      <Bot className="h-4 w-4" />
+      <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
+        <span
+          className={`relative inline-flex rounded-full h-2 w-2 border border-card ${
+            isAiActive ? 'bg-emerald-500' : 'bg-amber-500'
+          }`}
+        />
+      </span>
+    </button>
+  );
+
   return (
-    <div className="business-inbox-header business-inbox-chat-header p-2 sm:p-3">
-      <div className="business-inbox-header-row business-inbox-chat-header-row">
+    <div className="business-inbox-header business-inbox-chat-header border-b border-border/50 bg-card/80 px-2.5 py-2 sm:px-3.5 sm:py-2.5">
+      <div className="business-inbox-header-row business-inbox-chat-header-row flex items-center justify-between gap-2">
         {/* Mobile back button */}
         <button
           type="button"
           onClick={onBackToConversationList}
-          className="md:hidden business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20 p-2 rounded-lg transition-colors"
+          className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background text-foreground hover:bg-muted/60 transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title={t('facebookInbox.backToConversations')}
           aria-label={t('facebookInbox.backToConversations')}
         >
-          <ArrowRight className="h-5 w-5" />
+          <ArrowRight className="h-4 w-4" />
         </button>
 
         {/* Customer Identity */}
-        <div className="business-inbox-chat-identity flex min-w-0 items-center gap-3">
+        <div className="business-inbox-chat-identity flex min-w-0 flex-1 items-center gap-2.5">
           {selectedConversationAvatarUrl ? (
             <img
               src={selectedConversationAvatarUrl}
               alt={selectedConversation.customerName}
-              className="business-conversation-avatar !w-10 !h-10"
+              className="h-9 w-9 shrink-0 rounded-full object-cover border border-border/60"
               onError={(e) => {
                 (e.currentTarget as HTMLElement).style.display = 'none';
                 const fallback = e.currentTarget.nextElementSibling;
@@ -104,24 +166,18 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
             />
           ) : null}
           <div
-            className="business-conversation-fallback !w-10 !h-10"
+            className="h-9 w-9 shrink-0 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold items-center justify-center"
             style={{ display: selectedConversationAvatarUrl ? 'none' : 'flex' }}
           >
             {selectedConversation.customerName?.charAt(0)?.toUpperCase() || '؟'}
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2
-              className="truncate text-base sm:text-lg font-semibold leading-tight"
-              style={{ color: 'var(--color-foreground)' }}
-            >
+            <h2 className="truncate text-sm sm:text-base font-semibold leading-tight text-foreground">
               {selectedConversation.customerName}
             </h2>
             {selectedConversation.pageName && (
-              <p
-                className="truncate text-xs mt-0.5"
-                style={{ color: 'var(--color-muted-foreground)' }}
-              >
+              <p className="truncate text-[11px] text-muted-foreground mt-0.5">
                 {selectedConversation.pageName}
               </p>
             )}
@@ -129,76 +185,36 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="business-inbox-chat-actions">
+        <div className="business-inbox-chat-actions flex items-center gap-1.5 shrink-0">
           {isMobileViewport ? (
             <>
-              <button
-                type="button"
-                onClick={onToggleAi}
-                className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
-                data-tone={isAiActive ? 'primary' : 'warning'}
-                style={
-                  isAiActive
-                    ? {
-                        background:
-                          'color-mix(in srgb, var(--color-primary) 12%, transparent)',
-                        color: 'var(--color-primary)',
-                        borderColor:
-                          'color-mix(in srgb, var(--color-primary) 28%, transparent)',
-                      }
-                    : {
-                        background:
-                          'color-mix(in srgb, var(--business-warning) 14%, transparent)',
-                        color: 'var(--business-warning)',
-                        borderColor:
-                          'color-mix(in srgb, var(--business-warning) 32%, transparent)',
-                      }
-                }
-                title={
-                  isAiActive
-                    ? t(
-                        'facebookInbox.stopAiTooltip',
-                        'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة',
-                      )
-                    : t(
-                        'facebookInbox.startAiTooltip',
-                        'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي',
-                      )
-                }
-                aria-label={
-                  isAiActive
-                    ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-                    : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
-                }
-              >
-                <Bot className="h-5 w-5" />
-                <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
-                  <span
-                    className={`relative inline-flex rounded-full h-2 w-2 ${
-                      isAiActive ? 'bg-emerald-500' : 'bg-amber-500'
-                    } border border-white dark:border-slate-900`}
-                  />
-                </span>
-              </button>
+              {renderAiToggleButton()}
 
               <button
                 type="button"
                 onClick={onOpenProfilePanel}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone={isProfilePanelActive ? 'primary' : undefined}
+                className={`${iconBtnCls} ${
+                  isProfilePanelActive
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : ''
+                }`}
                 title={profilePanelToggleTitle}
                 aria-label={profilePanelToggleTitle}
                 aria-pressed={isProfilePanelActive}
               >
-                <UserCircleIcon className="h-5 w-5" />
+                <UserCircle2 className="h-4 w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowMobileActionMenu((current) => !current)}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone={showMobileActionMenu ? 'primary' : undefined}
+                className={`${iconBtnCls} ${
+                  showMobileActionMenu
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : ''
+                }`}
                 title={t('facebookInbox.more')}
+                aria-label={t('facebookInbox.more')}
                 aria-expanded={showMobileActionMenu}
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -206,54 +222,7 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
             </>
           ) : shouldCollapseActions ? (
             <>
-              <button
-                type="button"
-                onClick={onToggleAi}
-                className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
-                data-tone={isAiActive ? 'primary' : 'warning'}
-                style={
-                  isAiActive
-                    ? {
-                        background:
-                          'color-mix(in srgb, var(--color-primary) 12%, transparent)',
-                        color: 'var(--color-primary)',
-                        borderColor:
-                          'color-mix(in srgb, var(--color-primary) 28%, transparent)',
-                      }
-                    : {
-                        background:
-                          'color-mix(in srgb, var(--business-warning) 14%, transparent)',
-                        color: 'var(--business-warning)',
-                        borderColor:
-                          'color-mix(in srgb, var(--business-warning) 32%, transparent)',
-                      }
-                }
-                title={
-                  isAiActive
-                    ? t(
-                        'facebookInbox.stopAiTooltip',
-                        'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة',
-                      )
-                    : t(
-                        'facebookInbox.startAiTooltip',
-                        'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي',
-                      )
-                }
-                aria-label={
-                  isAiActive
-                    ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-                    : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
-                }
-              >
-                <Bot className="h-5 w-5" />
-                <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
-                  <span
-                    className={`relative inline-flex rounded-full h-2 w-2 ${
-                      isAiActive ? 'bg-emerald-500' : 'bg-amber-500'
-                    } border border-white dark:border-slate-900`}
-                  />
-                </span>
-              </button>
+              {renderAiToggleButton()}
 
               <ConversationActionsBar
                 isPriority={selectedConversation.priority}
@@ -265,8 +234,11 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenProfilePanel}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone={isProfilePanelActive ? 'primary' : undefined}
+                className={`${iconBtnCls} ${
+                  isProfilePanelActive
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : ''
+                }`}
                 title={profilePanelToggleTitle}
                 aria-label={profilePanelToggleTitle}
                 aria-pressed={isProfilePanelActive}
@@ -278,16 +250,16 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                 )}
               </button>
 
-              <div
-                className="business-inbox-chat-separator h-6 w-px mx-1"
-                style={{ background: 'var(--business-muted-line)' }}
-              />
+              <div className="h-5 w-px mx-0.5 bg-border/50" />
 
               <FacebookChatHeaderDesktopMenu
                 showDesktopMoreMenu={showDesktopMoreMenu}
                 setShowDesktopMoreMenu={setShowDesktopMoreMenu}
                 isAiActive={isAiActive}
                 onToggleAi={onToggleAi}
+                primaryAction={resolvedPrimaryAction}
+                availableActions={availableActions}
+                onTriggerVerticalAction={onTriggerVerticalAction}
                 onOpenQuickOrderModal={onOpenQuickOrderModal}
                 conversationId={selectedConversation.id}
                 onCopyConversationLink={onCopyConversationLink}
@@ -302,15 +274,25 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
             <>
               <button
                 type="button"
+                onClick={handlePrimaryClick}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                title={resolvedPrimaryAction.label}
+                aria-label={resolvedPrimaryAction.label}
+              >
+                {renderVerticalActionIcon(resolvedPrimaryAction.id, 'h-3.5 w-3.5')}
+                <span className="hidden xl:inline">{resolvedPrimaryAction.label}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => onCopyConversationLink(selectedConversation.id)}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone={copiedLink ? 'success' : 'primary'}
-                style={
-                  copiedLink
-                    ? { color: 'var(--business-success)' }
-                    : { color: 'var(--color-primary)' }
-                }
+                className={`${iconBtnCls} ${
+                  copiedLink ? 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10' : ''
+                }`}
                 title={String(
+                  copiedLink ? t('sidebar.linkCopied') : t('sidebar.copyLink'),
+                )}
+                aria-label={String(
                   copiedLink ? t('sidebar.linkCopied') : t('sidebar.copyLink'),
                 )}
               >
@@ -319,19 +301,12 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
 
               <button
                 type="button"
-                onClick={onOpenQuickOrderModal}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone="warning"
-                title={t('facebookInbox.createQuickOrder')}
-              >
-                <ShoppingCartIcon className="h-5 w-5" />
-              </button>
-
-              <button
-                type="button"
                 onClick={onOpenProfilePanel}
-                className="business-icon-button rounded-xl transition-colors"
-                data-tone={isProfilePanelActive ? 'primary' : undefined}
+                className={`${iconBtnCls} ${
+                  isProfilePanelActive
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : ''
+                }`}
                 title={profilePanelToggleTitle}
                 aria-label={profilePanelToggleTitle}
                 aria-pressed={isProfilePanelActive}
@@ -343,76 +318,22 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={onToggleAi}
-                className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
-                data-tone={isAiActive ? 'primary' : 'warning'}
-                style={
-                  isAiActive
-                    ? {
-                        background:
-                          'color-mix(in srgb, var(--color-primary) 12%, transparent)',
-                        color: 'var(--color-primary)',
-                        borderColor:
-                          'color-mix(in srgb, var(--color-primary) 28%, transparent)',
-                      }
-                    : {
-                        background:
-                          'color-mix(in srgb, var(--business-warning) 14%, transparent)',
-                        color: 'var(--business-warning)',
-                        borderColor:
-                          'color-mix(in srgb, var(--business-warning) 32%, transparent)',
-                      }
-                }
-                title={
-                  isAiActive
-                    ? t(
-                        'facebookInbox.stopAiTooltip',
-                        'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة',
-                      )
-                    : t(
-                        'facebookInbox.startAiTooltip',
-                        'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي',
-                      )
-                }
-                aria-label={
-                  isAiActive
-                    ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-                    : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
-                }
-              >
-                <Bot className="h-5 w-5" />
-                <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
-                  <span
-                    className={`relative inline-flex rounded-full h-2 w-2 ${
-                      isAiActive ? 'bg-emerald-500' : 'bg-amber-500'
-                    } border border-white dark:border-slate-900`}
-                  />
-                </span>
-              </button>
+              {renderAiToggleButton()}
 
-              <div
-                className="business-inbox-chat-separator h-6 w-px mx-1"
-                style={{ background: 'var(--business-muted-line)' }}
-              />
+              <div className="h-5 w-px mx-0.5 bg-border/50" />
 
               <button
                 type="button"
                 onClick={onToggleNotesPanel}
-                className="business-chip-button p-2 rounded-full transition-colors"
-                style={
+                className={`${iconBtnCls} ${
                   showNotes
-                    ? {
-                        color: 'var(--business-warning)',
-                        background:
-                          'color-mix(in srgb, var(--business-warning) 10%, white)',
-                      }
-                    : undefined
-                }
+                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    : ''
+                }`}
                 title={String(t('inbox.notes'))}
+                aria-label={String(t('inbox.notes'))}
               >
-                <StickyNote className="h-5 w-5" />
+                <StickyNote className="h-4 w-4" />
               </button>
 
               <ConversationActionsBar
@@ -423,6 +344,26 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                 onDelete={onDeleteConversation}
                 disabled={updating}
               />
+
+              {availableActions && availableActions.length > 1 && (
+                <FacebookChatHeaderDesktopMenu
+                  showDesktopMoreMenu={showDesktopMoreMenu}
+                  setShowDesktopMoreMenu={setShowDesktopMoreMenu}
+                  isAiActive={isAiActive}
+                  onToggleAi={onToggleAi}
+                  primaryAction={resolvedPrimaryAction}
+                  availableActions={availableActions}
+                  onTriggerVerticalAction={onTriggerVerticalAction}
+                  onOpenQuickOrderModal={onOpenQuickOrderModal}
+                  conversationId={selectedConversation.id}
+                  onCopyConversationLink={onCopyConversationLink}
+                  copiedLink={copiedLink}
+                  showNotes={showNotes}
+                  onToggleNotesPanel={onToggleNotesPanel}
+                  onOpenSnoozeModal={onOpenSnoozeModal}
+                  onDeleteConversation={onDeleteConversation}
+                />
+              )}
             </>
           )}
         </div>
@@ -433,6 +374,9 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
         setShowMobileActionMenu={setShowMobileActionMenu}
         isAiActive={isAiActive}
         onToggleAi={onToggleAi}
+        primaryAction={resolvedPrimaryAction}
+        availableActions={availableActions}
+        onTriggerVerticalAction={onTriggerVerticalAction}
         onOpenQuickOrderModal={onOpenQuickOrderModal}
         conversationId={selectedConversation.id}
         onCopyConversationLink={onCopyConversationLink}

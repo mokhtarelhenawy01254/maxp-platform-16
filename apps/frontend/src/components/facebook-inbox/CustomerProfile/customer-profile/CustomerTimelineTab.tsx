@@ -70,7 +70,7 @@ export const CustomerTimelineTab: React.FC<CustomerTimelineTabProps> = ({
                   <p
                     className="text-xs mt-2"
                     style={{
-                      color: syncMessage.includes("✅")
+                      color: syncMessage.startsWith("تم:")
                         ? "var(--business-success)"
                         : "var(--business-danger)",
                     }}

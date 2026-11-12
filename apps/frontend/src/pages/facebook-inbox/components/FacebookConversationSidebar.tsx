@@ -73,6 +73,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
         w-full sm:w-80 md:w-72 lg:w-80
         z-30
         business-inbox-column business-inbox-column--list flex flex-col
+        bg-card/80 border-e border-border/50
         transition-transform duration-300 ease-in-out
       `}
     >
@@ -94,7 +95,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
       />
 
       {/* Quick Filters Bar */}
-      <div className="px-3 py-2 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-white/[0.03]">
+      <div className="px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2 bg-muted/30">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <button
             type="button"
@@ -104,10 +105,10 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
                 unreadOnly: !prev.unreadOnly,
               }))
             }
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 select-none shadow-sm flex-shrink-0 ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
               filters.unreadOnly
-                ? 'bg-blue-600 text-white shadow-blue-500/25 ring-2 ring-blue-400/50'
-                : 'bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/15 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300 hover:border-blue-300'
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'bg-background text-foreground border border-border/60 hover:bg-muted/60 hover:border-primary/40'
             }`}
             title={
               filters.unreadOnly
@@ -124,7 +125,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
           <button
             type="button"
             onClick={onResetFilters}
-            className="text-[11px] text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 font-medium transition-colors whitespace-nowrap flex-shrink-0"
+            className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors whitespace-nowrap flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-1 cursor-pointer"
             title={t('facebookInbox.clearAllFilters', 'إلغاء جميع الفلاتر')}
           >
             {t('facebookInbox.resetFilters', 'مسح الفلاتر')}
@@ -149,16 +150,10 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
       >
         {loading && conversations.length === 0 ? (
           <div className="business-inbox-empty h-full flex items-center justify-center">
-            <div
-              className="animate-spin rounded-full h-10 w-10 border-b-2"
-              style={{ borderColor: 'var(--color-primary)' }}
-            />
+            <div className="animate-spin rounded-full h-9 w-9 border-2 border-primary border-t-transparent" />
           </div>
         ) : error ? (
-          <div
-            className="text-center p-8 text-sm"
-            style={{ color: 'var(--business-danger)' }}
-          >
+          <div className="text-center p-8 text-sm text-destructive">
             {error}
           </div>
         ) : filteredConversations.length === 0 ? (
@@ -166,14 +161,14 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
             {filters.priorityOnly ? (
               <>
                 <div className="flex justify-center mb-3">
-                  <div className="h-14 w-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-500">
+                  <div className="h-14 w-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                     <Star className="h-7 w-7 stroke-[1.5]" />
                   </div>
                 </div>
-                <p className="font-semibold text-slate-700 dark:text-slate-200">
+                <p className="font-semibold text-foreground">
                   {t('facebookInbox.noPriorityConversations', 'لا توجد محادثات ذات أولوية')}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
+                <p className="text-xs text-muted-foreground mt-1 mb-4">
                   {t(
                     'facebookInbox.priorityHint',
                     'يمكنك تمييز أي محادثة بنجمة من داخل الشات لتظهر هنا',
@@ -184,7 +179,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
                   onClick={() =>
                     setFilters((prev) => ({ ...prev, priorityOnly: false }))
                   }
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm mx-auto"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97] transition-all shadow-xs mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
                 >
                   {t('facebookInbox.showAllConversations', 'عرض جميع المحادثات')}
                 </button>
@@ -192,11 +187,11 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
             ) : (
               <>
                 <div className="flex justify-center mb-4">
-                  <div className="h-16 w-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                  <div className="h-16 w-16 rounded-2xl bg-muted/40 border border-border/50 flex items-center justify-center text-muted-foreground">
                     <MessageSquare className="h-8 w-8 stroke-[1.5]" />
                   </div>
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   {t('facebookInbox.noConversations')}
                 </p>
               </>
@@ -224,10 +219,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
 
             {loading && conversations.length > 0 && (
               <div className="flex justify-center p-4">
-                <div
-                  className="animate-spin rounded-full h-6 w-6 border-b-2"
-                  style={{ borderColor: 'var(--color-muted-foreground)' }}
-                />
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-muted-foreground border-t-transparent" />
               </div>
             )}
           </div>

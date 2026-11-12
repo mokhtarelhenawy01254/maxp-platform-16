@@ -2,21 +2,19 @@ import React from "react";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
 import {
-  Phone,
-  SquarePen,
-  X,
-  Plus,
-  Check,
-  ShoppingBag,
-  User,
-  Star,
-  MapPin,
-  FileText,
   ExternalLink,
+  FileText,
+  MapPin,
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  User,
+  Wrench,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStatusDisplay } from "../../../../utils/statusRegistry";
-import { sectionSurfaceStyle, mutedHeadingStyle, getOrderStatusTheme } from "./styles";
+import { getOrderStatusTheme } from "./styles";
+import { CustomerOrdersPhoneBanner } from "./CustomerOrdersPhoneBanner";
 import { InboxConversation } from "../../../../types/inbox.types";
 
 interface CustomerOrdersTabProps {
@@ -60,154 +58,18 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Phone Banner above orders */}
-      <div
-        className="p-3 rounded-lg"
-        style={{
-          background:
-            "color-mix(in srgb, var(--color-primary) 7%, var(--color-card, #ffffff))",
-          border:
-            "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
-        }}
-      >
-        <h4
-          className="text-xs font-semibold uppercase mb-2"
-          style={mutedHeadingStyle}
-        >
-          رقم الهاتف
-        </h4>
-        <div className="flex items-center gap-2 text-sm">
-          <Phone
-            size={15}
-            className="shrink-0"
-            style={{ color: "var(--color-primary)" }}
-          />
-          {editingPhone ? (
-            <input
-              autoFocus
-              type="tel"
-              dir="ltr"
-              value={phoneDraft}
-              onChange={(e) => setPhoneDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSavePhone();
-                if (e.key === "Escape") {
-                  setEditingPhone(false);
-                  setPhoneUpdateMessage(null);
-                }
-              }}
-              className="business-chat-input flex-1 min-w-0 px-2 py-1 text-sm font-medium font-mono"
-              placeholder="01xxxxxxxxx"
-              disabled={savingPhone}
-            />
-          ) : customer?.phone ? (
-            <span
-              className="flex-1 min-w-0 truncate font-mono font-medium"
-              style={{ color: "var(--color-primary)" }}
-              dir="ltr"
-            >
-              {customer.phone}
-            </span>
-          ) : (
-            <span
-              className="flex-1 min-w-0 text-xs"
-              style={{ color: "var(--color-muted-foreground)" }}
-            >
-              لم يتم إضافة رقم هاتف بعد
-            </span>
-          )}
-          {editingPhone ? (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={handleSavePhone}
-                disabled={savingPhone}
-                className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50"
-                style={{
-                  color: "#ffffff",
-                  background: "var(--business-success)",
-                  borderColor: "transparent",
-                  boxShadow:
-                    "0 10px 20px -12px color-mix(in srgb, var(--business-success) 70%, transparent)",
-                }}
-                title="حفظ رقم الهاتف"
-                aria-label="حفظ رقم الهاتف"
-              >
-                {savingPhone ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent"></div>
-                ) : (
-                  <Check size={20} strokeWidth={3} />
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setEditingPhone(false);
-                  setPhoneUpdateMessage(null);
-                }}
-                disabled={savingPhone}
-                className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
-                style={{
-                  color: "var(--business-danger)",
-                  background:
-                    "color-mix(in srgb, var(--business-danger) 12%, var(--color-card, #ffffff))",
-                  borderColor:
-                    "color-mix(in srgb, var(--business-danger) 30%, transparent)",
-                }}
-                title="إلغاء"
-                aria-label="إلغاء"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          ) : customer?.phone ? (
-            <button
-              onClick={handleStartEditPhone}
-              className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
-              style={{
-                color: "var(--color-primary)",
-                background:
-                  "color-mix(in srgb, var(--color-primary) 12%, var(--color-card, #ffffff))",
-                borderColor:
-                  "color-mix(in srgb, var(--color-primary) 30%, transparent)",
-              }}
-              title="تعديل رقم الهاتف"
-              aria-label="تعديل رقم الهاتف"
-            >
-              <SquarePen size={16} />
-            </button>
-          ) : null}
-        </div>
-        {!customer?.phone && !editingPhone && (
-          <button
-            onClick={handleStartEditPhone}
-            className="business-chip-button mt-2 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold transition-all"
-            style={{
-              color: "#ffffff",
-              background:
-                "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
-              border: "none",
-              boxShadow:
-                "0 18px 34px -22px color-mix(in srgb, var(--color-primary) 65%, transparent)",
-            }}
-            title="إضافة رقم الهاتف"
-            aria-label="إضافة رقم الهاتف"
-          >
-            <Plus size={16} />
-            إضافة رقم الهاتف
-          </button>
-        )}
-        {phoneUpdateMessage && (
-          <p
-            className="text-xs mt-2"
-            style={{
-              color: phoneUpdateMessage.includes("✅")
-                ? "var(--business-success)"
-                : "var(--business-danger)",
-            }}
-          >
-            {phoneUpdateMessage}
-          </p>
-        )}
-      </div>
+      <CustomerOrdersPhoneBanner
+        customer={customer}
+        editingPhone={editingPhone}
+        phoneDraft={phoneDraft}
+        setPhoneDraft={setPhoneDraft}
+        savingPhone={savingPhone}
+        phoneUpdateMessage={phoneUpdateMessage}
+        handleStartEditPhone={handleStartEditPhone}
+        handleSavePhone={handleSavePhone}
+        setEditingPhone={setEditingPhone}
+        setPhoneUpdateMessage={setPhoneUpdateMessage}
+      />
 
       {/* Orders Summary Header & Quick Phone Search */}
       <div className="space-y-2">
@@ -215,7 +77,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
           <input
             type="text"
             placeholder="بحث برقم هاتف عن طلبات سابقة..."
-            className="business-control-input flex-1 text-xs py-1.5 font-mono"
+            className="flex-1 rounded-lg border border-border/60 bg-background px-2.5 py-1.5 text-xs tabular-nums text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             dir="ltr"
             value={searchOrderPhone}
             onChange={(e) => setSearchOrderPhone(e.target.value)}
@@ -238,7 +100,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                 });
               }
             }}
-            className="business-chip-button px-3 py-1.5 text-xs font-medium"
+            className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
           >
             بحث
           </button>
@@ -255,7 +117,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                     undefined,
                 });
               }}
-              className="business-chip-button px-2 py-1.5 text-xs"
+              className="rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               title="إعادة تعيين"
             >
               إلغاء
@@ -269,18 +131,9 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
           customer?.governorate ||
           customer?.city ||
           customer?.customerRating) && (
-          <div
-            className="p-3 rounded-lg text-xs space-y-1.5 border"
-            style={{
-              background: "var(--business-surface-subtle)",
-              borderColor: "var(--business-card-border)",
-            }}
-          >
+          <div className="p-3 rounded-lg text-xs space-y-1.5 border border-border/50 bg-muted/20">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div
-                className="flex items-center gap-1.5 font-bold text-sm"
-                style={{ color: "var(--color-foreground)" }}
-              >
+              <div className="flex items-center gap-1.5 font-bold text-sm text-foreground">
                 <User size={15} className="text-primary shrink-0" />
                 <span>{customer.name || conversation.customerName}</span>
               </div>
@@ -292,9 +145,7 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
               )}
             </div>
 
-            {(customer.governorate ||
-              customer.city ||
-              customer.address) && (
+            {(customer.governorate || customer.city || customer.address) && (
               <div className="flex items-start gap-1.5 text-muted-foreground">
                 <MapPin size={13} className="text-primary shrink-0 mt-0.5" />
                 <span className="leading-snug">
@@ -315,46 +166,25 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
         )}
 
         {orders.length > 0 && (
-          <div
-            className="p-3 rounded-lg"
-            style={{
-              background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff)) 0%, color-mix(in srgb, var(--color-secondary) 8%, var(--color-card, #ffffff)) 100%)",
-              border:
-                "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingBag
-                  size={18}
-                  style={{ color: "var(--color-primary)" }}
-                />
-                <span
-                  className="font-semibold text-sm"
-                  style={{ color: "var(--color-primary)" }}
-                >
-                  سجل الطلبات
-                </span>
-              </div>
-              <span
-                className="text-white text-xs font-bold font-mono tabular-nums px-2 py-0.5 rounded-full"
-                style={{ background: "var(--color-primary)" }}
-              >
-                {orders.length} طلب
+          <div className="p-2.5 rounded-lg border border-primary/20 bg-primary/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={16} className="text-primary" />
+              <span className="font-semibold text-xs text-primary">
+                سجل الطلبات
               </span>
             </div>
+            <span className="bg-primary text-primary-foreground text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full">
+              <span className="font-mono">{orders.length}</span>{" "}
+              <span>طلب</span>
+            </span>
           </div>
         )}
       </div>
 
       {orders.length === 0 ? (
-        <div
-          className="text-center py-8"
-          style={{ color: "var(--color-muted-foreground)" }}
-        >
-          <ShoppingBag size={44} className="mx-auto mb-2 opacity-20" />
-          <p className="text-sm">لا توجد طلبات سابقة لهذا الرقم</p>
+        <div className="text-center py-8 text-muted-foreground">
+          <ShoppingBag size={40} className="mx-auto mb-2 opacity-20" />
+          <p className="text-xs">لا توجد طلبات سابقة لهذا الرقم</p>
         </div>
       ) : (
         orders.map((order) => {
@@ -363,38 +193,38 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
               conversation?.id &&
               String(order.conversationId) === String(conversation.id),
           );
+          const isServiceOrder =
+            order.type === "SERVICE" || order.orderType === "SERVICE";
 
           return (
             <div
               key={order.id}
-              className="p-3 rounded-lg transition-colors space-y-2.5"
-              style={sectionSurfaceStyle}
+              className="p-3 rounded-lg border border-border/50 bg-muted/20 transition-colors space-y-2.5"
             >
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p
-                      className="font-bold text-sm font-mono"
-                      style={{ color: "var(--color-foreground)" }}
-                    >
+                    <p className="font-bold text-sm font-mono tabular-nums text-foreground">
                       #{order.orderNumber}
                     </p>
+                    {isServiceOrder && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60">
+                        <Wrench className="h-3 w-3" />
+                        <span>طلب خدمة</span>
+                      </span>
+                    )}
                     {isFromThisConv && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                        💬 من هذه المحادثة
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <MessageSquare className="h-3 w-3" />
+                        <span>من هذه المحادثة</span>
                       </span>
                     )}
                   </div>
-                  <p
-                    className="text-xs mt-0.5"
-                    style={{ color: "var(--color-muted-foreground)" }}
-                  >
+                  <p className="text-xs mt-0.5 text-muted-foreground">
                     {format(
                       new Date(order.createdAt),
                       "dd MMM yyyy - HH:mm",
-                      {
-                        locale: arSA,
-                      },
+                      { locale: arSA },
                     )}
                   </p>
                 </div>
@@ -409,23 +239,14 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                 </span>
               </div>
 
-              {/* Order Items Breakdown */}
               {order.items && order.items.length > 0 && (
-                <div
-                  className="pt-2 space-y-1.5"
-                  style={{
-                    borderTop: "1px dashed var(--business-muted-line)",
-                  }}
-                >
+                <div className="pt-2 space-y-1.5 border-t border-dashed border-border/50">
                   {order.items.map((item: any, idx: number) => (
                     <div
                       key={idx}
                       className="flex justify-between items-center text-xs gap-2"
                     >
-                      <span
-                        className="truncate font-medium flex-1 text-right"
-                        style={{ color: "var(--color-foreground)" }}
-                      >
+                      <span className="truncate font-medium flex-1 text-right text-foreground">
                         {item.quantity}× {item.productName || item.name}
                         {(item.productColor || item.productSize) && (
                           <span className="text-[11px] opacity-75 mr-1 font-normal">
@@ -437,48 +258,34 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                           </span>
                         )}
                       </span>
-                      <span
-                        className="font-mono tabular-nums shrink-0 text-left font-medium"
-                        style={{ color: "var(--color-foreground)" }}
-                      >
-                        {(item.price * item.quantity).toLocaleString()} ج.م
+                      <span className="tabular-nums shrink-0 text-left font-medium text-foreground">
+                        <span className="font-mono">
+                          {(item.price * item.quantity).toLocaleString()}
+                        </span>{" "}
+                        <span>ج.م</span>
                       </span>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div
-                className="flex justify-between items-center pt-2"
-                style={{
-                  borderTop: "1px solid var(--business-muted-line)",
-                }}
-              >
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: "var(--color-muted-foreground)" }}
-                >
+              <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                <span className="text-xs font-medium text-muted-foreground">
                   الإجمالي:
                 </span>
-                <span
-                  className="font-bold text-sm font-mono tabular-nums"
-                  style={{ color: "var(--color-primary)" }}
-                >
-                  {order.total?.toLocaleString() || 0} ج.م
+                <span className="font-bold text-sm tabular-nums text-primary">
+                  <span className="font-mono">
+                    {order.total?.toLocaleString() || 0}
+                  </span>{" "}
+                  <span>ج.م</span>
                 </span>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setPreviewOrder(order)}
-                  className="business-chip-button flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{
-                    color: "var(--color-primary)",
-                    background:
-                      "color-mix(in srgb, var(--color-primary) 8%, var(--color-card, #ffffff))",
-                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary text-xs font-medium hover:bg-primary/15 transition-colors cursor-pointer"
                 >
                   معاينة سريعة
                 </button>
@@ -486,14 +293,10 @@ export const CustomerOrdersTab: React.FC<CustomerOrdersTabProps> = ({
                   href={`/orders/${order.orderNumber || order.id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="business-chip-button flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{
-                    borderColor: "var(--business-card-border)",
-                    color: "var(--business-text-primary)",
-                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/60 bg-background text-foreground text-xs font-medium hover:bg-muted/50 transition-colors"
                 >
                   <ExternalLink size={12} />
-                  صفحة الطلب
+                  <span>صفحة الطلب</span>
                 </a>
               </div>
             </div>

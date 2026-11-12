@@ -1,18 +1,52 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, Check, Copy, MoreHorizontal, StickyNote } from 'lucide-react';
 import {
-  ClockIcon,
-  ShoppingCartIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+  Bot,
+  CalendarPlus,
+  Check,
+  Clock,
+  Copy,
+  ListTodo,
+  MoreHorizontal,
+  ShoppingBag,
+  Stethoscope,
+  StickyNote,
+  Trash2,
+  Wrench,
+} from 'lucide-react';
+import type {
+  InboxVerticalAction,
+  InboxVerticalActionId,
+} from '../hooks/useInboxVerticalCapabilities';
+
+export const renderVerticalActionIcon = (
+  id: InboxVerticalActionId,
+  className = 'h-4 w-4',
+) => {
+  switch (id) {
+    case 'dental_case':
+      return <Stethoscope className={className} />;
+    case 'appointment':
+      return <CalendarPlus className={className} />;
+    case 'service_order':
+      return <Wrench className={className} />;
+    case 'task':
+      return <ListTodo className={className} />;
+    case 'order':
+    default:
+      return <ShoppingBag className={className} />;
+  }
+};
 
 interface FacebookChatHeaderDesktopMenuProps {
   showDesktopMoreMenu: boolean;
   setShowDesktopMoreMenu: React.Dispatch<React.SetStateAction<boolean>>;
   isAiActive: boolean;
   onToggleAi: () => void;
-  onOpenQuickOrderModal: () => void;
+  primaryAction?: InboxVerticalAction;
+  availableActions?: InboxVerticalAction[];
+  onTriggerVerticalAction?: (actionId: InboxVerticalActionId) => void;
+  onOpenQuickOrderModal?: () => void;
   conversationId: string;
   onCopyConversationLink: (id: string) => void;
   copiedLink: boolean;
@@ -27,6 +61,9 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
   setShowDesktopMoreMenu,
   isAiActive,
   onToggleAi,
+  primaryAction,
+  availableActions,
+  onTriggerVerticalAction,
   onOpenQuickOrderModal,
   conversationId,
   onCopyConversationLink,
@@ -38,14 +75,29 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
 }) => {
   const { t } = useTranslation();
 
+  const actionsList: InboxVerticalAction[] =
+    availableActions && availableActions.length > 0
+      ? availableActions
+      : [primaryAction || { id: 'order', label: t('facebookInbox.createQuickOrder') }];
+
+  const handleActionClick = (actionId: InboxVerticalActionId) => {
+    setShowDesktopMoreMenu(false);
+    if (onTriggerVerticalAction) {
+      onTriggerVerticalAction(actionId);
+    } else if (actionId === 'order' && onOpenQuickOrderModal) {
+      onOpenQuickOrderModal();
+    }
+  };
+
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setShowDesktopMoreMenu((current) => !current)}
-        className="business-icon-button rounded-xl transition-colors"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
         data-tone={showDesktopMoreMenu ? 'primary' : undefined}
         title={t('facebookInbox.moreActions')}
+        aria-label={t('facebookInbox.moreActions')}
         aria-expanded={showDesktopMoreMenu}
       >
         <MoreHorizontal className="h-4 w-4" />
@@ -58,17 +110,17 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
             onClick={() => setShowDesktopMoreMenu(false)}
             aria-label={t('facebookInbox.closeMenu')}
           />
-          <div className="business-dropdown-surface absolute left-0 top-full z-30 mt-2 p-2 w-56 flex flex-col gap-1 shadow-xl">
+          <div className="absolute left-0 top-full z-30 mt-2 p-1.5 w-56 rounded-xl border border-border/60 bg-popover text-popover-foreground flex flex-col gap-0.5 shadow-xl">
             <button
               type="button"
-              className="business-dropdown-option"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-muted/60 transition-colors text-start cursor-pointer"
               onClick={() => {
                 setShowDesktopMoreMenu(false);
                 onToggleAi();
               }}
             >
               <Bot
-                className={`h-5 w-5 ${
+                className={`h-4 w-4 ${
                   isAiActive ? 'text-amber-500' : 'text-emerald-500'
                 }`}
               />
@@ -79,30 +131,30 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
               </span>
             </button>
 
-            <button
-              type="button"
-              className="business-dropdown-option"
-              onClick={() => {
-                setShowDesktopMoreMenu(false);
-                onOpenQuickOrderModal();
-              }}
-            >
-              <ShoppingCartIcon className="h-5 w-5" />
-              <span>{t('facebookInbox.createQuickOrder')}</span>
-            </button>
+            {actionsList.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-muted/60 transition-colors text-start cursor-pointer"
+                onClick={() => handleActionClick(action.id)}
+              >
+                {renderVerticalActionIcon(action.id, 'h-4 w-4 text-primary')}
+                <span>{action.label}</span>
+              </button>
+            ))}
 
             <button
               type="button"
-              className="business-dropdown-option"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-muted/60 transition-colors text-start cursor-pointer"
               onClick={() => {
                 onCopyConversationLink(conversationId);
                 setShowDesktopMoreMenu(false);
               }}
             >
               {copiedLink ? (
-                <Check className="h-5 w-5 text-emerald-500" />
+                <Check className="h-4 w-4 text-emerald-500" />
               ) : (
-                <Copy className="h-5 w-5" />
+                <Copy className="h-4 w-4 text-muted-foreground" />
               )}
               <span>
                 {copiedLink
@@ -113,13 +165,13 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
 
             <button
               type="button"
-              className="business-dropdown-option"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-muted/60 transition-colors text-start cursor-pointer"
               onClick={() => {
                 setShowDesktopMoreMenu(false);
                 onToggleNotesPanel();
               }}
             >
-              <StickyNote className="h-5 w-5" />
+              <StickyNote className="h-4 w-4 text-muted-foreground" />
               <span>
                 {showNotes
                   ? t('facebookInbox.hideNotes')
@@ -129,31 +181,27 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
 
             <button
               type="button"
-              className="business-dropdown-option"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium hover:bg-muted/60 transition-colors text-start cursor-pointer"
               onClick={() => {
                 setShowDesktopMoreMenu(false);
                 onOpenSnoozeModal();
               }}
             >
-              <ClockIcon className="h-5 w-5" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               <span>{t('facebookInbox.snooze')}</span>
             </button>
 
-            <div
-              className="h-px my-1"
-              style={{ background: 'var(--business-muted-line)' }}
-            />
+            <div className="h-px my-1 bg-border/50" />
 
             <button
               type="button"
-              className="business-dropdown-option"
-              style={{ color: 'var(--business-danger)' }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors text-start cursor-pointer"
               onClick={() => {
                 setShowDesktopMoreMenu(false);
                 onDeleteConversation();
               }}
             >
-              <TrashIcon className="h-5 w-5" />
+              <Trash2 className="h-4 w-4" />
               <span>{t('facebookInbox.deleteConversation')}</span>
             </button>
           </div>

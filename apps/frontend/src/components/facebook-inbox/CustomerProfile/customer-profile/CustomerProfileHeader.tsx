@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
-  Volume2,
-  VolumeX,
+  Ban,
   Bell,
   BellOff,
+  CalendarPlus,
+  CheckCircle2,
+  ListTodo,
   ShoppingBag,
+  Stethoscope,
+  Volume2,
+  VolumeX,
+  Wrench,
 } from "lucide-react";
-import { NoSymbolIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import {
   ConversationStatus,
   InboxConversation,
@@ -15,7 +20,11 @@ import {
 import { getInboxCustomerAvatarUrl } from "../../../../utils/imageUrl";
 import StatusDropdown from "../../StatusDropdown/StatusDropdown";
 import AssignmentDropdown from "../../AssignmentDropdown/AssignmentDropdown";
-import { mutedHeadingStyle } from "./styles";
+import type {
+  CustomerProfileVerticalCapabilities,
+  CustomerProfileVerticalContext,
+} from "./types";
+import { extractVerticalRecords } from "./CustomerVerticalRecordsTab";
 
 interface CustomerProfileHeaderProps {
   conversation: InboxConversation;
@@ -38,7 +47,27 @@ interface CustomerProfileHeaderProps {
   blocking?: boolean;
   onBlockClick?: () => void;
   onUnblockClick?: () => void;
+  verticalCapabilities?: CustomerProfileVerticalCapabilities;
+  verticalContext?: CustomerProfileVerticalContext | null;
+  onPrimaryAction?: () => void;
+  onOpenServiceOrder?: () => void;
+  onOpenTasks?: () => void;
 }
+
+const renderActionIcon = (actionId?: string) => {
+  switch (actionId) {
+    case "dental_case":
+      return <Stethoscope className="h-3.5 w-3.5 shrink-0" />;
+    case "appointment":
+      return <CalendarPlus className="h-3.5 w-3.5 shrink-0" />;
+    case "service_order":
+      return <Wrench className="h-3.5 w-3.5 shrink-0" />;
+    case "task":
+      return <ListTodo className="h-3.5 w-3.5 shrink-0" />;
+    default:
+      return <ShoppingBag className="h-3.5 w-3.5 shrink-0" />;
+  }
+};
 
 export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
   conversation,
@@ -61,6 +90,11 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
   blocking = false,
   onBlockClick,
   onUnblockClick,
+  verticalCapabilities,
+  verticalContext,
+  onPrimaryAction,
+  onOpenServiceOrder,
+  onOpenTasks,
 }) => {
   const [isMobileViewport, setIsMobileViewport] = useState(
     () => (typeof window !== "undefined" ? window.innerWidth < 768 : false),
@@ -78,57 +112,68 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
     conversation.customerAvatar,
   );
 
+  const isNonCommerce = Boolean(
+    verticalCapabilities &&
+      verticalCapabilities.vertical !== "commerce" &&
+      verticalCapabilities.vertical !== "cafe",
+  );
+  const verticalRecordsCount = extractVerticalRecords(verticalContext).length;
+  const kpiCount = isNonCommerce
+    ? (verticalContext?.summary?.primaryCount ??
+      verticalContext?.summary?.totalCount ??
+      (verticalRecordsCount || ordersCount))
+    : ordersCount;
+  const kpiValue = isNonCommerce
+    ? (verticalContext?.summary?.secondaryValue ??
+      verticalContext?.summary?.totalValue ??
+      ltv)
+    : ltv;
+  const countLabel = verticalCapabilities?.kpiLabels.countLabel || "الطلبات";
+  const valueLabel = verticalCapabilities?.kpiLabels.valueLabel || "القيمة";
+
   const statsSummary = (
     <div
       className={[
-        "grid grid-cols-2 overflow-hidden rounded-lg text-center",
+        "grid grid-cols-2 gap-1.5",
         compactHeader ? "w-full" : "shrink-0",
       ].join(" ")}
-      style={{
-        border: "1px solid var(--business-card-border)",
-        background: "var(--business-surface-subtle)",
-      }}
     >
-      <div className="min-w-[46px] px-2 py-1">
-        <p className="text-[10px] leading-4" style={mutedHeadingStyle}>
-          الطلبات
+      <div className="min-w-[54px] rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-center">
+        <p className="text-[10px] font-medium text-muted-foreground leading-4">
+          {countLabel}
         </p>
-        <p
-          className="text-sm font-semibold font-mono tabular-nums leading-5"
-          style={{ color: "var(--color-foreground)" }}
-        >
-          {ordersCount}
+        <p className="text-sm font-bold font-mono tabular-nums text-foreground leading-5">
+          {kpiCount}
         </p>
       </div>
-      <div
-        className="min-w-[58px] px-2 py-1"
-        style={{ borderRight: "1px solid var(--business-muted-line)" }}
-      >
-        <p className="text-[10px] leading-4" style={mutedHeadingStyle}>
-          القيمة
+      <div className="min-w-[68px] rounded-lg border border-border/50 bg-muted/20 px-2.5 py-1.5 text-center">
+        <p className="text-[10px] font-medium text-muted-foreground leading-4">
+          {valueLabel}
         </p>
-        <p
-          className="text-sm font-semibold font-mono tabular-nums leading-5"
-          style={{ color: "var(--business-success)" }}
-        >
-          {ltv.toLocaleString()} ج.م
+        <p className="text-sm font-bold tabular-nums text-primary leading-5">
+          {Number(kpiValue || 0).toLocaleString()} ج.م
         </p>
       </div>
     </div>
   );
 
   const useCompactActions = compactHeader || isMobileViewport;
-  const compactActionClassName =
-    "business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-xl p-0 text-xs font-medium transition-colors";
-  const expandedActionClassName =
-    "business-chip-button flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-medium transition-colors";
-  const actionLabelClassName = useCompactActions ? "sr-only" : "truncate";
+  const compactActionCls =
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border p-0 text-xs font-medium transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer";
+  const expandedActionCls =
+    "flex h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-medium transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer";
+  const actionLabelCls = useCompactActions ? "sr-only" : "truncate";
+
+  const handlePrimaryClick = onPrimaryAction || onCreateOrder;
+  const primaryId = verticalCapabilities?.primaryAction.id || "order";
+  const primaryLabel = verticalCapabilities?.primaryAction.label || "طلب";
+  const primaryTitle =
+    verticalCapabilities?.primaryAction && primaryId !== "order"
+      ? verticalCapabilities.primaryAction.label
+      : "إنشاء طلب سريع لهذا العميل";
 
   return (
-    <div
-      className="business-inbox-header px-3 py-2.5 text-right"
-      style={{ borderBottom: "1px solid var(--business-muted-line)" }}
-    >
+    <div className="business-inbox-header border-b border-border/50 bg-card/60 px-3 py-2.5 text-right">
       {compactHeader ? (
         statsSummary
       ) : (
@@ -137,8 +182,7 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
             <img
               src={customerAvatarUrl}
               alt={conversation.customerName}
-              className="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm"
-              style={{ border: "1px solid var(--business-card-border)" }}
+              className="h-11 w-11 shrink-0 rounded-full object-cover border border-border/60"
               onError={(e) => {
                 (e.currentTarget as HTMLElement).style.display = "none";
                 const fallback = e.currentTarget.nextElementSibling;
@@ -147,28 +191,20 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
             />
           ) : null}
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
-            style={{
-              display: customerAvatarUrl ? "none" : "flex",
-              background:
-                "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
-            }}
+            className="h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-base font-bold text-primary"
+            style={{ display: customerAvatarUrl ? "none" : "flex" }}
           >
             {conversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
           </div>
 
           <div className="min-w-0 flex-1">
-            <h3
-              className="truncate text-sm font-bold leading-5"
-              style={{ color: "var(--color-foreground)" }}
-            >
+            <h3 className="truncate text-sm font-bold leading-5 text-foreground">
               {conversation.customerName}
             </h3>
-            <div
-              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]"
-              style={mutedHeadingStyle}
-            >
-              <span>عميل منذ {format(new Date(), "yyyy")}</span>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+              <span className="tabular-nums">
+                عميل منذ {format(new Date(), "yyyy")}
+              </span>
               {conversation.platform === "facebook" && (
                 <span className="truncate font-medium">
                   {conversation.pageName || "Facebook"}
@@ -181,7 +217,6 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
         </div>
       )}
 
-      {/* Status & Assignment - compact controls */}
       {(onStatusChange || onAssign) && (
         <div
           className="mt-2 grid gap-1.5"
@@ -193,7 +228,7 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
           }}
         >
           {onStatusChange && (
-            <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1 [&>div>button]:text-xs [&>div>button_span]:truncate">
+            <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-lg [&>div>button]:px-2 [&>div>button]:py-1 [&>div>button]:text-xs [&>div>button_span]:truncate">
               <StatusDropdown
                 currentStatus={effectiveStatus}
                 onStatusChange={onStatusChange}
@@ -202,7 +237,7 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
             </div>
           )}
           {onAssign && (
-            <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1 [&>div>button]:text-xs [&>div>button_span]:truncate">
+            <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-lg [&>div>button]:px-2 [&>div>button]:py-1 [&>div>button]:text-xs [&>div>button_span]:truncate">
               <AssignmentDropdown
                 currentAssignee={currentAssignee ?? conversation.assignedTo}
                 currentAssigneeName={
@@ -218,22 +253,20 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
 
       {(onSoundToggle ||
         onNotificationsToggle ||
-        onCreateOrder ||
+        handlePrimaryClick ||
+        onOpenServiceOrder ||
+        onOpenTasks ||
         (conversation.pageId && (onBlockClick || onUnblockClick))) && (
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {onSoundToggle && (
             <button
+              type="button"
               onClick={onSoundToggle}
-              className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-xl p-0 transition-colors"
-              style={
+              className={`${compactActionCls} ${
                 soundEnabled
-                  ? {
-                      color: "var(--color-primary)",
-                      background:
-                        "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
-                    }
-                  : undefined
-              }
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border/60 bg-background text-muted-foreground hover:text-foreground"
+              }`}
               title={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
               aria-label={soundEnabled ? "كتم الصوت" : "تفعيل الصوت"}
             >
@@ -243,52 +276,58 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
 
           {onNotificationsToggle && (
             <button
+              type="button"
               onClick={onNotificationsToggle}
-              className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-xl p-0 transition-colors"
-              style={
+              className={`${compactActionCls} ${
                 notificationsEnabled
-                  ? {
-                      color: "var(--color-primary)",
-                      background:
-                        "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
-                    }
-                  : undefined
-              }
-              title={
-                notificationsEnabled ? "كتم الإشعارات" : "تفعيل الإشعارات"
-              }
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border/60 bg-background text-muted-foreground hover:text-foreground"
+              }`}
+              title={notificationsEnabled ? "كتم الإشعارات" : "تفعيل الإشعارات"}
               aria-label={
                 notificationsEnabled ? "كتم الإشعارات" : "تفعيل الإشعارات"
               }
             >
-              {notificationsEnabled ? (
-                <Bell size={15} />
-              ) : (
-                <BellOff size={15} />
-              )}
+              {notificationsEnabled ? <Bell size={15} /> : <BellOff size={15} />}
             </button>
           )}
 
-          {onCreateOrder && (
+          {handlePrimaryClick && (
             <button
-              onClick={onCreateOrder}
-              className={
-                useCompactActions
-                  ? compactActionClassName
-                  : expandedActionClassName
-              }
-              style={{
-                color: "var(--business-warning)",
-                background:
-                  "color-mix(in srgb, var(--business-warning) 10%, var(--color-card, #ffffff))",
-                borderColor:
-                  "color-mix(in srgb, var(--business-warning) 20%, transparent)",
-              }}
-              title="إنشاء طلب سريع لهذا العميل"
-              aria-label="إنشاء طلب سريع لهذا العميل"
+              type="button"
+              onClick={handlePrimaryClick}
+              className={`${
+                useCompactActions ? compactActionCls : expandedActionCls
+              } border-primary/30 bg-primary/10 text-primary hover:bg-primary/15`}
+              title={primaryTitle}
+              aria-label={primaryTitle}
             >
-              <ShoppingBag className="h-4 w-4 shrink-0" />
-              <span className={actionLabelClassName}>طلب</span>
+              {renderActionIcon(primaryId)}
+              <span className={actionLabelCls}>{primaryLabel}</span>
+            </button>
+          )}
+
+          {onOpenServiceOrder && primaryId !== "service_order" && (
+            <button
+              type="button"
+              onClick={onOpenServiceOrder}
+              className={`${compactActionCls} border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15`}
+              title="طلب خدمة"
+              aria-label="طلب خدمة"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {onOpenTasks && primaryId !== "task" && (
+            <button
+              type="button"
+              onClick={onOpenTasks}
+              className={`${compactActionCls} border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/15`}
+              title="إنشاء مهمة"
+              aria-label="إنشاء مهمة"
+            >
+              <ListTodo className="h-3.5 w-3.5" />
             </button>
           )}
 
@@ -297,57 +336,38 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
             (checkingBlockStatus ? (
               <div
                 className={[
-                  "flex h-8 items-center justify-center rounded-xl",
+                  "flex h-8 items-center justify-center rounded-lg border border-border/50 bg-muted/20",
                   useCompactActions ? "w-8 shrink-0" : "min-w-0 flex-1",
                 ].join(" ")}
-                style={{
-                  border: "1px solid var(--business-card-border)",
-                  background: "var(--business-surface-subtle)",
-                }}
               >
-                <div
-                  className="h-4 w-4 animate-spin rounded-full border-b-2"
-                  style={{ borderColor: "var(--color-muted-foreground)" }}
-                ></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
               </div>
             ) : isBlocked ? (
               <button
+                type="button"
                 onClick={onUnblockClick}
                 disabled={blocking}
-                className={`${useCompactActions ? compactActionClassName : expandedActionClassName} disabled:cursor-not-allowed disabled:opacity-50`}
-                style={{
-                  color: "var(--business-success)",
-                  background:
-                    "color-mix(in srgb, var(--business-success) 10%, var(--color-card, #ffffff))",
-                  borderColor:
-                    "color-mix(in srgb, var(--business-success) 20%, transparent)",
-                }}
+                className={`${
+                  useCompactActions ? compactActionCls : expandedActionCls
+                } border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 disabled:cursor-not-allowed disabled:opacity-50`}
                 title="إلغاء حظر العميل على الصفحة"
                 aria-label="إلغاء حظر العميل على الصفحة"
               >
-                <CheckCircleIcon className="h-4 w-4 shrink-0" />
-                <span className={actionLabelClassName}>فتح</span>
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                <span className={actionLabelCls}>فتح</span>
               </button>
             ) : (
               <button
+                type="button"
                 onClick={onBlockClick}
-                className={
-                  useCompactActions
-                    ? compactActionClassName
-                    : expandedActionClassName
-                }
-                style={{
-                  color: "var(--business-danger)",
-                  background:
-                    "color-mix(in srgb, var(--business-danger) 10%, var(--color-card, #ffffff))",
-                  borderColor:
-                    "color-mix(in srgb, var(--business-danger) 20%, transparent)",
-                }}
+                className={`${
+                  useCompactActions ? compactActionCls : expandedActionCls
+                } border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15`}
                 title="حظر العميل على الصفحة"
                 aria-label="حظر العميل على الصفحة"
               >
-                <NoSymbolIcon className="h-4 w-4 shrink-0" />
-                <span className={actionLabelClassName}>حظر</span>
+                <Ban className="h-3.5 w-3.5 shrink-0" />
+                <span className={actionLabelCls}>حظر</span>
               </button>
             ))}
         </div>

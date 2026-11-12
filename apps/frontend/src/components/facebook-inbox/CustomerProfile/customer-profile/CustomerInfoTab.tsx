@@ -175,9 +175,11 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
             <p
               className="text-xs"
               style={{
-                color: phoneUpdateMessage.includes("✅")
-                  ? "var(--business-success)"
-                  : "var(--business-danger)",
+                color:
+                  phoneUpdateMessage.startsWith("تم الحفظ:") ||
+                  phoneUpdateMessage.includes("تم")
+                    ? "var(--business-success)"
+                    : "var(--business-danger)",
               }}
             >
               {phoneUpdateMessage}

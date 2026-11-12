@@ -1,9 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { X } from 'lucide-react';
 import { NotesPanel } from '@/components/facebook-inbox/NotesPanel/NotesPanel';
 import CustomerProfile from '@/components/facebook-inbox/CustomerProfile/CustomerProfile';
 import type { InboxConversation, ConversationStatus } from '@/types/inbox.types';
+import type { InboxVerticalCapabilities } from '../hooks/useInboxVerticalCapabilities';
+import type { VerticalContextData } from '../hooks/useConversationVerticalContext';
 
 interface FacebookContextDrawerProps {
   selectedConversation: InboxConversation;
@@ -34,6 +36,11 @@ interface FacebookContextDrawerProps {
   onSoundToggle: () => void;
   onNotificationsToggle: () => void;
   onCreateOrder: () => void;
+  verticalCapabilities?: InboxVerticalCapabilities;
+  verticalContext?: VerticalContextData | null;
+  onPrimaryAction?: () => void;
+  onOpenServiceOrder?: () => void;
+  onOpenTasks?: () => void;
 }
 
 export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
@@ -65,6 +72,11 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
   onSoundToggle,
   onNotificationsToggle,
   onCreateOrder,
+  verticalCapabilities,
+  verticalContext,
+  onPrimaryAction,
+  onOpenServiceOrder,
+  onOpenTasks,
 }) => {
   const { t } = useTranslation();
 
@@ -76,6 +88,40 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
         console.error('Failed to copy link:', err);
         alert(t('conversations.conversationLinkAlert', { link: conversationLink }));
       });
+  };
+
+  const sharedProfileProps = {
+    conversation: selectedConversation,
+    onTagsChange,
+    updatingTags,
+    currentStatus: selectedConversation.status,
+    onStatusChange: (status: string) =>
+      onStatusChange(status as ConversationStatus),
+    currentAssignee: selectedConversation.assignedTo,
+    currentAssigneeName: selectedConversation.assignedToName ?? null,
+    onAssign,
+    disabled,
+    onCopyConversationLink: handleCopyConversationLink,
+    isBlocked,
+    checkingBlockStatus,
+    blocking,
+    showBlockModal,
+    blockReason,
+    onBlockClick,
+    onUnblockClick,
+    onBlockReasonChange,
+    onBlockConfirm,
+    onBlockCancel,
+    soundEnabled,
+    notificationsEnabled,
+    onSoundToggle,
+    onNotificationsToggle,
+    onCreateOrder,
+    verticalCapabilities,
+    verticalContext,
+    onPrimaryAction,
+    onOpenServiceOrder,
+    onOpenTasks,
   };
 
   return (
@@ -102,42 +148,16 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
       {showPinnedContextPanel &&
         (showNotes ? (
           <NotesPanel
-            className="business-inbox-column--profile business-inbox-column--context h-full shadow-none"
+            className="business-inbox-column--profile business-inbox-column--context h-full border-s border-border/50 bg-card/80 shadow-none"
             customerId={selectedConversation.customerId}
             isOpen
             onClose={onCloseNotes}
           />
         ) : (
           <CustomerProfile
-            className="business-inbox-column--context h-full shadow-none"
-            conversation={selectedConversation}
+            className="business-inbox-column--context h-full border-s border-border/50 bg-card/80 shadow-none"
             compactHeader
-            onTagsChange={onTagsChange}
-            updatingTags={updatingTags}
-            currentStatus={selectedConversation.status}
-            onStatusChange={(status) =>
-              onStatusChange(status as ConversationStatus)
-            }
-            currentAssignee={selectedConversation.assignedTo}
-            currentAssigneeName={selectedConversation.assignedToName ?? null}
-            onAssign={onAssign}
-            disabled={disabled}
-            onCopyConversationLink={handleCopyConversationLink}
-            isBlocked={isBlocked}
-            checkingBlockStatus={checkingBlockStatus}
-            blocking={blocking}
-            showBlockModal={showBlockModal}
-            blockReason={blockReason}
-            onBlockClick={onBlockClick}
-            onUnblockClick={onUnblockClick}
-            onBlockReasonChange={onBlockReasonChange}
-            onBlockConfirm={onBlockConfirm}
-            onBlockCancel={onBlockCancel}
-            soundEnabled={soundEnabled}
-            notificationsEnabled={notificationsEnabled}
-            onSoundToggle={onSoundToggle}
-            onNotificationsToggle={onNotificationsToggle}
-            onCreateOrder={onCreateOrder}
+            {...sharedProfileProps}
           />
         ))}
 
@@ -152,40 +172,15 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
             <button
               type="button"
               onClick={onCloseProfilePanel}
-              className="business-icon-button absolute left-3 top-3 z-40 rounded-full"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 text-foreground hover:bg-muted absolute left-3 top-3 z-40 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title={t('facebookInbox.closeCustomerData')}
+              aria-label={t('facebookInbox.closeCustomerData')}
             >
-              <XMarkIcon className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
             <CustomerProfile
               className="w-full shadow-2xl"
-              conversation={selectedConversation}
-              onTagsChange={onTagsChange}
-              updatingTags={updatingTags}
-              currentStatus={selectedConversation.status}
-              onStatusChange={(status) =>
-                onStatusChange(status as ConversationStatus)
-              }
-              currentAssignee={selectedConversation.assignedTo}
-              currentAssigneeName={selectedConversation.assignedToName ?? null}
-              onAssign={onAssign}
-              disabled={disabled}
-              onCopyConversationLink={handleCopyConversationLink}
-              isBlocked={isBlocked}
-              checkingBlockStatus={checkingBlockStatus}
-              blocking={blocking}
-              showBlockModal={showBlockModal}
-              blockReason={blockReason}
-              onBlockClick={onBlockClick}
-              onUnblockClick={onUnblockClick}
-              onBlockReasonChange={onBlockReasonChange}
-              onBlockConfirm={onBlockConfirm}
-              onBlockCancel={onBlockCancel}
-              soundEnabled={soundEnabled}
-              notificationsEnabled={notificationsEnabled}
-              onSoundToggle={onSoundToggle}
-              onNotificationsToggle={onNotificationsToggle}
-              onCreateOrder={onCreateOrder}
+              {...sharedProfileProps}
             />
           </div>
         </>

@@ -1,4 +1,57 @@
-import { InboxConversation } from "../../../types/inbox.types";
+import { InboxConversation } from "../../../../types/inbox.types";
+
+export interface CustomerProfileVerticalAction {
+  id: string;
+  label: string;
+}
+
+export interface CustomerProfileVerticalRecord {
+  id: string;
+  type?: string;
+  title?: string;
+  code?: string;
+  status?: string;
+  amount?: number;
+  date?: string;
+  subtitle?: string;
+  href?: string;
+  [key: string]: unknown;
+}
+
+export interface CustomerProfileVerticalContext {
+  vertical?: string;
+  records?: CustomerProfileVerticalRecord[];
+  dentalCases?: CustomerProfileVerticalRecord[];
+  appointments?: CustomerProfileVerticalRecord[];
+  serviceOrders?: CustomerProfileVerticalRecord[];
+  tasks?: CustomerProfileVerticalRecord[];
+  enrollments?: CustomerProfileVerticalRecord[];
+  summary?: {
+    countLabel?: string;
+    valueLabel?: string;
+    primaryCount?: number;
+    secondaryValue?: number;
+    totalCount?: number;
+    totalValue?: number;
+    items?: CustomerProfileVerticalRecord[];
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface CustomerProfileVerticalCapabilities {
+  vertical: string;
+  specialtyLabel: string;
+  badgeClassName?: string;
+  primaryAction: CustomerProfileVerticalAction;
+  availableActions?: CustomerProfileVerticalAction[];
+  recordsTabLabel: string;
+  kpiLabels: {
+    countLabel: string;
+    valueLabel: string;
+  };
+  showProductPicker?: boolean;
+}
 
 export interface CustomerProfileProps {
   conversation: InboxConversation;
@@ -31,9 +84,14 @@ export interface CustomerProfileProps {
   onNotificationsToggle?: () => void;
   // Copy Conversation Link
   onCopyConversationLink?: (conversationId: string) => void;
-  // Quick Order
+  // Quick Order & Vertical Capabilities
   onCreateOrder?: () => void;
   compactHeader?: boolean;
+  verticalCapabilities?: CustomerProfileVerticalCapabilities;
+  verticalContext?: CustomerProfileVerticalContext | null;
+  onPrimaryAction?: () => void;
+  onOpenServiceOrder?: () => void;
+  onOpenTasks?: () => void;
 }
 
 export type Tab = "info" | "orders" | "timeline";

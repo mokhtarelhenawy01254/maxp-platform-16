@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot } from 'lucide-react';
+import { AlertTriangle, Bot } from 'lucide-react';
 import MessageBubble from '@/components/facebook-inbox/MessageBubble/MessageBubble';
 import MessageInput from '@/components/facebook-inbox/MessageInput/MessageInput';
 import type { InboxMessage, InboxConversation } from '@/types/inbox.types';
@@ -36,7 +36,10 @@ interface FacebookMessageStreamProps {
   onCancelReply: () => void;
   onOpenTextGallery: () => void;
   onOpenImageGallery: () => void;
-  onOpenProductPicker: () => void;
+  onOpenProductPicker?: () => void;
+  onOpenOrder?: () => void;
+  onOpenServiceOrder?: () => void;
+  onOpenTasks?: () => void;
   composerDraft: string;
   setComposerDraft: (draft: string) => void;
   onRetryMessage?: (message: InboxMessage) => void;
@@ -74,6 +77,9 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
   onOpenTextGallery,
   onOpenImageGallery,
   onOpenProductPicker,
+  onOpenOrder,
+  onOpenServiceOrder,
+  onOpenTasks,
   composerDraft,
   setComposerDraft,
   onRetryMessage,
@@ -105,31 +111,25 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
     <>
       {/* Scrollable messages viewport */}
       <div
-        className="business-chat-stage flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-4 pb-4"
+        className="business-chat-stage flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-background/60 p-2 sm:p-4 pb-4"
         style={{ flex: '1 1 0%', minHeight: 0 }}
         ref={messagesContainerRef as React.RefObject<HTMLDivElement>}
         onScroll={onScroll}
       >
         {loadingMessages && !hasMore ? (
           <div className="business-inbox-empty h-full flex items-center justify-center">
-            <div
-              className="animate-spin rounded-full h-8 w-8 border-b-2"
-              style={{ borderColor: 'var(--color-primary)' }}
-            />
+            <div className="animate-spin rounded-full h-9 w-9 border-2 border-primary border-t-transparent" />
           </div>
         ) : messages.length === 0 && !loadingMessages ? (
-          <div className="business-inbox-empty h-full py-10 text-center">
-            <p className="text-sm text-slate-500">{t('inbox.noMessages')}</p>
+          <div className="business-inbox-empty h-full py-10 text-center flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">{t('inbox.noMessages')}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {/* Loading older messages indicator */}
             {loadingMessages && hasMore && (
               <div className="flex justify-center p-2">
-                <div
-                  className="animate-spin rounded-full h-5 w-5 border-b-2"
-                  style={{ borderColor: 'var(--color-muted-foreground)' }}
-                />
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-muted-foreground border-t-transparent" />
               </div>
             )}
 
@@ -175,18 +175,9 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
       </div>
 
       {/* Bottom composer & AI status banner */}
-      <div className="flex-shrink-0 mt-auto" style={{ flexShrink: 0, marginTop: 'auto' }}>
+      <div className="flex-shrink-0 mt-auto border-t border-border/50 bg-card/80" style={{ flexShrink: 0, marginTop: 'auto' }}>
         {!isAiActive && (
-          <div
-            className="flex items-center justify-between px-3.5 py-1.5 text-xs border-t backdrop-blur-sm"
-            style={{
-              background:
-                'color-mix(in srgb, var(--business-warning) 8%, var(--color-card, #ffffff))',
-              borderColor:
-                'color-mix(in srgb, var(--business-warning) 22%, transparent)',
-              color: 'var(--color-foreground)',
-            }}
-          >
+          <div className="flex items-center justify-between px-3.5 py-1.5 text-xs border-b border-amber-500/20 bg-amber-500/10 text-foreground backdrop-blur-sm">
             <div className="flex items-center gap-2 min-w-0">
               <Bot className="h-4 w-4 flex-shrink-0 text-amber-500" />
               <span className="truncate font-medium">
@@ -204,27 +195,25 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
             <button
               type="button"
               onClick={onToggleAi}
-              className="ms-2 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white transition-all flex-shrink-0 shadow-sm cursor-pointer"
+              className="ms-2 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97] text-white transition-all flex-shrink-0 shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {t('facebookInbox.resumeAi', 'تشغيل الرد الآلي')}
             </button>
           </div>
         )}
 
-        {/* ⏰ تحذير انتهاء نافذة الـ 24 ساعة لفيسبوك */}
+        {/* 24-hour Facebook window notice */}
         {isFacebookConv && isWindowExpired && (
-          <div
-            className="flex items-center justify-between px-4 py-2.5 text-xs border-t bg-amber-500/10 border-amber-500/30 text-amber-300 backdrop-blur-sm"
-          >
+          <div className="flex items-center justify-between px-4 py-2 text-xs border-b border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300 backdrop-blur-sm">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-base flex-shrink-0">⚠️</span>
-              <span className="font-semibold text-amber-200">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-500" />
+              <span className="font-semibold tabular-nums">
                 {hoursSinceExpiration > 0
                   ? `النافذة اتقفلت من ${hoursSinceExpiration} ساعة — لا يمكن إرسال رسائل جديدة`
                   : 'انتهت نافذة الـ 24 ساعة للرد على العميل عبر فيسبوك'}
               </span>
             </div>
-            <div className="text-[11px] text-amber-300/80 hidden sm:block">
+            <div className="text-[11px] text-amber-600/80 dark:text-amber-300/80 hidden sm:block">
               تواصل مع العميل هاتفياً أو انتظر رداً جديداً منه لفتح النافذة
             </div>
           </div>
@@ -244,14 +233,17 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
           onOpenTextGallery={onOpenTextGallery}
           onOpenImageGallery={onOpenImageGallery}
           onOpenProductPicker={onOpenProductPicker}
+          onOpenOrder={onOpenOrder}
+          onOpenServiceOrder={onOpenServiceOrder}
+          onOpenTasks={onOpenTasks}
           draftMessage={composerDraft}
           onDraftMessageHandled={() => setComposerDraft('')}
           disabled={isFacebookConv && isWindowExpired}
           disabledReason={
             isFacebookConv && isWindowExpired
-              ? (hoursSinceExpiration > 0
-                  ? `النافذة اتقفلت من ${hoursSinceExpiration} ساعة — لا يمكن إرسال رسائل جديدة`
-                  : 'انتهت نافذة الـ 24 ساعة للرد على العميل')
+              ? hoursSinceExpiration > 0
+                ? `النافذة اتقفلت من ${hoursSinceExpiration} ساعة — لا يمكن إرسال رسائل جديدة`
+                : 'انتهت نافذة الـ 24 ساعة للرد على العميل'
               : undefined
           }
         />

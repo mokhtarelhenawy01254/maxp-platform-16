@@ -12,6 +12,10 @@ export function useFacebookInboxModals() {
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [showServiceOrderModal, setShowServiceOrderModal] = useState(false);
+  const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
+  const [showDentalCaseModal, setShowDentalCaseModal] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockReason, setBlockReason] = useState('');
@@ -39,6 +43,14 @@ export function useFacebookInboxModals() {
     setShowProductPicker,
     showQuickOrderModal,
     setShowQuickOrderModal,
+    showServiceOrderModal,
+    setShowServiceOrderModal,
+    showQuickTaskModal,
+    setShowQuickTaskModal,
+    showDentalCaseModal,
+    setShowDentalCaseModal,
+    showAppointmentModal,
+    setShowAppointmentModal,
     showBlockModal,
     setShowBlockModal,
     blockReason,

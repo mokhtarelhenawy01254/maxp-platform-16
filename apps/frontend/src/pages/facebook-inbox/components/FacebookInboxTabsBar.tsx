@@ -1,5 +1,7 @@
 import React from 'react';
-import InboxTabs from '@/components/facebook-inbox/InboxTabs/InboxTabs';
+import InboxTabs, {
+  type InboxVerticalBadge,
+} from '@/components/facebook-inbox/InboxTabs/InboxTabs';
 import type { InboxTab } from '@/types/inbox.types';
 import type { FilterState } from '@/components/facebook-inbox/FilterPanel/FilterPanel';
 import type { TabCountsState } from '../types/facebookInboxTypes';
@@ -15,6 +17,7 @@ interface FacebookInboxTabsBarProps {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   priorityCount: number;
+  verticalBadge?: InboxVerticalBadge;
 }
 
 export const FacebookInboxTabsBar: React.FC<FacebookInboxTabsBarProps> = ({
@@ -28,7 +31,16 @@ export const FacebookInboxTabsBar: React.FC<FacebookInboxTabsBarProps> = ({
   filters,
   setFilters,
   priorityCount,
+  verticalBadge,
 }) => {
+  const hasActiveFilters = Boolean(
+    filters.priorityOnly ||
+      filters.unreadOnly ||
+      filters.assignedTo !== 'all' ||
+      filters.startDate ||
+      filters.endDate,
+  );
+
   return (
     <div className={hasSelectedConversation ? 'hidden md:block' : ''}>
       <InboxTabs
@@ -46,6 +58,9 @@ export const FacebookInboxTabsBar: React.FC<FacebookInboxTabsBarProps> = ({
           }))
         }
         priorityCount={priorityCount}
+        verticalBadge={verticalBadge}
+        hasActiveFilters={hasActiveFilters}
+        showFilterButton
       />
     </div>
   );
