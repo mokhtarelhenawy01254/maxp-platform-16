@@ -774,6 +774,25 @@ const normalizeThemeOverrides = (
     (isRecord(settings?.['designTokens']) ? (settings?.['designTokens']['header'] as StorefrontHeaderConfig | undefined) : undefined) ||
     settings?.["header"]) as StorefrontHeaderConfig | undefined;
 
+  if (header && isRecord(header)) {
+    const cleanedHeader: Record<string, unknown> = { ...header };
+    if (Array.isArray(cleanedHeader['dropdowns']) && cleanedHeader['dropdowns'].length === 0) {
+      delete cleanedHeader['dropdowns'];
+    }
+    if (isRecord(cleanedHeader['i18n'])) {
+      const cleanedI18n: Record<string, unknown> = { ...(cleanedHeader['i18n'] as Record<string, unknown>) };
+      for (const [locKey, locVal] of Object.entries(cleanedI18n)) {
+        if (isRecord(locVal) && Array.isArray(locVal['dropdowns']) && locVal['dropdowns'].length === 0) {
+          const nextLoc = { ...locVal };
+          delete nextLoc['dropdowns'];
+          cleanedI18n[locKey] = nextLoc;
+        }
+      }
+      cleanedHeader['i18n'] = cleanedI18n;
+    }
+    header = cleanedHeader as StorefrontHeaderConfig;
+  }
+
   const rawNavMenu =
     (isRecord(input?.designTokens) && isRecord((input.designTokens as any).navigation)
       ? (input.designTokens as any).navigation.menu

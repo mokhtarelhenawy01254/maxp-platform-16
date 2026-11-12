@@ -16,6 +16,7 @@ interface FiltersSidebarCategoriesProps {
   isPcHub: boolean;
   isRoseBoutique: boolean;
   isDistrictMarket: boolean;
+  isMarketplaceAvenue?: boolean;
   onCategorySelect: (id: string) => void;
 }
 
@@ -34,6 +35,7 @@ export const FiltersSidebarCategories: React.FC<FiltersSidebarCategoriesProps> =
   isPcHub,
   isRoseBoutique,
   isDistrictMarket,
+  isMarketplaceAvenue = false,
   onCategorySelect,
 }) => {
   if (!showCategories) {
@@ -83,14 +85,18 @@ export const FiltersSidebarCategories: React.FC<FiltersSidebarCategoriesProps> =
                     ? 'rounded-[1rem] bg-[linear-gradient(135deg,#3d2a2f,#8f4d41)] font-medium text-white shadow-[0_16px_32px_-24px_rgba(76,42,44,0.32)]'
                     : isDistrictMarket
                       ? 'rounded-[1rem] bg-[linear-gradient(135deg,#ee742f,#d95d1c)] font-medium text-white shadow-[0_16px_32px_-26px_rgba(217,93,28,0.55)]'
-                      : 'rounded-[var(--radius)] bg-primary text-primary-foreground font-medium'
+                      : isMarketplaceAvenue
+                        ? 'rounded-[6px] bg-[#e14a5c]/10 font-bold text-[#e14a5c]'
+                        : 'rounded-[var(--radius)] bg-primary text-primary-foreground font-medium'
                 : isPcHub
                   ? 'rounded-[1rem] border border-[#d9dee5] text-[#1f242c] hover:border-[#facc15] hover:bg-[#fffdf5]'
                   : isRoseBoutique
                     ? 'rounded-[1rem] border border-[#ead8cf] text-[#5b4950] hover:border-[#d86b55] hover:bg-[#fff8f5]'
                     : isDistrictMarket
                       ? 'rounded-[1rem] text-foreground hover:bg-[#f7eee6]'
-                      : 'rounded-[var(--radius)] text-foreground hover:bg-muted'
+                      : isMarketplaceAvenue
+                        ? 'rounded-[6px] text-[#444444] hover:bg-[#f7f7f7] hover:text-[#e14a5c]'
+                        : 'rounded-[var(--radius)] text-foreground hover:bg-muted'
             }`}
           >
             {allProductsLabel}
@@ -119,14 +125,18 @@ export const FiltersSidebarCategories: React.FC<FiltersSidebarCategoriesProps> =
                         ? 'rounded-[1rem] bg-[linear-gradient(135deg,#3d2a2f,#8f4d41)] font-medium text-white shadow-[0_16px_32px_-24px_rgba(76,42,44,0.32)]'
                         : isDistrictMarket
                           ? 'rounded-[1rem] bg-[linear-gradient(135deg,#ee742f,#d95d1c)] font-medium text-white shadow-[0_16px_32px_-26px_rgba(217,93,28,0.55)]'
-                          : 'rounded-[var(--radius)] bg-primary text-primary-foreground font-medium'
+                          : isMarketplaceAvenue
+                            ? 'rounded-[6px] bg-[#e14a5c]/10 font-bold text-[#e14a5c]'
+                            : 'rounded-[var(--radius)] bg-primary text-primary-foreground font-medium'
                     : isPcHub
                       ? 'rounded-[1rem] border border-[#d9dee5] text-[#1f242c] hover:border-[#facc15] hover:bg-[#fffdf5]'
                       : isRoseBoutique
                         ? 'rounded-[1rem] border border-[#ead8cf] text-[#5b4950] hover:border-[#d86b55] hover:bg-[#fff8f5]'
                         : isDistrictMarket
                           ? 'rounded-[1rem] text-foreground hover:bg-[#f7eee6]'
-                          : 'rounded-[var(--radius)] text-foreground hover:bg-muted'
+                          : isMarketplaceAvenue
+                            ? 'rounded-[6px] text-[#444444] hover:bg-[#f7f7f7] hover:text-[#e14a5c]'
+                            : 'rounded-[var(--radius)] text-foreground hover:bg-muted'
                 }`}
               >
                 {cat.name}

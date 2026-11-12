@@ -30,6 +30,12 @@ import {
   type StorefrontLocale,
 } from '../i18n';
 import { useStorefrontTheme } from './ThemeProvider';
+import {
+  MarketplaceCategoryHeader,
+  MarketplaceHeaderRenderedProvider,
+} from '../components/MarketplaceCategoryHeader';
+import { isMarketplaceAvenueTheme } from '../utils/marketplaceCategories';
+import { resolveActivePageKeyFromPath } from './themeResolverCore';
 
 interface PageComposerProps {
   pageConfig: StorefrontPageConfig;
@@ -807,6 +813,10 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     return 99;
   };
 
+  const isMarketplaceShopPage =
+    isMarketplaceAvenueTheme(activeThemeId) &&
+    Boolean(location && resolveActivePageKeyFromPath(location.pathname) === 'shop');
+
   // Sidebar layout: render the known sidebar section separately from the main content.
   if (layout === 'sidebar-left' && indexedSections.length > 1 && hasSection(['filters-sidebar'])) {
     const sidebarIndex = findSectionIndex(['filters-sidebar'], 0);
@@ -825,24 +835,31 @@ export const PageComposer: React.FC<PageComposerProps> = ({
       return !(topSectionIds.has(sectionId) || topSectionIds.has(componentKey));
     });
     return (
-      <div className="storefront-page-composer w-full px-4 md:px-6 py-8">
-        {topSections.length > 0 ? (
-          <div className="mb-6 flex flex-col gap-6">
-            {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
-          </div>
-        ) : null}
-        {!renderSectionFrame && (
-          <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
-        )}
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-8">
-          <aside className={renderSectionFrame ? "block" : "hidden lg:block"}>
-            {renderSection(sidebarSection, sidebarIndex)}
-          </aside>
-          <div className="flex flex-col w-full">
-            {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+      <MarketplaceHeaderRenderedProvider rendered={isMarketplaceShopPage}>
+        <div
+          className={`storefront-page-composer ${
+            isMarketplaceShopPage ? 'container px-4 md:px-6 py-6 md:py-8' : 'w-full px-4 md:px-6 py-8'
+          }`}
+        >
+          {isMarketplaceShopPage ? <MarketplaceCategoryHeader /> : null}
+          {topSections.length > 0 ? (
+            <div className="mb-6 flex flex-col gap-6">
+              {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+            </div>
+          ) : null}
+          {!renderSectionFrame && (
+            <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-8">
+            <aside className={renderSectionFrame ? "block" : "hidden lg:block"}>
+              {renderSection(sidebarSection, sidebarIndex)}
+            </aside>
+            <div className="flex flex-col w-full">
+              {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+            </div>
           </div>
         </div>
-      </div>
+      </MarketplaceHeaderRenderedProvider>
     );
   }
 
@@ -869,24 +886,33 @@ export const PageComposer: React.FC<PageComposerProps> = ({
       return !(topSectionIds.has(sectionId) || topSectionIds.has(componentKey));
     });
     return (
-      <div className="storefront-page-composer w-full px-3 py-2 sm:px-4 md:px-6 sm:py-8">
-        {topSections.length > 0 ? (
-          <div className="mb-6 flex flex-col gap-6">
-            {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
-          </div>
-        ) : null}
-        {!renderSectionFrame && (
-          <div className="mb-2 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
-        )}
-        <div className="grid grid-cols-1 gap-3 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <aside className={renderSectionFrame ? "order-first lg:order-last block" : "hidden lg:block"}>
-            {renderSection(sidebarSection, sidebarIndex)}
-          </aside>
-          <div className="flex flex-col w-full order-last lg:order-first">
-            {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+      <MarketplaceHeaderRenderedProvider rendered={isMarketplaceShopPage}>
+        <div
+          className={`storefront-page-composer ${
+            isMarketplaceShopPage
+              ? 'container px-4 md:px-6 py-6 md:py-8'
+              : 'w-full px-3 py-2 sm:px-4 md:px-6 sm:py-8'
+          }`}
+        >
+          {isMarketplaceShopPage ? <MarketplaceCategoryHeader /> : null}
+          {topSections.length > 0 ? (
+            <div className="mb-6 flex flex-col gap-6">
+              {topSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+            </div>
+          ) : null}
+          {!renderSectionFrame && (
+            <div className="mb-2 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
+          )}
+          <div className="grid grid-cols-1 gap-3 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <aside className={renderSectionFrame ? "order-first lg:order-last block" : "hidden lg:block"}>
+              {renderSection(sidebarSection, sidebarIndex)}
+            </aside>
+            <div className="flex flex-col w-full order-last lg:order-first">
+              {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
+            </div>
           </div>
         </div>
-      </div>
+      </MarketplaceHeaderRenderedProvider>
     );
   }
 

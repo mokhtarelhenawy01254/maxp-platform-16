@@ -72,6 +72,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({ settings }) => {
       isDistrictMarket={ctrl.isDistrictMarket}
       isZenOrganic={ctrl.isZenOrganic}
       isKhemetLuxe={ctrl.isKhemetLuxe}
+      isMarketplaceAvenue={ctrl.isMarketplaceAvenue}
       sidebarBadge={ctrl.sidebarBadge}
       sidebarTitle={ctrl.sidebarTitle}
       sidebarSubtitle={ctrl.sidebarSubtitle}

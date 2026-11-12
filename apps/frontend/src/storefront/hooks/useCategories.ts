@@ -9,9 +9,12 @@ import {
 export interface Category {
   id: string;
   name: string;
+  nameEn?: string;
   slug: string;
   image?: string;
   description?: string;
+  parentId?: string | null;
+  sortOrder?: number;
 }
 
 export const getStorefrontCategoriesQueryKey = (

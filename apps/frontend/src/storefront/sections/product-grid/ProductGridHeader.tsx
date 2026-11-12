@@ -1,88 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { ProductGridController } from './useProductGridController';
+import {
+  MarketplaceCategoryHeader,
+  useMarketplaceHeaderRendered,
+} from '../../components/MarketplaceCategoryHeader';
 
 export interface ProductGridHeaderProps {
   controller: ProductGridController;
 }
-
-const MARKETPLACE_CATEGORY_IMAGES: Record<string, string> = {
-  // Beauty & Care
-  'beauty-care': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-  'hair-dryers': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80',
-  'hair': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
-  'shavers': 'https://images.unsplash.com/photo-1508380702597-707c1b00695c?auto=format&fit=crop&w=400&q=80',
-  'skincare': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
-  'makeup': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=400&q=80',
-  'perfumes': 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=400&q=80',
-  // Tools & Home Improvement
-  'tools-improvement': 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80',
-  'power-tools': 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80',
-  'hand-tools': 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=400&q=80',
-  'lighting': 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=400&q=80',
-  'plumbing': 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80',
-  'industrial-scientific': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
-  // Electronics
-  'electronics': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80',
-  'mobiles': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80',
-  'laptops': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&q=80',
-  'televisions': 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=400&q=80',
-  'headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80',
-  'smart-watches': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
-  'tablets': 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80',
-  // Appliances
-  'appliances': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=400&q=80',
-  'washing-machines': 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?auto=format&fit=crop&w=400&q=80',
-  'refrigerators': 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=400&q=80',
-  'air-conditioners': 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80',
-  'vacuum-cleaners': 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=400&q=80',
-  'microwaves': 'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?auto=format&fit=crop&w=400&q=80',
-  'water-heaters': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=400&q=80',
-  // Home & Kitchen
-  'home-kitchen': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=400&q=80',
-  'blenders': 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=400&q=80',
-  'cookware': 'https://images.unsplash.com/photo-1584990347449-3972a953716a?auto=format&fit=crop&w=400&q=80',
-  'coffee-makers': 'https://images.unsplash.com/photo-1517668808822-9ebb02ae2a0e?auto=format&fit=crop&w=400&q=80',
-  'kitchen-tools': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=400&q=80',
-  // Health & Home
-  'health-home': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
-  'supplements': 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
-  'medical-devices': 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80',
-  // Sports
-  'sports': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=400&q=80',
-  'fitness-equipment': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=400&q=80',
-  'sports-gear': 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=400&q=80',
-  // Garden
-  'garden': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=400&q=80',
-  'garden-tools': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=400&q=80',
-  'planters': 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80',
-  'outdoor-furniture': 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?auto=format&fit=crop&w=400&q=80',
-};
-
-const getMarketplaceCategoryImage = (tokenOrSlug: string): string => {
-  const clean = String(tokenOrSlug || '').toLowerCase().trim();
-  for (const [key, url] of Object.entries(MARKETPLACE_CATEGORY_IMAGES)) {
-    if (clean.includes(key)) return url;
-  }
-  return 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80';
-};
-
-const getCategoryFromUrl = (url?: string): string => {
-  if (!url || typeof url !== 'string') return '';
-  try {
-    const queryPart = url.includes('?') ? url.split('?')[1] : url;
-    return new URLSearchParams(queryPart || '').get('category') || '';
-  } catch {
-    return '';
-  }
-};
-
-const isCategoryMatch = (url?: string, activeCat?: string | null): boolean => {
-  if (!activeCat || !url) return false;
-  const param = getCategoryFromUrl(url);
-  if (param) return param.toLowerCase() === activeCat.toLowerCase();
-  return url.toLowerCase().includes(`category=${activeCat.toLowerCase()}`);
-};
 
 export const ProductGridHeader: React.FC<ProductGridHeaderProps> = ({ controller }) => {
   const {
@@ -146,132 +72,15 @@ export const ProductGridHeader: React.FC<ProductGridHeaderProps> = ({ controller
     setViewMode,
   } = controller;
 
-  const isRtl = theme.direction === 'rtl';
-  const activeCategoryParam = searchParams.get('category');
-  const dropdownCategories = (theme.header?.dropdowns || []) as Array<{
-    label: string;
-    to: string;
-    items?: Array<{ label: string; to: string }>;
-  }>;
-
-  const matchedDepartment = dropdownCategories.find((d) => {
-    if (!activeCategoryParam) return false;
-    if (isCategoryMatch(d?.to, activeCategoryParam)) return true;
-    return (d.items || []).some((it) => isCategoryMatch(it?.to, activeCategoryParam));
-  });
-
-  const activeSubcategory = matchedDepartment?.items?.find((it) =>
-    activeCategoryParam ? isCategoryMatch(it?.to, activeCategoryParam) : false
-  );
-
-  const activeHeadingTitle = activeSubcategory
-    ? activeSubcategory.label
-    : matchedDepartment
-      ? matchedDepartment.label
-      : isRtl
-        ? 'جميع المنتجات'
-        : 'All Products';
-
-  const circularItems: Array<{ label: string; to: string; active: boolean; slug: string }> = (() => {
-    if (matchedDepartment && Array.isArray(matchedDepartment.items) && matchedDepartment.items.length > 0) {
-      return matchedDepartment.items.map((it) => {
-        const itemCatParam = getCategoryFromUrl(it?.to);
-        const safeTo = it?.to || (itemCatParam ? `/shop?category=${itemCatParam}` : '/shop');
-        return {
-          label: it?.label || '',
-          to: safeTo,
-          active: isCategoryMatch(safeTo, activeCategoryParam),
-          slug: itemCatParam || it?.label || 'category',
-        };
-      });
-    }
-    return dropdownCategories.slice(0, 8).map((d) => {
-      const itemCatParam = getCategoryFromUrl(d?.to);
-      const safeTo = d?.to || (itemCatParam ? `/shop?category=${itemCatParam}` : '/shop');
-      return {
-        label: d?.label || '',
-        to: safeTo,
-        active: isCategoryMatch(safeTo, activeCategoryParam),
-        slug: itemCatParam || d?.label || 'category',
-      };
-    });
-  })();
+  const headerRenderedAtTop = useMarketplaceHeaderRendered();
 
   return (
     <>
       {isShopPage && isMarketplaceAvenue ? (
-        <div className="mb-8" dir={theme.direction}>
-          {/* 1. Breadcrumbs (WoodMart Marketplace 2 style) */}
-          <nav className="mb-2.5 flex flex-wrap items-center gap-1.5 text-[13px] text-[#777777]" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-[#e14a5c] transition-colors">{isRtl ? 'الرئيسية' : 'Home'}</Link>
-            <span className="text-[#cccccc] text-xs">/</span>
-            <Link to="/shop" className="hover:text-[#e14a5c] transition-colors">{isRtl ? 'المتجر' : 'Shop'}</Link>
-            {matchedDepartment && (
-              <>
-                <span className="text-[#cccccc] text-xs">/</span>
-                {activeSubcategory ? (
-                  <Link to={matchedDepartment.to || '/shop'} className="hover:text-[#e14a5c] transition-colors">
-                    {matchedDepartment.label}
-                  </Link>
-                ) : (
-                  <span className="font-semibold text-[#333333]">{matchedDepartment.label}</span>
-                )}
-              </>
-            )}
-            {activeSubcategory && (
-              <>
-                <span className="text-[#cccccc] text-xs">/</span>
-                <span className="font-semibold text-[#333333]">{activeSubcategory.label}</span>
-              </>
-            )}
-          </nav>
+        <div className="mb-6" dir={theme.direction}>
+          {!headerRenderedAtTop ? <MarketplaceCategoryHeader /> : null}
 
-          {/* 2. Page Title */}
-          <h1 className="text-2xl sm:text-3xl font-bold font-heading text-[#222222] mb-5 tracking-tight">
-            {activeHeadingTitle}
-          </h1>
-
-          {/* 3. Circular Subcategories Carousel / Row (WoodMart Marketplace 2 .wd-cats) */}
-          {circularItems.length > 0 && (
-            <div className="mb-8 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex items-start gap-4 sm:gap-6 md:gap-7 min-w-max pb-1">
-                {circularItems.map((item) => {
-                  const img = getMarketplaceCategoryImage(item.slug);
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.to || '/shop'}
-                      className="group flex flex-col items-center shrink-0 w-20 sm:w-24 md:w-28 text-center transition-transform hover:-translate-y-1"
-                    >
-                      <div
-                        className={`relative aspect-square w-18 h-18 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-full overflow-hidden bg-white shadow-xs border transition-all ${
-                          item.active
-                            ? 'border-[#e14a5c] ring-2 ring-[#e14a5c] ring-offset-2'
-                            : 'border-[#e5e7eb] group-hover:border-[#e14a5c]'
-                        }`}
-                      >
-                        <img
-                          src={img}
-                          alt={item.label}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      </div>
-                      <span
-                        className={`mt-2.5 text-xs sm:text-[13px] font-semibold leading-tight line-clamp-2 transition-colors ${
-                          item.active ? 'text-[#e14a5c] font-bold' : 'text-[#333333] group-hover:text-[#e14a5c]'
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 4. Toolbar (Shop loop head) */}
+          {/* Toolbar (WoodMart Marketplace 2 shop-loop-head) */}
           <div className="flex flex-col gap-3 border-b border-[#e5e7eb] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[14px] font-normal text-[#777777]">
               {theme.direction === 'rtl' ? (
@@ -290,7 +99,7 @@ export const ProductGridHeader: React.FC<ProductGridHeaderProps> = ({ controller
                     else nextParams.set('sortBy', e.target.value);
                     return nextParams;
                   })}
-                  className={`appearance-none cursor-pointer rounded-[4px] border border-[#e2e8f0] bg-white py-1.5 ${theme.direction === 'rtl' ? 'pl-8 pr-3' : 'pr-8 pl-3'} text-[13px] font-medium text-[#333333] shadow-xs outline-none transition hover:border-[#ad7d61] focus:border-[#ad7d61] focus:ring-1 focus:ring-[#ad7d61]`}
+                  className={`appearance-none cursor-pointer rounded-[4px] border border-[#e2e8f0] bg-white py-1.5 ${theme.direction === 'rtl' ? 'pl-8 pr-3' : 'pr-8 pl-3'} text-[13px] font-medium text-[#333333] shadow-xs outline-none transition hover:border-[#e14a5c] focus:border-[#e14a5c] focus:ring-1 focus:ring-[#e14a5c]`}
                 >
                   <option value="default">{theme.direction === 'rtl' ? 'الترتيب الافتراضي' : 'Default sorting'}</option>
                   <option value="price-asc">{theme.direction === 'rtl' ? 'ترتيب حسب السعر: من الأقل إلى الأعلى' : 'Sort by price: low to high'}</option>

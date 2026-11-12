@@ -5,8 +5,80 @@ import { StorefrontSearchOverlay } from "./StorefrontSearchOverlay";
 import type { StorefrontHeaderController } from "../storefrontHeaderTypes";
 import { LanguageSwitcher } from "../../LanguageSwitcher";
 import { useStorefrontLocale } from "../../../i18n/useStorefrontLocale";
+import { useCategories } from "../../../hooks/useCategories";
+import {
+  isCategoryUrlMatch,
+  resolveMarketplaceDepartments,
+} from "../../../utils/marketplaceCategories";
 import { useCartStore } from "../../../store/useCartStore";
 import { formatStorefrontCurrency } from "../../../utils/currency";
+
+const renderDepartmentIcon = (slug: string) => {
+  const clean = slug.toLowerCase();
+  if (clean.includes("electronic") || clean.includes("mobile") || clean.includes("laptop")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    );
+  }
+  if (clean.includes("appliance")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <line x1="4" y1="9" x2="20" y2="9" />
+        <circle cx="8" cy="5.5" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (clean.includes("home") || clean.includes("kitchen")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    );
+  }
+  if (clean.includes("tool")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+    );
+  }
+  if (clean.includes("beauty") || clean.includes("care") || clean.includes("skin")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+      </svg>
+    );
+  }
+  if (clean.includes("health")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+      </svg>
+    );
+  }
+  if (clean.includes("sport") || clean.includes("fitness")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M4.93 4.93l14.14 14.14" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-90" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+};
 
 interface MarketplaceHeaderProps {
   controller: StorefrontHeaderController;
@@ -51,9 +123,10 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
   const { locale } = useStorefrontLocale(theme.defaultLocale);
   const isRtl = bilingual ? locale === "ar" : theme.direction === "rtl";
   const headerDir = isRtl ? "rtl" : "ltr";
+  const { categories: dbCategories } = useCategories();
   const quickLinks = (theme.header?.actions || []).slice(0, 6);
-  const allDropdownCategories = theme.header?.dropdowns || [];
-  const categories = allDropdownCategories.slice(0, 8);
+  const allDropdownCategories = resolveMarketplaceDepartments(theme, dbCategories, isRtl);
+  const categories = allDropdownCategories.slice(0, 6);
   const drawerCategories = allDropdownCategories.length ? allDropdownCategories : categories;
   const phone = (theme.footer && (theme.footer as { phoneText?: string }).phoneText) || "01000 000 000";
 
@@ -251,54 +324,48 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
           </div>
         </div>
 
-        {/* band 3 — categories + nav */}
+        {/* band 3 — categories + nav (WoodMart Marketplace 2 style) */}
         <div className="bg-[#e14a5c] text-white">
-          <div className="container flex h-[51px] items-center justify-between gap-6 px-4 text-[15px] font-semibold md:px-6">
-            <div className="flex items-center gap-7 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categories.map((dropdown) => {
+          <div className="container flex h-[51px] items-center justify-between gap-4 px-4 text-[13.5px] xl:text-[14px] font-semibold md:px-6">
+            <div className="flex min-w-0 items-center gap-4 lg:gap-5 xl:gap-6 overflow-x-auto md:overflow-visible py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {categories.map((dropdown, idx) => {
                 const items = (dropdown.items || []).filter(
-                  (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
+                  (item) => Boolean(item?.label && item?.to),
                 );
                 const label = dropdown.label || items[0]?.label || "";
                 const currentCategory = new URLSearchParams(location?.search || "").get("category");
-                const getCatParam = (url?: string) => {
-                  if (!url || typeof url !== 'string') return '';
-                  try {
-                    const q = url.includes('?') ? url.split('?')[1] : url;
-                    return new URLSearchParams(q || '').get('category') || '';
-                  } catch { return ''; }
-                };
                 const isCatActive = Boolean(
                   currentCategory &&
-                  (getCatParam(dropdown.to).toLowerCase() === currentCategory.toLowerCase() ||
-                   items.some((item) => getCatParam(item?.to).toLowerCase() === currentCategory.toLowerCase()))
+                  (isCategoryUrlMatch(dropdown.to, currentCategory, dbCategories) ||
+                   items.some((item) => isCategoryUrlMatch(item.to, currentCategory, dbCategories)))
                 );
                 return (
-                  <div key={label} className="group relative shrink-0">
+                  <div key={`${dropdown.slug || label}-${idx}`} className="group relative shrink-0">
                     <Link
                       to={dropdown.to || items[0]?.to || "/collections"}
-                      className={`flex items-center gap-1 whitespace-nowrap transition-colors ${
+                      className={`flex items-center gap-1.5 whitespace-nowrap py-1.5 transition-colors ${
                         isCatActive
                           ? "text-white font-bold underline decoration-2 underline-offset-8"
                           : "text-white/95 hover:text-white"
                       }`}
                     >
-                      {label}
+                      {renderDepartmentIcon(dropdown.slug || label)}
+                      <span>{label}</span>
                       {items.length ? (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="opacity-80">
                           <path d="m6 9 6 6 6-6" />
                         </svg>
                       ) : null}
                     </Link>
                     {/* department flyout */}
                     {items.length ? (
-                      <div className="pointer-events-none invisible absolute start-0 top-full z-50 w-[250px] translate-y-1 rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground opacity-0 shadow-xl transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                      <div className="pointer-events-none invisible absolute start-0 top-full z-50 w-[240px] translate-y-1 rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground opacity-0 shadow-xl transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
                         <ul className="flex flex-col">
-                          {items.map((item: { label: string; to: string }) => (
+                          {items.map((item) => (
                             <li key={item.to + item.label}>
                               <Link
                                 to={item.to}
-                                className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                                className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
                               >
                                 {item.label}
                               </Link>
@@ -310,59 +377,58 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                   </div>
                 );
               })}
-              {/* overflow menu — the categories/nav that do not fit are reachable here
-                  instead of a raw horizontal scrollbar */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMoreOpen((open) => !open)}
-                  aria-label={isRtl ? "المزيد من الأقسام" : "More departments"}
-                  aria-expanded={moreOpen}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <circle cx="5" cy="12" r="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <circle cx="19" cy="12" r="2" />
-                  </svg>
-                </button>
-                {moreOpen ? (
-                  <div className="absolute start-0 top-full z-50 mt-1 w-[240px] rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground shadow-xl">
-                    <ul className="flex max-h-[320px] flex-col overflow-y-auto">
-                      {categories.map((dropdown) => {
-                        const items = (dropdown.items || []).filter(
-                          (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
-                        );
-                        const label = dropdown.label || items[0]?.label || "";
-                        return (
-                          <li key={`more-${label}`}>
+              {/* Clean More menu for overflow categories & static pages */}
+              {(allDropdownCategories.length > 6 || (navLinks && navLinks.length > 0)) ? (
+                <div className="relative shrink-0 hidden md:block">
+                  <button
+                    type="button"
+                    onClick={() => setMoreOpen((open) => !open)}
+                    aria-label={isRtl ? "المزيد من الأقسام" : "More departments"}
+                    aria-expanded={moreOpen}
+                    className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <span>{isRtl ? "المزيد" : "More"}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  {moreOpen ? (
+                    <div className="absolute start-0 top-full z-50 mt-1 w-[240px] rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground shadow-xl">
+                      <ul className="flex max-h-[340px] flex-col overflow-y-auto">
+                        {allDropdownCategories.map((dropdown, idx) => {
+                          const label = dropdown.label || "";
+                          return (
+                            <li key={`more-${dropdown.slug || label}-${idx}`}>
+                              <Link
+                                to={dropdown.to || "/collections"}
+                                onClick={() => setMoreOpen(false)}
+                                className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
+                              >
+                                {label}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                        {allDropdownCategories.length > 0 && navLinks && navLinks.length > 0 ? (
+                          <li className="my-1 border-t border-border" />
+                        ) : null}
+                        {(navLinks || []).map((link: { label: string; to: string }) => (
+                          <li key={`more-nav-${link.to}-${link.label}`}>
                             <Link
-                              to={dropdown.to || items[0]?.to || "/collections"}
+                              to={link.to}
                               onClick={() => setMoreOpen(false)}
-                              className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
+                              className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
                             >
-                              {label}
+                              {link.label}
                             </Link>
                           </li>
-                        );
-                      })}
-                      <li className="my-1 border-t border-border" />
-                      {(navLinks || []).map((link: { label: string; to: string }) => (
-                        <li key={`more-nav-${link.to}-${link.label}`}>
-                          <Link
-                            to={link.to}
-                            onClick={() => setMoreOpen(false)}
-                            className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-              {/* When categories exist (WoodMart Marketplace 2 style), the red bar focuses purely on categories and keeps nav in the more dropdown/drawer */}
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              {/* Fallback to navLinks only when store has zero categories */}
               {categories.length === 0 && navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
                 <Link
                   key={link.to + link.label}
@@ -491,7 +557,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                   <div className="space-y-1">
                     {drawerCategories.map((dropdown, idx) => {
                       const items = (dropdown.items || []).filter(
-                        (item): item is { label: string; to: string } => Boolean(item?.label && item?.to),
+                        (item) => Boolean(item?.label && item?.to),
                       );
                       const label = dropdown.label || items[0]?.label || "";
                       const to = dropdown.to || items[0]?.to || "/collections";

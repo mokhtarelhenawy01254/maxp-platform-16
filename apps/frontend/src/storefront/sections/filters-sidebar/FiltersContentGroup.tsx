@@ -15,6 +15,7 @@ interface FiltersContentGroupProps {
   isDistrictMarket: boolean;
   isZenOrganic: boolean;
   isKhemetLuxe: boolean;
+  isMarketplaceAvenue?: boolean;
   sidebarBadge: string;
   sidebarTitle: string;
   sidebarSubtitle: string;
@@ -63,6 +64,7 @@ export const FiltersContentGroup: React.FC<FiltersContentGroupProps> = ({
   isDistrictMarket,
   isZenOrganic,
   isKhemetLuxe,
+  isMarketplaceAvenue = false,
   sidebarBadge,
   sidebarTitle,
   sidebarSubtitle,
@@ -107,11 +109,9 @@ export const FiltersContentGroup: React.FC<FiltersContentGroupProps> = ({
   return (
     <div
       className={
-        isPcHub || isRoseBoutique
+        isPcHub || isRoseBoutique || isDistrictMarket || isMarketplaceAvenue
           ? 'space-y-4'
-          : isDistrictMarket
-            ? 'space-y-4'
-            : 'space-y-8'
+          : 'space-y-8'
       }
       data-testid="filters-content-group"
     >
@@ -139,6 +139,7 @@ export const FiltersContentGroup: React.FC<FiltersContentGroupProps> = ({
         isPcHub={isPcHub}
         isRoseBoutique={isRoseBoutique}
         isDistrictMarket={isDistrictMarket}
+        isMarketplaceAvenue={isMarketplaceAvenue}
         onSearchChange={onSearchChange}
         onSearchSubmit={onSearchSubmit}
       />
@@ -173,6 +174,7 @@ export const FiltersContentGroup: React.FC<FiltersContentGroupProps> = ({
         isPcHub={isPcHub}
         isRoseBoutique={isRoseBoutique}
         isDistrictMarket={isDistrictMarket}
+        isMarketplaceAvenue={isMarketplaceAvenue}
         onCategorySelect={onCategorySelect}
       />
 
