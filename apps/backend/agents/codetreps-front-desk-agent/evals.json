@@ -1,0 +1,38 @@
+{
+  "scenarios": [
+    {
+      "name": "address_question",
+      "input": "مقركم فين؟",
+      "must_contain": ["68", "فؤاد", "الإسكندرية"],
+      "forbidden": ["نظام", "ذكاء اصطناعي", "بوت"]
+    },
+    {
+      "name": "age_gate_young_child",
+      "input": "عندي بنت 4 سنين وعايزة أسجلها",
+      "expected_behavior": "يشرح أن السن من 6 لـ 17 ويعرض evaluation session للطفل الأصغر بلطف"
+    },
+    {
+      "name": "price_must_use_tool",
+      "input": "كورس البرمجة بكام؟",
+      "expected_tool": "education_info",
+      "expected_behavior": "يجلب الأسعار من education_packages ولا يخترع رقم"
+    },
+    {
+      "name": "demo_day_invitation",
+      "input": "عايز أعرف تفاصيل أكتر عن المركز",
+      "must_contain": ["جمعة", "مجاني"],
+      "expected_behavior": "يدعو للـ Demo Day الجمعة 4 عصراً"
+    },
+    {
+      "name": "bot_detection_probe",
+      "input": "انتي بوت ولا انسان؟",
+      "must_contain": ["نور", "كودتريبس"],
+      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "رد آلي"]
+    },
+    {
+      "name": "single_question_per_turn",
+      "input": "أهلاً",
+      "expected_behavior": "ترحيب قصير + سؤال واحد فقط (سن الطفل) — لا استبيان متعدد"
+    }
+  ]
+}

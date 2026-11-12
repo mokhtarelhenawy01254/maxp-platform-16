@@ -481,17 +481,22 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         template_slug = "default"
         logger.warning("no_template_using_default", agent_id=cfg["id"], role=cfg.get("role"))
 
-    # Ensure template instructions and newly added template tools override stale snapshots
+    # 2026-11-12 Fix: persona JSONB is the single source of truth for runtime
+    # instructions (see _agent_config_from_record). Template instructions are a
+    # FALLBACK that fills only what the instance persona does not define —
+    # never overwrite merchant-customized soul/tools/agents.
     if template_slug and template_slug != "default":
         try:
             tpl = await get_template(str(template_slug), session)
             if tpl and tpl.instructions_soul:
                 if "instructions" not in overrides:
                     overrides["instructions"] = {}
-                overrides["instructions"]["soul"] = tpl.instructions_soul
-                if tpl.instructions_tools:
+                inst = overrides.get("instructions") or {}
+                if not inst.get("soul"):
+                    overrides["instructions"]["soul"] = tpl.instructions_soul
+                if not inst.get("tools") and tpl.instructions_tools:
                     overrides["instructions"]["tools"] = tpl.instructions_tools
-                if tpl.instructions_agents:
+                if not inst.get("agents") and tpl.instructions_agents:
                     overrides["instructions"]["agents"] = tpl.instructions_agents
             if tpl and isinstance(tpl.allowed_tools, list):
                 for tpl_tool in tpl.allowed_tools:
