@@ -173,8 +173,9 @@ export const handleAttendanceActionError = (
   );
 };
 
-export const formatTime = (date: Date) =>
+export const formatTime = (date: Date, timezone: string = "Africa/Cairo") =>
   date.toLocaleTimeString("ar-EG", {
+    timeZone: timezone,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",

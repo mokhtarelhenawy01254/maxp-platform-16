@@ -4,7 +4,7 @@
  */
 
 const { getSharedPrismaClient } = require("../sharedDatabase");
-const { normalizeDateForDb } = require("../../utils/dateUtils");
+const { normalizeDateForDb, combineDateAndTime } = require("../../utils/dateUtils");
 const hrNotificationService = require("./hrNotificationService");
 const auditService = require("./auditService");
 
@@ -47,9 +47,11 @@ function parseLocalTimeToUtc(dateVal, timeStr, timezone = "Africa/Cairo") {
     const offsetMs = localDate.getTime() - utcDate.getTime();
     return new Date(testDate.getTime() - offsetMs);
   } catch (err) {
-    const d = new Date(dateVal);
-    d.setUTCHours(h - 2, m, 0, 0);
-    return d;
+    try {
+      return combineDateAndTime(dateVal, timeStr, timezone) || new Date(dateVal);
+    } catch {
+      return new Date(dateVal);
+    }
   }
 }
 

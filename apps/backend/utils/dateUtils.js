@@ -4,6 +4,30 @@
  */
 
 const EGYPT_TIMEZONE = 'Africa/Cairo';
+const DEFAULT_DISPLAY_TIMEZONE = EGYPT_TIMEZONE;
+
+/**
+ * التحقق من صحة المنطقة الزمنية
+ */
+function isValidTimeZone(tz) {
+  if (!tz || typeof tz !== 'string') return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * تحديد المنطقة الزمنية لعرض الحضور (توقيت الشركة أو الافتراضي)
+ */
+function resolveAttendanceTimezone(companyTimezone) {
+  if (companyTimezone && isValidTimeZone(companyTimezone)) {
+    return companyTimezone;
+  }
+  return DEFAULT_DISPLAY_TIMEZONE;
+}
 
 function getDateStringInTimezone(date = new Date(), timezone = EGYPT_TIMEZONE) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -298,6 +322,9 @@ function addMinutes(date, minutes) {
 
 module.exports = {
   EGYPT_TIMEZONE,
+  DEFAULT_DISPLAY_TIMEZONE,
+  isValidTimeZone,
+  resolveAttendanceTimezone,
   // Generic Timezone Functions
   getNowInTimezone,
   getStartOfDayInTimezone,

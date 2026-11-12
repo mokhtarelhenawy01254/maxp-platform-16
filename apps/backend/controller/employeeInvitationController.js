@@ -483,7 +483,7 @@ const acceptEmployeeInvitation = async (req, res) => {
     const invitation = await prisma.employeeInvitation.findUnique({
       where: { token },
       include: {
-        company: { select: { id: true, name: true } }
+        company: { select: { id: true, name: true, timezone: true } }
       }
     });
 
@@ -591,6 +591,7 @@ const acceptEmployeeInvitation = async (req, res) => {
           phone: phone ? phone.trim() : null,
           role: invitation.role || 'AGENT',
           companyId: invitation.companyId,
+          timezone: invitation.company?.timezone || 'Africa/Cairo',
           isActive: true,
           isEmailVerified: true,
           emailVerifiedAt: new Date()

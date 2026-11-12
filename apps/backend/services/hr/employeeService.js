@@ -130,6 +130,7 @@ class EmployeeService {
         }
 
         try {
+          const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { timezone: true } });
           const newUser = await this.prisma.user.create({
             data: {
               email: emailLower,
@@ -140,6 +141,7 @@ class EmployeeService {
               role: employeeRole,
               isActive: true,
               companyId: companyId,
+              timezone: company?.timezone || 'Africa/Cairo',
               resetPasswordToken: setupPasswordToken,
               resetPasswordExpires: setupPasswordExpires,
             }

@@ -3595,12 +3595,14 @@ class AttendanceService {
             : "-",
           "وقت الحضور": record.checkIn
             ? new Date(record.checkIn).toLocaleTimeString("ar-EG", {
+                timeZone: timezone,
                 hour: "2-digit",
                 minute: "2-digit",
               })
             : "-",
           "وقت الانصراف": record.checkOut
             ? new Date(record.checkOut).toLocaleTimeString("ar-EG", {
+                timeZone: timezone,
                 hour: "2-digit",
                 minute: "2-digit",
               })

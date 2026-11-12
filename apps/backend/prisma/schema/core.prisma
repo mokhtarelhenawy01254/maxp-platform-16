@@ -37,7 +37,7 @@ model Company {
   sidebarLayout                   String                           @default("three-tier")
   sidebarPreferences              Json?
   customDomain                    String?                          @unique
-  timezone                        String                           @default("Asia/Riyadh")
+  timezone                        String                           @default("Africa/Cairo")
   geofenceEnabled                 Boolean                          @default(false)
   geofenceRadius                  Int?                             @default(200)
   officeLatitude                  Decimal?                         @db.Decimal(10, 8)
@@ -431,7 +431,7 @@ model User {
   employeeNumber                                    String?
   hireDate                                          DateTime?
   positionId                                        String?
-  timezone                                          String                   @default("Asia/Riyadh")
+  timezone                                          String                   @default("Africa/Cairo")
   settings                                          String?
   enableAutoDeduction                               Boolean                  @default(true)
   lateDeductionRate                                 Decimal?                 @db.Decimal(10, 2)

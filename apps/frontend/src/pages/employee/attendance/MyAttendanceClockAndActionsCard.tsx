@@ -93,7 +93,7 @@ export const MyAttendanceClockAndActionsCard: React.FC<
 
             <div>
               <div className="text-4xl sm:text-5xl md:text-6xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                {formatTime(currentTime)}
+                {formatTime(currentTime, timezone)}
               </div>
               <p className="text-gray-600 dark:text-gray-300">
                 {t("employee.attendance.currentTime")}

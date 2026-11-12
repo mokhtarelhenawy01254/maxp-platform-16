@@ -280,8 +280,9 @@ async function getMyTodayAttendance(req, res) {
       companyId,
       employee.userId || employee.id,
     );
+    const timezone = await attendanceService.getCompanyTimezone(companyId);
 
-    res.json({ success: true, attendance });
+    res.json({ success: true, attendance, timezone });
   } catch (error) {
     console.error("❌ Error getting my today attendance:", error);
     res.status(500).json({
@@ -316,8 +317,9 @@ async function getMyAttendanceStats(req, res) {
       companyId,
       employee.userId || employee.id,
     );
+    const timezone = await attendanceService.getCompanyTimezone(companyId);
 
-    res.json({ success: true, stats });
+    res.json({ success: true, stats, timezone });
   } catch (error) {
     console.error("❌ Error getting my attendance stats:", error);
     res.status(500).json({
@@ -359,10 +361,12 @@ async function getMyRecentAttendance(req, res) {
         endDate,
       },
     );
+    const timezone = await attendanceService.getCompanyTimezone(companyId);
 
     res.json({
       success: true,
       attendance: result.records,
+      timezone,
       pagination: {
         page: result.page,
         limit: result.limit,
@@ -7312,11 +7316,13 @@ async function exportMyCompaniesReport(req, res) {
         الحالة: att.status,
         الدخول: att.checkInTime
           ? new Date(att.checkInTime).toLocaleTimeString("en-US", {
+              timeZone: uc.company.timezone || "Africa/Cairo",
               hour12: false,
             })
           : "-",
         الخروج: att.checkOutTime
           ? new Date(att.checkOutTime).toLocaleTimeString("en-US", {
+              timeZone: uc.company.timezone || "Africa/Cairo",
               hour12: false,
             })
           : "-",

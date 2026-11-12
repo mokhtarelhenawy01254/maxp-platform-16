@@ -31,7 +31,7 @@ import {
 export const useMyAttendanceController = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const timezone = user?.timezone || "Africa/Cairo";
+  const [timezone, setTimezone] = useState("Africa/Cairo");
   const [loading, setLoading] = useState(true);
   const [isNotAnEmployee, setIsNotAnEmployee] = useState(false);
   const [requestingLink, setRequestingLink] = useState(false);
@@ -183,6 +183,9 @@ export const useMyAttendanceController = () => {
     try {
       setLoading(true);
       const response = await api.get("/hr/attendance/my-today");
+      if (response.data?.timezone) {
+        setTimezone(response.data.timezone);
+      }
       if (response.data?.notAnEmployee) {
         setIsNotAnEmployee(true);
         setTodayAttendance(null);
@@ -220,6 +223,9 @@ export const useMyAttendanceController = () => {
   const fetchStats = async () => {
     try {
       const response = await api.get("/hr/attendance/my-stats");
+      if (response.data?.timezone) {
+        setTimezone(response.data.timezone);
+      }
       setStats(response.data.stats);
       clearErrorKey("stats");
     } catch (error: unknown) {
@@ -258,6 +264,9 @@ export const useMyAttendanceController = () => {
       const response = await api.get(
         `/hr/attendance/my-recent?limit=15&page=${recentPage}&startDate=${startDate}&endDate=${endDate}`,
       );
+      if (response.data?.timezone) {
+        setTimezone(response.data.timezone);
+      }
       setRecentAttendance(response.data.attendance || []);
       setHasMoreRecent(Boolean(response.data.pagination?.hasMore));
       clearErrorKey("recent");
