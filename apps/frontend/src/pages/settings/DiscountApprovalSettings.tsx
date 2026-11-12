@@ -186,18 +186,14 @@ export const DiscountApprovalSettings: React.FC = () => {
                 htmlFor="require-discount-approval"
                 className="text-xs font-semibold text-foreground cursor-pointer"
               >
-                الموافقة الإلزامية على الخصومات والكوبونات
+                اعتماد الخصومات اليدوية فقط
               </label>
               <span className="text-[10px] px-1.5 py-0.2 rounded font-mono uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                 Manual Approval
               </span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed pr-7">
-              عند تفعيل هذا الخيار، يتم وضع أي طلب يحتوي على خصم في حالة{" "}
-              <span className="font-semibold text-foreground underline decoration-amber-500/40">
-                «بانتظار اعتماد الخصم»
-              </span>
-              ، ويُمنع تأكيد الطلب أو شحنه حتى يتم اعتماده صراحة من قِبل الإدارة.
+              الخصومات اليدوية اللي بيدخلها الموظف بتحتاج اعتماد. خصم الدفع الإلكتروني ونقاط الولاء والعروض التلقائية بتتطبق فورًا ومش بتوقف الأوردر.
             </p>
           </div>
 

@@ -19,7 +19,7 @@ const orderDetailsUpdateService = require('../services/orderDetailsUpdateService
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const preparationQueueService = require('../services/preparationQueueService');
-const { resolveDiscountReason } = require('../utils/orderDiscountUtils');
+const { resolveDiscountReason, PAID_PAYMENT_STATUSES } = require('../utils/orderDiscountUtils');
 const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
@@ -6892,6 +6892,13 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
         });
       } else {
         // REJECT action: strip discount and recalculate total
+        if (PAID_PAYMENT_STATUSES.has(String(regularOrder.paymentStatus || '').toUpperCase())) {
+          return res.status(409).json({
+            success: false,
+            code: 'PAID_ORDER_DISCOUNT_REJECT_BLOCKED',
+            message: 'الأوردر مدفوع — رفض الخصم مش مسموح. القرار: تنفيذ أو استرداد.'
+          });
+        }
         metadata.needsDiscountApproval = false;
         metadata.discountApprovalStatus = 'REJECTED';
         metadata.discountRejectedBy = userName;
@@ -6999,6 +7006,13 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
         });
       } else {
         // REJECT action: strip discount and recalculate
+        if (PAID_PAYMENT_STATUSES.has(String(guestOrder.paymentStatus || '').toUpperCase())) {
+          return res.status(409).json({
+            success: false,
+            code: 'PAID_ORDER_DISCOUNT_REJECT_BLOCKED',
+            message: 'الأوردر مدفوع — رفض الخصم مش مسموح. القرار: تنفيذ أو استرداد.'
+          });
+        }
         metadata.needsDiscountApproval = false;
         metadata.discountApprovalStatus = 'REJECTED';
         metadata.discountRejectedBy = userName;

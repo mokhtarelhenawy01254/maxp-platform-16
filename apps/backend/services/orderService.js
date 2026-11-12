@@ -10,6 +10,17 @@ const {
 } = require('../utils/planLimitPayloads');
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
 const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
+const { PAID_PAYMENT_STATUSES } = require('../utils/orderDiscountUtils');
+
+const parseOrderMetadata = (raw) => {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+};
 
 const normalizeWhatsAppOrderStatus = (status) => {
   const normalizedStatus = String(status || '').trim().toUpperCase();
@@ -2187,6 +2198,14 @@ class OrderService {
       }, 3);
 
       if (!order) throw createOrderStatusError("الطلب غير موجود", 404);
+
+      if (
+        status === 'CANCELLED' &&
+        PAID_PAYMENT_STATUSES.has(String(order.paymentStatus || '').toUpperCase()) &&
+        parseOrderMetadata(order.metadata)?.discountApprovalStatus === 'PENDING_APPROVAL'
+      ) {
+        throw createOrderStatusError('الأوردر مدفوع بالفعل — ممنوع الإلغاء بسبب خصم معلّق. القرار: تنفيذ الأوردر أو استرداد المبلغ.', 409);
+      }
 
       const currentStatus = normalizeOrderStatusCode(order.status);
       // 🛡️ PRODUCTION-FIX (custom-status-noop): لو عليه كود مخصص، نفس الحالة النظامية

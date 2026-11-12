@@ -158,6 +158,83 @@ function buildCompositeDiscountReason({
   return Number(totalDiscount) > 0 ? 'خصم خاص' : null;
 }
 
+const DISCOUNT_SOURCE = Object.freeze({
+  SYSTEM: 'SYSTEM',
+  MANUAL: 'MANUAL',
+});
+
+const DISCOUNT_APPROVAL_STATUS = Object.freeze({
+  PENDING: 'PENDING_APPROVAL',
+  AUTO_PAID: 'AUTO_APPROVED_PAID',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+});
+
+const PAID_PAYMENT_STATUSES = new Set(['COMPLETED', 'PAID', 'CAPTURED', 'SETTLED']);
+
+function resolveDiscountSource({ appliedAdminDiscount } = {}) {
+  return appliedAdminDiscount !== undefined && Number(appliedAdminDiscount) > 0
+    ? DISCOUNT_SOURCE.MANUAL
+    : DISCOUNT_SOURCE.SYSTEM;
+}
+
+function resolveDiscountApproval({
+  discountAmount = 0,
+  requireDiscountApproval = true,
+  discountSource,
+  paymentStatus,
+} = {}) {
+  const amount = Number(discountAmount || 0);
+  const source = discountSource || DISCOUNT_SOURCE.SYSTEM;
+  const isPaid = paymentStatus ? PAID_PAYMENT_STATUSES.has(String(paymentStatus).toUpperCase()) : false;
+
+  // (أ) مفيش خصم → كل حاجة false/null
+  if (amount <= 0) {
+    return {
+      needsDiscountApproval: false,
+      discountApprovalStatus: null,
+      discountApprovalReason: null,
+      discountSource: null,
+    };
+  }
+
+  // (ب) MANUAL + requireDiscountApproval → PENDING_APPROVAL
+  if (source === DISCOUNT_SOURCE.MANUAL) {
+    if (requireDiscountApproval) {
+      return {
+        needsDiscountApproval: true,
+        discountApprovalStatus: DISCOUNT_APPROVAL_STATUS.PENDING,
+        discountApprovalReason: 'خصم يدوي يتطلب اعتماد',
+        discountSource: source,
+      };
+    }
+    return {
+      needsDiscountApproval: false,
+      discountApprovalStatus: null,
+      discountApprovalReason: null,
+      discountSource: source,
+    };
+  }
+
+  // (ج) SYSTEM + دفع مكتمل → AUTO_APPROVED_PAID وneedsDiscountApproval = false
+  if (isPaid) {
+    return {
+      needsDiscountApproval: false,
+      discountApprovalStatus: DISCOUNT_APPROVAL_STATUS.AUTO_PAID,
+      discountApprovalReason: 'دفع إلكتروني مكتمل — خصم نظام لا يطلب اعتماد',
+      discountSource: source,
+    };
+  }
+
+  // (د) SYSTEM غير مدفوع → false + null (لا اعتماد)
+  return {
+    needsDiscountApproval: false,
+    discountApprovalStatus: null,
+    discountApprovalReason: null,
+    discountSource: source,
+  };
+}
+
 /**
  * Unified checkout pricing resolver.
  * Single source of truth for computing subtotal, all discounts (coupon, store promotion, loyalty, electronic payment),
@@ -195,6 +272,7 @@ async function resolveCheckoutPricing({
   appliedAdminDiscount,
   markVoucherUsed = false,
   clientExplicitShipping = false,
+  paymentStatus,
 } = {}) {
   let prisma = customPrisma;
   if (!prisma) {
@@ -616,10 +694,27 @@ async function resolveCheckoutPricing({
   }
   if (discountAmount > 0) {
     orderMetadata.discountReason = compositeReason;
-    if (requireDiscountApproval && !appliedAdminDiscount) {
+    const discountSource = resolveDiscountSource({ appliedAdminDiscount });
+    orderMetadata.discountSource = discountSource;
+    const approval = resolveDiscountApproval({
+      discountAmount,
+      requireDiscountApproval,
+      discountSource,
+      paymentStatus,
+    });
+    if (approval.needsDiscountApproval) {
       orderMetadata.needsDiscountApproval = true;
-      orderMetadata.discountApprovalStatus = 'PENDING_APPROVAL';
+      orderMetadata.discountApprovalStatus = approval.discountApprovalStatus;
       orderMetadata.discountApprovalRequestedAt = new Date().toISOString();
+      if (approval.discountApprovalReason) {
+        orderMetadata.discountApprovalReason = approval.discountApprovalReason;
+      }
+    } else if (approval.discountApprovalStatus) {
+      orderMetadata.needsDiscountApproval = false;
+      orderMetadata.discountApprovalStatus = approval.discountApprovalStatus;
+      if (approval.discountApprovalReason) {
+        orderMetadata.discountApprovalReason = approval.discountApprovalReason;
+      }
     }
   }
 
@@ -672,4 +767,9 @@ module.exports = {
   buildCompositeDiscountReason,
   safeParseJson,
   resolveCheckoutPricing,
+  DISCOUNT_SOURCE,
+  DISCOUNT_APPROVAL_STATUS,
+  PAID_PAYMENT_STATUSES,
+  resolveDiscountSource,
+  resolveDiscountApproval,
 };

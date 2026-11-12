@@ -6,7 +6,12 @@ const { extractSubdomainMiddleware, requireCompany } = require('../middleware/su
 const { resolvePublicShippingQuote } = require('../controller/shippingZoneController');
 const { toCanonicalE164 } = require('../utils/phoneNormalization');
 const { findCustomerByPhone, safeCreateCustomer, buildPhoneWhere } = require('../utils/customerIdentity');
-const { resolveCheckoutPricing, safeParseJson } = require('../utils/orderDiscountUtils');
+const {
+  resolveCheckoutPricing,
+  safeParseJson,
+  resolveDiscountApproval,
+  DISCOUNT_SOURCE,
+} = require('../utils/orderDiscountUtils');
 const { parseProductMetadata } = require('../utils/productMetadataUtils');
 const {
   applyVolumeDiscount,
@@ -718,6 +723,26 @@ router.post('/kashier/webhook', async (req, res) => {
       ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })()
       : (order.metadata || {});
 
+    const released = resolveDiscountApproval({
+      discountAmount: Number(order.discount || 0),
+      requireDiscountApproval: existingMeta?.needsDiscountApproval === true,
+      discountSource: existingMeta?.discountSource || DISCOUNT_SOURCE.SYSTEM,
+      paymentStatus: isSuccess ? 'COMPLETED' : 'PENDING',
+    });
+
+    const isDiscountAutoApproved = Boolean(
+      isSuccess &&
+      existingMeta?.discountApprovalStatus === 'PENDING_APPROVAL' &&
+      released.discountApprovalStatus === 'AUTO_APPROVED_PAID'
+    );
+
+    if (isDiscountAutoApproved) {
+      existingMeta.needsDiscountApproval = false;
+      existingMeta.discountApprovalStatus = 'AUTO_APPROVED_PAID';
+      existingMeta.discountAutoApprovedAt = new Date().toISOString();
+      existingMeta.discountAutoApprovedReason = 'دفع إلكتروني مكتمل — خصم نظام لا يطلب اعتماد';
+    }
+
     const updatedMetadata = JSON.stringify({
       ...existingMeta,
       kashierSessionId: sessionId || existingMeta.kashierSessionId,
@@ -731,7 +756,9 @@ router.post('/kashier/webhook', async (req, res) => {
       paymentStatus,
       paymentMethod: resolvedPaymentMethod,
       // ⚠️ الطلبات المدفوعة مسبقاً/أونلاين تدخل مرحلة المراجعة (PENDING) ولا يتم تأكيدها آلياً دون مراجعة وتأكيد يدوي
-      ...(order.status === 'PENDING' ? { status: 'PENDING' } : {}),
+      ...(isDiscountAutoApproved
+        ? { status: 'CONFIRMED' }
+        : (order.status === 'PENDING' ? { status: 'PENDING' } : {})),
       metadata: updatedMetadata,
     };
 
@@ -762,6 +789,16 @@ router.post('/kashier/webhook', async (req, res) => {
             authorName: 'Kashier Gateway',
           },
         });
+
+        if (isDiscountAutoApproved) {
+          await prisma.orderNote.create({
+            data: {
+              orderId: order.id,
+              content: `🔓 تم اعتماد خصم الدفع الإلكتروني تلقائياً وتأكيد الطلب — دفع إلكتروني مكتمل — خصم نظام لا يطلب اعتماد${txInfo}`,
+              authorName: 'Kashier Gateway',
+            },
+          });
+        }
       } catch (noteErr) {
         console.warn('[KASHIER-WEBHOOK] Could not create order note:', noteErr.message);
       }

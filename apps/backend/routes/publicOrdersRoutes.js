@@ -46,7 +46,12 @@ const {
   parseMetadataObject,
 } = require('../utils/volumeDiscountUtils');
 const { calculateDiscount: calcStorePromotionDiscount } = require('../utils/storePromotionUtils');
-const { buildCompositeDiscountReason, resolveCheckoutPricing } = require('../utils/orderDiscountUtils');
+const {
+  buildCompositeDiscountReason,
+  resolveCheckoutPricing,
+  resolveDiscountSource,
+  resolveDiscountApproval,
+} = require('../utils/orderDiscountUtils');
 const customerBlocklistService = require('../services/customerBlocklistService');
 
 /**
@@ -2219,10 +2224,21 @@ router.post('/', async (req, res) => {
           totalDiscount: discountAmount
         });
 
-        if (requireDiscountApproval && !req.headers['x-admin-convert']) {
+        const discountSource = resolveDiscountSource({ appliedAdminDiscount: req.headers['x-admin-convert'] ? discountAmount : 0 });
+        orderMetadata.discountSource = discountSource;
+        const approval = resolveDiscountApproval({
+          discountAmount,
+          requireDiscountApproval,
+          discountSource,
+          paymentStatus: 'PENDING',
+        });
+        if (approval.needsDiscountApproval) {
           orderMetadata.needsDiscountApproval = true;
-          orderMetadata.discountApprovalStatus = 'PENDING_APPROVAL';
+          orderMetadata.discountApprovalStatus = approval.discountApprovalStatus;
           orderMetadata.discountApprovalRequestedAt = new Date().toISOString();
+          if (approval.discountApprovalReason) {
+            orderMetadata.discountApprovalReason = approval.discountApprovalReason;
+          }
         }
       }
 
