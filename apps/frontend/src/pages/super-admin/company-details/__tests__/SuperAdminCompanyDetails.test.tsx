@@ -356,6 +356,9 @@ function setupApiMocks(options?: { withoutAppPrices?: boolean }) {
     return Promise.resolve({ data: { success: true, data: [] } });
   });
   mockedApi.post.mockResolvedValue({ data: { success: true, data: { token: "t", user: {} } } });
+  mockedApi.put.mockResolvedValue({
+    data: { success: true, data: { company: payload.companyDetailResponse.data.company } },
+  });
 }
 
 function renderDetailsPage(initialRoute = "/super-admin/companies-v2/cmp-1") {
@@ -397,6 +400,9 @@ describe("SuperAdminCompanyDetails Acceptance Criteria", () => {
     expect(headerButtons).toHaveLength(3);
     expect(headerButtons[0]).toHaveTextContent("تعديل");
     expect(headerButtons[1]).toHaveTextContent("دخول بدعم موثّق");
+    expect(headerButtons[1]).toHaveAttribute("data-variant", "warning");
+    expect(headerButtons[1].className).toContain("amber");
+    expect(headerButtons[1].className).not.toContain("text-primary");
     expect(headerButtons[2]).toHaveTextContent("المزيد");
 
     // Unified 4-KPI Bar without fake trends
@@ -575,5 +581,155 @@ describe("SuperAdminCompanyDetails Acceptance Criteria", () => {
 
     expect(await screen.findByText("تأكيد التفعيل الجماعي للأدوات")).toBeInTheDocument();
     expect(screen.getByTestId("bulk-activate-total-price")).toHaveTextContent("السعر غير محدد");
+  });
+
+  it("displays '100 من 150 عضو' and loads remaining users via pagination when company has > 100 members", async () => {
+    const payload = buildMockPayload();
+    payload.companyDetailResponse.data.company._count.users = 150;
+    payload.companyDetailResponse.data.review.userStats = { total: 150, active: 140, inactive: 10 };
+    payload.companyDetailResponse.data.review.limits.entries[0].current = 150;
+
+    const makeUsers = (start: number, count: number) =>
+      Array.from({ length: count }, (_, idx) => {
+        const num = start + idx;
+        return {
+          id: `u-${num}`,
+          firstName: `عضو`,
+          lastName: `${num}`,
+          email: `user${num}@alnour.test`,
+          role: "AGENT",
+          isActive: true,
+          createdAt: "2026-01-10T10:00:00.000Z",
+          lastLoginAt: TWO_DAYS_AGO,
+        };
+      });
+
+    mockedSpecialtyService.listSpecialties.mockResolvedValue([]);
+    mockedApi.get.mockImplementation((url: string, config?: any) => {
+      if (url === "/admin/companies/cmp-1") return Promise.resolve({ data: payload.companyDetailResponse });
+      if (url.includes("/admin/companies/cmp-1/users")) {
+        const page = config?.params?.page ?? 1;
+        if (page === 1) {
+          return Promise.resolve({
+            data: {
+              success: true,
+              data: {
+                users: makeUsers(1, 100),
+                pagination: { page: 1, limit: 100, total: 150, totalPages: 2, hasNext: true, hasPrev: false },
+              },
+            },
+          });
+        }
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: {
+              users: makeUsers(101, 50),
+              pagination: { page: 2, limit: 100, total: 150, totalPages: 2, hasNext: false, hasPrev: true },
+            },
+          },
+        });
+      }
+      if (url.includes("/admin/companies/cmp-1/facebook-pages")) return Promise.resolve({ data: payload.pagesResponse });
+      if (url.includes("/support/admin/tickets")) return Promise.resolve({ data: payload.ticketsResponse });
+      if (url.includes("/activity/company/activities")) return Promise.resolve({ data: payload.activitiesResponse });
+      if (url.includes("/marketplace/apps")) return Promise.resolve({ data: payload.appsResponse });
+      if (url.includes("/marketplace/bundles")) return Promise.resolve({ data: payload.bundlesResponse });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    renderDetailsPage("/super-admin/companies-v2/cmp-1?tab=team");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("team-total-badge")).toHaveTextContent("100 من 150 عضو");
+    });
+
+    const loadMoreBtn = screen.getByTestId("team-load-more-button");
+    expect(loadMoreBtn).toHaveTextContent("تحميل المزيد من الأعضاء");
+    fireEvent.click(loadMoreBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("team-total-badge")).toHaveTextContent("150 عضو");
+    });
+    expect(screen.queryByTestId("team-load-more-bar")).not.toBeInTheDocument();
+  });
+
+  it("opens warning confirmation modal with mandatory reason for company suspend and logs reason in activity", async () => {
+    setupApiMocks();
+    renderDetailsPage();
+
+    const moreBtn = await screen.findByRole("button", { name: /المزيد/ });
+    fireEvent.click(moreBtn);
+    fireEvent.click(await screen.findByText("إيقاف نشاط الشركة"));
+
+    // Should open warning confirm dialog instead of Edit Company modal
+    expect(await screen.findByTestId("company-status-confirm-dialog")).toBeInTheDocument();
+    expect(screen.queryByText(/حدّث بيانات الشركة الأساسية/)).not.toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole("button", { name: "تأكيد إيقاف الشركة" });
+    expect(confirmBtn).toBeDisabled();
+
+    const reasonInput = screen.getByLabelText(/سبب إيقاف الشركة/);
+    fireEvent.change(reasonInput, { target: { value: "   " } });
+    expect(confirmBtn).toBeDisabled();
+
+    fireEvent.change(reasonInput, { target: { value: "إيقاف مؤقت بسبب فاتورة 2026/11/01" } });
+    expect(confirmBtn).toBeEnabled();
+
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockedApi.put).toHaveBeenCalledWith(
+        "/admin/companies/cmp-1",
+        expect.objectContaining({
+          isActive: false,
+          reason: "إيقاف مؤقت بسبب فاتورة 2026/11/01",
+        }),
+        expect.any(Object),
+      );
+    });
+
+    // Switch to activity tab and verify suspend action + reason (including date!) appear
+    fireEvent.click(screen.getByRole("tab", { name: "نشاط" }));
+    await waitFor(() => {
+      expect(screen.getByText("إيقاف نشاط الشركة")).toBeInTheDocument();
+    });
+    expect(screen.getByText("السبب: إيقاف مؤقت بسبب فاتورة 2026/11/01")).toBeInTheDocument();
+  });
+
+  it("requires mandatory reason for bulk activation and sends it in install requests and activity", async () => {
+    setupApiMocks();
+    renderDetailsPage("/super-admin/companies-v2/cmp-1?tab=activation");
+
+    const activateAllBtn = await screen.findByRole("button", { name: /تفعيل الكل/ });
+    fireEvent.click(activateAllBtn);
+
+    const confirmBtn = await screen.findByRole("button", { name: /تأكيد وتفعيل 3 أداة/ });
+    expect(confirmBtn).toBeDisabled();
+
+    const reasonInput = screen.getByLabelText(/سبب التفعيل الجماعي/);
+    fireEvent.change(reasonInput, { target: { value: "   " } });
+    expect(confirmBtn).toBeDisabled();
+
+    fireEvent.change(reasonInput, { target: { value: "تفعيل باقة النمو للعميل بتاريخ 2026/11/12" } });
+    expect(confirmBtn).toBeEnabled();
+
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockedApi.post).toHaveBeenCalledWith(
+        "/marketplace/apps/app-1/install",
+        expect.objectContaining({
+          reason: "تفعيل باقة النمو للعميل بتاريخ 2026/11/12",
+        }),
+        expect.any(Object),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "نشاط" }));
+    await waitFor(() => {
+      expect(screen.getByText(/تفعيل جماعي للأدوات/)).toBeInTheDocument();
+    });
+    expect(screen.getByText("السبب: تفعيل باقة النمو للعميل بتاريخ 2026/11/12")).toBeInTheDocument();
   });
 });

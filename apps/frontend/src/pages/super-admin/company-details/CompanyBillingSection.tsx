@@ -21,18 +21,28 @@ import {
   getBillingTypeLabel,
 } from "./helpers";
 
-// أوصاف الفوترة تيجي من الباك إنجليزي جاهز — تُعرض عربي، وأي وصف جديد يرجع زي ما هو
+// أوصاف الفوترة تيجي من الباك إنجليزي جاهز — تُعرض عربي، وأي وصف أجنبي غير معروف يقع لبديل عربي عام
 const BILLING_DESCRIPTION_LABELS: Record<string, string> = {
-  "Subscription created": "إنشاء اشتراك",
-  "Subscription renewed": "تجديد اشتراك",
-  "Subscription cancelled": "إلغاء اشتراك",
-  "Wallet top-up": "شحن محفظة",
-  "Wallet topup": "شحن محفظة",
+  "subscription created": "إنشاء اشتراك",
+  "subscription renewed": "تجديد اشتراك",
+  "subscription cancelled": "إلغاء اشتراك",
+  "subscription canceled": "إلغاء اشتراك",
+  "wallet top-up": "شحن محفظة",
+  "wallet topup": "شحن محفظة",
+  "wallet recharge": "شحن محفظة",
+  "invoice paid": "سداد فاتورة",
+  "payment received": "استلام دفعة",
+  "monthly fee": "رسوم الاشتراك الشهري",
+  "platform fee": "رسوم المنصة",
+  "refund": "استرداد مبلغ",
 };
 
-function billingDescription(description?: string | null) {
-  if (!description) return "حركة فوترة";
-  return BILLING_DESCRIPTION_LABELS[description.trim()] ?? description;
+export function billingDescription(description?: string | null) {
+  if (!description || !description.trim()) return "حركة فوترة";
+  const trimmed = description.trim();
+  const mapped = BILLING_DESCRIPTION_LABELS[trimmed.toLowerCase()];
+  if (mapped) return mapped;
+  return /[\u0600-\u06FF]/.test(trimmed) ? trimmed : "حركة فوترة على الحساب";
 }
 
 export function CompanyBillingSection({

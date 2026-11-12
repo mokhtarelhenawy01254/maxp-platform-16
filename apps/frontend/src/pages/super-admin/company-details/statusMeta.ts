@@ -129,13 +129,5 @@ export function getStatusMeta(category: string, status?: string): { label: strin
     return { label: entry.label, className: severityClasses[entry.severity] ?? "" };
   }
 
-  // Cross-category fallback for common statuses
-  for (const cat of Object.keys(statusMap)) {
-    if (statusMap[cat][normalizedKey]) {
-      const match = statusMap[cat][normalizedKey];
-      return { label: match.label, className: severityClasses[match.severity] ?? "" };
-    }
-  }
-
   return { label: "غير محدد", className: severityClasses["neutral"] ?? "" };
 }

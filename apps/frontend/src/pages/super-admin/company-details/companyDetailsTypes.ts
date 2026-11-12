@@ -44,22 +44,6 @@ export interface CompanyUser {
   employee?: { employeeNumber?: string };
 }
 
-export interface WhatsAppSession {
-  id: string;
-  phoneNumber: string;
-  status: string;
-  isDefault?: boolean;
-  lastConnectedAt?: string | null;
-}
-
-export interface WhatsAppSummary {
-  connectedSessions: number;
-  sessionsTotal: number;
-  templatesTotal: number;
-  notificationsEnabled: boolean;
-  defaultSession?: WhatsAppSession | null;
-}
-
 export interface FacebookPage {
   id: string;
   pageName?: string;
@@ -181,6 +165,5 @@ export interface UnifiedKpiStats {
   walletBalance: number;
   monthlyFee: number;
   subscriptionStatus: string;
-  openTickets: number;
   activeApps: number;
 }

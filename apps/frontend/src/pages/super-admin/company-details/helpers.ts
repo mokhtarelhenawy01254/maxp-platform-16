@@ -557,7 +557,7 @@ function sanitizeActivityText(raw: string): string {
     .replace(/\/api\/\S*/gi, "")
     .replace(/\/v\d+\/\S*/gi, "")
     .replace(/\/(admin|auth|marketplace|support|activity|billing|wallet|companies|users|employees|orders|products)\S*/gi, "")
-    .replace(/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*/gi, "")
+    .replace(/(^|\s)\/?(?=[a-zA-Z0-9_/-]*[a-zA-Z])[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)+\/?/gi, "$1")
     .replace(/\b[A-Za-z]+(Controller|Service|Worker|Middleware|Manager|Router)\b/g, "")
     .replace(/\(\s*Super\s*Admin\s*\)/gi, "")
     .replace(/\s{2,}/g, " ")
@@ -599,6 +599,7 @@ export function formatActivityTimeline(entry: any): {
       meta = null;
     }
   }
+  const cleanMetaReason = meta?.reason ? sanitizeActivityText(String(meta.reason)) : "";
 
   // 1. Impersonation (Super Admin entering as Company Admin)
   if (
@@ -618,18 +619,33 @@ export function formatActivityTimeline(entry: any): {
     };
   }
 
-  // 2. Auth / Login
+  // 2. Tenant Pulse (operational hourly heartbeat)
+  if (category === "PULSE" || action === "TENANT_ACTIVITY") {
+    const cleanTarget = entry.targetName ? sanitizeActivityText(String(entry.targetName)) : "";
+    return {
+      actionText: "نبض نشاط تشغيلي للشركة",
+      detailText: cleanMetaReason
+        ? `السبب: ${cleanMetaReason}`
+        : cleanTarget
+          ? `وحدة النشاط: ${cleanTarget}`
+          : "رصد نشاط تشغيلي مسجّل على حساب الشركة",
+      typeKey: "system",
+      typeLabel: "نبض النشاط",
+    };
+  }
+
+  // 3. Auth / Login
   if (category === "AUTH" || desc.includes("/auth/login") || desc.toLowerCase().includes("login")) {
     const cleaned = sanitizeActivityText(desc);
     return {
       actionText: "تسجيل دخول إلى النظام",
-      detailText: (hasArabicText(cleaned) ? cleaned : "") || "عملية مصادقة ناجحة للمستخدم",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : (hasArabicText(cleaned) ? cleaned : "") || "عملية مصادقة ناجحة للمستخدم",
       typeKey: "auth",
       typeLabel: "مصادقة",
     };
   }
 
-  // 3. Wallet / Balance Recharge & Billing
+  // 4. Wallet / Balance Recharge & Billing
   if (
     category === "BILLING" ||
     desc.includes("add-funds") ||
@@ -644,60 +660,56 @@ export function formatActivityTimeline(entry: any): {
       actionText: desc.includes("add-funds") || action.includes("TOP_UP") || action.includes("WALLET")
         ? "شحن رصيد المحفظة"
         : "عملية مالية على الفوترة",
-      detailText: (hasArabicText(cleaned) ? cleaned : "") || "تحديث الرصيد أو حركة الفواتير للشركة",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : (hasArabicText(cleaned) ? cleaned : "") || "تحديث الرصيد أو حركة الفواتير للشركة",
       typeKey: "billing",
       typeLabel: "مالي",
     };
   }
 
-  // 4. Company Suspension / Activation
-  if (action.includes("SUSPEND") || desc.toLowerCase().includes("suspended") || desc.includes("إيقاف")) {
-    const cleaned = sanitizeActivityText(desc);
-    return {
-      actionText: "إيقاف نشاط الشركة",
-      detailText: (hasArabicText(cleaned) ? cleaned : "") || "تم إيقاف حساب الشركة وتجميد صلاحيات الدخول",
-      typeKey: "settings",
-      typeLabel: "إدارة",
-    };
-  }
-  if (action.includes("ACTIVATE") || desc.toLowerCase().includes("activated") || desc.includes("تفعيل الشركة")) {
-    return {
-      actionText: "تفعيل نشاط الشركة",
-      detailText: "تم إعادة تنشيط الشركة وفتح الصلاحيات",
-      typeKey: "settings",
-      typeLabel: "إدارة",
-    };
-  }
-
-  // 5. Trial Mode
-  if (desc.includes("/trial") || action.includes("TRIAL")) {
-    const cleaned = sanitizeActivityText(desc);
-    return {
-      actionText: "تحديث الفترة التجريبية",
-      detailText: (hasArabicText(cleaned) ? cleaned : "") || "تعديل إعدادات الفترة المجانية للشركة",
-      typeKey: "settings",
-      typeLabel: "تجريبي",
-    };
-  }
-
-  // 6. App / Marketplace Install
-  if (desc.includes("/install") || desc.includes("/marketplace") || action.includes("INSTALL") || category === "MARKETPLACE") {
+  // 5. Bulk App Activation / App / Marketplace Install (before generic ACTIVATE check)
+  if (
+    action === "BULK_ACTIVATE_APPS" ||
+    desc.includes("/install") ||
+    desc.includes("/marketplace") ||
+    action.includes("INSTALL") ||
+    category === "MARKETPLACE"
+  ) {
+    if (action === "BULK_ACTIVATE_APPS") {
+      const countLabel = meta?.count ? ` (${formatNumber(meta.count)} أداة)` : "";
+      return {
+        actionText: `تفعيل جماعي للأدوات${countLabel}`,
+        detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم تفعيل الأدوات غير المثبتة للشركة بنجاح",
+        typeKey: "marketplace",
+        typeLabel: "الأدوات",
+      };
+    }
     const appMatch = desc.match(/apps\/([^/\s]+)\/install/i);
     const appName = appMatch ? appMatch[1] : "";
     return {
       actionText: appName ? `تثبيت وتفعيل أداة (${appName})` : "تثبيت وتفعيل أداة من المتجر",
-      detailText: "تم تفعيل الأداة بنجاح وربطها بحساب الشركة",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم تفعيل الأداة بنجاح وربطها بحساب الشركة",
       typeKey: "marketplace",
       typeLabel: "الأدوات",
     };
   }
 
-  // 7. Employees / Users
+  // 6. Trial Mode (before generic SUSPEND/ACTIVATE checks)
+  if (desc.includes("/trial") || action.includes("TRIAL") || desc.includes("الفترة التجريبية")) {
+    const cleaned = sanitizeActivityText(desc);
+    return {
+      actionText: "تحديث الفترة التجريبية",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : (hasArabicText(cleaned) ? cleaned : "") || "تعديل إعدادات الفترة المجانية للشركة",
+      typeKey: "settings",
+      typeLabel: "تجريبي",
+    };
+  }
+
+  // 7. Employees / Users (before generic company SUSPEND/ACTIVATE checks)
   if (desc.includes("/employees") || desc.includes("/users") || action.includes("EMPLOYEE") || action.includes("USER") || category === "TEAM") {
     if (desc.includes("DELETE") || action.includes("DELETE")) {
       return {
         actionText: "حذف عضو من الفريق",
-        detailText: "تم حذف حساب المستخدم من فريق عمل الشركة",
+        detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم حذف حساب المستخدم من فريق عمل الشركة",
         typeKey: "team",
         typeLabel: "الفريق",
       };
@@ -705,16 +717,58 @@ export function formatActivityTimeline(entry: any): {
     if (desc.includes("ROLE") || action.includes("ROLE")) {
       return {
         actionText: "تعديل صلاحية عضو في الفريق",
-        detailText: "تم تحديث دور وصلاحيات أحد أعضاء الشركة",
+        detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم تحديث دور وصلاحيات أحد أعضاء الشركة",
+        typeKey: "team",
+        typeLabel: "الفريق",
+      };
+    }
+    if (action.includes("SUSPEND") || action.includes("STATUS") || desc.includes("إيقاف")) {
+      const cleaned = sanitizeActivityText(desc);
+      return {
+        actionText: "تحديث حالة عضو في الفريق",
+        detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : (hasArabicText(cleaned) ? cleaned : "") || "تم تغيير حالة تفعيل أحد أعضاء الفريق",
         typeKey: "team",
         typeLabel: "الفريق",
       };
     }
     return {
       actionText: "إضافة عضو جديد للفريق",
-      detailText: "تم إنشاء حساب وتعيين صلاحيات لعضو جديد بالشركة",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم إنشاء حساب وتعيين صلاحيات لعضو جديد بالشركة",
       typeKey: "team",
       typeLabel: "الفريق",
+    };
+  }
+
+  // 8. Company Suspension / Activation
+  if (
+    action === "SUSPEND_COMPANY" ||
+    action === "DEACTIVATE_COMPANY" ||
+    action.includes("SUSPEND") ||
+    desc.toLowerCase().includes("suspended") ||
+    desc.includes("إيقاف نشاط الشركة") ||
+    desc.includes("إيقاف الشركة") ||
+    (category === "COMPANY" && desc.includes("إيقاف"))
+  ) {
+    const cleaned = sanitizeActivityText(desc);
+    return {
+      actionText: "إيقاف نشاط الشركة",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : (hasArabicText(cleaned) ? cleaned : "") || "تم إيقاف حساب الشركة وتجميد صلاحيات الدخول",
+      typeKey: "settings",
+      typeLabel: "إدارة",
+    };
+  }
+  if (
+    action === "ACTIVATE_COMPANY" ||
+    (!action.includes("DEACTIVATE") && action.includes("ACTIVATE")) ||
+    desc.toLowerCase().includes("company activated") ||
+    desc.includes("تفعيل نشاط الشركة") ||
+    desc.includes("تفعيل الشركة")
+  ) {
+    return {
+      actionText: "تفعيل نشاط الشركة",
+      detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "تم إعادة تنشيط الشركة وفتح الصلاحيات",
+      typeKey: "settings",
+      typeLabel: "إدارة",
     };
   }
 
@@ -754,7 +808,6 @@ export function formatActivityTimeline(entry: any): {
     typeLabel: "النظام",
   };
 
-  const cleanMetaReason = meta?.reason ? sanitizeActivityText(String(meta.reason)) : "";
   return {
     actionText: hasArabicText(sanitized) ? sanitized : fallbackMeta.actionText,
     detailText: cleanMetaReason ? `السبب: ${cleanMetaReason}` : "",

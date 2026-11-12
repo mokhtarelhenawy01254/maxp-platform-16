@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import type { CompanyData, CompanyUser, FacebookPage } from "./companyDetailsTypes";
-import { MoreVertical, Globe, Mail, Phone, Shield, Trash2, UserPlus, UserRoundX, Users, Search, Bot, AlertCircle } from "lucide-react";
+import { MoreVertical, Globe, Mail, Phone, Shield, Trash2, UserPlus, UserRoundX, Users, Search, Bot, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -57,6 +57,9 @@ export function CompanyTeamSection({
   handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
   deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
   unifiedUsersCount,
+  usersHasMore,
+  loadingMoreUsers = false,
+  onLoadMoreUsers,
 }: {
   companyUsers: CompanyUser[];
   usersLoading: boolean;
@@ -69,6 +72,9 @@ export function CompanyTeamSection({
   handleDeleteUser: (userId: string) => Promise<void>;
   deleteConfirmUserId: string | null; setDeleteConfirmUserId: (id: string | null) => void; deleteUserLoading: boolean;
   unifiedUsersCount?: number;
+  usersHasMore?: boolean;
+  loadingMoreUsers?: boolean;
+  onLoadMoreUsers?: () => void | Promise<void>;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -140,6 +146,10 @@ export function CompanyTeamSection({
   );
 
   const displayUsersCount = unifiedUsersCount ?? company?._count?.users ?? companyUsers.length;
+  const hasMoreToLoad =
+    usersHasMore !== undefined
+      ? Boolean(usersHasMore)
+      : companyUsers.length >= 100 && displayUsersCount > companyUsers.length;
   const hasActiveFilter = Boolean(searchTerm || roleFilter !== "ALL" || statusFilter !== "ALL");
 
   const renderUserRow = (user: CompanyUser) => {
@@ -239,7 +249,9 @@ export function CompanyTeamSection({
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg font-black">فريق الشركة</CardTitle>
                 <Badge variant="outline" className="rounded-full px-2.5 py-0.5 text-xs font-mono" data-testid="team-total-badge">
-                  {formatNumber(displayUsersCount)} عضو
+                  {hasMoreToLoad
+                    ? `${formatNumber(companyUsers.length)} من ${formatNumber(displayUsersCount)} عضو`
+                    : `${formatNumber(displayUsersCount)} عضو`}
                 </Badge>
               </div>
               <CardDescription>
@@ -362,6 +374,38 @@ export function CompanyTeamSection({
                     </p>
                   )}
                 </div>
+
+                {hasMoreToLoad ? (
+                  <div
+                    className="flex flex-col gap-2.5 rounded-xl border border-border/60 bg-muted/25 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    data-testid="team-load-more-bar"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-foreground">
+                        يتم عرض {formatNumber(companyUsers.length)} من أصل {formatNumber(displayUsersCount)} عضو
+                      </p>
+                      {hasActiveFilter ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          البحث والفلتر يعملان على الأعضاء المحمّلين حالياً — حمّل البقية لعرض القائمة كاملة.
+                        </p>
+                      ) : null}
+                    </div>
+                    {onLoadMoreUsers ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl font-bold text-xs gap-1.5 shrink-0"
+                        onClick={() => void onLoadMoreUsers()}
+                        disabled={loadingMoreUsers}
+                        data-testid="team-load-more-button"
+                      >
+                        {loadingMoreUsers ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                        <span>{loadingMoreUsers ? "جاري التحميل..." : "تحميل المزيد من الأعضاء"}</span>
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <EmptyState

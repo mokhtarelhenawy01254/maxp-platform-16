@@ -1,3 +1,6 @@
+import { render, screen } from "@testing-library/react";
+import { billingDescription } from "../CompanyBillingSection";
+import { CompanyRecentActivity } from "../CompanyRecentActivity";
 import {
   formatActivityTimeline,
   formatNumber,
@@ -141,6 +144,42 @@ describe("Timeline Formatter without /api/", () => {
     });
     expect(result5.actionText).not.toContain("/api/");
     expect(result5.actionText).not.toContain("Controller");
+
+    const resultWithDateInReason = formatActivityTimeline({
+      action: "IMPERSONATE",
+      description: "POST /api/v1/admin/companies/cmp-1/login-as-admin",
+      metadata: JSON.stringify({
+        reason: "فحص فاتورة بتاريخ 2026/11/01 وحالة 12/05 للدفعة 50/100",
+      }),
+    });
+    expect(resultWithDateInReason.detailText).toBe(
+      "السبب: فحص فاتورة بتاريخ 2026/11/01 وحالة 12/05 للدفعة 50/100",
+    );
+
+    const pulseEntry = formatActivityTimeline({
+      category: "PULSE",
+      action: "TENANT_ACTIVITY",
+      description: "POST /api/v1/orders",
+      targetName: "orders",
+    });
+    expect(pulseEntry.actionText).toBe("نبض نشاط تشغيلي للشركة");
+    expect(pulseEntry.actionText).not.toContain("/api/");
+    expect(pulseEntry.typeLabel).toBe("نبض النشاط");
+
+    const trialDeactivate = formatActivityTimeline({
+      action: "DEACTIVATE_TRIAL",
+      description: "إيقاف الفترة التجريبية مؤقتاً",
+    });
+    expect(trialDeactivate.actionText).toBe("تحديث الفترة التجريبية");
+
+    const companyDeactivate = formatActivityTimeline({
+      action: "DEACTIVATE_COMPANY",
+      description: "Action via /webhooks/dispatch",
+      metadata: JSON.stringify({ reason: "سبب بتاريخ 2026/11/01" }),
+    });
+    expect(companyDeactivate.actionText).toBe("إيقاف نشاط الشركة");
+    expect(companyDeactivate.detailText).toBe("السبب: سبب بتاريخ 2026/11/01");
+    expect(companyDeactivate.detailText).not.toContain("/webhooks/dispatch");
   });
 });
 
@@ -163,6 +202,13 @@ describe("StatusMeta Localization", () => {
     expect(getStatusMeta("user", "INACTIVE").label).toBe("غير نشط");
     expect(getStatusMeta("pricingModel", "PAY_PER_USE").label).toBe("حسب الاستخدام");
     expect(getStatusMeta("channel", "WHATSAPP").label).toBe("واتساب");
+  });
+
+  it("uses neutral arabic fallback instead of stealing labels across categories", () => {
+    const unknownInvoiceStatus = getStatusMeta("invoice", "PENDING");
+    expect(unknownInvoiceStatus.label).toBe("غير محدد");
+    expect(unknownInvoiceStatus.className).toContain("slate");
+    expect(getStatusMeta("ticket", "TOTALLY_UNKNOWN").label).toBe("غير محدد");
   });
 });
 
@@ -205,5 +251,30 @@ describe("Team, Health, Risk & Numeral Helpers", () => {
     expect(
       getCompanyRiskInfo({ isActive: true }, { wallet: { balance: 500 }, subscription: { monthlyFee: 200 } }).level,
     ).toBe("ok");
+  });
+
+  it("maps unknown billing server descriptions to a clean Arabic fallback and displays PULSE activity category", () => {
+    expect(billingDescription("Subscription renewed")).toBe("تجديد اشتراك");
+    expect(billingDescription("شحن رصيد يدوي")).toBe("شحن رصيد يدوي");
+    expect(billingDescription("Unexpected gateway settlement batch #99")).toBe("حركة فوترة على الحساب");
+    expect(billingDescription(null)).toBe("حركة فوترة");
+
+    render(
+      <CompanyRecentActivity
+        loading={false}
+        activities={[
+          {
+            id: "act-pulse-1",
+            category: "PULSE",
+            action: "TENANT_ACTIVITY",
+            description: "POST /api/v1/orders",
+            severity: "LOW",
+            createdAt: new Date().toISOString(),
+          },
+        ]}
+      />,
+    );
+    expect(screen.getAllByText("نبض النشاط").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("عام")).not.toBeInTheDocument();
   });
 });

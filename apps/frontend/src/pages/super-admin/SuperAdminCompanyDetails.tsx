@@ -99,11 +99,12 @@ const SuperAdminCompanyDetails = () => {
     navigate, isMobile, company, loading, error, review, reviewCurrency, limitEntries,
     reviewAlerts, ownerUser, nextBillingDate,
     refreshCompanyWorkspace, refreshing, openTopUpModal, openEditModal, handleLoginAsAdmin,
-    impersonating, unifiedKpiStats,
+    impersonating, statusSaving, handleToggleCompanyStatus, unifiedKpiStats,
     bundleAction, appAction, installAllLoading, activationLoading, activationError,
     orderedCatalogApps, resolvedBundles,
     handleInstallApp, handleSubscribeBundle, handleActivateAllTools,
-    companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal, setTransferOpen,
+    companyUsers, usersLoading, usersPagination, loadingMoreUsers, handleLoadMoreUsers,
+    facebookPages, pagesLoading, openAddEmployeeModal, setTransferOpen,
     handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
     companyTickets, ticketsLoading,
@@ -139,6 +140,22 @@ const SuperAdminCompanyDetails = () => {
   // Impersonation Modal State
   const [impersonateModalOpen, setImpersonateModalOpen] = useState(false);
   const [impersonateReason, setImpersonateReason] = useState("");
+
+  // Suspend / Activate Confirmation Modal State
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [statusReason, setStatusReason] = useState("");
+  const [editStatusReason, setEditStatusReason] = useState("");
+
+  const handleOpenEditModal = useCallback(() => {
+    setEditStatusReason("");
+    openEditModal();
+  }, [openEditModal]);
+
+  const openStatusConfirmModal = useCallback(() => {
+    if (!company) return;
+    setStatusReason("");
+    setStatusConfirmOpen(true);
+  }, [company]);
 
   useEffect(() => {
     businessSpecialtyService
@@ -318,18 +335,19 @@ const SuperAdminCompanyDetails = () => {
         type="button"
         variant="default"
         className="h-9 rounded-xl font-bold shadow-xs gap-1.5 text-xs sm:text-sm px-3.5"
-        onClick={openEditModal}
+        onClick={handleOpenEditModal}
         disabled={!company}
       >
         <Sparkles className="size-4" />
         <span>تعديل</span>
       </Button>
 
-      {/* Action 2 (Secondary): Verified Support Login */}
+      {/* Action 2 (Warning): Verified Support Login */}
       <Button
         type="button"
         variant="outline"
-        className="h-9 rounded-xl border-primary/40 text-primary hover:bg-primary/10 font-bold gap-1.5 text-xs sm:text-sm px-3.5"
+        data-variant="warning"
+        className="h-9 rounded-xl border-amber-500/60 bg-amber-50/80 text-amber-800 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50 font-bold gap-1.5 text-xs sm:text-sm px-3.5"
         onClick={() => {
           setImpersonateReason("");
           setImpersonateModalOpen(true);
@@ -419,7 +437,7 @@ const SuperAdminCompanyDetails = () => {
                 ? "text-destructive focus:text-destructive"
                 : "text-emerald-700 focus:text-emerald-700 dark:text-emerald-400",
             )}
-            onClick={openEditModal}
+            onClick={openStatusConfirmModal}
             disabled={!company}
           >
             <AlertOctagon className="size-3.5" />
@@ -600,7 +618,7 @@ const SuperAdminCompanyDetails = () => {
                         type="button"
                         variant={company.isActive ? "destructive" : "default"}
                         className="h-10 rounded-xl px-4 font-bold shrink-0"
-                        onClick={openEditModal}
+                        onClick={openStatusConfirmModal}
                       >
                         {company.isActive ? "إيقاف الشركة" : "تفعيل الشركة"}
                       </Button>
@@ -662,6 +680,9 @@ const SuperAdminCompanyDetails = () => {
                   setDeleteConfirmUserId={setDeleteConfirmUserId}
                   deleteUserLoading={deleteUserLoading}
                   unifiedUsersCount={unifiedUsersCount}
+                  usersHasMore={usersPagination.hasNext}
+                  loadingMoreUsers={loadingMoreUsers}
+                  onLoadMoreUsers={handleLoadMoreUsers}
                 />
               </TabsContent>
 
@@ -809,11 +830,16 @@ const SuperAdminCompanyDetails = () => {
         </div>
       ) : null}
 
-      {/* 4. Impersonation Confirmation Modal (Mandatory Reason) */}
-      <Dialog open={impersonateModalOpen} onOpenChange={setImpersonateModalOpen}>
+      {/* 4. Impersonation Confirmation Modal (Warning Style + Mandatory Reason) */}
+      <Dialog
+        open={impersonateModalOpen}
+        onOpenChange={(open) => {
+          if (!impersonating) setImpersonateModalOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <div className="flex items-center gap-2 text-primary">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
               <KeyRound className="size-5" />
               <DialogTitle className="text-lg font-black">دخول بدعم موثّق كأدمن الشركة</DialogTitle>
             </div>
@@ -854,7 +880,7 @@ const SuperAdminCompanyDetails = () => {
             </Button>
             <Button
               type="button"
-              className="bg-primary text-primary-foreground font-bold shadow-sm gap-1.5"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm gap-1.5"
               disabled={impersonating || !impersonateReason.trim()}
               onClick={async () => {
                 if (!impersonateReason.trim()) return;
@@ -863,6 +889,107 @@ const SuperAdminCompanyDetails = () => {
             >
               {impersonating ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
               تأكيد الدخول كمدير
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 5. Company Suspend / Reactivate Warning Confirmation Modal (Mandatory Reason) */}
+      <Dialog
+        open={statusConfirmOpen}
+        onOpenChange={(open) => {
+          if (!statusSaving) setStatusConfirmOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" data-testid="company-status-confirm-dialog">
+          <DialogHeader>
+            <div
+              className={cn(
+                "flex items-center gap-2",
+                company?.isActive
+                  ? "text-destructive"
+                  : "text-amber-700 dark:text-amber-400",
+              )}
+            >
+              <AlertTriangle className="size-5" />
+              <DialogTitle className="text-lg font-black">
+                {company?.isActive ? "تحذير: إيقاف نشاط الشركة" : "تحذير: إعادة تفعيل نشاط الشركة"}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
+              {company?.isActive
+                ? `أنت على وشك إيقاف شركة «${company?.name}». سيُمنع جميع الأعضاء من تسجيل الدخول وتُعلّق العمليات الفورية حتى إعادة التفعيل.`
+                : `أنت على وشك إعادة تفعيل شركة «${company?.name}». سيتمكن الأعضاء من تسجيل الدخول والوصول إلى جميع الأدوات المفعّلة.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div
+              className={cn(
+                "flex items-start gap-2 rounded-xl border p-3 text-xs",
+                company?.isActive
+                  ? "border-destructive/30 bg-destructive/10 text-destructive"
+                  : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200",
+              )}
+            >
+              <AlertOctagon className="size-4 shrink-0 mt-0.5" />
+              <p>
+                {company?.isActive
+                  ? "إجراء حساس يوقف التشغيل المباشر للشركة ويُسجّل مع السبب في سجل النشاط."
+                  : "سيُفتح الحساب للتشغيل فوراً ويُسجّل هذا الإجراء مع السبب في سجل النشاط."}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="company-status-reason-input" className="text-xs font-bold text-foreground">
+                {company?.isActive ? "سبب إيقاف الشركة" : "سبب تفعيل الشركة"}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="company-status-reason-input"
+                value={statusReason}
+                onChange={(event) => setStatusReason(event.target.value)}
+                placeholder={
+                  company?.isActive
+                    ? "اكتب السبب الإلزامي لإيقاف الشركة (مثال: تأخر سداد الفواتير المستحقة بتاريخ 2026/11/01)..."
+                    : "اكتب السبب الإلزامي لإعادة تفعيل الشركة (مثال: تم تأكيد سداد الفواتير وتوثيق الإيصال)..."
+                }
+                className="min-h-[85px] rounded-xl text-xs"
+                disabled={statusSaving}
+              />
+              {!statusReason.trim() ? (
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  يجب كتابة سبب واضح لتفعيل زر التأكيد وتوثيق العملية في سجل النشاط.
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStatusConfirmOpen(false)}
+              disabled={statusSaving}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant={company?.isActive ? "destructive" : "default"}
+              className="font-bold shadow-sm gap-1.5"
+              disabled={statusSaving || !statusReason.trim()}
+              onClick={async () => {
+                if (!company || !statusReason.trim()) return;
+                const ok = await handleToggleCompanyStatus(!company.isActive, statusReason.trim());
+                if (ok) {
+                  setStatusReason("");
+                  setStatusConfirmOpen(false);
+                }
+              }}
+            >
+              {statusSaving ? <Loader2 className="size-4 animate-spin" /> : <AlertOctagon className="size-4" />}
+              {company?.isActive ? "تأكيد إيقاف الشركة" : "تأكيد تفعيل الشركة"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -879,8 +1006,9 @@ const SuperAdminCompanyDetails = () => {
         footer={
           <ModalFooter
             loading={editSaving}
+            disabled={Boolean(company && editForm.isActive !== company.isActive && !editStatusReason.trim())}
             onCancel={() => setEditOpen(false)}
-            onConfirm={() => void handleSaveCompany()}
+            onConfirm={() => void handleSaveCompany(editStatusReason)}
             confirmLabel="حفظ التعديلات"
             confirmIcon={CheckCircle2}
           />
@@ -972,7 +1100,7 @@ const SuperAdminCompanyDetails = () => {
           </FormField>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
               <p className="text-sm font-black text-foreground">حالة الشركة</p>
@@ -982,12 +1110,34 @@ const SuperAdminCompanyDetails = () => {
               <StatusBadge isActive={editForm.isActive} />
               <Switch
                 checked={editForm.isActive}
-                onCheckedChange={(checked: boolean) =>
-                  setEditForm((current) => ({ ...current, isActive: checked }))
-                }
+                onCheckedChange={(checked: boolean) => {
+                  setEditForm((current) => ({ ...current, isActive: checked }));
+                  if (company && checked === company.isActive) {
+                    setEditStatusReason("");
+                  }
+                }}
               />
             </div>
           </div>
+          {company && editForm.isActive !== company.isActive ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3 space-y-2 dark:border-amber-800/70 dark:bg-amber-950/30">
+              <p className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                <AlertTriangle className="size-3.5 shrink-0" />
+                <span>
+                  {editForm.isActive
+                    ? "تحذير: أنت على وشك تفعيل نشاط الشركة."
+                    : "تحذير: أنت على وشك إيقاف نشاط الشركة ومنع دخول الأعضاء."}
+                </span>
+              </p>
+              <Textarea
+                id="edit-company-status-reason-input"
+                value={editStatusReason}
+                onChange={(event) => setEditStatusReason(event.target.value)}
+                placeholder="اكتب السبب الإلزامي لتغيير حالة الشركة (يُسجّل في سجل النشاط)..."
+                className="min-h-[70px] rounded-xl text-xs bg-background"
+              />
+            </div>
+          ) : null}
         </div>
 
         <FormField label="ملاحظات">

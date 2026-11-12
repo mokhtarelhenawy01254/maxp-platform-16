@@ -5,8 +5,6 @@ import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
 import i18n from "../../../i18n";
 import { tToast } from "../../../utils/i18n-toast";
-import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, ShoppingBag, Wallet } from "lucide-react";
-import type { ElementType } from "react";
 import type { CompanyData, CompanyReview, CompanyUser, FacebookPage, TicketListItem, ActivityEntry, UnifiedKpiStats } from "./companyDetailsTypes";
 import { apiClient } from "../../../services/apiClient";
 import { tokenManager } from "../../../utils/tokenManager";
@@ -15,7 +13,6 @@ import {
   formatNumber,
   formatCurrency,
   formatRelativeDateLabel,
-  getCount,
   getBundleAppSlugs,
   getDaysUntil,
   getDefaultPricingModel,
@@ -57,12 +54,12 @@ interface ReviewAlert {
   tone: string;
 }
 
-interface Metric {
-  icon: ElementType;
-  label: string;
-  value: string | number;
-  hint?: string;
-  tone?: string;
+interface UsersPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
 }
 
 interface EditForm {
@@ -81,17 +78,19 @@ interface TopUpForm {
 interface UseCompanyDetailsReturn {
   navigate: NavigateFunction; isMobile: boolean; company: CompanyData | null; loading: boolean; error: string; review: CompanyReview | null;
   reviewCurrency: string; limitEntries: NonNullable<CompanyReview['limits']>['entries']; nextBillingDate: string | null;
-  scrollToActivationSection: () => void; reviewAlerts: ReviewAlert[]; detailMetrics: Metric[]; financialMetrics: Metric[]; ownerUser: CompanyUser | null;
+  reviewAlerts: ReviewAlert[]; ownerUser: CompanyUser | null;
   refreshCompanyWorkspace: (opts?: { background?: boolean }) => Promise<void>; refreshing: boolean;
   openTopUpModal: () => void; openEditModal: () => void; handleLoginAsAdmin: (reason?: string) => Promise<void>;
-  impersonating: boolean; unifiedKpiStats: UnifiedKpiStats;
+  impersonating: boolean; statusSaving: boolean; handleToggleCompanyStatus: (nextIsActive: boolean, reason: string) => Promise<boolean>;
+  unifiedKpiStats: UnifiedKpiStats;
   bundleAction: string; appAction: string; installAllLoading: boolean; activationLoading: boolean; activationError: string;
   orderedCatalogApps: any[]; resolvedBundles: any[]; appNameBySlug: Map<string, string>;
   handleInstallApp: (app: any) => Promise<void>; handleSubscribeBundle: (bundleSlug: string) => Promise<void>;
-  handleActivateAllTools: () => Promise<void>; refreshActivationCatalog: () => Promise<void>;
-  companyUsers: CompanyUser[]; usersLoading: boolean; facebookPages: FacebookPage[]; pagesLoading: boolean; openAddEmployeeModal: () => void;
+  handleActivateAllTools: (reason?: string) => Promise<void>; refreshActivationCatalog: () => Promise<void>;
+  companyUsers: CompanyUser[]; usersLoading: boolean; usersPagination: UsersPagination; loadingMoreUsers: boolean; handleLoadMoreUsers: () => Promise<void>;
+  facebookPages: FacebookPage[]; pagesLoading: boolean; openAddEmployeeModal: () => void;
   editOpen: boolean; setEditOpen: Dispatch<SetStateAction<boolean>>; editSaving: boolean; editForm: EditForm; setEditForm: Dispatch<SetStateAction<EditForm>>; editErrors: any;
-  handleSaveCompany: () => Promise<void>; transferOpen: boolean; setTransferOpen: Dispatch<SetStateAction<boolean>>; transferLoading: boolean;
+  handleSaveCompany: (statusChangeReason?: string) => Promise<void>; transferOpen: boolean; setTransferOpen: Dispatch<SetStateAction<boolean>>; transferLoading: boolean;
   changeOwnerTargetUserId: string; setChangeOwnerTargetUserId: Dispatch<SetStateAction<string>>; handleTransferOwnership: () => Promise<void>;
   addEmployeeOpen: boolean; setAddEmployeeOpen: Dispatch<SetStateAction<boolean>>; employeeLoading: boolean; addEmployeeForm: EmployeeForm;
   setAddEmployeeForm: Dispatch<SetStateAction<EmployeeForm>>; addEmployeeErrors: any; handleAddEmployee: () => Promise<void>;
@@ -122,13 +121,23 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [companyTickets, setCompanyTickets] = useState<TicketListItem[]>([]);
   const [companyActivities, setCompanyActivities] = useState<ActivityEntry[]>([]);
+  const [recordedActivities, setRecordedActivities] = useState<ActivityEntry[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [usersPagination, setUsersPagination] = useState<UsersPagination>({
+    page: 1,
+    limit: 100,
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+  });
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
   const [pagesLoading, setPagesLoading] = useState(false);
   const [impersonating, setImpersonating] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [error, setError] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
@@ -173,9 +182,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     [companyUsers],
   );
 
-  const activeUsersCount = useMemo(() => companyUsers.filter((user) => user.isActive).length, [companyUsers]);
-  const inactiveUsersCount = useMemo(() => companyUsers.filter((user) => !user.isActive).length, [companyUsers]);
-
   const syncEditForm = (nextCompany: CompanyData | null): void => {
     if (!nextCompany) return;
     setEditForm({
@@ -202,7 +208,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     try {
       const [detailResult, usersResult, pagesResult, ticketsResult, activitiesResult] = await Promise.allSettled([
         apiClient.get(`/admin/companies/${companyId}`, getCompanyScopedRequestConfig()),
-        apiClient.get(`/admin/companies/${companyId}/users`, getCompanyScopedRequestConfig({ params: { limit: 100, sortBy: "createdAt", sortOrder: "desc" } })),
+        apiClient.get(`/admin/companies/${companyId}/users`, getCompanyScopedRequestConfig({ params: { page: 1, limit: 100, sortBy: "createdAt", sortOrder: "desc" } })),
         apiClient.get(`/admin/companies/${companyId}/facebook-pages`, getCompanyScopedRequestConfig()),
         apiClient.get(`/support/admin/tickets`, getCompanyScopedRequestConfig({ params: { companyId, limit: 20 } })),
         apiClient.get(`/activity/company/activities`, getCompanyScopedRequestConfig({ params: { companyId, limit: 50 } })),
@@ -214,13 +220,32 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       const activitiesData: any = activitiesResult.status === "fulfilled" ? activitiesResult.value.data : null;
       if (!detailData?.success) {
         setCompany(null); setReview(null); setCompanyUsers([]); setFacebookPages([]);
+        setUsersPagination({ page: 1, limit: 100, total: 0, totalPages: 1, hasNext: false });
         setError("تعذر تحميل بيانات الشركة"); return;
       }
       let nextCompany = normalizeCompanyData(detailData.data?.company) as CompanyData | null;
       const nextReview: CompanyReview | null = detailData.data?.review || null;
       if (usersData?.success) {
-        setCompanyUsers(usersData.data?.users || []);
-      } else { setCompanyUsers([]); tToast.error("companyDetails.unable_load_1117"); }
+        const fetchedUsers: CompanyUser[] = usersData.data?.users || [];
+        setCompanyUsers(fetchedUsers);
+        const pag = usersData.data?.pagination;
+        const limitNum = pag?.limit ?? 100;
+        const totalNum = pag?.total ?? nextReview?.userStats?.total ?? fetchedUsers.length;
+        setUsersPagination({
+          page: pag?.page ?? 1,
+          limit: limitNum,
+          total: totalNum,
+          totalPages: pag?.totalPages ?? Math.max(1, Math.ceil(totalNum / limitNum)),
+          hasNext:
+            typeof pag?.hasNext === "boolean"
+              ? pag.hasNext
+              : fetchedUsers.length >= limitNum && totalNum > fetchedUsers.length,
+        });
+      } else {
+        setCompanyUsers([]);
+        setUsersPagination({ page: 1, limit: 100, total: 0, totalPages: 1, hasNext: false });
+        tToast.error("companyDetails.unable_load_1117");
+      }
       if (pagesData?.success) {
         const nextPages: FacebookPage[] = pagesData.data || [];
         setFacebookPages(nextPages);
@@ -235,6 +260,48 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       setCompany(null); setReview(null); setCompanyUsers([]); setFacebookPages([]); setCompanyTickets([]); setCompanyActivities([]);
       setError(extractErrorMessage(nextError, "تعذر تحميل مساحة الشركة"));
     } finally { setLoading(false); setRefreshing(false); setUsersLoading(false); setPagesLoading(false); setTicketsLoading(false); setActivitiesLoading(false); }
+  };
+
+  const handleLoadMoreUsers = async (): Promise<void> => {
+    if (!companyId || loadingMoreUsers || !usersPagination.hasNext) return;
+    const nextPage = usersPagination.page + 1;
+    const limitNum = usersPagination.limit || 100;
+    try {
+      setLoadingMoreUsers(true);
+      const response: any = await apiClient.get(
+        `/admin/companies/${companyId}/users`,
+        getCompanyScopedRequestConfig({
+          params: { page: nextPage, limit: limitNum, sortBy: "createdAt", sortOrder: "desc" },
+        }),
+      );
+      if (response.data?.success) {
+        const nextUsers: CompanyUser[] = response.data?.data?.users || [];
+        const pag = response.data?.data?.pagination;
+        const seen = new Set(companyUsers.map((u) => u.id));
+        const uniqueNextUsers = nextUsers.filter((u) => !seen.has(u.id));
+        const mergedUsers = [...companyUsers, ...uniqueNextUsers];
+        setCompanyUsers(mergedUsers);
+        const resolvedLimit = pag?.limit ?? usersPagination.limit;
+        const resolvedTotal = pag?.total ?? usersPagination.total;
+        const resolvedHasNext =
+          typeof pag?.hasNext === "boolean"
+            ? pag.hasNext
+            : nextUsers.length >= resolvedLimit && resolvedTotal > mergedUsers.length;
+        setUsersPagination((prev) => ({
+          page: pag?.page ?? nextPage,
+          limit: resolvedLimit,
+          total: resolvedTotal,
+          totalPages: pag?.totalPages ?? prev.totalPages,
+          hasNext: resolvedHasNext,
+        }));
+      } else {
+        toast.error(response.data?.message || "تعذر تحميل المزيد من الأعضاء");
+      }
+    } catch (nextError) {
+      toast.error(extractErrorMessage(nextError, "تعذر تحميل المزيد من الأعضاء"));
+    } finally {
+      setLoadingMoreUsers(false);
+    }
   };
 
   const refreshActivationCatalog = async (): Promise<void> => {
@@ -261,7 +328,11 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     } finally { setActivationLoading(false); }
   };
 
-  useEffect(() => { void refreshCompanyWorkspace(); void refreshActivationCatalog(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setRecordedActivities([]);
+    void refreshCompanyWorkspace();
+    void refreshActivationCatalog();
+  }, [companyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateEditForm = (): boolean => {
     const next: Record<string, string> = {};
@@ -272,8 +343,15 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     setEditErrors(next); return Object.keys(next).length === 0;
   };
 
-  const handleSaveCompany = async (): Promise<void> => {
+  const handleSaveCompany = async (statusChangeReason?: string): Promise<void> => {
     if (!companyId || !validateEditForm()) return;
+    const statusChanged = Boolean(company && editForm["isActive"] !== company.isActive);
+    const trimmedStatusReason = statusChangeReason?.trim() || "";
+    if (statusChanged && !trimmedStatusReason) {
+      setEditErrors((prev: Record<string, string>) => ({ ...prev, statusReason: "يجب كتابة سبب تغيير حالة الشركة" }));
+      toast.error("يجب كتابة سبب تغيير حالة الشركة");
+      return;
+    }
     try {
       setEditSaving(true);
       const response: any = await apiClient.put(`/admin/companies/${companyId}`, {
@@ -281,11 +359,79 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         website: editForm["website"].trim(), currency: editForm["currency"], isActive: editForm["isActive"],
         notes: editForm["notes"].trim(),
         businessSpecialtyId: editForm["businessSpecialtyId"] === "none" ? null : (editForm["businessSpecialtyId"] || null),
+        ...(statusChanged ? { reason: trimmedStatusReason } : {}),
       }, getCompanyScopedRequestConfig());
-      if (response.data?.success) { tToast.success("companyDetails.success_update_a26a"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
+      if (response.data?.success) {
+        if (statusChanged) {
+          setRecordedActivities((prev) => [
+            {
+              id: `local-status-${Date.now()}`,
+              category: "COMPANY",
+              action: editForm["isActive"] ? "ACTIVATE_COMPANY" : "SUSPEND_COMPANY",
+              description: editForm["isActive"] ? "تفعيل نشاط الشركة" : "إيقاف نشاط الشركة",
+              severity: editForm["isActive"] ? "MEDIUM" : "HIGH",
+              createdAt: new Date().toISOString(),
+              metadata: JSON.stringify({ reason: trimmedStatusReason, isActive: editForm["isActive"] }),
+            },
+            ...prev,
+          ]);
+        }
+        tToast.success("companyDetails.success_update_a26a"); setEditOpen(false); await refreshCompanyWorkspace({ background: true });
+      }
       else toast.error(response.data?.message || "فشل في تحديث الشركة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تحديث الشركة")); }
     finally { setEditSaving(false); }
+  };
+
+  const handleToggleCompanyStatus = async (nextIsActive: boolean, reason: string): Promise<boolean> => {
+    if (!companyId || !company) return false;
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      toast.error("يجب إدخال سبب واضح لتنفيذ العملية");
+      return false;
+    }
+    try {
+      setStatusSaving(true);
+      const response: any = await apiClient.put(
+        `/admin/companies/${companyId}`,
+        {
+          name: company.name,
+          email: company.email,
+          phone: company.phone || "",
+          website: company.website || "",
+          currency: company.currency || "EGP",
+          isActive: nextIsActive,
+          notes: (company as any)["notes"] || "",
+          businessSpecialtyId: company.businessSpecialtyId || company.businessSpecialty?.id || null,
+          reason: trimmedReason,
+        },
+        getCompanyScopedRequestConfig(),
+      );
+      if (response.data?.success) {
+        setRecordedActivities((prev) => [
+          {
+            id: `local-status-${Date.now()}`,
+            category: "COMPANY",
+            action: nextIsActive ? "ACTIVATE_COMPANY" : "SUSPEND_COMPANY",
+            description: nextIsActive ? "تفعيل نشاط الشركة" : "إيقاف نشاط الشركة",
+            severity: nextIsActive ? "MEDIUM" : "HIGH",
+            createdAt: new Date().toISOString(),
+            metadata: JSON.stringify({ reason: trimmedReason, isActive: nextIsActive }),
+          },
+          ...prev,
+        ]);
+        toast.success(nextIsActive ? "تم تفعيل نشاط الشركة بنجاح" : "تم إيقاف نشاط الشركة بنجاح");
+        await refreshCompanyWorkspace({ background: true });
+        return true;
+      }
+      toast.error(response.data?.message || "فشل في تحديث حالة الشركة");
+      return false;
+    } catch (nextError) {
+      toast.error(extractErrorMessage(nextError, "فشل في تحديث حالة الشركة"));
+      return false;
+    } finally {
+      setStatusSaving(false);
+    }
   };
 
   const validateEmployeeForm = (): boolean => {
@@ -375,11 +521,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     } finally {
       setImpersonating(false);
     }
-  };
-
-  const scrollToActivationSection = (): void => {
-    if (typeof document === "undefined") return;
-    document.getElementById("company-activation-center")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const openEditModal = (): void => { if (!company) return; syncEditForm(company); setEditErrors({}); setEditOpen(true); };
@@ -517,21 +658,57 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     finally { setBundleAction(""); }
   };
 
-  const handleActivateAllTools = async (): Promise<void> => {
+  const handleActivateAllTools = async (reason?: string): Promise<void> => {
     if (!companyId) return;
+    const trimmedReason = reason?.trim() || "";
+    if (!trimmedReason) {
+      toast.error("يجب كتابة سبب التفعيل الجماعي قبل التنفيذ");
+      return;
+    }
     const uninstalledApps = orderedCatalogApps.filter((app) => !app.isInstalled);
     if (!uninstalledApps.length) { tToast.success("companyDetails.msg_1f2a"); return; }
     setInstallAllLoading(true);
     let successCount = 0, failCount = 0;
+    const succeededSlugs: string[] = [];
     const toastId = tToast.loading("companyDetails.loading_activate_8824");
     try {
       for (let index = 0; index < uninstalledApps.length; index += 1) {
         const app = uninstalledApps[index];
         toast.loading(`جاري تفعيل ${app.name}... ${Math.round(((index + 1) / uninstalledApps.length) * 100)}%`, { id: toastId });
-        try { await apiClient.post(`/marketplace/apps/${app.slug}/install`, { pricingModel: getDefaultPricingModel(app) }, getCompanyScopedRequestConfig()) as any; successCount += 1; }
+        try {
+          await apiClient.post(
+            `/marketplace/apps/${app.slug}/install`,
+            { pricingModel: getDefaultPricingModel(app), reason: trimmedReason },
+            getCompanyScopedRequestConfig(),
+          ) as any;
+          successCount += 1;
+          succeededSlugs.push(app.slug);
+        }
         catch { failCount += 1; }
       }
-      toast.success(failCount === 0 ? `تم تفعيل ${successCount} أداة للشركة بنجاح` : `تم تفعيل ${successCount} أداة، وتعذر تفعيل ${failCount} أداة`, { id: toastId });
+      if (successCount > 0) {
+        setRecordedActivities((prev) => [
+          {
+            id: `local-bulk-activate-${Date.now()}`,
+            category: "MARKETPLACE",
+            action: "BULK_ACTIVATE_APPS",
+            description: `تفعيل جماعي للأدوات (${successCount} أداة)`,
+            severity: "MEDIUM",
+            createdAt: new Date().toISOString(),
+            metadata: JSON.stringify({
+              reason: trimmedReason,
+              count: successCount,
+              apps: succeededSlugs,
+            }),
+          },
+          ...prev,
+        ]);
+      }
+      if (successCount === 0 && failCount > 0) {
+        toast.error(`تعذر تفعيل ${failCount} أداة للشركة`, { id: toastId });
+      } else {
+        toast.success(failCount === 0 ? `تم تفعيل ${successCount} أداة للشركة بنجاح` : `تم تفعيل ${successCount} أداة، وتعذر تفعيل ${failCount} أداة`, { id: toastId });
+      }
       await refreshReviewAndCatalog();
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "حدث خطأ أثناء التفعيل الجماعي"), { id: toastId }); }
     finally { setInstallAllLoading(false); }
@@ -557,14 +734,6 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     return alerts.slice(0, 4);
   }, [review, reviewCurrency, nextBillingDate, highUsageItems.length]);
 
-  const financialMetrics: Metric[] = review ? [
-    { icon: Wallet, label: "رصيد المحفظة", value: formatCurrency(review.wallet?.balance, reviewCurrency), hint: `إجمالي الإيداعات ${formatCurrency(review.wallet?.totalDeposited, reviewCurrency)}`, tone: "border-emerald-200/80 bg-[linear-gradient(135deg,rgba(236,253,245,0.96),rgba(209,250,229,0.78))] text-emerald-900 dark:border-emerald-900/60 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.52),rgba(4,120,87,0.22))] dark:text-emerald-100" },
-    { icon: CalendarClock, label: "التجديد القادم", value: nextBillingDate ? formatDate(nextBillingDate) : "غير متوفر", hint: nextBillingDate ? formatRelativeDateLabel(nextBillingDate) : "لا يوجد موعد محدد", tone: "border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(254,243,199,0.82))] text-amber-900 dark:border-amber-900/60 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.45),rgba(146,64,14,0.22))] dark:text-amber-100" },
-    { icon: BarChart3, label: "استهلاك الشهر", value: formatCurrency(review.usage?.costs?.total, reviewCurrency), hint: `${formatNumber(review.usage?.totalActions)} عملية / ${formatNumber(review.usage?.totalQuantity)} وحدة`, tone: "border-sky-200/80 bg-[linear-gradient(135deg,rgba(239,246,255,0.96),rgba(219,234,254,0.82))] text-sky-900 dark:border-sky-900/60 dark:bg-[linear-gradient(135deg,rgba(7,89,133,0.48),rgba(2,132,199,0.22))] dark:text-sky-100" },
-    { icon: Receipt, label: "الفواتير المفتوحة", value: formatNumber(review.billing?.stats?.unpaidInvoices || 0), hint: `المتأخرة ${formatNumber(review.billing?.stats?.overdueInvoices || 0)}`, tone: "border-rose-200/80 bg-[linear-gradient(135deg,rgba(255,241,242,0.96),rgba(254,205,211,0.82))] text-rose-900 dark:border-rose-900/60 dark:bg-[linear-gradient(135deg,rgba(127,29,29,0.42),rgba(190,24,93,0.18))] dark:text-rose-100" },
-    { icon: Boxes, label: "الأدوات النشطة", value: formatNumber(review.usage?.activeApps || 0), hint: `فشل مدفوعات ${formatNumber(review.billing?.stats?.failedPayments || 0)}`, tone: "border-violet-200/80 bg-[linear-gradient(135deg,rgba(245,243,255,0.96),rgba(233,213,255,0.8))] text-violet-900 dark:border-violet-900/60 dark:bg-[linear-gradient(135deg,rgba(76,29,149,0.42),rgba(109,40,217,0.2))] dark:text-violet-100" },
-  ] : [];
-
   const unifiedKpiStats = useMemo<UnifiedKpiStats>(() => {
     const totalUsers = review?.userStats?.total ?? company?._count?.users ?? companyUsers.length;
     const activeUsers = review?.userStats?.active ?? companyUsers.filter((u) => u.isActive).length;
@@ -583,41 +752,26 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       walletBalance: review?.wallet?.balance || 0,
       monthlyFee: review?.subscription?.monthlyFee || 0,
       subscriptionStatus: review?.subscription?.status || "ACTIVE",
-      openTickets: companyTickets.filter((t) => t.status === "OPEN" || t.status === "IN_PROGRESS").length,
       activeApps: review?.usage?.activeApps || 0,
     };
-  }, [review, company, companyUsers, facebookPages.length, companyTickets]);
+  }, [review, company, companyUsers, facebookPages.length]);
 
-  const detailMetrics: Metric[] = company ? [
-    {
-      icon: ShoppingBag,
-      label: "طلبات الشهر",
-      value: formatNumber(unifiedKpiStats.ordersThisMonth),
-      hint: "إجمالي طلبات الشهر الحالي",
-    },
-    {
-      icon: Building2,
-      label: "قاعدة العملاء",
-      value: formatNumber(unifiedKpiStats.customers),
-      hint: "إجمالي العملاء المسجلين",
-    },
-    {
-      icon: Facebook,
-      label: "صفحات فيسبوك",
-      value: formatNumber(unifiedKpiStats.facebookPages),
-      hint: pagesLoading ? "جاري التحميل..." : "قنوات الربط الحالية",
-    },
-  ] : [];
+  const mergedCompanyActivities = useMemo(() => {
+    if (!recordedActivities.length) return companyActivities;
+    const seen = new Set(recordedActivities.map((item) => item.id));
+    return [...recordedActivities, ...companyActivities.filter((item) => !seen.has(item.id))];
+  }, [recordedActivities, companyActivities]);
 
   return {
     navigate, isMobile, company, loading, error, review, reviewCurrency, limitEntries, nextBillingDate,
-    scrollToActivationSection, reviewAlerts, detailMetrics, financialMetrics, ownerUser,
+    reviewAlerts, ownerUser,
     refreshCompanyWorkspace, refreshing,
-    openTopUpModal, openEditModal, handleLoginAsAdmin, impersonating, unifiedKpiStats,
+    openTopUpModal, openEditModal, handleLoginAsAdmin, impersonating, statusSaving, handleToggleCompanyStatus, unifiedKpiStats,
     bundleAction, appAction, installAllLoading, activationLoading, activationError,
     orderedCatalogApps, resolvedBundles, appNameBySlug,
     handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
-    companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal,
+    companyUsers, usersLoading, usersPagination, loadingMoreUsers, handleLoadMoreUsers,
+    facebookPages, pagesLoading, openAddEmployeeModal,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors,
     handleSaveCompany, transferOpen, setTransferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId,
     handleTransferOwnership, addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
@@ -629,7 +783,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
     companyTickets, ticketsLoading,
-    companyActivities, activitiesLoading,
+    companyActivities: mergedCompanyActivities, activitiesLoading,
     toggleFeatureLoading, handleToggleFeature,
   };
 }

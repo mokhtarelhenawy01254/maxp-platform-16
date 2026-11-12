@@ -3,6 +3,8 @@ import { CheckCircle2, Loader2, Layers, Zap, AlertTriangle, Sparkles, Search } f
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { Textarea } from "../../../components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
 import {
@@ -123,12 +125,13 @@ export function CompanyActivationCenter({
   installAllLoading: boolean; activationLoading: boolean; activationError: string;
   handleInstallApp: (app: ActivationItem) => void;
   handleSubscribeBundle: (slug: string) => void;
-  handleActivateAllTools: () => void;
+  handleActivateAllTools: (reason: string) => void | Promise<void>;
   company: any;
   handleToggleFeature: (feature: string, enabled: boolean) => void;
   toggleFeatureLoading: boolean;
 }) {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [bulkReason, setBulkReason] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
@@ -174,8 +177,11 @@ export function CompanyActivationCenter({
         : "السعر غير محدد";
 
   const handleConfirmAndActivate = () => {
+    const trimmed = bulkReason.trim();
+    if (!trimmed) return;
     setConfirmModalOpen(false);
-    handleActivateAllTools();
+    setBulkReason("");
+    void handleActivateAllTools(trimmed);
   };
 
   return (
@@ -190,7 +196,10 @@ export function CompanyActivationCenter({
             <Button
               type="button"
               className="rounded-xl font-bold bg-primary text-primary-foreground shadow-sm gap-1.5"
-              onClick={() => setConfirmModalOpen(true)}
+              onClick={() => {
+                setBulkReason("");
+                setConfirmModalOpen(true);
+              }}
               disabled={installAllLoading}
             >
               {installAllLoading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -352,6 +361,25 @@ export function CompanyActivationCenter({
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="bulk-activate-reason-input" className="text-xs font-bold text-foreground">
+                سبب التفعيل الجماعي <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="bulk-activate-reason-input"
+                value={bulkReason}
+                onChange={(event) => setBulkReason(event.target.value)}
+                placeholder="اكتب السبب الإلزامي للتفعيل الجماعي (مثال: تفعيل أدوات باقة النمو حسب طلب الشركة)..."
+                className="min-h-[80px] rounded-xl text-xs"
+                disabled={installAllLoading}
+              />
+              {!bulkReason.trim() ? (
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  يجب كتابة سبب التفعيل لتفعيل زر التأكيد وتوثيق العملية في سجل النشاط.
+                </p>
+              ) : null}
+            </div>
+
             <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 border border-amber-200 dark:border-amber-800/60">
               <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600" />
               <p>
@@ -367,6 +395,7 @@ export function CompanyActivationCenter({
             <Button
               type="button"
               className="bg-primary text-primary-foreground font-bold shadow-sm"
+              disabled={installAllLoading || !bulkReason.trim()}
               onClick={handleConfirmAndActivate}
             >
               تأكيد وتفعيل {formatNumber(uninstalledCount)} أداة
