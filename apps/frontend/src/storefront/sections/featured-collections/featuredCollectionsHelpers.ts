@@ -147,8 +147,9 @@ export const shouldPreferRuntimeFeaturedCollections = ({
 }): boolean =>
   settingsPreferRuntimeCategories === true ||
   (settingsPreferRuntimeCategories !== false &&
-    isKhemetLuxeTheme(themeId) &&
-    (variant === 'gallery-columns' || variant === 'legacy-circle-categories'));
+    (variant === 'marketplace-tiles' ||
+      (isKhemetLuxeTheme(themeId) &&
+        (variant === 'gallery-columns' || variant === 'legacy-circle-categories'))));
 
 export const normalizeMatchText = (value: string): string =>
   value

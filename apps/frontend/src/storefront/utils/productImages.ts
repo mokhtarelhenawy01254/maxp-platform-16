@@ -356,3 +356,18 @@ export const getPrimaryProductImage = (product?: ProductLike | null): string =>
 
 export const getCartItemImageCandidates = (item?: { imageUrl?: ImageValue } | null): string[] =>
   buildStorefrontImageCandidates(item?.imageUrl);
+
+/**
+ * Identifies placeholder or external stock demo URLs (Unsplash, local placeholders)
+ * so storefront presets can swap them for live merchant product/category imagery.
+ */
+export const isStorefrontDemoImage = (url?: string): boolean => {
+  if (!url || typeof url !== 'string') return true;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    trimmed.includes('images.unsplash.com') ||
+    trimmed.startsWith('/placeholders/') ||
+    trimmed.includes('via.placeholder.com') ||
+    trimmed.includes('placeholder')
+  );
+};

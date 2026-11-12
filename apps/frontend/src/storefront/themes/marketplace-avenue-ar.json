@@ -1111,7 +1111,7 @@
             "limit": 12,
             "ctaText": "كل الأقسام",
             "ctaLink": "/collections",
-            "preferRuntimeCategories": false,
+            "preferRuntimeCategories": true,
             "collections": [
               {
                 "title": "أجهزة منزلية",
@@ -1579,7 +1579,7 @@
             "limit": 12,
             "ctaText": "كل الأقسام",
             "ctaLink": "/collections",
-            "preferRuntimeCategories": false,
+            "preferRuntimeCategories": true,
             "collections": [
               {
                 "title": "أجهزة منزلية",

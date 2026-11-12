@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { buildStorefrontPath } from '../utils/paths';
+import { getPrimaryProductImage, isStorefrontDemoImage } from '../utils/productImages';
 import { useProductGridController } from './product-grid/useProductGridController';
 import type { ProductGridProps } from './product-grid/gridTypes';
 
@@ -129,11 +130,27 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
   const scoped = (href?: string) =>
     href ? buildStorefrontPath(location.pathname, href.startsWith('/') ? href : `/${href}`, location.search) : '#';
 
+  const featuredBannerProduct = useMemo(() => {
+    const list = controller.filteredProducts || [];
+    return list.find((p: any) => p.isFeatured) || list[0];
+  }, [controller.filteredProducts]);
+
+  const rawBannerImage = settings?.bannerImage || '';
+  const hasCustomBanner = rawBannerImage && !isStorefrontDemoImage(rawBannerImage);
+
   const banner = {
-    eyebrow: settings?.bannerEyebrow || 'Urbanears',
-    title: settings?.bannerTitle || (isRtl ? 'جاهز لصوت يبهرك' : 'Ready for immersive sound'),
-    image: settings?.bannerImage || '',
-    link: settings?.bannerLink || '/shop',
+    eyebrow: hasCustomBanner
+      ? (settings?.bannerEyebrow || 'Urbanears')
+      : ((featuredBannerProduct as any)?.category?.name || (isRtl ? 'منتج مميز' : 'Featured Product')),
+    title: hasCustomBanner
+      ? (settings?.bannerTitle || (isRtl ? 'جاهز لصوت يبهرك' : 'Ready for immersive sound'))
+      : (featuredBannerProduct?.name || settings?.bannerTitle || (isRtl ? 'جاهز لصوت يبهرك' : 'Ready for immersive sound')),
+    image: hasCustomBanner
+      ? rawBannerImage
+      : (featuredBannerProduct ? getPrimaryProductImage(featuredBannerProduct) : '') || rawBannerImage,
+    link: hasCustomBanner
+      ? (settings?.bannerLink || '/shop')
+      : (featuredBannerProduct ? `/product/${(featuredBannerProduct as any).slug || (featuredBannerProduct as any).id}` : (settings?.bannerLink || '/shop')),
   };
   const articles = (settings?.articles || []).slice(0, 3);
   const tabsTitle = settings?.tabsTitle || (isRtl ? 'منتجات مميزة' : 'Featured Products');

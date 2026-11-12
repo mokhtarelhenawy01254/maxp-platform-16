@@ -5,6 +5,7 @@ import { useStorefrontTheme } from '../../engine/ThemeProvider';
 import { resolvePreviewThemeId } from '../../preview/previewContext';
 import { resolveActiveThemePreviewDataset } from '../../preview/themePreviewData';
 import { buildStorefrontPath } from '../../utils/paths';
+import { isStorefrontDemoImage } from '../../utils/productImages';
 import {
   FeaturedCollectionsProps,
   normalizeFeaturedCollectionsVariant,
@@ -156,6 +157,10 @@ export const useFeaturedCollectionsController = (
 
   const manualCollections = parseManualCollections(settings?.['collections']);
 
+  const hasOnlyDemoManualCollections =
+    manualCollections.length > 0 &&
+    manualCollections.every((c) => !c.image || isStorefrontDemoImage(c.image));
+
   const preferRuntimeCategories = shouldPreferRuntimeFeaturedCollections({
     themeId,
     variant,
@@ -164,6 +169,7 @@ export const useFeaturedCollectionsController = (
 
   const shouldUseManualCollections =
     manualCollections.length > 0 &&
+    !hasOnlyDemoManualCollections &&
     !(preferRuntimeCategories && categories.length > 0);
 
   const preferPreviewProductImagery = previewProducts.length > 0;

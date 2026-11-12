@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { buildStorefrontPath } from '../utils/paths';
+import { useCategories } from '../hooks/useCategories';
+import { useProducts } from '../hooks/useProducts';
+import { getPrimaryProductImage, isStorefrontDemoImage } from '../utils/productImages';
 
 interface HoverCardItem {
   title?: string;
@@ -82,12 +85,51 @@ const HoverCards: React.FC<HoverCardsProps> = ({ section, settings }) => {
 
   const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : false;
   const rawVariant = String(settings?.variant || section?.variant || '').trim().toLowerCase();
+  const { categories = [] } = useCategories();
+  const { products = [] } = useProducts({ limit: 6 });
+
+  const hasCustomCards = resolvedCards.some((c) => c.image && !isStorefrontDemoImage(c.image));
+
+  const displayCards = useMemo(() => {
+    if (hasCustomCards || rawVariant !== 'marketplace-trio') {
+      return resolvedCards;
+    }
+    if (categories.length >= 3) {
+      return categories.slice(0, 3).map((cat, idx) => {
+        let catImage = cat.image && !isStorefrontDemoImage(cat.image) ? cat.image : '';
+        if (!catImage) {
+          const matchProduct = products.find(
+            (p) => p.categoryId === cat.id || p.category?.id === cat.id || p.category?.slug === cat.slug,
+          );
+          if (matchProduct) catImage = getPrimaryProductImage(matchProduct);
+        }
+        return {
+          title: cat.name,
+          description: cat.description || (isRtl ? 'تسوق تشكيلة مختارة بعناية لأفضل المنتجات.' : 'Carefully curated selection for your home and lifestyle.'),
+          image: catImage || resolvedCards[idx]?.image || '',
+          ctaText: isRtl ? 'تسوّق الآن' : 'Shop Now',
+          link: `/shop?category=${encodeURIComponent(cat.slug || cat.id)}`,
+        };
+      });
+    }
+    if (products.length >= 3) {
+      return products.slice(0, 3).map((prod, idx) => ({
+        title: prod.name,
+        description: prod.description ? prod.description.replace(/<[^>]+>/g, '').slice(0, 70) : (isRtl ? 'أفضل عروض المتجر' : 'Best store picks'),
+        image: getPrimaryProductImage(prod) || resolvedCards[idx]?.image || '',
+        ctaText: isRtl ? 'تسوّق الآن' : 'Shop Now',
+        link: `/product/${prod.slug || prod.id}`,
+      }));
+    }
+    return resolvedCards;
+  }, [hasCustomCards, rawVariant, resolvedCards, categories, products, isRtl]);
+
   if (rawVariant === 'marketplace-trio') {
     return (
       <section className="w-full bg-white py-4">
         <div className="mx-auto w-full max-w-[1235px] px-4 md:px-6">
           <div className="grid gap-4 md:grid-cols-3">
-            {resolvedCards.slice(0, 3).map((card, index) => {
+            {displayCards.slice(0, 3).map((card, index) => {
               const isAccent = index === 0;
               return (
                 <Link

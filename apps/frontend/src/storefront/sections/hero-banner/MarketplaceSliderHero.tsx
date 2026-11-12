@@ -3,6 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { HeroSlide, HeroVariantProps } from './heroTypes';
 import { renderHeroAction } from './heroActions';
 import { buildStorefrontPath } from '../../utils/paths';
+import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
+import { getPrimaryProductImage, isStorefrontDemoImage } from '../../utils/productImages';
+import { formatStorefrontCurrency } from '../../utils/currency';
 
 const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
 
@@ -78,12 +82,47 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
       ? document.documentElement.dir === 'rtl'
       : false;
 
-  const slides: HeroSlide[] = (props.slides || []).filter(
+  const { products = [] } = useProducts({ limit: 12 });
+  const { categories = [] } = useCategories();
+
+  const inputSlides: HeroSlide[] = (props.slides || []).filter(
     (slide) => slide && (slide.image || slide.title),
   );
-  const resolvedSlides: HeroSlide[] = slides.length
-    ? slides
-    : [{ image: props.backgroundImage, title: props.title, subtitle: props.subtitle, eyebrow: props.eyebrow }];
+  const hasCustomSlides = inputSlides.some((slide) => slide.image && !isStorefrontDemoImage(slide.image));
+
+  const resolvedSlides: HeroSlide[] = useMemo(() => {
+    if (hasCustomSlides && inputSlides.length > 0) {
+      return inputSlides;
+    }
+    if (products.length > 0) {
+      const topProducts = [...products]
+        .sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return 0;
+        })
+        .slice(0, 3);
+
+      return topProducts.map((prod, idx) => {
+        const prodImage = getPrimaryProductImage(prod);
+        const prodPrice = formatStorefrontCurrency(prod.price);
+        const prodCat = prod.category?.name || (isRtl ? 'وصل حديثًا' : 'New Arrival');
+        return {
+          image: prodImage || inputSlides[idx]?.image,
+          title: prod.name,
+          eyebrow: prodCat,
+          subtitle: prod.comparePrice && Number(prod.comparePrice) > Number(prod.price)
+            ? (isRtl ? `وفر الآن بسعر ${prodPrice}` : `Special price ${prodPrice}`)
+            : (prod.description ? prod.description.replace(/<[^>]+>/g, '').slice(0, 80) : prodPrice),
+          ctaText: isRtl ? 'تسوّق الآن' : 'Shop Now',
+          ctaLink: `/product/${prod.slug || prod.id}`,
+        };
+      });
+    }
+
+    if (inputSlides.length > 0) return inputSlides;
+    return [{ image: props.backgroundImage, title: props.title, subtitle: props.subtitle, eyebrow: props.eyebrow }];
+  }, [hasCustomSlides, inputSlides, products, isRtl, props.backgroundImage, props.title, props.subtitle, props.eyebrow]);
 
   const [active, setActive] = useState(0);
   const total = resolvedSlides.length;
@@ -97,11 +136,91 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
   }, [total]);
 
   const goTo = (index: number) => setActive(((index % total) + total) % total);
+
+  // Dynamic offer card: prefer merchant's top discounted product
   const offer = props.offerCard;
+  const hasCustomOfferImage = offer?.image && !isStorefrontDemoImage(offer.image);
+
+  const resolvedOffer = useMemo(() => {
+    if (hasCustomOfferImage && offer) {
+      return offer;
+    }
+    if (products.length > 0) {
+      const discountedProduct = [...products]
+        .filter((p) => p.comparePrice && Number(p.comparePrice) > Number(p.price))
+        .sort((a, b) => (Number(b.comparePrice) - Number(b.price)) - (Number(a.comparePrice) - Number(a.price)))[0]
+        || products[products.length > 3 ? 3 : 0];
+
+      if (discountedProduct) {
+        const discAmount = (Number(discountedProduct.comparePrice) || 0) - Number(discountedProduct.price);
+        return {
+          eyebrow: discountedProduct.category?.name || (isRtl ? 'عرض خاص' : 'Special Offer'),
+          title: discountedProduct.name,
+          price: formatStorefrontCurrency(discountedProduct.price),
+          note: discAmount > 0
+            ? (isRtl ? `خصم ${formatStorefrontCurrency(discAmount)}` : `Save ${formatStorefrontCurrency(discAmount)}`)
+            : (isRtl ? 'عرض محدود' : 'Limited Offer'),
+          image: getPrimaryProductImage(discountedProduct) || offer?.image,
+          link: `/product/${discountedProduct.slug || discountedProduct.id}`,
+        };
+      }
+    }
+    return offer;
+  }, [hasCustomOfferImage, offer, products, isRtl]);
+
+  // Dynamic mini categories: prefer merchant's real categories
   const minis = props.miniCategories;
-  const miniItems = (minis?.items || []).slice(0, 8);
+  const inputMiniItems = (minis?.items || []).slice(0, 8);
+  const hasCustomMinis = inputMiniItems.some((it) => it.image && !isStorefrontDemoImage(it.image));
+
+  const resolvedMiniItems = useMemo(() => {
+    if (hasCustomMinis && inputMiniItems.length > 0) {
+      return inputMiniItems;
+    }
+    if (categories.length > 0) {
+      return categories.slice(0, 8).map((cat) => {
+        let catImage = cat.image && !isStorefrontDemoImage(cat.image) ? cat.image : '';
+        if (!catImage) {
+          const matchProduct = products.find(
+            (p) => p.categoryId === cat.id || p.category?.id === cat.id || p.category?.slug === cat.slug,
+          );
+          if (matchProduct) {
+            catImage = getPrimaryProductImage(matchProduct);
+          }
+        }
+        return {
+          label: cat.name,
+          image: catImage || cat.image || '',
+          link: `/shop?category=${encodeURIComponent(cat.slug || cat.id)}`,
+        };
+      });
+    }
+    return inputMiniItems;
+  }, [hasCustomMinis, inputMiniItems, categories, products]);
+
+  // Dynamic best picks: prefer merchant's real products
   const best = props.bestPicks;
-  const bestItems = (best?.items || []).slice(0, 4);
+  const inputBestItems = (best?.items || []).slice(0, 4);
+  const hasCustomBest = inputBestItems.some((it) => it.image && !isStorefrontDemoImage(it.image));
+
+  const resolvedBestItems = useMemo(() => {
+    if (hasCustomBest && inputBestItems.length > 0) {
+      return inputBestItems;
+    }
+    if (products.length > 0) {
+      return products.slice(0, 4).map((prod) => ({
+        title: prod.name,
+        image: getPrimaryProductImage(prod),
+        price: formatStorefrontCurrency(prod.price),
+        comparePrice: prod.comparePrice && Number(prod.comparePrice) > Number(prod.price)
+          ? formatStorefrontCurrency(prod.comparePrice)
+          : undefined,
+        rating: (prod as any).rating ? String((prod as any).rating) : '5',
+        link: `/product/${prod.slug || prod.id}`,
+      }));
+    }
+    return inputBestItems;
+  }, [hasCustomBest, inputBestItems, products]);
 
   const currentSlide = resolvedSlides[active] || {};
   const slideCta = currentSlide.ctaText || props.ctaText;
@@ -127,7 +246,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                     loading={index === 0 ? 'eager' : 'lazy'}
                   />
                 ) : null}
-                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.34),rgba(255,255,255,0)_62%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,244,241,0.92)_0%,rgba(246,244,241,0.72)_38%,rgba(246,244,241,0)_68%)]" />
                 <div className="absolute inset-x-0 top-0 flex flex-col items-start gap-3 p-5 text-start sm:p-8 lg:p-10">
                   {slide.eyebrow ? (
                     <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#5f5f5f] sm:text-[12px]">
@@ -135,12 +254,12 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                     </span>
                   ) : null}
                   {slide.title ? (
-                    <h2 className="max-w-[22rem] font-heading text-[28px] font-bold leading-[1.15] text-[#ad7d61] sm:text-[34px] lg:text-[36px]">
+                    <h2 className="line-clamp-2 max-w-[22rem] font-heading text-[26px] font-bold leading-[1.2] text-[#ad7d61] sm:text-[32px] lg:text-[34px]">
                       {slide.title}
                     </h2>
                   ) : null}
                   {slide.subtitle ? (
-                    <p className="max-w-[24rem] text-[13px] leading-6 text-[#4a4a4a]">{slide.subtitle}</p>
+                    <p className="line-clamp-2 max-w-[24rem] text-[13px] leading-6 text-[#4a4a4a]">{slide.subtitle}</p>
                   ) : null}
                   {slide.countdownEndAt ? <CountdownRow target={slide.countdownEndAt} isRtl={isRtl} /> : null}
                   {slideCta && index === active
@@ -193,37 +312,37 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
 
           <div className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-[1fr_1.52fr]">
-              {offer ? (
+              {resolvedOffer ? (
                 <Link
-                  to={scoped(offer.link || props.primaryHref || '/shop')}
+                  to={scoped(resolvedOffer.link || props.primaryHref || '/shop')}
                   className="group relative block h-[260px] overflow-hidden rounded-[20px] bg-[#efefef] sm:h-[280px] lg:h-[392px]"
                 >
-                  {offer.image ? (
+                  {resolvedOffer.image ? (
                     <img
-                      src={offer.image}
-                      alt={offer.title || ''}
+                      src={resolvedOffer.image}
+                      alt={resolvedOffer.title || ''}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
                     />
                   ) : null}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_35%,rgba(0,0,0,0.42)_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(18,22,36,0.74)_0%,rgba(18,22,36,0.36)_46%,rgba(18,22,36,0.08)_100%)]" />
                   <div className="absolute inset-x-0 top-0 flex flex-col items-start gap-1 p-6 text-start lg:p-7">
-                    {offer.eyebrow ? (
+                    {resolvedOffer.eyebrow ? (
                       <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white drop-shadow">
-                        {offer.eyebrow}
+                        {resolvedOffer.eyebrow}
                       </span>
                     ) : null}
-                    {offer.title ? (
-                      <span className="max-w-[12rem] font-heading text-[24px] font-semibold leading-tight text-white drop-shadow lg:text-[28px]">
-                        {offer.title}
+                    {resolvedOffer.title ? (
+                      <span className="line-clamp-2 max-w-[13rem] font-heading text-[22px] font-semibold leading-tight text-white drop-shadow lg:text-[26px]">
+                        {resolvedOffer.title}
                       </span>
                     ) : null}
-                    {offer.price ? (
+                    {resolvedOffer.price ? (
                       <span className="mt-2 inline-flex items-center gap-1 text-[15px] font-bold text-white drop-shadow">
-                        {offer.price}
-                        {offer.note ? (
+                        {resolvedOffer.price}
+                        {resolvedOffer.note ? (
                           <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85">
-                            {offer.note}
+                            {resolvedOffer.note}
                           </span>
                         ) : null}
                       </span>
@@ -245,9 +364,9 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                 </div>
 
                 <div className="grid grid-cols-4 gap-x-2 gap-y-4">
-                  {miniItems.map((item) => (
+                  {resolvedMiniItems.map((item) => (
                     <Link key={item.label} to={scoped(item.link || '/collections')} className="group flex flex-col items-center gap-2 text-center">
-                      <span className="block h-[68px] w-[68px] overflow-hidden bg-[#f5f5f5] lg:h-[94px] lg:w-[94px]">
+                      <span className="block h-[68px] w-[68px] overflow-hidden rounded-full border border-[#ececec] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] lg:h-[94px] lg:w-[94px]">
                         {item.image ? (
                           <img
                             src={item.image}
@@ -257,7 +376,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                           />
                         ) : null}
                       </span>
-                      <span className="text-[12px] font-semibold text-[#333333] group-hover:text-[#ad7d61] lg:text-[15px]">
+                      <span className="line-clamp-2 text-[12px] font-semibold text-[#333333] group-hover:text-[#ad7d61] lg:text-[14px]">
                         {item.label}
                       </span>
                     </Link>
@@ -282,7 +401,7 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {bestItems.map((item) => (
+                {resolvedBestItems.map((item) => (
                   <Link key={item.title} to={scoped(item.link || '/shop')} className="group flex items-center gap-3 bg-white p-2">
                     <span className="block h-[66px] w-[60px] shrink-0 overflow-hidden bg-[#f4f4f4]">
                       {item.image ? (
@@ -295,15 +414,15 @@ export const MarketplaceSliderHero: React.FC<HeroVariantProps> = (props) => {
                       ) : null}
                     </span>
                     <span className="flex min-w-0 flex-col gap-1 text-start">
-                      <span className="truncate text-[13px] font-semibold text-[#333333] group-hover:text-[#ad7d61]">
+                      <span className="line-clamp-2 text-[13px] font-semibold leading-[1.35] text-[#333333] group-hover:text-[#ad7d61]">
                         {item.title}
                       </span>
                       {item.rating ? <span className="flex items-center gap-[1px]">{ratingStars(item.rating)}</span> : null}
-                      <span className="flex items-center gap-2 text-[13px] font-semibold">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] font-semibold sm:text-[13px]">
+                        <span className="whitespace-nowrap text-[#e14a5c]">{item.price}</span>
                         {item.comparePrice ? (
-                          <span className="text-[#a3a3a3] line-through">{item.comparePrice}</span>
+                          <span className="whitespace-nowrap text-[11px] text-[#a3a3a3] line-through">{item.comparePrice}</span>
                         ) : null}
-                        <span className="text-[#e14a5c]">{item.price}</span>
                       </span>
                     </span>
                   </Link>
