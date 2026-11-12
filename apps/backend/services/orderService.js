@@ -2552,7 +2552,27 @@ class OrderService {
       // 🚀 SPEED: Return result immediately to the user
       // All other operations (Turbo, Returns, Commissions, Notifications) happen in the background
       (async () => {
+        let statusAlertSettings = null;
         try {
+          // 🔔 Team / Owner Status-Change Alert (in-app + WhatsApp)
+          try {
+            const { getStatusAlertSettings, alertStatusChange } = require('./orderStatusAlertService');
+            statusAlertSettings = await getStatusAlertSettings(order.companyId, this.getPrisma());
+            await alertStatusChange({
+              companyId: order.companyId,
+              order: updatedOrder || order,
+              oldStatus: order.customStatusCode || order.status,
+              newStatus: status,
+              customStatusCode: originalRequestedStatus,
+              changedBy: userId || null,
+              changedByName: userName || null,
+              prisma: this.getPrisma(),
+              settings: statusAlertSettings,
+            });
+          } catch (statusAlertErr) {
+            console.warn('⚠️ [ORDER-STATUS-ALERT] Background alert failed:', statusAlertErr?.message || statusAlertErr);
+          }
+
           // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on order events
           try {
             const goalMetricEngine = require("./goalMetricEngine");
@@ -2870,24 +2890,34 @@ class OrderService {
 
           // 🔔 Mobile / Web Push Notification for Order Status Changed
           try {
-            const { sendBrowserPushToCompany } = require('./browserPushService');
-            void sendBrowserPushToCompany({
-              companyId: order.companyId,
-              typeId: 'order_status_changed',
-              title: `تحديث حالة الطلب #${order.orderNumber || orderNumber}`,
-              body: `تغيرت حالة الطلب إلى: ${status}`,
-              compactBody: `تغيرت حالة الطلب #${order.orderNumber || orderNumber}`,
-              url: `/orders?orderId=${order.id}`,
-              data: {
-                source: 'order_status_changed',
-                orderId: order.id,
-                orderNumber: order.orderNumber || orderNumber,
-                status,
+            const { isStatusAlertEnabled, getStatusAlertSettings } = require('./orderStatusAlertService');
+            const effectiveAlertSettings =
+              statusAlertSettings || (await getStatusAlertSettings(order.companyId, this.getPrisma()));
+            const alertTargetCode = originalRequestedStatus || status;
+            const shouldGatePush = Boolean(
+              effectiveAlertSettings?._hasExplicitConfig && effectiveAlertSettings?.enabled === true
+            );
+
+            if (!shouldGatePush || isStatusAlertEnabled(effectiveAlertSettings, alertTargetCode)) {
+              const { sendBrowserPushToCompany } = require('./browserPushService');
+              void sendBrowserPushToCompany({
+                companyId: order.companyId,
                 typeId: 'order_status_changed',
-              },
-            }).catch((pushErr) => {
-              console.warn('⚠️ [PUSH-STATUS] Error:', pushErr?.message || pushErr);
-            });
+                title: `تحديث حالة الطلب #${order.orderNumber || orderNumber}`,
+                body: `تغيرت حالة الطلب إلى: ${status}`,
+                compactBody: `تغيرت حالة الطلب #${order.orderNumber || orderNumber}`,
+                url: `/orders?orderId=${order.id}`,
+                data: {
+                  source: 'order_status_changed',
+                  orderId: order.id,
+                  orderNumber: order.orderNumber || orderNumber,
+                  status,
+                  typeId: 'order_status_changed',
+                },
+              }).catch((pushErr) => {
+                console.warn('⚠️ [PUSH-STATUS] Error:', pushErr?.message || pushErr);
+              });
+            }
           } catch (pushImportErr) {
             console.warn('⚠️ [PUSH-STATUS] Failed to bootstrap:', pushImportErr?.message || pushImportErr);
           }

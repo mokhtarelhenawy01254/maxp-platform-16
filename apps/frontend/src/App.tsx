@@ -611,6 +611,9 @@ const RatingSettingsManager = React.lazy(
 const ScheduledOrderSettings = React.lazy(
   () => import("./pages/settings/ScheduledOrderSettings"),
 );
+const StatusAlertsSettings = React.lazy(
+  () => import("./pages/settings/StatusAlertsSettings"),
+);
 
 // Procurement/Purchasing
 const Suppliers = React.lazy(
@@ -7268,6 +7271,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <OrderSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/orders/status-alerts"
+                  element={
+                    <Layout>
+                      <StatusAlertsSettings />
                     </Layout>
                   }
                 />

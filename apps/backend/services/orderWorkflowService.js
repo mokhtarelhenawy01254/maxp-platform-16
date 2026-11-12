@@ -417,6 +417,16 @@ class OrderWorkflowService {
                 .then(() => console.log(`✅ [WORKFLOW-BG-SUCCESS] Notification for ${order.orderNumber}`))
                 .catch(e => console.error(`❌ [WORKFLOW-BG-ERROR] Notification failed: ${e.message}`));
 
+            // 🔔 Team / Owner Status-Change Alert (in-app + WhatsApp)
+            this._triggerStatusAlert({
+                companyId,
+                order,
+                oldStatus: order.customStatusCode || order.status,
+                newStatus: wfStored,
+                customStatusCode: nextStatusDef.code,
+                changedBy: userId
+            });
+
             return { status: 'allowed', nextStatusCode: nextStatusDef.code, auditLog };
         });
     }
@@ -598,6 +608,16 @@ class OrderWorkflowService {
                 this.sendWorkflowNotification(companyId, order, request.toStatus.code)
                     .then(() => console.log(`✅ [WORKFLOW-BG-SUCCESS] Notification for ${order.orderNumber}`))
                     .catch(e => console.error(`❌ [WORKFLOW-BG-ERROR] Notification failed: ${e.message}`));
+
+                // 🔔 Team / Owner Status-Change Alert (in-app + WhatsApp)
+                this._triggerStatusAlert({
+                    companyId,
+                    order: order || request.order,
+                    oldStatus: request.order?.customStatusCode || request.order?.status,
+                    newStatus: apprStored,
+                    customStatusCode: request.toStatus?.code,
+                    changedBy: userId
+                });
             } catch (notifyErr) {
                 console.error('Error sending approval notification:', notifyErr);
             }
@@ -623,6 +643,29 @@ class OrderWorkflowService {
                     metadata: reviewReason
                 }
             });
+        }
+    }
+
+    /**
+     * 🔔 Fire-and-forget team/owner status-change alert for workflow paths
+     * that bypass orderService.updateOrderStatus.
+     */
+    _triggerStatusAlert({ companyId, order, oldStatus, newStatus, customStatusCode, changedBy }) {
+        try {
+            const { alertStatusChange } = require('./orderStatusAlertService');
+            void alertStatusChange({
+                companyId,
+                order,
+                oldStatus,
+                newStatus,
+                customStatusCode,
+                changedBy: changedBy || null,
+                prisma: this.prisma
+            }).catch((err) => {
+                console.warn(`⚠️ [WORKFLOW-STATUS-ALERT] Failed for ${order?.orderNumber || order?.id}:`, err?.message || err);
+            });
+        } catch (err) {
+            console.warn('⚠️ [WORKFLOW-STATUS-ALERT] Bootstrap failed:', err?.message || err);
         }
     }
 
