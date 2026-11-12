@@ -1178,6 +1178,35 @@ async function sendFacebookCommentReply(commentId, messageText, pageAccessToken)
   }
 }
 
+// 2026-11-13: polite hold reply when a parent messages outside working hours —
+// replaces the old silent drop. Cooldown-gated (once per 4h per conversation) to avoid spam.
+const OUT_OF_HOURS_HOLD_TEXT = 'شكراً لتواصل حضرتك! فريقنا بيرد على الرسايل خلال ساعات العمل، وحد هيتواصل معاك في أقرب وقت إن شاء الله.';
+async function sendOutOfHoursHoldReply({ conversationId, senderId, messagePageId, pageData }) {
+  if (!conversationId || !senderId || !pageData?.pageAccessToken) return;
+  const prisma = getSharedPrismaClient();
+  const conv = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: { metadata: true },
+  });
+  let meta = {};
+  try {
+    meta = typeof conv?.metadata === 'string' ? JSON.parse(conv.metadata || '{}') : (conv?.metadata || {});
+  } catch (e) { meta = {}; }
+  const lastSentAt = meta.lastOutOfHoursReplyAt ? new Date(meta.lastOutOfHoursReplyAt).getTime() : 0;
+  if (Date.now() - lastSentAt < 4 * 60 * 60 * 1000) {
+    console.log(`🤖 [OUT-OF-HOURS-HOLD] cooldown active for conversation ${conversationId}, skipping`);
+    return;
+  }
+  const { sendProductionFacebookMessage } = require('./production-facebook-fix');
+  await sendProductionFacebookMessage(senderId, OUT_OF_HOURS_HOLD_TEXT, 'TEXT', messagePageId, pageData.pageAccessToken);
+  meta.lastOutOfHoursReplyAt = new Date().toISOString();
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { metadata: JSON.stringify(meta) },
+  });
+  console.log(`🤖 [OUT-OF-HOURS-HOLD] hold reply sent for conversation ${conversationId}`);
+}
+
 // ENHANCED: Handle Facebook messages with real profile fetching
 async function handleFacebookMessage(webhookEvent, currentPageId = null) {
   const handleStartTime = Date.now();
@@ -2489,21 +2518,34 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             const prisma = getSharedPrismaClient();
             const { getEffectiveAiAutoReplySetting } = require('../services/aiSettingsResolver');
             const aiSetting = await getEffectiveAiAutoReplySetting(customer.companyId, prisma);
-            if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
+            if (!aiSetting?.autoReplyEnabled) { console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for company`); return; }
             if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
               try {
                 const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
                 const now = new Date();
                 const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
                 const today = hours[dayName];
-                if (today && !today.enabled) { console.log('🤖 [AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
-                if (today && today.start && today.end) {
-                  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                  const [startH, startM] = today.start.split(':').map(Number);
-                  const [endH, endM] = today.end.split(':').map(Number);
-                  const startMin = startH * 60 + startM;
-                  const endMin = endH * 60 + endM;
-                  if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [AI-AUTOREPLY] Outside working hours (time)'); return; }
+                // 2026-11-13 fix: compute minutes in Cairo TZ (same source as the weekday above).
+                // getHours() was server-local — on non-Cairo servers the window silently shifted.
+                const cairoNow = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
+                const currentMinutes = cairoNow.getHours() * 60 + cairoNow.getMinutes();
+                const isOutsideHours =
+                  (today && !today.enabled) ||
+                  (today && today.start && today.end && (() => {
+                    const [startH, startM] = today.start.split(':').map(Number);
+                    const [endH, endM] = today.end.split(':').map(Number);
+                    return currentMinutes < startH * 60 + startM || currentMinutes > endH * 60 + endM;
+                  })());
+                if (isOutsideHours) {
+                  console.log(`🤖 [AI-AUTOREPLY] Outside working hours — sending cooldown-gated hold reply`);
+                  // Don't leave the parent in silence: polite hold reply (max once per 4h per conversation)
+                  await sendOutOfHoursHoldReply({
+                    conversationId: conversation?.id,
+                    senderId,
+                    messagePageId,
+                    pageData,
+                  }).catch((holdErr) => console.warn(`⚠️ [OUT-OF-HOURS-HOLD] failed:`, holdErr.message));
+                  return;
                 }
               } catch(e) { /* continue if parsing fails */ }
             }
@@ -3425,7 +3467,9 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
               const today = hours[dayName];
               if (today && !today.enabled) { console.log('🤖 [IG-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
               if (today && today.start && today.end) {
-                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                // 2026-11-13 TZ fix: match the Cairo-based weekday source above
+                const cairoNow = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
+                const currentMinutes = cairoNow.getHours() * 60 + cairoNow.getMinutes();
                 const [startH, startM] = today.start.split(':').map(Number);
                 const [endH, endM] = today.end.split(':').map(Number);
                 const startMin = startH * 60 + startM;
@@ -3932,7 +3976,9 @@ async function handleTikTokMessage(inbound, companyId) {
               const today = hours[dayName];
               if (today && !today.enabled) { console.log('🤖 [TT-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
               if (today && today.start && today.end) {
-                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                // 2026-11-13 TZ fix: match the Cairo-based weekday source above
+                const cairoNow = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Cairo' }));
+                const currentMinutes = cairoNow.getHours() * 60 + cairoNow.getMinutes();
                 const [startH, startM] = today.start.split(':').map(Number);
                 const [endH, endM] = today.end.split(':').map(Number);
                 const startMin = startH * 60 + startM;

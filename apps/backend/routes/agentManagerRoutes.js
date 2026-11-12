@@ -554,18 +554,40 @@ router.get('/auto-reply', async (req, res) => {
   }
 });
 
-// PUT /auto-reply — enable/disable AI auto-reply globally
+// PUT /auto-reply — enable/disable AI auto-reply globally (+ optional working-hours override)
 router.put('/auto-reply', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
     const enabled = req.body?.enabled === true;
+    // 2026-11-13: optional working-hours override — additive, omitted fields = unchanged.
+    // Lets merchants go 24/7 or widen their AI window without direct DB access.
+    const updateData = { autoReplyEnabled: enabled };
+    const createData = { companyId, autoReplyEnabled: enabled };
+    if (req.body?.workingHoursEnabled !== undefined) {
+      const whEnabled = req.body.workingHoursEnabled === true;
+      updateData.workingHoursEnabled = whEnabled;
+      createData.workingHoursEnabled = whEnabled;
+    }
+    if (req.body?.workingHours !== undefined) {
+      const wh = req.body.workingHours;
+      const validDay = (d) => d && typeof d === 'object' && typeof d.enabled === 'boolean' &&
+        (!d.start || /^\d{1,2}:\d{2}$/.test(String(d.start))) &&
+        (!d.end || /^\d{1,2}:\d{2}$/.test(String(d.end)));
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      if (wh && typeof wh === 'object' && !Array.isArray(wh) && days.every((day) => !wh[day] || validDay(wh[day]))) {
+        updateData.workingHours = JSON.stringify(wh);
+        createData.workingHours = JSON.stringify(wh);
+      } else {
+        return res.status(400).json({ success: false, error: 'Invalid workingHours shape' });
+      }
+    }
     await Promise.all([
       aiServiceAdminClient.updateAutoReply(companyId, enabled),
       prisma().aiSetting.upsert({
         where: { companyId },
-        update: { autoReplyEnabled: enabled },
-        create: { companyId, autoReplyEnabled: enabled },
+        update: updateData,
+        create: createData,
       }),
     ]);
     return res.json({ success: true, autoReplyEnabled: enabled });
