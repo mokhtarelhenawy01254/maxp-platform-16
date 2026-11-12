@@ -6,11 +6,10 @@ import { SectionShell } from "./SectionShell";
 import { UsageBar, getUsageTone } from "./UsageBar";
 import { formatNumber, formatLimit, getMetricDetails } from "./helpers";
 
-type LimitEntry = NonNullable<NonNullable<CompanyReview["limits"]>["entries"]>[number];
-
-export function CompanyLimitsSection({ review, limitEntries }: {
+export function CompanyLimitsSection({ review, limitEntries, directUsersCount }: {
   review?: CompanyReview | null;
   limitEntries: NonNullable<NonNullable<CompanyReview["limits"]>["entries"]>;
+  directUsersCount?: number;
 }) {
   return (
     <SectionShell
@@ -34,12 +33,17 @@ export function CompanyLimitsSection({ review, limitEntries }: {
           const tone = getUsageTone(entry.percentage);
           const meta = getMetricDetails(entry);
           const unlimited = Boolean(entry.isUnlimited) || Number(entry.limit) === -1;
+          const displayLabel = entry.key === "users" ? "الأعضاء" : entry.label;
+          const externalMembersCount =
+            entry.key === "users" && directUsersCount !== undefined
+              ? Math.max(0, Number(entry.current) - directUsersCount)
+              : 0;
           return (
             <div key={entry.key} className="rounded-xl border border-border/40 bg-card/60 p-3 space-y-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-black text-foreground">{entry.label}</p>
+                    <p className="text-sm font-black text-foreground">{displayLabel}</p>
                     {entry.bonus ? (
                       <Badge variant="outline" className="rounded-full border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-300">
                         +{formatNumber(entry.bonus)} بونص
@@ -47,6 +51,11 @@ export function CompanyLimitsSection({ review, limitEntries }: {
                     ) : null}
                   </div>
                   <p className="text-xs font-medium text-muted-foreground">{meta.detail}</p>
+                  {externalMembersCount > 0 ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      عضويات user_companies شاملة {formatNumber(externalMembersCount)} {externalMembersCount === 1 ? "عضو" : "أعضاء"} من شركات أخرى (المستخدمون الأساسيون من جدول users: {formatNumber(directUsersCount)})
+                    </p>
+                  ) : null}
                 </div>
                 {unlimited ? (
                   <span className="w-fit rounded-full border border-border/50 bg-muted/40 px-2.5 py-1 text-[11px] font-bold text-muted-foreground">

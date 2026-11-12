@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { billingDescription } from "../CompanyBillingSection";
+import { CompanyPulse } from "../CompanyPulse";
 import { CompanyRecentActivity } from "../CompanyRecentActivity";
 import {
   formatActivityTimeline,
@@ -8,6 +9,7 @@ import {
   getStatusMeta,
   getMetricDetails,
   getUnifiedUsersCount,
+  getDirectUsersCount,
   isSystemAccount,
   isUserDormant,
   getCompanyRiskInfo,
@@ -221,12 +223,22 @@ describe("Team, Health, Risk & Numeral Helpers", () => {
     expect(formattedCurr).toContain("ج.م");
   });
 
-  it("resolves single unified user count from limits/userStats", () => {
+  it("resolves single unified user count from limits/userStats and literal direct user count from company.users", () => {
     const review = {
+      limits: { entries: [{ key: "users", current: 20, limit: 25 }] },
+      userStats: { total: 20, active: 18, inactive: 2 },
+    };
+    const companyWith17Users = {
+      users: Array.from({ length: 17 }, (_, i) => ({ id: `u-${i + 1}` })),
+      _count: { users: 20 },
+    };
+    expect(getDirectUsersCount(companyWith17Users, review)).toBe(17);
+    expect(getUnifiedUsersCount(review, companyWith17Users)).toBe(20);
+    expect(getDirectUsersCount({ users: [] }, review)).toBe(0);
+    expect(getUnifiedUsersCount({
       limits: { entries: [{ key: "users", current: 16, limit: 20 }] },
       userStats: { total: 16, active: 14, inactive: 2 },
-    };
-    expect(getUnifiedUsersCount(review, { _count: { users: 18 } })).toBe(16);
+    }, { _count: { users: 18 } })).toBe(16);
   });
 
   it("identifies system accounts and dormant users (>30 days)", () => {
@@ -276,5 +288,32 @@ describe("Team, Health, Risk & Numeral Helpers", () => {
     );
     expect(screen.getAllByText("نبض النشاط").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("عام")).not.toBeInTheDocument();
+  });
+
+  it("renders 0 direct users and 3 external memberships cleanly in CompanyPulse without mislabeling", () => {
+    render(
+      <CompanyPulse
+        company={{
+          id: "cmp-ext",
+          name: "شركة خارجية",
+          email: "ext@test.com",
+          currency: "EGP",
+          isActive: true,
+          users: [],
+          _count: { users: 3 },
+        }}
+        review={{
+          userStats: { total: 3, active: 3, inactive: 0 },
+          limits: { entries: [{ key: "users", label: "المستخدمين", current: 3, limit: 10, percentage: 30, remaining: 7, isUnlimited: false }] },
+        }}
+      />,
+    );
+    const directCard = screen.getByTestId("kpi-direct-users");
+    expect(within(directCard).getByText("المستخدمون")).toBeInTheDocument();
+    expect(within(directCard).getByText("0")).toBeInTheDocument();
+    const membersCard = screen.getByTestId("memberships-metric-card");
+    expect(within(membersCard).getByText("الأعضاء")).toBeInTheDocument();
+    expect(screen.getByTestId("memberships-metric-value")).toHaveTextContent("3");
+    expect(within(membersCard).getByText(/شاملة 3 أعضاء من شركات أخرى/)).toBeInTheDocument();
   });
 });

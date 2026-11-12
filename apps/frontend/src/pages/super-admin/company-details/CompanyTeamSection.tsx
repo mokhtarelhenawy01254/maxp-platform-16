@@ -57,6 +57,7 @@ export function CompanyTeamSection({
   handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
   deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
   unifiedUsersCount,
+  directUsersCount,
   usersHasMore,
   loadingMoreUsers = false,
   onLoadMoreUsers,
@@ -72,6 +73,7 @@ export function CompanyTeamSection({
   handleDeleteUser: (userId: string) => Promise<void>;
   deleteConfirmUserId: string | null; setDeleteConfirmUserId: (id: string | null) => void; deleteUserLoading: boolean;
   unifiedUsersCount?: number;
+  directUsersCount?: number;
   usersHasMore?: boolean;
   loadingMoreUsers?: boolean;
   onLoadMoreUsers?: () => void | Promise<void>;
@@ -145,7 +147,8 @@ export function CompanyTeamSection({
     [filteredAndSortedUsers],
   );
 
-  const displayUsersCount = unifiedUsersCount ?? company?._count?.users ?? companyUsers.length;
+  // مصدر واحد للعدّ: `_count.users` بيعدّ كل المستخدمين في القاعدة (بما فيهم حسابات النظام) فبيختلف عن الجدول.
+  const displayUsersCount = unifiedUsersCount ?? companyUsers.length;
   const hasMoreToLoad =
     usersHasMore !== undefined
       ? Boolean(usersHasMore)
@@ -255,7 +258,15 @@ export function CompanyTeamSection({
                 </Badge>
               </div>
               <CardDescription>
-                إدارة أعضاء الفريق، الصلاحيات، وحالات الحسابات.
+                {directUsersCount !== undefined && directUsersCount !== displayUsersCount
+                  ? `عضويات الفريق في user_companies (${formatNumber(displayUsersCount)} عضو${
+                      displayUsersCount > directUsersCount
+                        ? ` شاملة ${formatNumber(displayUsersCount - directUsersCount)} ${
+                            displayUsersCount - directUsersCount === 1 ? "عضو" : "أعضاء"
+                          } من شركات أخرى`
+                        : ""
+                    }) • المستخدمون الأساسيون في الشركة (جدول users): ${formatNumber(directUsersCount)}.`
+                  : "إدارة أعضاء الفريق، الصلاحيات، وحالات الحسابات."}
               </CardDescription>
             </div>
             <Button type="button" className="rounded-xl font-bold bg-primary text-primary-foreground shadow-sm gap-1.5" onClick={openAddEmployeeModal}>

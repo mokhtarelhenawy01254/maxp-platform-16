@@ -1,16 +1,20 @@
 import type { ReactNode, ElementType } from "react"
 import { cn } from "../../../lib/utils"
 
-export function MetricCard({ icon: Icon, label, value, hint, tone, trend }: {
+export function MetricCard({ icon: Icon, label, value, hint, tone, trend, tooltip, testId }: {
   icon: ElementType;
   label: string;
   value: ReactNode;
   hint?: string;
   tone?: string;
   trend?: string | null;
+  tooltip?: string;
+  testId?: string;
 }) {
   return (
     <div
+      data-testid={testId}
+      title={tooltip}
       className={cn(
         "min-w-0 rounded-xl border px-3.5 py-2.5 shadow-[0_20px_50px_-35px_rgba(15,27,45,0.55)]",
         tone || "border bg-card text-card-foreground",

@@ -416,6 +416,22 @@ export function getUnifiedUsersCount(review: any, company: any): number {
   return 0;
 }
 
+/**
+ * عدد المستخدمين الأساسيين المسجلين مباشرة على الشركة (SELECT count(*) FROM users WHERE "companyId" = الشركة).
+ * الـ API يرجّع company.users مباشرة من جدول users، بينما review.userStats و company._count.users
+ * بيعكسوا عضويات جدول user_companies.
+ */
+export function getDirectUsersCount(company: any, review?: any): number {
+  if (typeof company?.directUsersCount === "number" && Number.isFinite(company.directUsersCount)) {
+    return company.directUsersCount;
+  }
+  if (Array.isArray(company?.users)) {
+    const ids = company.users.map((u: any) => u?.id).filter(Boolean);
+    return ids.length > 0 ? new Set(ids).size : company.users.length;
+  }
+  return getUnifiedUsersCount(review, company);
+}
+
 export function getCompanyPlanUsagePercentage(review: any): {
   percentage: number | null;
   label: string;
@@ -431,9 +447,10 @@ export function getCompanyPlanUsagePercentage(review: any): {
   const topEntry = finiteEntries.reduce((max: any, current: any) =>
     (Number(current.percentage) || 0) > (Number(max.percentage) || 0) ? current : max,
   );
+  const safeLabel = topEntry.key === "users" ? "الأعضاء" : (topEntry.label || "الخطة");
   return {
     percentage: Math.round(Number(topEntry.percentage) || 0),
-    label: topEntry.label || "الخطة",
+    label: safeLabel,
     hasFiniteLimit: true,
   };
 }

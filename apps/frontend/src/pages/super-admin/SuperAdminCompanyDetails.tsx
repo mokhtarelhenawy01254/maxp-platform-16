@@ -62,6 +62,7 @@ import {
   getCompanyPlanUsagePercentage,
   getCount,
   getDaysUntil,
+  getDirectUsersCount,
   getRoleLabel,
   getStatusMeta,
   getUnifiedUsersCount,
@@ -203,6 +204,11 @@ const SuperAdminCompanyDetails = () => {
   const unifiedUsersCount = useMemo(
     () => getUnifiedUsersCount(review, company),
     [review, company],
+  );
+
+  const directUsersCount = useMemo(
+    () => getDirectUsersCount(company, review),
+    [company, review],
   );
 
   const planUsage = useMemo(
@@ -585,7 +591,7 @@ const SuperAdminCompanyDetails = () => {
               {/* Tab 3: Management (Limits + Usage + Distinct Danger Zone) */}
               <TabsContent value="management" hidden={activeTab !== "management"} className="pt-3.5 space-y-5">
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                  <CompanyLimitsSection review={review} limitEntries={limitEntries} />
+                  <CompanyLimitsSection review={review} limitEntries={limitEntries} directUsersCount={directUsersCount} />
                   <CompanyUsageSection review={review} reviewCurrency={reviewCurrency} />
                 </div>
 
@@ -618,6 +624,7 @@ const SuperAdminCompanyDetails = () => {
                         type="button"
                         variant={company.isActive ? "destructive" : "default"}
                         className="h-10 rounded-xl px-4 font-bold shrink-0"
+                        data-testid="danger-zone-suspend-btn"
                         onClick={openStatusConfirmModal}
                       >
                         {company.isActive ? "إيقاف الشركة" : "تفعيل الشركة"}
@@ -680,6 +687,7 @@ const SuperAdminCompanyDetails = () => {
                   setDeleteConfirmUserId={setDeleteConfirmUserId}
                   deleteUserLoading={deleteUserLoading}
                   unifiedUsersCount={unifiedUsersCount}
+                  directUsersCount={directUsersCount}
                   usersHasMore={usersPagination.hasNext}
                   loadingMoreUsers={loadingMoreUsers}
                   onLoadMoreUsers={handleLoadMoreUsers}
@@ -1109,6 +1117,7 @@ const SuperAdminCompanyDetails = () => {
             <div className="flex items-center gap-3">
               <StatusBadge isActive={editForm.isActive} />
               <Switch
+                aria-label="حالة الشركة"
                 checked={editForm.isActive}
                 onCheckedChange={(checked: boolean) => {
                   setEditForm((current) => ({ ...current, isActive: checked }));
@@ -1129,6 +1138,9 @@ const SuperAdminCompanyDetails = () => {
                     : "تحذير: أنت على وشك إيقاف نشاط الشركة ومنع دخول الأعضاء."}
                 </span>
               </p>
+              <Label htmlFor="edit-company-status-reason-input" className="text-xs font-bold text-foreground">
+                سبب تغيير حالة الشركة <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="edit-company-status-reason-input"
                 value={editStatusReason}

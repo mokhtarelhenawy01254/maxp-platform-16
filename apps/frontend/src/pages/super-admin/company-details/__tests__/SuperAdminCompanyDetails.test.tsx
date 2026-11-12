@@ -405,13 +405,17 @@ describe("SuperAdminCompanyDetails Acceptance Criteria", () => {
     expect(headerButtons[1].className).not.toContain("text-primary");
     expect(headerButtons[2]).toHaveTextContent("المزيد");
 
-    // Unified 4-KPI Bar without fake trends
+    // Unified KPI Bar without fake trends
     const kpiBar = screen.getByTestId("unified-kpi-bar");
-    expect(within(kpiBar).getByText("الأعضاء")).toBeInTheDocument();
+    const directUsersKpi = screen.getByTestId("kpi-direct-users");
+    expect(within(directUsersKpi).getByText("المستخدمون")).toBeInTheDocument();
+    expect(within(directUsersKpi).getByText("16")).toBeInTheDocument();
+    const membershipsCard = screen.getByTestId("memberships-metric-card");
+    expect(within(membershipsCard).getByText("الأعضاء")).toBeInTheDocument();
+    expect(screen.getByTestId("memberships-metric-value")).toHaveTextContent("16");
     expect(within(kpiBar).getByText("العملاء")).toBeInTheDocument();
     expect(within(kpiBar).getByText("طلبات الشهر")).toBeInTheDocument();
     expect(within(kpiBar).getByText("الأدوات النشطة")).toBeInTheDocument();
-    expect(within(kpiBar).getByText("16")).toBeInTheDocument();
 
     // Company Health Column with 4 required indicators & single renewal badge
     const healthCol = screen.getByTestId("company-health-column");
@@ -731,5 +735,153 @@ describe("SuperAdminCompanyDetails Acceptance Criteria", () => {
       expect(screen.getByText(/تفعيل جماعي للأدوات/)).toBeInTheDocument();
     });
     expect(screen.getByText("السبب: تفعيل باقة النمو للعميل بتاريخ 2026/11/12")).toBeInTheDocument();
+  });
+
+  it("shows 17 in 'المستخدمون' KPI from users and 20 in separate 'الأعضاء' metric from user_companies with explanation and no third count", async () => {
+    const payload = buildMockPayload();
+    const directUsers17 = Array.from({ length: 17 }, (_, idx) => ({
+      id: `direct-u-${idx + 1}`,
+      firstName: "مستخدم",
+      lastName: `${idx + 1}`,
+      email: `u${idx + 1}@alnour.test`,
+      role: idx === 0 ? "OWNER" : "AGENT",
+      isActive: true,
+      createdAt: "2026-01-10T10:00:00.000Z",
+      lastLoginAt: TWO_DAYS_AGO,
+    }));
+    const members20 = [
+      ...directUsers17,
+      ...Array.from({ length: 3 }, (_, idx) => ({
+        id: `ext-u-${idx + 1}`,
+        firstName: "خارجي",
+        lastName: `${idx + 1}`,
+        email: `ext${idx + 1}@other.test`,
+        role: "MANAGER",
+        isActive: true,
+        createdAt: "2026-01-15T10:00:00.000Z",
+        lastLoginAt: TWO_DAYS_AGO,
+      })),
+    ];
+
+    (payload.companyDetailResponse.data.company as any).users = directUsers17;
+    payload.companyDetailResponse.data.company._count.users = 20;
+    payload.companyDetailResponse.data.review.userStats = { total: 20, active: 19, inactive: 1 };
+    payload.companyDetailResponse.data.review.limits.entries[0] = {
+      key: "users",
+      label: "المستخدمين",
+      current: 20,
+      limit: 25,
+      percentage: 80,
+      remaining: 5,
+      isUnlimited: false,
+    };
+
+    mockedSpecialtyService.listSpecialties.mockResolvedValue([]);
+    mockedApi.get.mockImplementation((url: string) => {
+      if (url === "/admin/companies/cmp-1") return Promise.resolve({ data: payload.companyDetailResponse });
+      if (url.includes("/admin/companies/cmp-1/users")) {
+        return Promise.resolve({
+          data: {
+            success: true,
+            data: {
+              users: members20,
+              pagination: { page: 1, limit: 100, total: 20, totalPages: 1, hasNext: false, hasPrev: false },
+            },
+          },
+        });
+      }
+      if (url.includes("/admin/companies/cmp-1/facebook-pages")) return Promise.resolve({ data: payload.pagesResponse });
+      if (url.includes("/support/admin/tickets")) return Promise.resolve({ data: payload.ticketsResponse });
+      if (url.includes("/activity/company/activities")) return Promise.resolve({ data: payload.activitiesResponse });
+      if (url.includes("/marketplace/apps")) return Promise.resolve({ data: payload.appsResponse });
+      if (url.includes("/marketplace/bundles")) return Promise.resolve({ data: payload.bundlesResponse });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+
+    renderDetailsPage();
+
+    // 1. KPI 'المستخدمون' = 17 (from users WHERE companyId = ...), NOT 20
+    const directUsersKpi = await screen.findByTestId("kpi-direct-users");
+    expect(within(directUsersKpi).getByText("المستخدمون")).toBeInTheDocument();
+    expect(within(directUsersKpi).getByText("17")).toBeInTheDocument();
+    expect(within(directUsersKpi).queryByText("20")).not.toBeInTheDocument();
+
+    // 2. Separate 'الأعضاء' metric = 20 (user_companies) with clear difference explanation & tooltip
+    const membershipsCard = screen.getByTestId("memberships-metric-card");
+    expect(within(membershipsCard).getByText("الأعضاء")).toBeInTheDocument();
+    expect(screen.getByTestId("memberships-metric-value")).toHaveTextContent("20");
+    expect(within(membershipsCard).getByText(/عضويات user_companies شاملة 3 أعضاء من شركات أخرى/)).toBeInTheDocument();
+    expect(screen.getByTestId("memberships-diff-tooltip")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("الأعضاء (20)"),
+    );
+    expect(screen.getByTestId("memberships-diff-tooltip")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("users (17)"),
+    );
+
+    // Health column also normalizes 'users' limit label away from 'المستخدمين'
+    expect(screen.getByTestId("company-health-column")).not.toHaveTextContent("المستخدمين");
+    expect(screen.getByTestId("company-health-column")).toHaveTextContent("أعلى استهلاك: الأعضاء");
+
+    // 3. Switch to Management & Team tabs — verify only 17 (users) and 20 (members), no 3rd number, and 20 is never labeled 'مستخدمين'/'المستخدمون'
+    fireEvent.click(screen.getByRole("tab", { name: "الإدارة" }));
+    await waitFor(() => {
+      expect(screen.getByText("الأعضاء: 20 عضو من أصل 25")).toBeInTheDocument();
+    });
+    // Limits row label normalized away from 'المستخدمين'
+    expect(screen.queryByText("المستخدمين")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "فريق" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("team-total-badge")).toHaveTextContent("20 عضو");
+    });
+
+    // Ensure 20 never appears tied to 'مستخدمين' / 'المستخدمون' anywhere in the page
+    const fullText = document.body.textContent || "";
+    expect(fullText).not.toMatch(/20\s*(?:مستخدم|المستخدم)/);
+    expect(fullText).not.toMatch(/(?:مستخدمون|مستخدمين)\s*:?\s*20\b/);
+    // Ensure 19 (active members count) or any third count is not displayed as user/member total
+    expect(screen.queryByText(/19\s*(عضو|مستخدم)/)).not.toBeInTheDocument();
+  });
+
+  it("danger zone 'إيقاف الشركة' button opens warning confirmation dialog with mandatory reason instead of edit modal", async () => {
+    setupApiMocks();
+    renderDetailsPage("/super-admin/companies-v2/cmp-1?tab=management");
+
+    const dangerSuspendBtn = await screen.findByTestId("danger-zone-suspend-btn");
+    expect(dangerSuspendBtn).toHaveTextContent("إيقاف الشركة");
+    fireEvent.click(dangerSuspendBtn);
+
+    expect(await screen.findByTestId("company-status-confirm-dialog")).toBeInTheDocument();
+    expect(screen.queryByText(/حدّث بيانات الشركة الأساسية/)).not.toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole("button", { name: "تأكيد إيقاف الشركة" });
+    expect(confirmBtn).toBeDisabled();
+
+    const reasonInput = screen.getByLabelText(/سبب إيقاف الشركة/);
+    fireEvent.change(reasonInput, { target: { value: "إيقاف من منطقة الخطر بسبب مراجعة بتاريخ 2026/11/12" } });
+    expect(confirmBtn).toBeEnabled();
+
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(mockedApi.put).toHaveBeenCalledWith(
+        "/admin/companies/cmp-1",
+        expect.objectContaining({
+          isActive: false,
+          reason: "إيقاف من منطقة الخطر بسبب مراجعة بتاريخ 2026/11/12",
+        }),
+        expect.any(Object),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "نشاط" }));
+    await waitFor(() => {
+      expect(screen.getByText("إيقاف نشاط الشركة")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("السبب: إيقاف من منطقة الخطر بسبب مراجعة بتاريخ 2026/11/12"),
+    ).toBeInTheDocument();
   });
 });

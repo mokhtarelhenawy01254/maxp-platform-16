@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { toast } from "sonner";
@@ -16,6 +16,8 @@ import {
   getBundleAppSlugs,
   getDaysUntil,
   getDefaultPricingModel,
+  getDirectUsersCount,
+  getUnifiedUsersCount,
   sortAppsByDependencies,
   normalizeCompanyData,
   extractErrorMessage,
@@ -77,7 +79,7 @@ interface TopUpForm {
 
 interface UseCompanyDetailsReturn {
   navigate: NavigateFunction; isMobile: boolean; company: CompanyData | null; loading: boolean; error: string; review: CompanyReview | null;
-  reviewCurrency: string; limitEntries: NonNullable<CompanyReview['limits']>['entries']; nextBillingDate: string | null;
+  reviewCurrency: string; limitEntries: NonNullable<NonNullable<CompanyReview['limits']>['entries']>; nextBillingDate: string | null;
   reviewAlerts: ReviewAlert[]; ownerUser: CompanyUser | null;
   refreshCompanyWorkspace: (opts?: { background?: boolean }) => Promise<void>; refreshing: boolean;
   openTopUpModal: () => void; openEditModal: () => void; handleLoginAsAdmin: (reason?: string) => Promise<void>;
@@ -118,6 +120,8 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [company, setCompany] = useState<CompanyData | null>(null);
   const [review, setReview] = useState<CompanyReview | null>(null);
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
+  const companyUsersRef = useRef<CompanyUser[]>([]);
+  companyUsersRef.current = companyUsers;
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [companyTickets, setCompanyTickets] = useState<TicketListItem[]>([]);
   const [companyActivities, setCompanyActivities] = useState<ActivityEntry[]>([]);
@@ -277,9 +281,11 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       if (response.data?.success) {
         const nextUsers: CompanyUser[] = response.data?.data?.users || [];
         const pag = response.data?.data?.pagination;
-        const seen = new Set(companyUsers.map((u) => u.id));
+        const currentUsers = companyUsersRef.current;
+        const seen = new Set(currentUsers.map((u) => u.id));
         const uniqueNextUsers = nextUsers.filter((u) => !seen.has(u.id));
-        const mergedUsers = [...companyUsers, ...uniqueNextUsers];
+        const mergedUsers = [...currentUsers, ...uniqueNextUsers];
+        companyUsersRef.current = mergedUsers;
         setCompanyUsers(mergedUsers);
         const resolvedLimit = pag?.limit ?? usersPagination.limit;
         const resolvedTotal = pag?.total ?? usersPagination.total;
@@ -735,13 +741,15 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   }, [review, reviewCurrency, nextBillingDate, highUsageItems.length]);
 
   const unifiedKpiStats = useMemo<UnifiedKpiStats>(() => {
-    const totalUsers = review?.userStats?.total ?? company?._count?.users ?? companyUsers.length;
+    const directUsers = getDirectUsersCount(company, review);
+    const totalUsers = getUnifiedUsersCount(review, company) || companyUsers.length;
     const activeUsers = review?.userStats?.active ?? companyUsers.filter((u) => u.isActive).length;
     const inactiveUsers = Math.max(0, totalUsers - activeUsers);
 
     return {
       users: {
         total: totalUsers,
+        directTotal: directUsers,
         active: activeUsers,
         inactive: inactiveUsers,
       },

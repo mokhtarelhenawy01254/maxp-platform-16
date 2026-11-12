@@ -21,6 +21,8 @@ export interface CompanyData {
   trialModeEnabled?: boolean;
   trialStartedAt?: string | null;
   trialEndsAt?: string | null;
+  directUsersCount?: number;
+  users?: Array<{ id: string }>;
   _count?: {
     users?: number;
     customers?: number;
@@ -155,6 +157,7 @@ export interface CompanyReview {
 export interface UnifiedKpiStats {
   users: {
     total: number;
+    directTotal?: number;
     active: number;
     inactive: number;
   };
