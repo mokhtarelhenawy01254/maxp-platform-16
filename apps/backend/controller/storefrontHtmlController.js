@@ -267,6 +267,12 @@ exports.handleStorefrontShell = async (req, res, next) => {
     const prisma = await getSharedPrismaClientAsync();
     const portalSsrContext = resolvePortalSsrContext(req.path);
     const routeContext = resolveRouteContext(req.path);
+    const cleanReqPathLower = String(req.path || "/").split("?")[0].toLowerCase();
+    const isInviteConnectRoute =
+      cleanReqPathLower === "/i" ||
+      cleanReqPathLower.startsWith("/i/") ||
+      cleanReqPathLower === "/portal-connect" ||
+      cleanReqPathLower.startsWith("/portal-connect/");
     const compatibleProductSelect = buildCompatibleSelect(prisma, "Product", [
       "name",
       "description",
@@ -286,6 +292,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
 
     const isHomepage =
       !portalSsrContext.isPortalRoute &&
+      !isInviteConnectRoute &&
       !routeContext.productKey &&
       !routeContext.categorySlug &&
       !routeContext.articleSlug &&
@@ -294,6 +301,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
 
     const isShopRoute =
       !portalSsrContext.isPortalRoute &&
+      !isInviteConnectRoute &&
       (routeContext.pageSegment === "shop" ||
         routeContext.pageSegment === "store" ||
         (routeContext.pageSegment === "collections" && !routeContext.categorySlug));
@@ -633,6 +641,7 @@ exports.handleStorefrontShell = async (req, res, next) => {
 
     const isNotFound =
       !portalSsrContext.isPortalRoute &&
+      !isInviteConnectRoute &&
       ((routeContext.productKey && !product) ||
         (routeContext.categorySlug && !category) ||
         (routeContext.articleSlug && !article) ||
@@ -794,8 +803,9 @@ exports.handleStorefrontShell = async (req, res, next) => {
       landing: landingMeta,
       course: courseMeta,
       reviews,
-      noIndex: isNotFound || landingMissing || (isPortalRoute && !isIndexablePortal),
-      robots: courseMeta?.robots || (isPortalRoute && !isIndexablePortal ? "noindex, follow" : null),
+      noIndex: isNotFound || landingMissing || isInviteConnectRoute || (isPortalRoute && !isIndexablePortal),
+      robots: courseMeta?.robots || ((isInviteConnectRoute || (isPortalRoute && !isIndexablePortal)) ? "noindex, follow" : null),
+      ...(isInviteConnectRoute ? { portalTitle: "دخول البوابة" } : {}),
       ...portalSeoOptions,
     });
 

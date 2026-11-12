@@ -41,10 +41,12 @@ const mockPrisma = {
   company: {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
+    findMany: jest.fn(),
   },
   storefrontSettings: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
+    findMany: jest.fn(),
   },
   homepageTemplate: {
     findFirst: jest.fn(),
@@ -92,11 +94,13 @@ jest.mock("../../services/redisCacheService", () => mockRedisCacheService);
 
 const {
   PORTAL_MANIFEST_CONFIG,
+  getAndroidAssetLinks,
   getPortalBranding,
   getPortalIcon,
   getPortalManifest,
   invalidatePortalIconCache,
   isSafeRemoteLogoUrl,
+  lookupPortalCompanies,
   normalizeHex,
   resolvePortalCompany,
   resolveSafeLocalUploadPath,
@@ -175,8 +179,12 @@ describe("Public Portal PWA Controller, SSR & Security", () => {
 
     mockPrisma.company.findFirst.mockReset();
     mockPrisma.company.findUnique.mockReset();
+    mockPrisma.company.findMany.mockReset();
+    mockPrisma.company.findMany.mockResolvedValue([]);
     mockPrisma.storefrontSettings.findUnique.mockResolvedValue(null);
     mockPrisma.storefrontSettings.findFirst.mockResolvedValue(null);
+    mockPrisma.storefrontSettings.findMany.mockReset();
+    mockPrisma.storefrontSettings.findMany.mockResolvedValue([]);
     mockPrisma.homepageTemplate.findFirst.mockResolvedValue(null);
     mockPrisma.storePage.findFirst.mockResolvedValue(null);
     mockPrisma.product.findFirst.mockResolvedValue(null);
@@ -656,6 +664,32 @@ describe("Public Portal PWA Controller, SSR & Security", () => {
       expect(res.body).toContain('<meta name="theme-color" content="#059669" />');
     });
 
+    test("handleStorefrontShell serves HTTP 200 with noindex for /i/:slug and /portal-connect without 404 or storefront lookup", async () => {
+      mockPrisma.storefrontSettings.findUnique.mockResolvedValue({
+        designTokens: { colors: { primary: "#4f46e5" } },
+      });
+
+      for (const routePath of ["/i", "/i/swan", "/portal-connect"]) {
+        const req = createReq({
+          path: routePath,
+          url: routePath,
+          originalUrl: routePath,
+          companyId: "comp_swan",
+          company: { id: "comp_swan", name: "Swan", slug: "swan", isActive: true },
+        });
+        const res = createMockRes();
+        const next = jest.fn();
+
+        await handleStorefrontShell(req, res, next);
+
+        expect(next).not.toHaveBeenCalled();
+        expect(res.statusCode).toBe(200);
+        expect(mockPrisma.storePage.findFirst).not.toHaveBeenCalled();
+        expect(mockPrisma.product.findFirst).not.toHaveBeenCalled();
+        expect(res.body).toContain('<meta name="robots" content="noindex, follow" />');
+      }
+    });
+
     test("renders remote CDN logo onto 192x192 PNG via sharp after DNS public IP check", async () => {
       const dns = require("dns");
       const sharp = require("sharp");
@@ -719,7 +753,7 @@ describe("Public Portal PWA Controller, SSR & Security", () => {
       }
     });
 
-    test("publicPortalRoutes registers /branding, /manifest.webmanifest, /manifest.json, and /icon-:size.png and server mounts it before globalSecurity", () => {
+    test("publicPortalRoutes registers /lookup, /branding, /manifest.webmanifest, /manifest.json, and /icon-:size.png and server mounts it before globalSecurity", () => {
       const portalRouter = require("../../routes/publicPortalRoutes");
       const routePaths = portalRouter.stack
         .filter((layer) => layer.route)
@@ -729,6 +763,7 @@ describe("Public Portal PWA Controller, SSR & Security", () => {
 
       expect(routePaths).toEqual(
         expect.arrayContaining([
+          "/lookup",
           "/branding",
           "/manifest.webmanifest",
           "/manifest.json",
@@ -743,9 +778,191 @@ describe("Public Portal PWA Controller, SSR & Security", () => {
       const storefrontMountIdx = serverSrc.indexOf('"/api/v1/public/storefront"');
       const portalMountIdx = serverSrc.indexOf('"/api/v1/public/portal"');
       const globalSecurityIdx = serverSrc.indexOf("app.use(globalSecurity)");
+      const assetLinksIdx = serverSrc.indexOf('"/.well-known/assetlinks.json"');
+      const catchAllIdx = serverSrc.indexOf('app.get(\n  "*"');
       expect(storefrontMountIdx).toBeGreaterThan(-1);
       expect(portalMountIdx).toBeGreaterThan(storefrontMountIdx);
       expect(globalSecurityIdx).toBeGreaterThan(portalMountIdx);
+      expect(assetLinksIdx).toBeGreaterThan(-1);
+      expect(catchAllIdx).toBeGreaterThan(assetLinksIdx);
+
+      const { isPublicRoute } = require("../../middleware/globalSecurity");
+      expect(isPublicRoute("GET", "/.well-known/assetlinks.json")).toBe(true);
+      expect(isPublicRoute("HEAD", "/.well-known/assetlinks.json")).toBe(true);
+    });
+  });
+
+  describe("lookupPortalCompanies & getAndroidAssetLinks", () => {
+    afterEach(() => {
+      delete process.env.ANDROID_APP_SHA256_FINGERPRINTS;
+      delete process.env.ANDROID_PORTAL_SHA256_FINGERPRINTS;
+    });
+
+    test("returns empty list when q is missing or shorter than 2 characters", async () => {
+      for (const query of [{}, { q: "" }, { q: "a" }, { q: "  x  " }]) {
+        const req = createReq({ query });
+        const res = createMockRes();
+        await lookupPortalCompanies(req, res);
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toEqual({ success: true, data: [] });
+      }
+      expect(mockPrisma.company.findFirst).not.toHaveBeenCalled();
+      expect(mockPrisma.company.findMany).not.toHaveBeenCalled();
+    });
+
+    test("resolves exact match by publicCode or slug with primaryColor and strips PII", async () => {
+      mockPrisma.company.findFirst.mockResolvedValue({
+        id: "comp_swan",
+        name: "Swan Academy",
+        slug: "swan",
+        publicCode: "SWAN01",
+        customDomain: "portal.swan.eg",
+        logo: "/uploads/swan.png",
+        phone: "+201001112233",
+        email: "secret@swan.eg",
+      });
+      mockPrisma.storefrontSettings.findMany.mockResolvedValue([
+        {
+          companyId: "comp_swan",
+          designTokens: { colors: { primary: "#10b981" } },
+        },
+      ]);
+
+      const req = createReq({ query: { q: "swan01" } });
+      const res = createMockRes();
+      await lookupPortalCompanies(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        success: true,
+        data: [
+          {
+            id: "comp_swan",
+            name: "Swan Academy",
+            slug: "swan",
+            publicCode: "SWAN01",
+            customDomain: "portal.swan.eg",
+            logo: "/uploads/swan.png",
+            primaryColor: "#10b981",
+          },
+        ],
+      });
+      expect(res.body.data[0].phone).toBeUndefined();
+      expect(res.body.data[0].email).toBeUndefined();
+      expect(mockPrisma.company.findMany).not.toHaveBeenCalled();
+    });
+
+    test("searches active companies via findMany (max 8) and returns only public branding fields", async () => {
+      mockPrisma.company.findFirst.mockResolvedValue(null);
+      mockPrisma.company.findMany.mockResolvedValue([
+        {
+          id: "comp_1",
+          name: "CodeTreps Academy",
+          slug: "codetreps",
+          publicCode: "CT01",
+          customDomain: null,
+          logo: null,
+          phone: "+201234567890",
+        },
+        {
+          id: "comp_2",
+          name: "CodeLab",
+          slug: "codelab",
+          publicCode: "CL02",
+          customDomain: "codelab.eg",
+          logo: "https://cdn.example.com/cl.png",
+        },
+      ]);
+      mockPrisma.storefrontSettings.findMany.mockResolvedValue([
+        {
+          companyId: "comp_2",
+          designTokens: { colors: { primary: "#f59e0b" } },
+        },
+      ]);
+
+      const req = createReq({ query: { q: "code" } });
+      const res = createMockRes();
+      await lookupPortalCompanies(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(mockPrisma.company.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 8,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            publicCode: true,
+            customDomain: true,
+            logo: true,
+          },
+        }),
+      );
+      expect(res.body.data).toEqual([
+        {
+          id: "comp_1",
+          name: "CodeTreps Academy",
+          slug: "codetreps",
+          publicCode: "CT01",
+          customDomain: null,
+          logo: null,
+          primaryColor: "#4f46e5",
+        },
+        {
+          id: "comp_2",
+          name: "CodeLab",
+          slug: "codelab",
+          publicCode: "CL02",
+          customDomain: "codelab.eg",
+          logo: "https://cdn.example.com/cl.png",
+          primaryColor: "#f59e0b",
+        },
+      ]);
+      expect(res.body.data[0].phone).toBeUndefined();
+    });
+
+    test("getAndroidAssetLinks returns 200 valid empty JSON array when no fingerprints are configured", () => {
+      delete process.env.ANDROID_APP_SHA256_FINGERPRINTS;
+      delete process.env.ANDROID_PORTAL_SHA256_FINGERPRINTS;
+
+      const req = createReq({ path: "/.well-known/assetlinks.json" });
+      const res = createMockRes();
+      getAndroidAssetLinks(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers["content-type"]).toContain("application/json");
+      expect(res.headers["cache-control"]).toBe("public, max-age=3600");
+      expect(res.body).toEqual([]);
+    });
+
+    test("getAndroidAssetLinks returns Digital Asset Links statements for all 5 Android packages", () => {
+      process.env.ANDROID_APP_SHA256_FINGERPRINTS = "AA:BB:CC:11, DD:EE:FF:22";
+      process.env.ANDROID_PORTAL_SHA256_FINGERPRINTS = "DD:EE:FF:22, 33:44:55:66";
+
+      const req = createReq({ path: "/.well-known/assetlinks.json" });
+      const res = createMockRes();
+      getAndroidAssetLinks(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers["content-type"]).toContain("application/json");
+      expect(res.headers["cache-control"]).toBe("public, max-age=3600");
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.map((s) => s.target.package_name)).toEqual([
+        "online.maxp.parent",
+        "online.maxp.portal",
+        "online.maxp.courier",
+        "online.maxp.customer",
+        "online.maxp.app",
+      ]);
+      for (const stmt of res.body) {
+        expect(stmt.relation).toEqual(["delegate_permission/common.handle_all_urls"]);
+        expect(stmt.target.namespace).toBe("android_app");
+        expect(stmt.target.sha256_cert_fingerprints).toEqual([
+          "AA:BB:CC:11",
+          "DD:EE:FF:22",
+          "33:44:55:66",
+        ]);
+      }
     });
   });
 });

@@ -79,6 +79,10 @@ describe("shouldBootstrapStorefront", () => {
     for (const route of portalRoutes) {
       expect(shouldBootstrapStorefront("swan.maxp.online", route)).toBe(false);
     }
+
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/i")).toBe(false);
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/i/swan")).toBe(false);
+    expect(shouldBootstrapStorefront("swan.maxp.online", "/portal-connect")).toBe(false);
   });
 
   test("does not treat localhost admin pages as storefront requests", () => {

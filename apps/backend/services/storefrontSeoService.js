@@ -116,6 +116,8 @@ const RESERVED_PAGE_SEGMENTS = new Set([
   "wholesale-portal",
   "account",
   "client-portal",
+  "i",
+  "portal-connect",
 ]);
 
 const isRecord = (value) =>

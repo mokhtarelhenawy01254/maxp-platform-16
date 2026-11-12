@@ -1,0 +1,349 @@
+name: Build Portal Thin Shell APKs (Capacitor)
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'نكهة البوابة المطلوبة (Portal Flavor)'
+        required: true
+        default: 'parent'
+        type: choice
+        options:
+          - parent
+          - portal
+          - courier
+          - customer
+          - all
+      build_type:
+        description: 'نوع الحزمة (Build Type)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+      deploy_to_server:
+        description: 'نشر تلقائي للسيرفر إلى /var/www/maxp-downloads/ (Deploy to server)'
+        required: false
+        default: true
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/portal-mobile/**'
+      - '.github/workflows/build-portal-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-portal-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-portal-apks:
+    name: Build Portal Thin Shell APK(s)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Check Portal Mobile Lockfile
+        id: lockfile
+        shell: bash
+        run: |
+          if [ -f "apps/portal-mobile/package-lock.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js 22 (with npm cache)
+        if: steps.lockfile.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/portal-mobile/package-lock.json
+
+      - name: Setup Node.js 22 (without npm cache)
+        if: steps.lockfile.outputs.exists != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Enforce Thin Shell Invariants (Pre-Sync)
+        shell: bash
+        run: node apps/portal-mobile/scripts/configure-shell.cjs --verify
+
+      - name: Install Dependencies & Sync Capacitor Android
+        working-directory: apps/portal-mobile
+        shell: bash
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+          npx cap sync android
+          node scripts/configure-shell.cjs --verify
+
+      - name: Prepare Optional Signing Keystore & Google Services
+        working-directory: apps/portal-mobile/android/app
+        shell: bash
+        env:
+          PORTAL_KEYSTORE_B64: ${{ secrets.ANDROID_PORTAL_KEYSTORE_BASE64 }}
+          FALLBACK_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PORTAL_GOOGLE_SERVICES: ${{ secrets.ANDROID_PORTAL_GOOGLE_SERVICES_JSON }}
+        run: |
+          KEYSTORE_B64="${PORTAL_KEYSTORE_B64:-$FALLBACK_KEYSTORE_B64}"
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s\n' "$KEYSTORE_B64" | base64 -d > maxp-portal-release.keystore
+            cp -f maxp-portal-release.keystore maxp-release.keystore
+            echo "✅ Release keystore loaded from GitHub Secrets."
+          elif [ -f "maxp-portal-release.keystore" ] || [ -f "maxp-release.keystore" ]; then
+            echo "ℹ️ Using existing repository keystore."
+          else
+            echo "ℹ️ No release keystore configured; Gradle will fall back to configured debug/signing settings."
+          fi
+
+          if [ -n "$PORTAL_GOOGLE_SERVICES" ]; then
+            if printf '%s' "$PORTAL_GOOGLE_SERVICES" | grep -qE '^\s*\{'; then
+              printf '%s\n' "$PORTAL_GOOGLE_SERVICES" > google-services.json
+            else
+              printf '%s\n' "$PORTAL_GOOGLE_SERVICES" | base64 -d > google-services.json
+            fi
+            echo "✅ google-services.json loaded from GitHub Secrets."
+          else
+            echo "ℹ️ No ANDROID_PORTAL_GOOGLE_SERVICES_JSON secret provided; skipping."
+          fi
+
+      - name: Build & Verify Flavor APK(s)
+        id: build-apks
+        shell: bash
+        env:
+          REQUESTED_FLAVOR: ${{ github.event.inputs.flavor || 'all' }}
+          BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_PORTAL_KEYSTORE_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_PORTAL_KEY_ALIAS || secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_PORTAL_KEY_PASSWORD || secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          case "$REQUESTED_FLAVOR" in
+            parent|portal|courier|customer)
+              FLAVORS="$REQUESTED_FLAVOR"
+              ;;
+            all)
+              FLAVORS="parent portal courier customer"
+              ;;
+            *)
+              echo "❌ Invalid flavor: $REQUESTED_FLAVOR"
+              exit 1
+              ;;
+          esac
+
+          case "$BUILD_TYPE" in
+            release)
+              CAP_BUILD_TYPE="Release"
+              ;;
+            debug)
+              CAP_BUILD_TYPE="Debug"
+              ;;
+            *)
+              echo "❌ Invalid build_type: $BUILD_TYPE"
+              exit 1
+              ;;
+          esac
+
+          MAX_APK_BYTES=15728640
+          RELEASE_DATE=$(date -u +"%Y-%m-%d")
+          GRADLE_FILE="apps/portal-mobile/android/app/build.gradle"
+          VERSION_CODE=$(grep -E "versionCode\s+[0-9]+" "$GRADLE_FILE" | head -n 1 | awk '{print $2}' || true)
+          VERSION_NAME=$(grep -E 'versionName\s+"[^"]+"' "$GRADLE_FILE" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+          VERSION_CODE="${VERSION_CODE:-1}"
+          VERSION_NAME="${VERSION_NAME:-1.0.0}"
+
+          mkdir -p dist-apks
+          chmod +x apps/portal-mobile/android/gradlew
+
+          for FLAVOR in $FLAVORS; do
+            case "$FLAVOR" in
+              parent)
+                CAP_FLAVOR="Parent"
+                APP_NAME="MaxP"
+                DEFAULT_APP_ID="online.maxp.parent"
+                ;;
+              portal)
+                CAP_FLAVOR="Portal"
+                APP_NAME="MaxP Portal"
+                DEFAULT_APP_ID="online.maxp.portal"
+                ;;
+              courier)
+                CAP_FLAVOR="Courier"
+                APP_NAME="MaxP Courier"
+                DEFAULT_APP_ID="online.maxp.courier"
+                ;;
+              customer)
+                CAP_FLAVOR="Customer"
+                APP_NAME="MaxP Customer"
+                DEFAULT_APP_ID="online.maxp.customer"
+                ;;
+            esac
+
+            GRADLE_TASK="assemble${CAP_FLAVOR}${CAP_BUILD_TYPE}"
+            echo "🔧 Configuring thin shell for flavor '$FLAVOR'..."
+            node apps/portal-mobile/scripts/configure-shell.cjs --flavor="$FLAVOR"
+            (
+              cd apps/portal-mobile
+              PORTAL_FLAVOR="$FLAVOR" npx cap copy android
+            )
+            node apps/portal-mobile/scripts/configure-shell.cjs --verify
+
+            echo "🔨 Building flavor '$FLAVOR' via ./gradlew $GRADLE_TASK..."
+            (
+              cd apps/portal-mobile/android
+              ./gradlew "$GRADLE_TASK" --stacktrace
+            )
+
+            APK_PATH=$(find "apps/portal-mobile/android/app/build/outputs/apk/$FLAVOR/$BUILD_TYPE" -maxdepth 2 -name "*.apk" ! -name "*unaligned*" 2>/dev/null | head -n 1 || true)
+            if [ -z "$APK_PATH" ]; then
+              APK_PATH=$(find apps/portal-mobile/android/app/build/outputs/apk -name "*${FLAVOR}*${BUILD_TYPE}*.apk" ! -name "*unaligned*" 2>/dev/null | head -n 1 || true)
+            fi
+            if [ -z "$APK_PATH" ]; then
+              APK_PATH=$(find apps/portal-mobile/android/app/build/outputs/apk -name "*${FLAVOR}*.apk" ! -name "*unaligned*" 2>/dev/null | head -n 1 || true)
+            fi
+
+            if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+              echo "❌ Failed to locate generated APK for flavor '$FLAVOR' ($BUILD_TYPE)"
+              exit 1
+            fi
+
+            FILE_SIZE_BYTES=$(stat -c%s "$APK_PATH")
+            FILE_SIZE_FORMATTED=$(awk -v b="$FILE_SIZE_BYTES" 'BEGIN {printf "%.1f MB", b / 1048576}')
+            echo "📦 Located APK: $APK_PATH ($FILE_SIZE_BYTES bytes / $FILE_SIZE_FORMATTED)"
+
+            if [ "$FILE_SIZE_BYTES" -gt "$MAX_APK_BYTES" ]; then
+              echo "❌ BLOAT CHECK FAILED: $APK_PATH is $FILE_SIZE_BYTES bytes, exceeding thin-shell limit of $MAX_APK_BYTES bytes (15 MB)!"
+              exit 1
+            fi
+
+            TARGET_APK="dist-apks/maxp-${FLAVOR}.apk"
+            TARGET_JSON="dist-apks/latest-android-${FLAVOR}.json"
+            cp -f "$APK_PATH" "$TARGET_APK"
+            APK_SHA256=$(sha256sum "$TARGET_APK" | awk '{print $1}')
+
+            cat <<EOF > "$TARGET_JSON"
+          {
+            "platform": "android",
+            "flavor": "$FLAVOR",
+            "appName": "$APP_NAME",
+            "appId": "$DEFAULT_APP_ID",
+            "buildType": "$BUILD_TYPE",
+            "latestVersion": "$VERSION_NAME",
+            "latestVersionCode": $VERSION_CODE,
+            "minRequiredVersion": "1.0.0",
+            "minRequiredVersionCode": 1,
+            "forceUpdate": false,
+            "downloadUrl": "https://maxp.online/download/maxp-${FLAVOR}.apk",
+            "directApkUrl": "https://maxp.online/download/maxp-${FLAVOR}.apk",
+            "storeUrl": "https://maxp.online/download/maxp-${FLAVOR}.apk",
+            "releaseDate": "$RELEASE_DATE",
+            "fileSizeBytes": $FILE_SIZE_BYTES,
+            "fileSizeFormatted": "$FILE_SIZE_FORMATTED",
+            "sha256": "$APK_SHA256"
+          }
+          EOF
+            echo "✅ Prepared $TARGET_APK ($FILE_SIZE_FORMATTED, sha256=$APK_SHA256)"
+          done
+
+      - name: Upload Portal APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaxP-Portal-APKs-${{ github.event.inputs.flavor || 'all' }}-${{ github.event.inputs.build_type || 'release' }}-${{ github.run_number }}
+          path: dist-apks/
+          retention-days: 30
+
+      - name: Verify Deployment Secrets
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ] || [ -z "$SERVER_SSH_KEY" ]; then
+            echo "❌ Missing required deployment secrets (SERVER_HOST, SERVER_USER, or SERVER_SSH_KEY)."
+            exit 1
+          fi
+          echo "✅ Deployment secrets verified."
+
+      - name: Setup SSH Key for Server Deployment
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Deploy Portal APKs to Production Server
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          REMOTE_DIR="/var/www/maxp-downloads"
+
+          echo "🚀 Preparing $REMOTE_DIR on $SERVER_HOST..."
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p '$REMOTE_DIR'"
+
+          (
+            cd dist-apks
+            sha256sum maxp-*.apk latest-android-*.json > PORTAL_SHA256SUMS
+          )
+
+          scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            dist-apks/PORTAL_SHA256SUMS "$SERVER_USER@$SERVER_HOST:$REMOTE_DIR/PORTAL_SHA256SUMS.tmp"
+
+          for FILE in dist-apks/maxp-*.apk dist-apks/latest-android-*.json; do
+            BASENAME=$(basename "$FILE")
+            echo "⬆️ Uploading $BASENAME..."
+            scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+              -o StrictHostKeyChecking=accept-new \
+              "$FILE" "$SERVER_USER@$SERVER_HOST:$REMOTE_DIR/${BASENAME}.tmp"
+          done
+
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SERVER_USER@$SERVER_HOST" \
+            "set -euo pipefail
+             cd '$REMOTE_DIR'
+             for f in *.tmp; do
+               [ -e \"\$f\" ] || continue
+               target=\"\${f%.tmp}\"
+               mv -f \"\$f\" \"\$target\"
+               chmod 644 \"\$target\"
+             done
+             sha256sum -c PORTAL_SHA256SUMS
+             ls -lh maxp-*.apk latest-android-*.json"
+
+          echo "✅ Portal APK(s) and manifest(s) published to https://maxp.online/download/"

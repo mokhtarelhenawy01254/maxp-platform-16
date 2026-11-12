@@ -34,6 +34,7 @@ jobs:
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Code
@@ -78,9 +79,11 @@ jobs:
 
       - name: Prepare Signing Keystore
         working-directory: apps/frontend/android/app
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > maxp-release.keystore
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            printf '%s\n' "$ANDROID_KEYSTORE_BASE64" | base64 -d > maxp-release.keystore
             echo "✅ Release keystore loaded from GitHub Secrets."
           elif [ -f "maxp-release.keystore" ]; then
             echo "ℹ️ Using existing repository maxp-release.keystore."
@@ -89,12 +92,12 @@ jobs:
       - name: Build Android APK with Gradle
         working-directory: apps/frontend/android
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'maxp2026' }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'maxp' }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || 'maxp2026' }}
+          BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
           if [ "$BUILD_TYPE" = "release" ]; then
             ./gradlew assembleRelease --stacktrace
           else
@@ -103,8 +106,9 @@ jobs:
 
       - name: Locate Generated APK & Calculate Metadata
         id: apk-finder
+        env:
+          BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
         run: |
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
           if [ "$BUILD_TYPE" = "release" ]; then
             APK_PATH=$(find apps/frontend/android/app/build/outputs/apk/ -name "*release*.apk" | grep -v "unaligned" | head -n 1)
           fi
@@ -185,25 +189,39 @@ jobs:
           SIZE_FORMATTED: ${{ steps.apk-finder.outputs.size_formatted }}
           RELEASE_DATE: ${{ steps.apk-finder.outputs.release_date }}
         run: |
-          echo "🚀 Deploying APK and latest-android.json to production server..."
+          if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_USER" ]; then
+            echo "❌ SERVER_HOST or SERVER_USER secret is not configured."
+            exit 1
+          fi
+          echo "🚀 Deploying APK and latest-android.json to /var/www/maxp-downloads/ (and syncing /var/www/frontend2/dist/download{,s}/)..."
           ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
             "$SERVER_USER@$SERVER_HOST" \
-            "mkdir -p /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads"
+            "mkdir -p /var/www/maxp-downloads /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads"
 
           scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new \
-            "$APK_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/maxp.apk"
+            "$APK_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/maxp-downloads/maxp.apk.tmp"
 
           scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new \
-            latest-android.json "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/latest-android.json"
+            latest-android.json "$SERVER_USER@$SERVER_HOST:/var/www/maxp-downloads/latest-android.json.tmp"
 
           ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
             -o StrictHostKeyChecking=accept-new \
             "$SERVER_USER@$SERVER_HOST" \
-            "cp -f /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk && \
-             cp -f /var/www/frontend2/dist/download/latest-android.json /var/www/frontend2/dist/downloads/latest-android.json && \
-             chmod 644 /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk /var/www/frontend2/dist/download/latest-android.json /var/www/frontend2/dist/downloads/latest-android.json"
+            "mv -f /var/www/maxp-downloads/maxp.apk.tmp /var/www/maxp-downloads/maxp.apk && \
+             mv -f /var/www/maxp-downloads/latest-android.json.tmp /var/www/maxp-downloads/latest-android.json && \
+             cp -f /var/www/maxp-downloads/maxp.apk /var/www/frontend2/dist/download/maxp.apk && \
+             cp -f /var/www/maxp-downloads/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk && \
+             cp -f /var/www/maxp-downloads/latest-android.json /var/www/frontend2/dist/download/latest-android.json && \
+             cp -f /var/www/maxp-downloads/latest-android.json /var/www/frontend2/dist/downloads/latest-android.json && \
+             chmod 644 \
+               /var/www/maxp-downloads/maxp.apk \
+               /var/www/maxp-downloads/latest-android.json \
+               /var/www/frontend2/dist/download/maxp.apk \
+               /var/www/frontend2/dist/downloads/maxp.apk \
+               /var/www/frontend2/dist/download/latest-android.json \
+               /var/www/frontend2/dist/downloads/latest-android.json"
 
           echo "✅ APK successfully published to https://maxp.online/download/maxp.apk"

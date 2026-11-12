@@ -1,0 +1,10 @@
+rootProject.name = 'MaxPPortalShell'
+include ':app'
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+
+def capSettings = new File(rootDir, 'capacitor.settings.gradle')
+def capAndroidDir = new File(rootDir, '../node_modules/@capacitor/android/capacitor')
+if (capSettings.exists() && capAndroidDir.exists()) {
+    apply from: 'capacitor.settings.gradle'
+}

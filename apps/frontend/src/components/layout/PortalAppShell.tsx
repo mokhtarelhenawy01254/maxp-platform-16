@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronLeft, LogOut, Menu, User, X } from "lucide-react";
+import { ArrowLeftRight, ChevronLeft, LogOut, Menu, User, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { isCapacitorNative } from "../../config/environment";
 import { resolveBrandingLogoUrl, type CompanyBranding } from "../../hooks/useCompanyBranding";
+import {
+  getSavedSessionsForRole,
+  PORTAL_ROLE_STORAGE_MAP,
+  type PortalSessionRole,
+} from "../../utils/portalSessionManager";
 import { PortalInstallBanner } from "../common/PortalInstallBanner";
 
 export interface PortalNavItem {
@@ -61,6 +67,11 @@ export const PortalAppShell: React.FC<PortalAppShellProps> = ({
   const displaySubtitle = branding.name?.trim() ? portalTitle : portalSubtitle;
   const monogramChar = displayBrandName.trim().charAt(0) || "P";
   const showMobileBottomNav = navItems.length > 0 && navItems.length <= 5;
+  const savedRoleSessionsCount =
+    portalType in PORTAL_ROLE_STORAGE_MAP
+      ? getSavedSessionsForRole(portalType as PortalSessionRole).length
+      : 0;
+  const showInstitutionSwitcher = isCapacitorNative() || savedRoleSessionsCount > 1;
   const isNavActive = (itemPath: string) =>
     location.pathname === itemPath || location.pathname.startsWith(`${itemPath}/`);
 
@@ -172,7 +183,17 @@ export const PortalAppShell: React.FC<PortalAppShellProps> = ({
             })}
           </nav>
 
-          <div className="border-t border-border/60 p-3">
+          <div className="border-t border-border/60 p-3 space-y-1">
+            {showInstitutionSwitcher ? (
+              <Link
+                to={`/portal-connect?portal=${encodeURIComponent(portalType)}`}
+                onClick={() => setSidebarOpen(false)}
+                className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">تبديل المؤسسة</span>
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={onLogout}

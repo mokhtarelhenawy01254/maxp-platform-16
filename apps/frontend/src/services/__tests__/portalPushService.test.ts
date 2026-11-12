@@ -9,7 +9,10 @@ import { apiClient } from "../apiClient";
 import { tokenManager } from "../../utils/tokenManager";
 import { savePortalSession } from "../../utils/portalSessionManager";
 import {
+  PORTAL_FCM_TOKEN_STORAGE_KEY,
+  enablePortalPush,
   getCurrentPortalPushSubscription,
+  getPortalNotificationPermission,
   getPortalPushBearerToken,
   getPortalPushPublicKey,
   isPortalPushSupported,
@@ -54,6 +57,7 @@ describe("portalPushService", () => {
   const originalServiceWorker = navigator.serviceWorker;
   const originalNotification = (window as unknown as Record<string, unknown>)["Notification"];
   const originalPushManager = (window as unknown as Record<string, unknown>)["PushManager"];
+  const originalCapacitor = (window as unknown as Record<string, unknown>)["Capacitor"];
 
   const setMockLocation = (hostname: string, pathname: string) => {
     Object.defineProperty(window, "location", {
@@ -83,6 +87,11 @@ describe("portalPushService", () => {
     Object.defineProperty(navigator, "serviceWorker", { configurable: true, writable: true, value: originalServiceWorker });
     Object.defineProperty(window, "Notification", { configurable: true, writable: true, value: originalNotification });
     Object.defineProperty(window, "PushManager", { configurable: true, writable: true, value: originalPushManager });
+    if (originalCapacitor === undefined) {
+      delete (window as unknown as Record<string, unknown>)["Capacitor"];
+    } else {
+      Object.defineProperty(window, "Capacitor", { configurable: true, writable: true, value: originalCapacitor });
+    }
   });
 
   it("resolves bearer tokens cleanly for portal roles vs customer and wholesale", () => {
@@ -318,5 +327,77 @@ describe("portalPushService", () => {
     await waitFor(() => expect(blockedBtn).not.toBeDisabled());
     fireEvent.click(blockedBtn);
     expect(toastInfoSpy).toHaveBeenCalled();
+  });
+
+  it("supports Capacitor native PushNotifications FCM_ANDROID subscribe, check, and unsubscribe without browser Notification/PushManager", async () => {
+    delete (window as unknown as Record<string, unknown>)["Notification"];
+    mockPushManagerGlobal(false);
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true, writable: true, value: undefined });
+
+    const listeners: Record<string, (payload: Record<string, unknown>) => void> = {};
+    const removeMock = vi.fn().mockResolvedValue(undefined);
+    const pushPluginMock = {
+      checkPermissions: vi.fn().mockResolvedValue({ receive: "granted" }),
+      requestPermissions: vi.fn().mockResolvedValue({ receive: "granted" }),
+      register: vi.fn().mockImplementation(async () => {
+        listeners["registration"]?.({ value: "fcm_android_token_abc" });
+      }),
+      unregister: vi.fn().mockResolvedValue(undefined),
+      addListener: vi.fn().mockImplementation(async (event: string, cb: (payload: Record<string, unknown>) => void) => {
+        listeners[event] = cb;
+        return { remove: removeMock };
+      }),
+    };
+
+    Object.defineProperty(window, "Capacitor", {
+      configurable: true,
+      writable: true,
+      value: {
+        isNativePlatform: () => true,
+        Plugins: { PushNotifications: pushPluginMock },
+      },
+    });
+
+    expect(isPortalPushSupported()).toBe(true);
+    expect(getPortalNotificationPermission()).toBe("default");
+
+    savePortalSession({ role: "parent", companyId: "cmp_swan", token: "parent_native_tok" });
+    const postSpy = vi.spyOn(apiClient, "post").mockResolvedValue({ data: { success: true } } as never);
+
+    const subResult = await enablePortalPush("parent");
+    expect(subResult).toEqual({ subscribed: true, endpoint: "fcm:fcm_android_token_abc" });
+    expect(getPortalNotificationPermission()).toBe("granted");
+    expect(window.localStorage.getItem(PORTAL_FCM_TOKEN_STORAGE_KEY)).toBe("fcm_android_token_abc");
+    expect(postSpy).toHaveBeenCalledWith(
+      "/portal/push/subscribe",
+      {
+        platform: "FCM_ANDROID",
+        fcmToken: "fcm_android_token_abc",
+        userAgent: navigator.userAgent,
+      },
+      {
+        headers: { ...SWAN_HEADERS, Authorization: "Bearer parent_native_tok" },
+        _skipAuthRefresh: true,
+        _skipErrorToast: true,
+      },
+    );
+    expect(removeMock).toHaveBeenCalledTimes(2);
+
+    const currentSub = await getCurrentPortalPushSubscription();
+    expect(currentSub?.endpoint).toBe("fcm:fcm_android_token_abc");
+
+    const unsubResult = await unsubscribePortalPush("parent");
+    expect(unsubResult).toEqual({ unsubscribed: true, endpoint: "fcm:fcm_android_token_abc" });
+    expect(window.localStorage.getItem(PORTAL_FCM_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(pushPluginMock.unregister).toHaveBeenCalledTimes(1);
+    expect(postSpy).toHaveBeenLastCalledWith(
+      "/portal/push/unsubscribe",
+      { fcmToken: "fcm_android_token_abc", endpoint: "fcm:fcm_android_token_abc" },
+      {
+        headers: { ...SWAN_HEADERS, Authorization: "Bearer parent_native_tok" },
+        _skipAuthRefresh: true,
+        _skipErrorToast: true,
+      },
+    );
   });
 });

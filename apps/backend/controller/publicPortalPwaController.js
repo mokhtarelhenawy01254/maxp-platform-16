@@ -35,6 +35,25 @@ const PORTAL_COMPANY_SELECT = {
   isActive: true,
 };
 
+const PORTAL_PUBLIC_LOOKUP_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  publicCode: true,
+  customDomain: true,
+  logo: true,
+};
+
+const PORTAL_LOOKUP_CACHE_TTL_SECONDS = 60;
+
+const ANDROID_ASSET_LINK_PACKAGES = [
+  'online.maxp.parent',
+  'online.maxp.portal',
+  'online.maxp.courier',
+  'online.maxp.customer',
+  'online.maxp.app',
+];
+
 const PORTAL_MANIFEST_CONFIG = {
   parent: {
     title: 'بوابة ولي الأمر',
@@ -1110,16 +1129,201 @@ async function getPortalIcon(req, res) {
   }
 }
 
+function toSafeLookupItem(company, primaryColor = '#4f46e5') {
+  return {
+    id: company.id,
+    name: company.name,
+    slug: company.slug || null,
+    publicCode: company.publicCode || null,
+    customDomain: company.customDomain || null,
+    logo: company.logo || null,
+    primaryColor: primaryColor || '#4f46e5',
+  };
+}
+
+async function resolveLightPrimaryColors(prisma, companies) {
+  const colorByCompanyId = new Map();
+  const list = Array.isArray(companies) ? companies.filter((c) => c?.id) : [];
+  if (list.length === 0) return colorByCompanyId;
+
+  if (typeof prisma?.storefrontSettings?.findMany === 'function') {
+    const rows = await prisma.storefrontSettings
+      .findMany({
+        where: { companyId: { in: list.map((c) => c.id) } },
+        select: { companyId: true, designTokens: true },
+      })
+      .catch(() => []);
+    for (const row of rows || []) {
+      if (row?.companyId) {
+        const { primaryColor } = extractBrandingColors(row.designTokens);
+        colorByCompanyId.set(row.companyId, primaryColor);
+      }
+    }
+    return colorByCompanyId;
+  }
+
+  await Promise.all(
+    list.map(async (company) => {
+      const settings = await queryStorefrontDesignTokens(prisma, company.id).catch(
+        () => null,
+      );
+      if (settings?.designTokens) {
+        const { primaryColor } = extractBrandingColors(settings.designTokens);
+        colorByCompanyId.set(company.id, primaryColor);
+      }
+    }),
+  );
+  return colorByCompanyId;
+}
+
+async function lookupPortalCompanies(req, res) {
+  try {
+    const rawQuery = firstQueryParam(req.query?.q);
+    if (!rawQuery || rawQuery.length < 2) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const q = rawQuery.slice(0, 80);
+    const cacheKey = `portal:lookup:${q.toLowerCase()}`;
+    const cached = await redisCacheService.get(cacheKey).catch(() => null);
+    if (Array.isArray(cached)) {
+      res.set('Cache-Control', 'public, max-age=60');
+      return res.status(200).json({
+        success: true,
+        data: cached,
+      });
+    }
+
+    const prisma = await getSharedPrismaClientAsync();
+    if (!prisma?.company) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    let exactMatch = null;
+    if (typeof prisma.company.findFirst === 'function') {
+      exactMatch = await prisma.company.findFirst({
+        where: {
+          isActive: true,
+          OR: [
+            { publicCode: { equals: q, mode: 'insensitive' } },
+            { slug: { equals: q.toLowerCase(), mode: 'insensitive' } },
+          ],
+        },
+        select: PORTAL_PUBLIC_LOOKUP_SELECT,
+      });
+    }
+
+    if (exactMatch && exactMatch.isActive !== false) {
+      const colorMap = await resolveLightPrimaryColors(prisma, [exactMatch]);
+      const items = [
+        toSafeLookupItem(
+          exactMatch,
+          colorMap.get(exactMatch.id) || '#4f46e5',
+        ),
+      ];
+      await redisCacheService
+        .set(cacheKey, items, PORTAL_LOOKUP_CACHE_TTL_SECONDS)
+        .catch(() => {});
+      res.set('Cache-Control', 'public, max-age=60');
+      return res.status(200).json({
+        success: true,
+        data: items,
+      });
+    }
+
+    const companies =
+      typeof prisma.company.findMany === 'function'
+        ? await prisma.company.findMany({
+            where: {
+              isActive: true,
+              OR: [
+                { publicCode: { contains: q, mode: 'insensitive' } },
+                { slug: { contains: q, mode: 'insensitive' } },
+                { name: { contains: q, mode: 'insensitive' } },
+              ],
+            },
+            select: PORTAL_PUBLIC_LOOKUP_SELECT,
+            take: 8,
+            orderBy: { name: 'asc' },
+          })
+        : [];
+
+    const activeCompanies = (companies || []).filter(
+      (company) => company && company.isActive !== false,
+    );
+    const colorMap = await resolveLightPrimaryColors(prisma, activeCompanies);
+    const items = activeCompanies.map((company) =>
+      toSafeLookupItem(company, colorMap.get(company.id) || '#4f46e5'),
+    );
+
+    await redisCacheService
+      .set(cacheKey, items, PORTAL_LOOKUP_CACHE_TTL_SECONDS)
+      .catch(() => {});
+    res.set('Cache-Control', 'public, max-age=60');
+    return res.status(200).json({
+      success: true,
+      data: items,
+    });
+  } catch (error) {
+    console.error('❌ [PortalPWA] lookupPortalCompanies failed:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'تعذر البحث عن المؤسسات',
+    });
+  }
+}
+
+function parseSha256Fingerprints(rawValue) {
+  if (!rawValue || typeof rawValue !== 'string') return [];
+  return rawValue
+    .split(',')
+    .map((fp) => fp.trim())
+    .filter(Boolean);
+}
+
+function getAndroidAssetLinks(req, res) {
+  const fingerprints = Array.from(
+    new Set([
+      ...parseSha256Fingerprints(process.env.ANDROID_APP_SHA256_FINGERPRINTS),
+      ...parseSha256Fingerprints(process.env.ANDROID_PORTAL_SHA256_FINGERPRINTS),
+    ]),
+  );
+
+  const statements =
+    fingerprints.length === 0
+      ? []
+      : ANDROID_ASSET_LINK_PACKAGES.map((packageName) => ({
+          relation: ['delegate_permission/common.handle_all_urls'],
+          target: {
+            namespace: 'android_app',
+            package_name: packageName,
+            sha256_cert_fingerprints: fingerprints,
+          },
+        }));
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  return res.status(200).json(statements);
+}
+
 module.exports = {
   PORTAL_MANIFEST_CONFIG,
   extractBrandingColors,
   generateMonogramIconBuffer,
+  getAndroidAssetLinks,
   getPortalBranding,
   getPortalIcon,
   getPortalManifest,
   invalidatePortalIconCache,
   isPrivateOrReservedIp,
   isSafeRemoteLogoUrl,
+  lookupPortalCompanies,
   normalizeHex,
   resolvePortalBrandingData,
   resolvePortalCompany,

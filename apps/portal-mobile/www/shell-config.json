@@ -1,0 +1,24 @@
+{
+  "flavor": "parent",
+  "appId": "online.maxp.parent",
+  "appName": "بوابة ولي الأمر - MaxP",
+  "accentColor": "#059669",
+  "accentDarkColor": "#047857",
+  "badgeLabel": "بوابة ولي الأمر",
+  "title": "اربط حسابك بالمدرسة أو المركز",
+  "subtitle": "أدخل كود المؤسسة أو ابحث باسمها للوصول الفوري لبوابة ولي الأمر.",
+  "defaultPortal": "parent",
+  "startPath": "/parent/login",
+  "directPlatformPath": "/parent/login",
+  "directPlatformLabel": "تسجيل الدخول عبر الرقم على المنصة مباشرة (maxp.online)",
+  "lookupMode": "required",
+  "lookupPlaceholder": "كود المؤسسة (مثل SWAN01) أو اسم المدرسة…",
+  "apiBaseUrl": "https://maxp.online",
+  "portals": [
+    {
+      "key": "parent",
+      "label": "بوابة ولي الأمر",
+      "loginPath": "/parent/login"
+    }
+  ]
+}

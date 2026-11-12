@@ -29,6 +29,11 @@ export const PUBLIC_REGISTRATION_AND_PROPOSAL_PREFIXES = [
   "/portal/production",
 ] as const;
 
+export const PORTAL_CONNECT_PREFIXES = [
+  "/i",
+  "/portal-connect",
+] as const;
+
 const PORTAL_STOREFRONT_EXCLUSION_PREFIXES = [
   "/academy",
   "/client-portal/shipping",
@@ -47,7 +52,7 @@ export type PortalRole =
   | "client";
 
 const normalizePathname = (pathname: string): string => {
-  const normalized = String(pathname || "").trim();
+  const normalized = String(pathname || "").trim().split(/[?#]/)[0]?.trim() || "";
   if (!normalized) {
     return "/";
   }
@@ -86,6 +91,9 @@ export const isPortalOrRegistrationPath = (pathname: string): boolean => {
   return (
     isPortalPath(normalized) ||
     isPortalAuthBypassPath(normalized) ||
+    PORTAL_CONNECT_PREFIXES.some((prefix) =>
+      matchesPathPrefix(normalized, prefix),
+    ) ||
     PUBLIC_REGISTRATION_AND_PROPOSAL_PREFIXES.some((prefix) =>
       matchesPathPrefix(normalized, prefix),
     ) ||
@@ -150,6 +158,14 @@ export const isIsolatedPortalContextPath = (pathname: string): boolean => {
     return true;
   }
 
+  if (
+    PORTAL_CONNECT_PREFIXES.some((prefix) =>
+      matchesPathPrefix(normalized, prefix),
+    )
+  ) {
+    return true;
+  }
+
   // ERP shipping-client dashboard is guarded by RoleProtectedRoute using ERP session auth.
   if (matchesPathPrefix(normalized, "/client-portal/shipping")) {
     return false;
@@ -202,4 +218,45 @@ export const getPortalKeyFromPath = (pathname: string): string | null => {
     return "student";
   }
   return null;
+};
+
+export const getPortalEntryPath = (
+  portalKey?: string | null,
+  authenticated: boolean = false,
+): string => {
+  const key = String(portalKey || "")
+    .trim()
+    .toLowerCase();
+
+  switch (key) {
+    case "parent":
+      return authenticated ? "/parent/dashboard" : "/parent/login";
+    case "teacher":
+      return authenticated ? "/teacher/dashboard" : "/teacher/login";
+    case "student":
+    case "academy":
+      return authenticated ? "/portal/my-courses" : "/portal/login";
+    case "doctor":
+      return authenticated ? "/doctor/dashboard" : "/doctor/login";
+    case "patient":
+      return authenticated ? "/patient/dashboard" : "/patient/login";
+    case "dental":
+    case "dentist":
+      return authenticated
+        ? "/dental-portal/dashboard"
+        : "/dental-portal/login";
+    case "courier":
+      return authenticated ? "/courier-portal" : "/courier-portal/login";
+    case "wholesale":
+      return authenticated
+        ? "/wholesale-portal/orders"
+        : "/auth/customer-register";
+    case "customer":
+    case "account":
+      return authenticated ? "/account" : "/auth/customer-register";
+    case "client":
+      return "/client-portal/shipping";
+    default:
+      return authenticated ? "/parent/dashboard" : "/parent/login";
+  }
 };

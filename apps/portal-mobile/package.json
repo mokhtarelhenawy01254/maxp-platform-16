@@ -1,0 +1,27 @@
+{
+  "name": "maxp-portal-mobile",
+  "version": "1.0.0",
+  "description": "Consolidated multi-flavor thin Capacitor mobile shell for MaxP portals",
+  "private": true,
+  "scripts": {
+    "configure": "node scripts/configure-shell.cjs",
+    "verify:shell": "node scripts/configure-shell.cjs --verify",
+    "sync": "npx cap sync android",
+    "build:parent:debug": "node scripts/configure-shell.cjs --flavor=parent && cd android && gradlew assembleParentDebug",
+    "build:portal:debug": "node scripts/configure-shell.cjs --flavor=portal && cd android && gradlew assemblePortalDebug",
+    "build:courier:debug": "node scripts/configure-shell.cjs --flavor=courier && cd android && gradlew assembleCourierDebug",
+    "build:customer:debug": "node scripts/configure-shell.cjs --flavor=customer && cd android && gradlew assembleCustomerDebug",
+    "test": "node --test __tests__/configureShell.test.cjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "typescript": "^5.2.2"
+  }
+}

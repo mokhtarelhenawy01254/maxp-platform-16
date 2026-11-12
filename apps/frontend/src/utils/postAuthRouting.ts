@@ -59,12 +59,14 @@ const NON_APP_PATH_PREFIXES = [
   "/cafe-demo",
   "/book/",
   "/company-links/",
+  "/i/",
+  "/portal-connect",
   "/test-public",
 ];
 
 export const isAllowedPostAuthPath = (path: string | null | undefined): boolean => {
   if (!path || !path.startsWith("/")) return false;
-  if (path === "/") return false;
+  if (path === "/" || path === "/i") return false;
   if (NON_APP_PATH_PREFIXES.some((p) => path === p || path.startsWith(p))) {
     return false;
   }

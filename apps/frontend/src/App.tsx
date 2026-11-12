@@ -287,6 +287,9 @@ const PublicMerchantRegister = React.lazy(
 const PublicCompanyLinks = React.lazy(
   () => import("./pages/PublicCompanyLinks"),
 );
+const PortalInvitePage = React.lazy(
+  () => import("./pages/portal-mobile/PortalInvitePage"),
+);
 const PublicApplicationForm = React.lazy(
   () => import("./pages/public/PublicApplicationForm"),
 );
@@ -2279,6 +2282,10 @@ const AppContent = () => {
     currentPath.startsWith("/academy/student/") ||
     currentPath.startsWith("/test-public") ||
     currentPath.startsWith("/company-links/") ||
+    currentPath === "/i" ||
+    currentPath.startsWith("/i/") ||
+    currentPath === "/portal-connect" ||
+    currentPath.startsWith("/portal-connect/") ||
     currentPath.startsWith("/auth/") ||
     currentPath.startsWith("/register/") ||
     currentPath.startsWith("/dental-portal") ||
@@ -2443,6 +2450,30 @@ const AppContent = () => {
             <Route
               path="/company-links/:token"
               element={<PublicCompanyLinks />}
+            />
+            <Route
+              path="/i"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <PortalInvitePage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/i/:slug"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <PortalInvitePage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/portal-connect"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <PortalInvitePage />
+                </React.Suspense>
+              }
             />
             <Route
               path="/agency/client-portal/:token"

@@ -2,10 +2,12 @@ import { describe, expect, test } from "vitest";
 import {
   PORTAL_PREFIXES,
   PORTAL_AUTH_BYPASS_PATHS,
+  PORTAL_CONNECT_PREFIXES,
   isPortalPath,
   isPortalAuthBypassPath,
   isPortalOrRegistrationPath,
   getPortalRoleFromPath,
+  getPortalEntryPath,
   isIsolatedPortalContextPath,
 } from "../portals";
 
@@ -79,5 +81,47 @@ describe("portals config & routing helpers", () => {
     expect(isIsolatedPortalContextPath("/academy/dashboard")).toBe(false);
     expect(isIsolatedPortalContextPath("/client-portal/shipping")).toBe(false);
     expect(isIsolatedPortalContextPath("/orders")).toBe(false);
+  });
+
+  test("excludes /i, /i/:slug, and /portal-connect from storefront without registering actor portal SWs", () => {
+    for (const prefix of PORTAL_CONNECT_PREFIXES) {
+      expect(isPortalOrRegistrationPath(prefix)).toBe(true);
+      expect(isPortalPath(prefix)).toBe(false);
+      expect(isIsolatedPortalContextPath(prefix)).toBe(true);
+    }
+    expect(isPortalOrRegistrationPath("/i/swan")).toBe(true);
+    expect(isPortalOrRegistrationPath("/portal-connect?portal=parent")).toBe(true);
+    expect(isPortalPath("/i/swan")).toBe(false);
+    expect(isPortalPath("/portal-connect")).toBe(false);
+    expect(isPortalOrRegistrationPath("/invite/swan")).toBe(false);
+  });
+
+  test("getPortalEntryPath resolves login and dashboard routes for all portal keys", () => {
+    expect(getPortalEntryPath("parent", false)).toBe("/parent/login");
+    expect(getPortalEntryPath("parent", true)).toBe("/parent/dashboard");
+    expect(getPortalEntryPath("teacher", false)).toBe("/teacher/login");
+    expect(getPortalEntryPath("teacher", true)).toBe("/teacher/dashboard");
+    expect(getPortalEntryPath("student", false)).toBe("/portal/login");
+    expect(getPortalEntryPath("student", true)).toBe("/portal/my-courses");
+    expect(getPortalEntryPath("academy", false)).toBe("/portal/login");
+    expect(getPortalEntryPath("academy", true)).toBe("/portal/my-courses");
+    expect(getPortalEntryPath("doctor", false)).toBe("/doctor/login");
+    expect(getPortalEntryPath("doctor", true)).toBe("/doctor/dashboard");
+    expect(getPortalEntryPath("patient", false)).toBe("/patient/login");
+    expect(getPortalEntryPath("patient", true)).toBe("/patient/dashboard");
+    expect(getPortalEntryPath("dental", false)).toBe("/dental-portal/login");
+    expect(getPortalEntryPath("dental", true)).toBe("/dental-portal/dashboard");
+    expect(getPortalEntryPath("courier", false)).toBe("/courier-portal/login");
+    expect(getPortalEntryPath("courier", true)).toBe("/courier-portal");
+    expect(getPortalEntryPath("wholesale", false)).toBe("/auth/customer-register");
+    expect(getPortalEntryPath("wholesale", true)).toBe("/wholesale-portal/orders");
+    expect(getPortalEntryPath("customer", false)).toBe("/auth/customer-register");
+    expect(getPortalEntryPath("customer", true)).toBe("/account");
+    expect(getPortalEntryPath("account", false)).toBe("/auth/customer-register");
+    expect(getPortalEntryPath("account", true)).toBe("/account");
+    expect(getPortalEntryPath("client", false)).toBe("/client-portal/shipping");
+    expect(getPortalEntryPath("client", true)).toBe("/client-portal/shipping");
+    expect(getPortalEntryPath(null, false)).toBe("/parent/login");
+    expect(getPortalEntryPath(undefined, true)).toBe("/parent/dashboard");
   });
 });

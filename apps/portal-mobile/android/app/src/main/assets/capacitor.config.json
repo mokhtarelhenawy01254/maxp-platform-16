@@ -1,0 +1,25 @@
+{
+  "appId": "online.maxp.parent",
+  "appName": "بوابة ولي الأمر - MaxP",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "errorPath": "index.html",
+    "allowNavigation": [
+      "maxp.online",
+      "*.maxp.online"
+    ]
+  },
+  "android": {
+    "appendUserAgent": "MaxP-Native-Android MaxP-Portal-Shell/1.0.0"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}

@@ -495,6 +495,7 @@ const {
 const storefrontHtmlController = require("./controller/storefrontHtmlController");
 const storefrontSitemapController = require("./controller/storefrontSitemapController");
 const storefrontRobotsController = require("./controller/storefrontRobotsController");
+const publicPortalPwaController = require("./controller/publicPortalPwaController");
 const { handlePlatformSeo } = require("./middleware/platformSeoMiddleware");
 const {
   handleCourseSubdomainRedirect,
@@ -2001,6 +2002,11 @@ app.get(
   "/robots.txt",
   extractSubdomainMiddleware,
   storefrontRobotsController.handleStorefrontRobots,
+);
+
+app.get(
+  "/.well-known/assetlinks.json",
+  publicPortalPwaController.getAndroidAssetLinks,
 );
 
 app.get(

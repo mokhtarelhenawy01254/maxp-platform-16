@@ -402,6 +402,72 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     },
   },
   {
+    id: "parent-portal-android-app",
+    slug: "maxp-parent-portal-app",
+    name: "تطبيق بوابات التعليم والأولياء (APK) — MaxP Portals",
+    nameEn: "MaxP Portals Mobile App (Parents, Teachers & Students)",
+    category: "mobile",
+    categoryLabel: "بوابات التعليم",
+    platform: "أندرويد (Android 8.0+)",
+    platformEn: "Android APK",
+    version: "v1.0.0",
+    releaseDate: "2026-11",
+    icon: Smartphone,
+    summary: "تطبيق مستقل لأولياء الأمور والمدرسين والطلاب؛ تنبيهات فورية للحضور والحصص والنتائج، والتبديل السريع بين أكثر من مركز تعليمي.",
+    primaryActionLabel: "تحميل تطبيق البوابات (APK)",
+    telemetry: {
+      targetSystem: "Android 8.0+ (ARM64 & x86)",
+      primarySize: "~5 MB",
+      ramConsumption: "< 40 MB RAM",
+    },
+    files: [
+      {
+        id: "parent-portal-apk",
+        label: "تطبيق بوابات التعليم والأولياء (APK)",
+        size: "~5 MB",
+        url: "https://maxp.online/downloads/maxp-parent.apk",
+        extension: ".apk",
+        isPrimary: true,
+      },
+      {
+        id: "parent-portal-connect-web",
+        label: "اختيار المؤسسة والدخول المباشر (Web)",
+        size: "سحابي",
+        url: "https://maxp.online/portal-connect",
+        extension: "Web",
+        isPrimary: false,
+      },
+    ],
+    tags: ["parent", "teacher", "student", "education", "portal", "android", "apk", "أولياء الأمور", "مدرس", "طالب", "تعليم", "أندرويد"],
+    drawerDetails: {
+      overview: "تطبيق أندرويد خفيف ومخصص لمتابعة البوابات التعليمية والصحية (ولي الأمر، المدرس، الطالب، الطبيب والمريض)، مع دعم التنبيهات الفورية عبر FCM والربط السريع بكود المؤسسة.",
+      features: [
+        "ربط فوري بالمؤسسة أو السنتر عبر رابط الدعوة أو الكود العام.",
+        "إشعارات FCM فورية بمواعيد الحصص والغياب والمدفوعات.",
+        "إمكانية حفظ والتبديل بين أكثر من مؤسسة أو مركز من شاشة واحدة.",
+        "هوية مرئية وشعار مخصص للمؤسسة بمجرد الاتصال.",
+      ],
+      minRequirements: [
+        "هاتف أندرويد بنظام Android 8.0 Oreo أو أحدث.",
+        "اتصال إنترنت لتزامن الحصص والإشعارات.",
+      ],
+      recommendedSpecs: [
+        "Android 11.0 أو أحدث.",
+      ],
+      pairingNotes: "افتح التطبيق وأدخل كود المؤسسة أو افتح رابط الدعوة المرسل من السنتر أو الأكاديمية للاتصال المباشر.",
+      changelog: [
+        {
+          version: "v1.0.0",
+          date: "2026-11",
+          changes: [
+            "الإطلاق الأول لتطبيق بوابات MaxP المستقل للأندرويد.",
+            "دعم الربط الذكي بكود المؤسسة وإشعارات FCM الفورية.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "ios-companion",
     slug: "maxp-ios-companion",
     name: "تطبيق الآيفون ونظام iOS",

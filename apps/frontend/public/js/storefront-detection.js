@@ -28,6 +28,8 @@
     "/affiliate-register",
     "/proposal",
     "/agency/proposal",
+    "/i",
+    "/portal-connect",
   ];
 
   function matchesPrefix(path, prefix) {

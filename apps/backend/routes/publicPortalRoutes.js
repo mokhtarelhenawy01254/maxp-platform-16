@@ -10,6 +10,7 @@ const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddlewar
 
 router.use(extractSubdomainMiddleware);
 
+router.get('/lookup', publicPortalPwaController.lookupPortalCompanies);
 router.get('/branding', publicPortalPwaController.getPortalBranding);
 router.get(
   ['/manifest.webmanifest', '/manifest.json'],

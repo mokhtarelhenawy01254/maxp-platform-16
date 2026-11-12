@@ -404,6 +404,8 @@ const PUBLIC_ROUTES = [
   'HEAD /robots.txt',
   'GET /sitemap.xml',
   'HEAD /sitemap.xml',
+  'GET /.well-known/assetlinks.json',
+  'HEAD /.well-known/assetlinks.json',
   'OPTIONS *',
 
   // Internal deployment and cache purge routes (secured via x-deploy-secret header)
