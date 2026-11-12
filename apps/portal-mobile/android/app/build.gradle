@@ -25,7 +25,7 @@ android {
             resValue "string", "app_name", "بوابة ولي الأمر - MaxP"
             resValue "string", "title_activity_main", "بوابة ولي الأمر - MaxP"
             resValue "string", "custom_url_scheme", "online.maxp.parent"
-            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/i"]
+            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/portal-connect", customUrlScheme: "online.maxp.parent"]
             buildConfigField "String", "PORTAL_FLAVOR", '"parent"'
         }
         portal {
@@ -36,7 +36,7 @@ android {
             resValue "string", "app_name", "بوابات MaxP"
             resValue "string", "title_activity_main", "بوابات MaxP"
             resValue "string", "custom_url_scheme", "online.maxp.portal"
-            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/i"]
+            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/portal-connect", customUrlScheme: "online.maxp.portal"]
             buildConfigField "String", "PORTAL_FLAVOR", '"portal"'
         }
         courier {
@@ -47,7 +47,7 @@ android {
             resValue "string", "app_name", "مندوب ماكس بي"
             resValue "string", "title_activity_main", "مندوب ماكس بي"
             resValue "string", "custom_url_scheme", "online.maxp.courier"
-            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/courier-portal"]
+            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/courier-portal", customUrlScheme: "online.maxp.courier"]
             buildConfigField "String", "PORTAL_FLAVOR", '"courier"'
         }
         customer {
@@ -58,7 +58,7 @@ android {
             resValue "string", "app_name", "ماكس بي للشحن والعملاء"
             resValue "string", "title_activity_main", "ماكس بي للشحن والعملاء"
             resValue "string", "custom_url_scheme", "online.maxp.customer"
-            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/client-portal"]
+            manifestPlaceholders = [deepLinkHost: "maxp.online", deepLinkPrefix: "/client-portal", customUrlScheme: "online.maxp.customer"]
             buildConfigField "String", "PORTAL_FLAVOR", '"customer"'
         }
     }

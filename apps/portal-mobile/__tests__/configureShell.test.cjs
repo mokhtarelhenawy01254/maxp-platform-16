@@ -132,3 +132,20 @@ test('CLI configure and --verify work end-to-end', () => {
   const outVerify = execFileSync(process.execPath, [scriptPath, '--verify'], { encoding: 'utf8' });
   assert.match(outVerify, /\[verify:shell\] PASS/);
 });
+
+test('verifyShell catches missing splash or mipmap resources', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'maxp-portal-res-'));
+  try {
+    fs.mkdirSync(path.join(tempRoot, 'www'), { recursive: true });
+    for (const file of ['index.html', 'styles.css', 'app.js', 'icon.svg']) {
+      fs.writeFileSync(path.join(tempRoot, 'www', file), 'ok', 'utf8');
+    }
+    configureShell('parent', { rootDir: tempRoot });
+    const report = verifyShell({ rootDir: tempRoot });
+    assert.equal(report.ok, false);
+    assert.ok(report.errors.some((e) => e.includes('res/drawable/splash.png')));
+    assert.ok(report.errors.some((e) => e.includes('res/mipmap-xxxhdpi/ic_launcher_foreground.png')));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});

@@ -327,6 +327,27 @@ function verifyShell(options = {}) {
     if (!manifest.includes('${deepLinkHost}') || !manifest.includes('${deepLinkPrefix}')) {
       errors.push('AndroidManifest.xml missing ${deepLinkHost} / ${deepLinkPrefix} placeholders');
     }
+    if (!manifest.includes('${customUrlScheme}')) {
+      errors.push('AndroidManifest.xml missing ${customUrlScheme} placeholder');
+    }
+  }
+
+  // Validate required Android drawables & launcher mipmaps referenced by styles.xml & AndroidManifest.xml
+  const resDir = path.join(androidDir, 'app', 'src', 'main', 'res');
+  const requiredResFiles = [
+    path.join('drawable', 'splash.png'),
+    path.join('mipmap-anydpi-v26', 'ic_launcher.xml'),
+    path.join('mipmap-anydpi-v26', 'ic_launcher_round.xml'),
+    ...['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'].flatMap((density) => [
+      path.join(`mipmap-${density}`, 'ic_launcher.png'),
+      path.join(`mipmap-${density}`, 'ic_launcher_round.png'),
+      path.join(`mipmap-${density}`, 'ic_launcher_foreground.png'),
+    ]),
+  ];
+  for (const relRes of requiredResFiles) {
+    if (!fs.existsSync(path.join(resDir, relRes))) {
+      errors.push(`Missing required Android resource: res/${relRes.replace(/\\/g, '/')}`);
+    }
   }
 
   const mainActivityPath = path.join(
