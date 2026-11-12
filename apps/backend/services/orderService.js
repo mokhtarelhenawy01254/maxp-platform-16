@@ -350,8 +350,8 @@ class OrderService {
   }
 
   async validateConfiguredStatusTransition(companyId, currentStatus, nextStatus, options = {}) {
-    const { skipValidation = false } = options;
-    if (skipValidation) return;
+    const { skipValidation = false, isOverride = false, source = null } = options;
+    if (skipValidation || isOverride) return;
 
     const normalizedCurrentStatus = normalizeOrderStatusCode(currentStatus);
     const normalizedNextStatus = normalizeOrderStatusCode(nextStatus);
@@ -362,32 +362,67 @@ class OrderService {
     }
 
     const prisma = this.getPrisma();
-    const statusConfig = await prisma.orderStatusConfig.findFirst({
-      where: {
-        companyId,
-        code: normalizedCurrentStatus,
-        statusType: 'order',
-        isActive: true
-      }
-    });
-
-    if (!statusConfig?.allowedNextStatuses) {
-      return;
+    let statusConfig = null;
+    try {
+      statusConfig = await prisma.orderStatusConfig.findFirst({
+        where: {
+          companyId,
+          code: normalizedCurrentStatus,
+          statusType: 'order',
+          isActive: true
+        }
+      });
+    } catch (_err) {
+      statusConfig = null;
     }
 
     let allowed = null;
-    try {
-      allowed = JSON.parse(statusConfig.allowedNextStatuses);
-    } catch (error) {
-      allowed = null;
+    if (statusConfig?.allowedNextStatuses) {
+      try {
+        allowed = JSON.parse(statusConfig.allowedNextStatuses);
+      } catch (error) {
+        allowed = null;
+      }
     }
 
     const normalizedAllowedStatuses = Array.isArray(allowed)
       ? allowed.map((value) => normalizeOrderStatusCode(value))
       : [];
 
-    if (normalizedAllowedStatuses.length > 0 && !normalizedAllowedStatuses.includes(normalizedNextStatus)) {
-      throw createOrderStatusError(`لا يمكن الانتقال من الحالة ${normalizedCurrentStatus} إلى ${normalizedNextStatus}`);
+    if (normalizedAllowedStatuses.length > 0) {
+      if (!normalizedAllowedStatuses.includes(normalizedNextStatus)) {
+        throw createOrderStatusError(`لا يمكن الانتقال من الحالة ${normalizedCurrentStatus} إلى ${normalizedNextStatus}`);
+      }
+      return;
+    }
+
+    // 🛡️ Safe default when allowedNextStatuses is empty/null:
+    // Block reverse transitions for automated channels (e.g. WhatsApp bot)
+    const isAutomatedChannel = Boolean(
+      source && (
+        String(source).toLowerCase() === 'whatsapp_bot' ||
+        String(source).toLowerCase() === 'system_whatsapp' ||
+        String(source).toLowerCase().includes('bot') ||
+        String(source).toLowerCase().includes('webhook')
+      )
+    );
+
+    if (isAutomatedChannel) {
+      // PROCESSING -> CONFIRMED (Decision #6: do NOT block, only console.warn)
+      if (normalizedCurrentStatus === 'PROCESSING' && normalizedNextStatus === 'CONFIRMED') {
+        console.warn(`⚠️ [ORDER-SERVICE] Suspect transition from PROCESSING to CONFIRMED via automated source: ${source}`);
+        return;
+      }
+
+      const ADVANCED_STATUSES = new Set(['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED', 'REFUNDED']);
+      const REVERSE_TARGET_STATUSES = new Set(['CONFIRMED', 'PROCESSING', 'PENDING', 'CREATED', 'NEW', 'DRAFT', 'PENDING_CONFIRMATION', 'WOO_TAGHEZ']);
+
+      const isPostDispatchCancellation = ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED'].includes(normalizedCurrentStatus) && normalizedNextStatus === 'CANCELLED';
+
+      if ((ADVANCED_STATUSES.has(normalizedCurrentStatus) && REVERSE_TARGET_STATUSES.has(normalizedNextStatus)) || isPostDispatchCancellation) {
+        console.warn(`⚠️ [ORDER-SERVICE] Blocked automated reverse status transition from ${normalizedCurrentStatus} to ${normalizedNextStatus} (source: ${source})`);
+        throw createOrderStatusError(`لا يمكن الانتقال من الحالة ${normalizedCurrentStatus} إلى ${normalizedNextStatus}`, 409);
+      }
     }
   }
 
@@ -2164,7 +2199,7 @@ class OrderService {
   async updateOrderStatus(orderNumber, companyId, status, notes = null, userId = null, userName = null, existingOrderObject = null, isOverride = false, options = null) {
 
     try {
-      const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
+      const { skipCallAttemptGuard = false, skipTransitionValidation = false, source = null } = options || {};
       status = normalizeOrderStatusCode(status);
 
       // ⚡ FIX: If status is an ID (CUIDs are typically >20 chars), resolve it to its Code
@@ -2344,8 +2379,11 @@ class OrderService {
 
       // Enforce allowed transitions if configured
       try {
+        const effectiveSource = source || (userId === 'SYSTEM_WHATSAPP' ? 'whatsapp_bot' : null);
         await this.validateConfiguredStatusTransition(order.companyId, order.status, status, {
-          skipValidation: skipTransitionValidation || isOverride
+          skipValidation: skipTransitionValidation || isOverride,
+          source: effectiveSource,
+          isOverride
         });
       } catch (transitionError) {
         console.error('❌ [ORDER-SERVICE] Invalid status transition:', transitionError.message);
@@ -2897,7 +2935,7 @@ class OrderService {
   async updateGuestOrderStatus(orderNumber, companyId, status, notes = null, userId = null, userName = null, existingGuestOrderObject = null, options = null) {
 
     try {
-      const { skipCallAttemptGuard = false, skipTransitionValidation = false } = options || {};
+      const { skipCallAttemptGuard = false, skipTransitionValidation = false, source = null } = options || {};
       status = normalizeOrderStatusCode(status);
 
       const guestOrder = existingGuestOrderObject || await safeQuery(async () => {
@@ -2938,8 +2976,10 @@ class OrderService {
       if (!skipCallAttemptGuard) {
         this.assertCallAttemptRequirement(guestOrder, status);
       }
+      const effectiveSource = source || (userId === 'SYSTEM_WHATSAPP' ? 'whatsapp_bot' : null);
       await this.validateConfiguredStatusTransition(guestOrder.companyId, guestOrder.status, status, {
-        skipValidation: skipTransitionValidation
+        skipValidation: skipTransitionValidation,
+        source: effectiveSource
       });
 
       // 🛡️ PRODUCTION-FIX (stale-prep-hijack): نفس إصلاح الطلبات العادية — المراحل
