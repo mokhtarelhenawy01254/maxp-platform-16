@@ -145,7 +145,8 @@ export function CompanyTeamSection({
     [filteredAndSortedUsers],
   );
 
-  const displayUsersCount = unifiedUsersCount ?? company?._count?.users ?? companyUsers.length;
+  // مصدر واحد للعدّ: `_count.users` بيعدّ كل المستخدمين في القاعدة (بما فيهم حسابات النظام) فبيختلف عن الجدول.
+  const displayUsersCount = unifiedUsersCount ?? companyUsers.length;
   const hasMoreToLoad =
     usersHasMore !== undefined
       ? Boolean(usersHasMore)
