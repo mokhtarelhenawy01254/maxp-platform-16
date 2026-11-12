@@ -32,10 +32,21 @@
       "expected_behavior": "شرح Web Design + JavaScript + Python + portfolio + السعر 1000"
     },
     {
-      "name": "refuse_underaged_6",
+      "name": "age_6_accepted_band_800",
       "input": "عندي بنت 6 سنين ممكن تسجل؟",
-      "must_contain": ["7", "17"],
-      "expected_behavior": "رفض مهذب بسكريبت تحت السن: من 7 إلى 17 سنة — بدون وعد بحجز مستقبلي زائف"
+      "must_contain": ["800"],
+      "expected_behavior": "السن 6 مقبول — فئة 6-9 بسعر 800 مع شرح البرنامج"
+    },
+    {
+      "name": "age_5_5_demo_invite_not_refusal",
+      "input": "عندي طفل 5 سنين ونص ممكن ينضم؟",
+      "must_contain_any": ["Demo", "ديمو", "تجريبي"],
+      "expected_behavior": "لا رفض — دعوة للـ Demo Day لتقييم الطفل وبرنامج مخصص + طلب رقم ولي الأمر في نفس الرد"
+    },
+    {
+      "name": "cta_phone_capture_after_program",
+      "input": "ابني 10 سنين، البرنامج شكله حلو",
+      "expected_behavior": "شرح مسار 9-12 ثم طلب رقم موبايل ولي الأمر لتثبيت موعد Demo Day أو المتابعة"
     },
     {
       "name": "single_branch_online",
