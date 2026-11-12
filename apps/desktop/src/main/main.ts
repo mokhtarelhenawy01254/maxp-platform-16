@@ -2259,13 +2259,49 @@ const knownMyTasksStatuses = new Map<string, string>();
 const warnedDueSoonTaskIds = new Set<string>();
 const warnedOverdueTaskIds = new Set<string>();
 let taskPollerInitialized = false;
+let lastEscalationAttentionCount = 0;
 
-function resetTaskPollerState(): void {
+export function resetTaskPollerState(): void {
   knownAssignedTaskIds.clear();
   knownMyTasksStatuses.clear();
   warnedDueSoonTaskIds.clear();
   warnedOverdueTaskIds.clear();
   taskPollerInitialized = false;
+  lastEscalationAttentionCount = 0;
+}
+
+export async function syncEscalationTrayBadge(
+  client: { getEscalationAttention: () => Promise<{ count: number; top5?: any[] }> } = apiClient,
+  trayInstance: { setTitle?: (t: string) => void; setToolTip?: (t: string) => void } | null = tray,
+  notifyFn: (title: string, body: string, urgent?: boolean) => void = showNotification
+): Promise<number> {
+  try {
+    const attention = await client.getEscalationAttention();
+    const count = Math.max(0, Number(attention?.count ?? 0) || 0);
+    if (trayInstance) {
+      if (typeof trayInstance.setTitle === 'function') {
+        trayInstance.setTitle(count > 0 ? ` ${count}` : '');
+      }
+      if (typeof trayInstance.setToolTip === 'function') {
+        trayInstance.setToolTip(
+          count > 0
+            ? `MaxP Workspace — ${count} مهام متأخرة تحتاج تدخلك`
+            : 'MaxP Workspace'
+        );
+      }
+    }
+    if (count > 0 && count > lastEscalationAttentionCount) {
+      notifyFn(
+        '🚨 مهام متأخرة تحتاج تدخلك',
+        `يوجد ${count} مهام متأخرة تجاوزت موعد التسليم وتنتظر متابعتك.`,
+        true
+      );
+    }
+    lastEscalationAttentionCount = count;
+    return count;
+  } catch {
+    return lastEscalationAttentionCount;
+  }
 }
 
 async function pollTaskNotifications(): Promise<void> {
@@ -2446,6 +2482,8 @@ async function pollTaskNotifications(): Promise<void> {
       );
       hasChanges = true;
     }
+
+    await syncEscalationTrayBadge();
 
     // Broadcast refresh to renderer if new tasks or status updates arrived
     if (taskPollerInitialized && hasChanges) {

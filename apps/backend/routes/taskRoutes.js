@@ -3,6 +3,7 @@ const router = express.Router();
 const taskController = require("../controller/taskController");
 const businessGoalController = require("../controller/businessGoalController");
 const taskIntegrationController = require("../controller/taskIntegrationController");
+const taskEscalationController = require("../controller/taskEscalationController");
 const verifyToken = require("../utils/verifyToken");
 const { cacheMiddleware } = require("../middleware/performanceOptimization");
 
@@ -188,6 +189,16 @@ router.get("/kanban", taskController.getKanbanTasks);
 router.get("/running-timer", taskController.getRunningTimer);
 router.get("/company-active-timers", taskController.getCompanyActiveTimers);
 router.get("/notifications", taskController.getNotifications);
+// ==================== Escalation Routes (MUST be before /:id) ====================
+router.get("/escalation/settings", taskEscalationController.getSettings);
+router.put(
+  "/escalation/settings",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskEscalationController.updateSettings,
+);
+router.get("/escalation/attention", taskEscalationController.getAttentionTasks);
+router.post("/:id/snooze", taskEscalationController.snoozeTask);
+
 router.post("/", taskController.createTask);
 router.get("/:id", taskController.getTaskById);
 router.get("/:id/details", taskController.getTaskDetails);

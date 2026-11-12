@@ -358,6 +358,30 @@ class MonitorApiClient {
     }
   }
 
+  async getEscalationAttention(): Promise<{
+    count: number;
+    top5: Array<{ id: string; title: string; dueDate?: string | null; escalationLevel?: number }>;
+  }> {
+    try {
+      const base = this.serverUrl;
+      const headers = this.getAuthHeaders();
+      const res = await axios.get(`${base}/api/v1/tasks/escalation/attention`, {
+        headers,
+        timeout: 10_000,
+      });
+      const payload = res.data?.data ?? res.data ?? {};
+      const count = Number(payload.count ?? 0);
+      const top5 = Array.isArray(payload.top5) ? payload.top5 : [];
+      return {
+        count: Number.isFinite(count) ? count : 0,
+        top5,
+      };
+    } catch (err: any) {
+      console.warn('[API] getEscalationAttention failed:', err?.message);
+      throw err;
+    }
+  }
+
   async getCompanyUsers(): Promise<any[]> {
     try {
       const base = this.serverUrl;

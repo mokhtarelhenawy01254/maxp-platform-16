@@ -1,18 +1,49 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, PackageX, ShoppingCart } from "lucide-react";
+import { AlertTriangle, Clock, PackageX, ShoppingCart } from "lucide-react";
 import type { DashboardData } from "../../pages/dashboard/types";
+import { apiClient } from "../../services/api";
+
+export type EscalationAttentionData = {
+  count: number;
+  top5?: Array<{ id: string; title: string; dueDate?: string | null; escalationLevel?: number }>;
+};
 
 type Props = {
   dashboard: DashboardData | undefined;
+  escalationAttention?: EscalationAttentionData;
 };
 
-export function DashboardAlertsHub({ dashboard }: Props) {
+export function DashboardAlertsHub({ dashboard, escalationAttention }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const inventory = dashboard?.inventory;
   const orderHealth = dashboard?.orderHealth;
+  const [fetchedAttention, setFetchedAttention] = useState<EscalationAttentionData | null>(null);
+
+  useEffect(() => {
+    if (escalationAttention !== undefined) return;
+    let active = true;
+    apiClient
+      .get("/tasks/escalation/attention")
+      .then((res) => {
+        if (!active) return;
+        const payload = res.data?.data ?? res.data ?? {};
+        const count = Number(payload.count ?? 0);
+        const top5 = Array.isArray(payload.top5) ? payload.top5 : [];
+        setFetchedAttention({ count: Number.isFinite(count) ? count : 0, top5 });
+      })
+      .catch(() => {
+        // Silent fallback when unavailable
+      });
+    return () => {
+      active = false;
+    };
+  }, [escalationAttention]);
+
+  const effectiveAttention = escalationAttention ?? fetchedAttention;
+  const escalationCount = Number(effectiveAttention?.count ?? 0);
 
   const alerts: Array<{
     id: string;
@@ -20,7 +51,19 @@ export function DashboardAlertsHub({ dashboard }: Props) {
     className: string;
     text: string;
     onClick?: () => void;
+    testId?: string;
   }> = [];
+
+  if (escalationCount > 0) {
+    alerts.push({
+      id: "tasks-escalation-attention",
+      testId: "escalation-attention-banner",
+      icon: Clock,
+      className: "bg-destructive/10 text-destructive border border-destructive/25 hover:bg-destructive/20",
+      text: `مهام تحتاج تدخلك (${escalationCount})`,
+      onClick: () => navigate("/tasks?filter=overdue"),
+    });
+  }
 
   if (inventory?.outOfStockCount && inventory.outOfStockCount > 0) {
     alerts.push({
@@ -64,6 +107,7 @@ export function DashboardAlertsHub({ dashboard }: Props) {
           <button
             key={alert.id}
             type="button"
+            data-testid={alert.testId}
             onClick={alert.onClick}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${alert.className}`}
           >

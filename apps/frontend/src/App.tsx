@@ -614,6 +614,9 @@ const ScheduledOrderSettings = React.lazy(
 const StatusAlertsSettings = React.lazy(
   () => import("./pages/settings/StatusAlertsSettings"),
 );
+const TaskEscalationSettings = React.lazy(
+  () => import("./pages/settings/TaskEscalationSettings"),
+);
 
 // Procurement/Purchasing
 const Suppliers = React.lazy(
@@ -7279,6 +7282,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <StatusAlertsSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/tasks/escalation"
+                  element={
+                    <Layout>
+                      <TaskEscalationSettings />
                     </Layout>
                   }
                 />

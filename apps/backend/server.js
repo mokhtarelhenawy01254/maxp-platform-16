@@ -1699,6 +1699,14 @@ try {
   );
 }
 
+// Start Task Overdue Escalation Cron Service (daily 09:00 Africa/Cairo)
+try {
+  const { startTaskEscalationScheduler } = require("./cron/taskEscalationCron");
+  startTaskEscalationScheduler();
+} catch (error) {
+  console.error("❌ [TASK-ESCALATION-CRON] Failed to start task escalation service:", error);
+}
+
 // Start Recurring Tasks Cron Service
 try {
   const { startRecurringTaskScheduler } = require("./cron/recurringTaskCron");
