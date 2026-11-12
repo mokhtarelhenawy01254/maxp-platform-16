@@ -29,7 +29,7 @@ import type {
   EducationSubject,
   EducationPackage,
 } from "./types";
-import { SESSION_STATUS } from "./types";
+import { getSessionStatus } from "./types";
 
 export interface DrawerTarget {
   type: "student" | "teacher" | "session" | "enrollment";
@@ -226,7 +226,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-medium"
                     >
                       <MessageCircle className="w-3 h-3 text-emerald-600" />
-                      واتساب
+                      {isEn ? "WhatsApp" : "واتساب"}
                     </a>
                   )}
                 </>
@@ -328,14 +328,14 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="font-semibold text-xs text-foreground">
-                          {e.package?.name || "باقة دراسية"}
+                          {e.package?.name || (isEn ? "Package" : "باقة دراسية")}
                         </div>
                         <div className="text-[11px] text-muted-foreground">
-                          {e.package?.subject?.name || "مادة دراسية"}
+                          {e.package?.subject?.name || (isEn ? "Subject" : "مادة دراسية")}
                         </div>
                       </div>
                       <span className="font-mono text-xs font-bold tabular-nums text-primary">
-                        {e.remainingHours} / {e.totalHours} س
+                        {e.remainingHours} / {e.totalHours} {isEn ? "hrs" : "س"}
                       </span>
                     </div>
 
@@ -445,17 +445,17 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                         onClick={() =>
                           onSelectDrawer?.({ type: "session", id: s.id })
                         }
-                        className="text-right hover:text-primary font-medium text-foreground truncate"
+                        className={`${isEn ? "text-left" : "text-right"} hover:text-primary font-medium text-foreground truncate`}
                       >
-                        {s.subject?.name || "مادة دراسية"}
+                        {s.subject?.name || (isEn ? "Subject" : "مادة دراسية")}
                         {s.topic ? ` - ${s.topic}` : ""}
                       </button>
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${
-                          SESSION_STATUS[s.status]?.color || ""
+                          getSessionStatus(s.status, isEn).color
                         }`}
                       >
-                        {SESSION_STATUS[s.status]?.label || s.status}
+                        {getSessionStatus(s.status, isEn).label}
                       </span>
                     </div>
 
@@ -545,7 +545,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
             ? `${st.firstName} ${st.lastName || ""}`
             : e.student
             ? `${e.student.firstName} ${e.student.lastName || ""}`
-            : "طالب";
+            : (isEn ? "Student" : "طالب");
           uniqueStudentsMap.set(e.studentId, { id: e.studentId, name: studentName });
         }
       });
@@ -629,7 +629,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-medium"
                     >
                       <MessageCircle className="w-3 h-3 text-emerald-600" />
-                      واتساب
+                      {isEn ? "WhatsApp" : "واتساب"}
                     </a>
                   )}
                 </>
@@ -693,7 +693,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                     className="p-2.5 rounded-lg border border-border/70 bg-muted/20 flex items-center justify-between text-xs"
                   >
                     <span className="font-medium text-foreground">
-                      {sr.subject?.name || "مادة"}
+                      {sr.subject?.name || (isEn ? "Subject" : "مادة")}
                     </span>
                     <span className="font-mono tabular-nums font-bold text-primary">
                       {sr.hourlyRate} {isEn ? "EGP/hr" : "ج.م/س"}
@@ -810,10 +810,10 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
             <div className="flex items-center justify-between">
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                  SESSION_STATUS[session.status]?.color || ""
+                  getSessionStatus(session.status, isEn).color
                 }`}
               >
-                {SESSION_STATUS[session.status]?.label || session.status}
+                {getSessionStatus(session.status, isEn).label}
               </span>
               <span className="text-xs font-mono text-muted-foreground">
                 {session.actualDuration || session.plannedDuration}{" "}
@@ -823,7 +823,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
 
             <div className="space-y-1">
               <h3 className="font-bold text-base text-foreground">
-                {session.subject?.name || "مادة دراسية"}
+                {session.subject?.name || (isEn ? "Subject" : "مادة دراسية")}
               </h3>
               {session.topic && (
                 <p className="text-xs text-muted-foreground">{session.topic}</p>
@@ -975,7 +975,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           <div className="bg-muted/40 border border-border/70 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground">
-                {pkg?.name || "باقة دراسية"}
+                {pkg?.name || (isEn ? "Package" : "باقة دراسية")}
               </span>
               <span
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
@@ -995,7 +995,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
             </div>
 
             <div className="text-xs text-muted-foreground">
-              {pkg?.subject?.name || "المادة الدراسية"}
+              {pkg?.subject?.name || (isEn ? "Subject" : "المادة الدراسية")}
             </div>
 
             {/* Hours Progress */}
@@ -1061,7 +1061,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                   }
                   className="font-bold text-foreground hover:text-primary hover:underline"
                 >
-                  {teacher?.name || "مهندس معتمد"}
+                  {teacher?.name || (isEn ? "Certified Instructor" : "مهندس معتمد")}
                 </button>
               ) : (
                 <span className="text-amber-600 dark:text-amber-400 font-semibold">

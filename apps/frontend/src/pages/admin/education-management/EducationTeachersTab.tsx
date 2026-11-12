@@ -27,6 +27,7 @@ import { TeacherModal } from "./TeacherModal";
 export interface EducationTeachersTabProps {
   teachers: EducationTeacher[];
   subjects: EducationSubject[];
+  enableSubjects?: boolean;
   teacherSearch: string;
   setTeacherSearch: (q: string) => void;
   teacherModal: Partial<EducationTeacher> | null | undefined;
@@ -39,6 +40,7 @@ export interface EducationTeachersTabProps {
 export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
   teachers = [],
   subjects = [],
+  enableSubjects = false,
   teacherSearch,
   setTeacherSearch,
   teacherModal,
@@ -90,7 +92,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
   ).length;
 
   const getInitials = (name: string) => {
-    if (!name) return "م";
+    if (!name) return isEn ? "I" : "م";
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -203,8 +205,8 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
               <button
                 type="button"
                 onClick={() => setTeacherSearch("")}
-                className="absolute left-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-                title="مسح البحث"
+                className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-2.5 text-muted-foreground hover:text-foreground`}
+                title={isEn ? "Clear search" : "مسح البحث"}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -251,7 +253,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
             </div>
 
             {/* Subject Filter Dropdown */}
-            {subjects && subjects.length > 0 && (
+            {enableSubjects && subjects && subjects.length > 0 && (
               <div className="relative">
                 <select
                   value={subjectFilter}
@@ -333,7 +335,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                       className={`absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full border-2 border-card ${
                         t.isActive ? "bg-emerald-500" : "bg-rose-500"
                       }`}
-                      title={t.isActive ? "نشط" : "معطل"}
+                      title={t.isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Inactive" : "معطل")}
                     />
                   </div>
 
@@ -399,27 +401,29 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                 </div>
 
                 {/* Section 2: Subjects & Hourly Rates */}
-                <div className="lg:w-1/3 flex flex-wrap items-center gap-1.5 min-w-0">
-                  {hasRates ? (
-                    t.subjectRates!.map((sr) => (
-                      <span
-                        key={sr.id}
-                        className="inline-flex items-center gap-1 text-[11px] bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums"
-                      >
-                        <BookOpen className="w-2.5 h-2.5 text-blue-500 shrink-0" />
-                        <span className="font-sans font-medium">
-                          {sr.subject?.name || (isEn ? "Subject" : "مادة")}:
+                {enableSubjects && (
+                  <div className="lg:w-1/3 flex flex-wrap items-center gap-1.5 min-w-0">
+                    {hasRates ? (
+                      t.subjectRates!.map((sr) => (
+                        <span
+                          key={sr.id}
+                          className="inline-flex items-center gap-1 text-[11px] bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums"
+                        >
+                          <BookOpen className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                          <span className="font-sans font-medium">
+                            {sr.subject?.name || (isEn ? "Subject" : "مادة")}:
+                          </span>
+                          <span>{sr.hourlyRate} {isEn ? "EGP/h" : "ج.م/س"}</span>
                         </span>
-                        <span>{sr.hourlyRate} {isEn ? "EGP/h" : "ج.م/س"}</span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground/70 italic flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-muted-foreground/50" />
+                        {isEn ? "No rates specified" : "لا توجد أسعار محددة"}
                       </span>
-                    ))
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground/70 italic flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-muted-foreground/50" />
-                      {isEn ? "No rates specified" : "لا توجد أسعار محددة"}
-                    </span>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Section 3: Compact Action Buttons */}
                 <div className="flex items-center gap-1.5 shrink-0 self-end lg:self-center border-t lg:border-t-0 border-border/50 pt-2 lg:pt-0 w-full lg:w-auto justify-end">
@@ -543,6 +547,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
         <TeacherModal
           teacher={teacherModal}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           onClose={() => setTeacherModal(undefined)}
           onSave={handleSaveTeacher}
         />

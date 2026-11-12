@@ -454,11 +454,11 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                     >
                       {e.student
                         ? `${e.student.firstName} ${e.student.lastName || ""}`
-                        : "طالب"}
+                        : (isEn ? "Student" : "طالب")}
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-[11px]">
-                        {e.remainingHours} س
+                        {e.remainingHours} {isEn ? "hrs" : "س"}
                       </span>
                       <button
                         type="button"
@@ -503,7 +503,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                     <span className="font-medium text-foreground truncate">
                       {e.student
                         ? `${e.student.firstName} ${e.student.lastName || ""}`
-                        : "طالب"}
+                        : (isEn ? "Student" : "طالب")}
                     </span>
                     <button
                       type="button"
@@ -682,7 +682,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                         <span className="text-muted-foreground text-xs">•</span>
 
                         <span className="text-xs font-medium text-foreground truncate">
-                          {s.subject?.name || "مادة دراسية"}
+                          {s.subject?.name || (isEn ? "Subject" : "مادة دراسية")}
                         </span>
                       </div>
 
@@ -725,7 +725,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                             {s.teacher.name}
                           </button>
                         ) : (
-                          <span>مهندس غير محدد</span>
+                          <span>{isEn ? "Unassigned Instructor" : "مهندس غير محدد"}</span>
                         )}
                       </span>
                     </div>
@@ -897,7 +897,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                             key={sr.id}
                             className="px-2 py-0.5 rounded-md bg-background border border-border/70 text-foreground text-[10px]"
                           >
-                            {sr.subject?.name} ({sr.hourlyRate} ج.م/س)
+                            {sr.subject?.name} ({sr.hourlyRate} {isEn ? "EGP/hr" : "ج.م/س"})
                           </span>
                         ))
                       ) : (
@@ -1078,7 +1078,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                       {isEn ? "Remaining Hours" : "الرصيد المتبقي"}
                     </span>
                     <span className="font-mono font-bold text-primary tabular-nums">
-                      {totalRemaining} / {totalHours} س
+                      {totalRemaining} / {totalHours} {isEn ? "hrs" : "س"}
                     </span>
                   </div>
                   <div className="w-full bg-muted/80 h-1.5 rounded-full overflow-hidden">
@@ -1188,6 +1188,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           key={studentModal?.id || "new"}
           student={studentModal}
           subjects={subjects || []}
+          enableSubjects={enableSubjects}
           customers={customers}
           customerResults={customerResults}
           onCustomerSearch={searchCustomers}
@@ -1219,6 +1220,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           packages={packages}
           teachers={teachers}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           onClose={() => setEnrollmentModal?.(null)}
           onSave={async (d) => {
             if (handleSaveEnrollment) await handleSaveEnrollment(d);
@@ -1236,6 +1238,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
         <TeacherModal
           teacher={teacherModal}
           subjects={subjects}
+          enableSubjects={enableSubjects}
           onClose={() => setTeacherModal?.(null)}
           onSave={async (d) => {
             if (handleSaveTeacher) await handleSaveTeacher(d);

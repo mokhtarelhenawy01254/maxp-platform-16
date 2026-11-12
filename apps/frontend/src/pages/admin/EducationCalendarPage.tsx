@@ -43,9 +43,6 @@ const getDays = (isEn: boolean) => isEn
   ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
   : ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-const MONTHS_AR = getMonths(false);
-const DAYS_AR = getDays(false);
-
 const getStatusConfig = (isEn: boolean): Record<string, { label: string; badge: string; dot: string }> => ({
   SCHEDULED: {
     label: isEn ? "Scheduled" : "مجدولة",
@@ -265,7 +262,7 @@ const EducationCalendarPage: React.FC = () => {
       });
       const data = await res.json();
       if (!data.success) {
-        alert(data.error || data.message || "فشل تأكيد الحصة");
+        alert(data.error || data.message || (isEn ? "Failed to confirm session" : "فشل تأكيد الحصة"));
         return;
       }
       await fetchSessionsData();
@@ -273,7 +270,7 @@ const EducationCalendarPage: React.FC = () => {
         setSelectedSession((prev: EducationSession | null) => (prev ? { ...prev, status: "CONFIRMED" } : null));
       }
     } catch (e: any) {
-      alert(e.message || "حدث خطأ أثناء التأكيد");
+      alert(e.message || (isEn ? "An error occurred while confirming" : "حدث خطأ أثناء التأكيد"));
     } finally {
       setActionLoading(null);
     }
@@ -289,7 +286,7 @@ const EducationCalendarPage: React.FC = () => {
       });
       const data = await res.json();
       if (!data.success) {
-        alert(data.error || data.message || "فشل إلغاء الحصة");
+        alert(data.error || data.message || (isEn ? "Failed to cancel session" : "فشل إلغاء الحصة"));
         return;
       }
       await fetchSessionsData();
@@ -297,7 +294,7 @@ const EducationCalendarPage: React.FC = () => {
         setSelectedSession((prev: EducationSession | null) => (prev ? { ...prev, status: "CANCELLED" } : null));
       }
     } catch (e: any) {
-      alert(e.message || "حدث خطأ أثناء الإلغاء");
+      alert(e.message || (isEn ? "An error occurred while cancelling" : "حدث خطأ أثناء الإلغاء"));
     } finally {
       setActionLoading(null);
     }
@@ -540,8 +537,8 @@ const EducationCalendarPage: React.FC = () => {
 
           <span className="text-xs font-bold text-foreground px-2 font-mono text-center">
             {viewMode === "week"
-              ? `${weekDays[0].dayNumber} ${MONTHS_AR[weekDays[0].date.getMonth()]} - ${weekDays[6].dayNumber} ${MONTHS_AR[weekDays[6].date.getMonth()]} ${currentYear}`
-              : `${MONTHS_AR[currentMonth]} ${currentYear}`}
+              ? `${weekDays[0].dayNumber} ${months[weekDays[0].date.getMonth()]} - ${weekDays[6].dayNumber} ${months[weekDays[6].date.getMonth()]} ${currentYear}`
+              : `${months[currentMonth]} ${currentYear}`}
           </span>
 
           <button
@@ -694,7 +691,7 @@ const EducationCalendarPage: React.FC = () => {
             <div className="min-w-[720px]">
               {/* Days Header */}
               <div className="grid grid-cols-7 border-b border-border/80 bg-muted/40">
-                {DAYS_AR.map((d) => (
+                {days.map((d) => (
                   <div
                     key={d}
                     className="py-2.5 text-center text-xs font-semibold text-muted-foreground border-l border-border/60 last:border-l-0"
@@ -739,7 +736,7 @@ const EducationCalendarPage: React.FC = () => {
                             onClick={() =>
                               setDayOverviewDate({
                                 dateStr,
-                                dayName: DAYS_AR[dayOfWeek],
+                                dayName: days[dayOfWeek],
                                 dayNumber: day,
                               })
                             }
@@ -797,7 +794,7 @@ const EducationCalendarPage: React.FC = () => {
                             onClick={() =>
                               setDayOverviewDate({
                                 dateStr,
-                                dayName: DAYS_AR[dayOfWeek],
+                                dayName: days[dayOfWeek],
                                 dayNumber: day,
                               })
                             }
@@ -1135,7 +1132,7 @@ const EducationCalendarPage: React.FC = () => {
                               }}
                               className="px-2 py-0.5 bg-muted text-foreground rounded text-[11px] font-medium hover:bg-muted/80"
                             >
-                              إجراءات
+                              {isEn ? "Actions" : "إجراءات"}
                             </button>
                           </div>
                         </div>
@@ -1164,7 +1161,7 @@ const EducationCalendarPage: React.FC = () => {
                 onClick={() => setDayOverviewDate(null)}
                 className="px-3 py-1.5 bg-muted text-foreground text-xs font-medium rounded-lg hover:bg-muted/80"
               >
-                إغلاق
+                {isEn ? "Close" : "إغلاق"}
               </button>
             </div>
           </div>
@@ -1327,7 +1324,7 @@ const EducationCalendarPage: React.FC = () => {
                     ) : (
                       <X className="w-3.5 h-3.5" />
                     )}
-                    إلغاء
+                    {isEn ? "Cancel" : "إلغاء"}
                   </button>
                 )}
               </div>
@@ -1337,7 +1334,7 @@ const EducationCalendarPage: React.FC = () => {
                 onClick={() => setSelectedSession(null)}
                 className="px-3 py-1.5 bg-muted text-foreground text-xs font-medium rounded-lg hover:bg-muted/80"
               >
-                إغلاق
+                {isEn ? "Close" : "إغلاق"}
               </button>
             </div>
           </div>

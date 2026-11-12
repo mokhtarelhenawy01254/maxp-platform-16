@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   History,
   Search,
@@ -33,83 +34,90 @@ import type { EducationLogItem, EducationLogStats } from "./types";
 import { fetchEducationLogsApi, fetchEducationLogsStatsApi, getEducationLogsExportUrl } from "./api";
 
 // Severity Badge Configuration
-const SEVERITY_CONFIG: Record<string, { label: string; color: string }> = {
+const getSeverityConfig = (isEn: boolean): Record<string, { label: string; color: string }> => ({
   LOW: {
-    label: "عادي",
+    label: isEn ? "Low" : "عادي",
     color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },
   MEDIUM: {
-    label: "متوسط",
+    label: isEn ? "Medium" : "متوسط",
     color: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   },
   HIGH: {
-    label: "هام",
+    label: isEn ? "High" : "هام",
     color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   },
   CRITICAL: {
-    label: "حرج",
+    label: isEn ? "Critical" : "حرج",
     color: "bg-red-500/10 text-red-500 border-red-500/20",
   },
-};
+});
 
 // Entity Type Icons & Labels
-const ENTITY_CONFIG: Record<
+const getEntityConfig = (
+  isEn: boolean
+): Record<
   string,
   { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
-> = {
+> => ({
   STUDENT: {
-    label: "الطلاب",
+    label: isEn ? "Students" : "الطلاب",
     icon: User,
     color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
   },
   TEACHER: {
-    label: "المهندسين",
+    label: isEn ? "Instructors" : "المهندسين",
     icon: GraduationCap,
     color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
   },
   SESSION: {
-    label: "الحصص",
+    label: isEn ? "Sessions" : "الحصص",
     icon: Clock,
     color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
   },
   ENROLLMENT: {
-    label: "التسجيلات",
+    label: isEn ? "Enrollments" : "التسجيلات",
     icon: Layers,
     color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
   },
   PACKAGE: {
-    label: "الباقات",
+    label: isEn ? "Packages" : "الباقات",
     icon: Gift,
     color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
   },
   SUBJECT: {
-    label: "المواد الدراسية",
+    label: isEn ? "Subjects" : "المواد الدراسية",
     icon: BookOpen,
     color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
   },
   PAYMENT: {
-    label: "المرتبات والمستحقات",
+    label: isEn ? "Payroll & Dues" : "المرتبات والمستحقات",
     icon: DollarSign,
     color: "text-teal-500 bg-teal-500/10 border-teal-500/20",
   },
   NOTIFICATION: {
-    label: "الإشعارات",
+    label: isEn ? "Notifications" : "الإشعارات",
     icon: Bell,
     color: "text-pink-500 bg-pink-500/10 border-pink-500/20",
   },
   PORTAL: {
-    label: "البوابات وتسجيل الدخول",
+    label: isEn ? "Portals & Login" : "البوابات وتسجيل الدخول",
     icon: Calendar,
     color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
   },
   EDUCATION: {
-    label: "النظام التعليمي",
+    label: isEn ? "Education System" : "النظام التعليمي",
     icon: History,
     color: "text-primary bg-primary/10 border-primary/20",
   },
-};
+});
 
 export const EducationLogsTab: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+  const SEVERITY_CONFIG = useMemo(() => getSeverityConfig(isEn), [isEn]);
+  const ENTITY_CONFIG = useMemo(() => getEntityConfig(isEn), [isEn]);
+
   const [logs, setLogs] = useState<EducationLogItem[]>([]);
   const [stats, setStats] = useState<EducationLogStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,13 +194,13 @@ export const EducationLogsTab: React.FC = () => {
         setTotalPages(result.pagination?.totalPages || 1);
         setTotalCount(result.pagination?.total || 0);
       } catch (err: any) {
-        setError(err.message || "حدث خطأ أثناء تحميل السجلات");
+        setError(err.message || (isEn ? "Error loading logs" : "حدث خطأ أثناء تحميل السجلات"));
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [page, limit, search, selectedEntity, selectedAction, selectedSeverity, startDate, endDate]
+    [page, limit, search, selectedEntity, selectedAction, selectedSeverity, startDate, endDate, isEn]
   );
 
   useEffect(() => {
@@ -221,25 +229,22 @@ export const EducationLogsTab: React.FC = () => {
     window.open(exportUrl, "_blank");
   };
 
-  const formatDateTime = (dateStr: string) => {
-    try {
-      const d = new Date(dateStr);
-      return {
-        date: d.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" }),
-        time: d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        relative: getRelativeTimeArabic(d),
-      };
-    } catch {
-      return { date: dateStr, time: "", relative: "" };
-    }
-  };
-
-  const getRelativeTimeArabic = (date: Date) => {
+  const getRelativeTime = (date: Date) => {
     const diffMs = Date.now() - date.getTime();
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHr = Math.floor(diffMin / 60);
     const diffDays = Math.floor(diffHr / 24);
+
+    if (isEn) {
+      if (diffSec < 60) return "Just now";
+      if (diffMin === 1) return "1 min ago";
+      if (diffMin < 60) return `${diffMin} mins ago`;
+      if (diffHr === 1) return "1 hr ago";
+      if (diffHr < 24) return `${diffHr} hrs ago`;
+      if (diffDays === 1) return "Yesterday";
+      return `${diffDays} days ago`;
+    }
 
     if (diffSec < 60) return "الآن";
     if (diffMin === 1) return "منذ دقيقة";
@@ -255,8 +260,21 @@ export const EducationLogsTab: React.FC = () => {
     return `منذ ${diffDays} يوم`;
   };
 
+  const formatDateTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return {
+        date: d.toLocaleDateString(isEn ? "en-US" : "ar-EG", { year: "numeric", month: "short", day: "numeric" }),
+        time: d.toLocaleTimeString(isEn ? "en-US" : "ar-EG", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        relative: getRelativeTime(d),
+      };
+    } catch {
+      return { date: dateStr, time: "", relative: "" };
+    }
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6" dir={isEn ? "ltr" : "rtl"}>
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-card border border-border">
         <div className="space-y-1">
@@ -265,11 +283,11 @@ export const EducationLogsTab: React.FC = () => {
               <History className="w-5 h-5" />
             </span>
             <h2 className="text-base sm:text-lg font-bold text-foreground">
-              سجلات النظام التعليمي (Activity & Audit Trail)
+              {t("education.logsTab.title", isEn ? "Education System Activity & Audit Trail" : "سجلات النظام التعليمي (Activity & Audit Trail)")}
             </h2>
           </div>
           <p className="text-xs text-muted-foreground">
-            تتبع وتسجيل فوري وشامل لجميع العمليات، التعديلات، الحصص، المدفوعات، والإشعارات
+            {t("education.logsTab.subtitle", isEn ? "Real-time audit log tracking all operations, sessions, payments, and notifications" : "تتبع وتسجيل فوري وشامل لجميع العمليات، التعديلات، الحصص، المدفوعات، والإشعارات")}
           </p>
         </div>
 
@@ -280,7 +298,7 @@ export const EducationLogsTab: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors shadow-xs"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>تصدير كـ CSV</span>
+            <span>{isEn ? "Export CSV" : "تصدير كـ CSV"}</span>
           </button>
           <button
             type="button"
@@ -292,7 +310,7 @@ export const EducationLogsTab: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors shadow-xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
-            <span>تحديث</span>
+            <span>{isEn ? "Refresh" : "تحديث"}</span>
           </button>
         </div>
       </div>
@@ -301,68 +319,68 @@ export const EducationLogsTab: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>إجمالي السجلات</span>
+            <span>{isEn ? "Total Logs" : "إجمالي السجلات"}</span>
             <History className="w-4 h-4 text-primary" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
             {stats?.totalLogs ?? totalCount}
           </div>
-          <div className="text-[11px] text-muted-foreground">كل العمليات</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "All operations" : "كل العمليات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>عمليات اليوم</span>
+            <span>{isEn ? "Today's Activity" : "عمليات اليوم"}</span>
             <Clock className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-emerald-500 tabular-nums">
             {stats?.todayLogs ?? 0}
           </div>
-          <div className="text-[11px] text-muted-foreground">خلال 24 ساعة</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "Within 24 hours" : "خلال 24 ساعة"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>سجلات الحصص</span>
+            <span>{isEn ? "Session Logs" : "سجلات الحصص"}</span>
             <Clock className="w-4 h-4 text-blue-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-blue-500 tabular-nums">
             {stats?.targetTypeCounts?.SESSION ?? 0}
           </div>
-          <div className="text-[11px] text-muted-foreground">جدولة وتأكيد وإلغاء</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "Scheduling & status" : "جدولة وتأكيد وإلغاء"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>الطلاب والاشتراكات</span>
+            <span>{isEn ? "Students & Subscriptions" : "الطلاب والاشتراكات"}</span>
             <Users className="w-4 h-4 text-indigo-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-indigo-500 tabular-nums">
             {(stats?.targetTypeCounts?.STUDENT ?? 0) + (stats?.targetTypeCounts?.ENROLLMENT ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">تسجيل واشتراكات</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "Registrations & plans" : "تسجيل واشتراكات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>المهندسين والمرتبات</span>
+            <span>{isEn ? "Instructors & Payroll" : "المهندسين والمرتبات"}</span>
             <GraduationCap className="w-4 h-4 text-purple-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-purple-500 tabular-nums">
             {(stats?.targetTypeCounts?.TEACHER ?? 0) + (stats?.targetTypeCounts?.PAYMENT ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">كادر ومستحقات</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "Staff & payouts" : "كادر ومستحقات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>الإشعارات والفانل</span>
+            <span>{isEn ? "Notifications & Funnel" : "الإشعارات والفانل"}</span>
             <Bell className="w-4 h-4 text-pink-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-pink-500 tabular-nums">
             {(stats?.targetTypeCounts?.NOTIFICATION ?? 0) + (stats?.targetTypeCounts?.FUNNEL ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">تنبيهات ورسائل</div>
+          <div className="text-[11px] text-muted-foreground">{isEn ? "Alerts & messages" : "تنبيهات ورسائل"}</div>
         </div>
       </div>
 
@@ -380,7 +398,7 @@ export const EducationLogsTab: React.FC = () => {
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <span>كل الأقسام</span>
+          <span>{isEn ? "All Sections" : "كل الأقسام"}</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/20 font-mono">
             {stats?.totalLogs ?? totalCount}
           </span>
@@ -421,7 +439,7 @@ export const EducationLogsTab: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
           {/* Search Input */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className={`w-4 h-4 text-muted-foreground absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 pointer-events-none`} />
             <input
               type="text"
               value={search}
@@ -429,14 +447,14 @@ export const EducationLogsTab: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="ابحث في السجلات (اسم الطالب، المادة، المهندس، الوصف، المنفذ...)"
-              className="w-full pl-3 pr-9 py-2 rounded-lg text-xs bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder={isEn ? "Search logs (student, subject, instructor, description, actor...)" : "ابحث في السجلات (اسم الطالب، المادة، المهندس، الوصف، المنفذ...)"}
+              className={`w-full py-2 rounded-lg text-xs bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary ${isEn ? "pl-9 pr-3" : "pl-3 pr-9"}`}
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className={`absolute ${isEn ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground`}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -446,10 +464,10 @@ export const EducationLogsTab: React.FC = () => {
           {/* Date Presets */}
           <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60 shrink-0">
             {[
-              { id: "ALL", label: "كل الأوقات" },
-              { id: "TODAY", label: "اليوم" },
-              { id: "WEEK", label: "7 أيام" },
-              { id: "MONTH", label: "30 يوم" },
+              { id: "ALL", label: isEn ? "All Time" : "كل الأوقات" },
+              { id: "TODAY", label: isEn ? "Today" : "اليوم" },
+              { id: "WEEK", label: isEn ? "7 Days" : "7 أيام" },
+              { id: "MONTH", label: isEn ? "30 Days" : "30 يوم" },
             ].map((p) => (
               <button
                 key={p.id}
@@ -478,11 +496,11 @@ export const EducationLogsTab: React.FC = () => {
             }}
             className="px-2.5 py-2 rounded-lg text-xs bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
           >
-            <option value="ALL">كل مستويات الأهمية</option>
-            <option value="LOW">عادي</option>
-            <option value="MEDIUM">متوسط</option>
-            <option value="HIGH">هام</option>
-            <option value="CRITICAL">حرج</option>
+            <option value="ALL">{isEn ? "All Severity Levels" : "كل مستويات الأهمية"}</option>
+            <option value="LOW">{isEn ? "Low" : "عادي"}</option>
+            <option value="MEDIUM">{isEn ? "Medium" : "متوسط"}</option>
+            <option value="HIGH">{isEn ? "High" : "هام"}</option>
+            <option value="CRITICAL">{isEn ? "Critical" : "حرج"}</option>
           </select>
 
           {/* View Mode Toggle */}
@@ -490,7 +508,7 @@ export const EducationLogsTab: React.FC = () => {
             <button
               type="button"
               onClick={() => setViewMode("timeline")}
-              title="عرض زمني"
+              title={isEn ? "Timeline view" : "عرض زمني"}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === "timeline" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -500,7 +518,7 @@ export const EducationLogsTab: React.FC = () => {
             <button
               type="button"
               onClick={() => setViewMode("table")}
-              title="عرض جدول"
+              title={isEn ? "Table view" : "عرض جدول"}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === "table" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -523,13 +541,13 @@ export const EducationLogsTab: React.FC = () => {
       {loading ? (
         <div className="p-12 text-center text-muted-foreground text-xs space-y-3 bg-card rounded-xl border border-border">
           <RefreshCw className="w-6 h-6 mx-auto animate-spin text-primary" />
-          <p>جارٍ تحميل سجلات النظام التعليمي...</p>
+          <p>{isEn ? "Loading education system logs..." : "جارٍ تحميل سجلات النظام التعليمي..."}</p>
         </div>
       ) : logs.length === 0 ? (
         <div className="p-12 text-center text-muted-foreground text-xs space-y-2 bg-card rounded-xl border border-border">
           <History className="w-8 h-8 mx-auto text-muted-foreground/60" />
-          <p className="font-semibold text-foreground">لا توجد سجلات تطابق الفلاتر المحددة</p>
-          <p className="text-[11px]">أي عملية أو نشاط جديد في النظام التعليمي سيظهر هنا تلقائياً</p>
+          <p className="font-semibold text-foreground">{isEn ? "No logs match the selected filters" : "لا توجد سجلات تطابق الفلاتر المحددة"}</p>
+          <p className="text-[11px]">{isEn ? "Any new operation or activity in the education system will appear here automatically" : "أي عملية أو نشاط جديد في النظام التعليمي سيظهر هنا تلقائياً"}</p>
         </div>
       ) : viewMode === "timeline" ? (
         /* Timeline View */
@@ -568,7 +586,7 @@ export const EducationLogsTab: React.FC = () => {
                       {!log.isSuccess && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-red-500/10 text-red-500 border border-red-500/20">
                           <XCircle className="w-3 h-3" />
-                          فشل
+                          {isEn ? "Failed" : "فشل"}
                         </span>
                       )}
                     </div>
@@ -602,7 +620,7 @@ export const EducationLogsTab: React.FC = () => {
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5 text-primary" />
-                    <span>التفاصيل</span>
+                    <span>{isEn ? "Details" : "التفاصيل"}</span>
                   </button>
                 </div>
               </div>
@@ -613,16 +631,16 @@ export const EducationLogsTab: React.FC = () => {
         /* Table View */
         <div className="rounded-xl bg-card border border-border overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
+            <table className={`w-full text-xs ${isEn ? "text-left" : "text-right"}`}>
               <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
                 <tr>
-                  <th className="py-2.5 px-3">الوقت</th>
-                  <th className="py-2.5 px-3">القسم</th>
-                  <th className="py-2.5 px-3">الإجراء والوصف</th>
-                  <th className="py-2.5 px-3">الهدف</th>
-                  <th className="py-2.5 px-3">المنفذ</th>
-                  <th className="py-2.5 px-3">الأهمية</th>
-                  <th className="py-2.5 px-3 text-center">إجراءات</th>
+                  <th className="py-2.5 px-3">{isEn ? "Time" : "الوقت"}</th>
+                  <th className="py-2.5 px-3">{isEn ? "Section" : "القسم"}</th>
+                  <th className="py-2.5 px-3">{isEn ? "Action & Description" : "الإجراء والوصف"}</th>
+                  <th className="py-2.5 px-3">{isEn ? "Target" : "الهدف"}</th>
+                  <th className="py-2.5 px-3">{isEn ? "Actor" : "المنفذ"}</th>
+                  <th className="py-2.5 px-3">{isEn ? "Severity" : "الأهمية"}</th>
+                  <th className="py-2.5 px-3 text-center">{isEn ? "Actions" : "إجراءات"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -667,7 +685,7 @@ export const EducationLogsTab: React.FC = () => {
                           type="button"
                           onClick={() => setSelectedLog(log)}
                           className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors"
-                          title="عرض التفاصيل"
+                          title={isEn ? "View details" : "عرض التفاصيل"}
                         >
                           <Eye className="w-3.5 h-3.5 text-primary" />
                         </button>
@@ -685,8 +703,11 @@ export const EducationLogsTab: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-card border border-border text-xs">
           <div className="text-muted-foreground">
-            عرض صفحة <span className="font-bold text-foreground">{page}</span> من أصل{" "}
-            <span className="font-bold text-foreground">{totalPages}</span> (إجمالي {totalCount} سجل)
+            {isEn ? (
+              <>Showing page <span className="font-bold text-foreground">{page}</span> of <span className="font-bold text-foreground">{totalPages}</span> (Total {totalCount} logs)</>
+            ) : (
+              <>عرض صفحة <span className="font-bold text-foreground">{page}</span> من أصل <span className="font-bold text-foreground">{totalPages}</span> (إجمالي {totalCount} سجل)</>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -698,10 +719,10 @@ export const EducationLogsTab: React.FC = () => {
               }}
               className="px-2 py-1 rounded border border-border bg-background text-foreground text-xs"
             >
-              <option value="15">15 لكل صفحة</option>
-              <option value="25">25 لكل صفحة</option>
-              <option value="50">50 لكل صفحة</option>
-              <option value="100">100 لكل صفحة</option>
+              <option value="15">{isEn ? "15 per page" : "15 لكل صفحة"}</option>
+              <option value="25">{isEn ? "25 per page" : "25 لكل صفحة"}</option>
+              <option value="50">{isEn ? "50 per page" : "50 لكل صفحة"}</option>
+              <option value="100">{isEn ? "100 per page" : "100 لكل صفحة"}</option>
             </select>
 
             <button
@@ -710,8 +731,8 @@ export const EducationLogsTab: React.FC = () => {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none text-foreground transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span>السابق</span>
+              <ChevronRight className={`w-3.5 h-3.5 ${isEn ? "rotate-180" : ""}`} />
+              <span>{isEn ? "Previous" : "السابق"}</span>
             </button>
 
             <button
@@ -720,8 +741,8 @@ export const EducationLogsTab: React.FC = () => {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none text-foreground transition-colors"
             >
-              <span>التالي</span>
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>{isEn ? "Next" : "التالي"}</span>
+              <ChevronLeft className={`w-3.5 h-3.5 ${isEn ? "rotate-180" : ""}`} />
             </button>
           </div>
         </div>
@@ -729,7 +750,7 @@ export const EducationLogsTab: React.FC = () => {
 
       {/* Inspect Log Details Modal / Drawer */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4" dir={isEn ? "ltr" : "rtl"}>
           <div className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in-50 zoom-in-95">
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center justify-between">
@@ -739,10 +760,10 @@ export const EducationLogsTab: React.FC = () => {
                 </span>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-foreground">
-                    تفاصيل سجل النظام التعليمي
+                    {isEn ? "Education Log Details" : "تفاصيل سجل النظام التعليمي"}
                   </h3>
                   <p className="text-[11px] text-muted-foreground font-mono">
-                    معرف السجل: {selectedLog.id}
+                    {isEn ? `Log ID: ${selectedLog.id}` : `معرف السجل: ${selectedLog.id}`}
                   </p>
                 </div>
               </div>
@@ -767,11 +788,11 @@ export const EducationLogsTab: React.FC = () => {
                     {selectedLog.action}
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                    {selectedLog.targetType || "عام"}
+                    {selectedLog.targetType || (isEn ? "General" : "عام")}
                   </span>
                   {selectedLog.targetName && (
                     <span className="px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/70">
-                      الهدف: {selectedLog.targetName}
+                      {isEn ? `Target: ${selectedLog.targetName}` : `الهدف: ${selectedLog.targetName}`}
                     </span>
                   )}
                   <span
@@ -779,7 +800,7 @@ export const EducationLogsTab: React.FC = () => {
                       SEVERITY_CONFIG[selectedLog.severity]?.color || ""
                     }`}
                   >
-                    أهمية: {SEVERITY_CONFIG[selectedLog.severity]?.label || selectedLog.severity}
+                    {isEn ? "Severity:" : "أهمية:"} {SEVERITY_CONFIG[selectedLog.severity]?.label || selectedLog.severity}
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border ${
@@ -791,12 +812,12 @@ export const EducationLogsTab: React.FC = () => {
                     {selectedLog.isSuccess ? (
                       <>
                         <CheckCircle2 className="w-3 h-3" />
-                        <span>ناجح</span>
+                        <span>{isEn ? "Success" : "ناجح"}</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="w-3 h-3" />
-                        <span>فشل: {selectedLog.errorMessage || "خطأ غير محدد"}</span>
+                        <span>{isEn ? "Failed:" : "فشل:"} {selectedLog.errorMessage || (isEn ? "Unknown error" : "خطأ غير محدد")}</span>
                       </>
                     )}
                   </span>
@@ -808,15 +829,15 @@ export const EducationLogsTab: React.FC = () => {
                 <div className="p-3 rounded-xl bg-card border border-border space-y-1.5">
                   <div className="text-muted-foreground font-semibold flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-primary" />
-                    <span>بيانات المنفذ (Actor)</span>
+                    <span>{isEn ? "Actor Details" : "بيانات المنفذ (Actor)"}</span>
                   </div>
                   <div className="space-y-1 text-[11px]">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">الاسم:</span>
+                      <span className="text-muted-foreground">{isEn ? "Name:" : "الاسم:"}</span>
                       <span className="font-semibold text-foreground">{selectedLog.actorName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">الدور:</span>
+                      <span className="text-muted-foreground">{isEn ? "Role:" : "الدور:"}</span>
                       <span className="text-foreground">{selectedLog.actorRole}</span>
                     </div>
                     {selectedLog.userId && (
@@ -831,15 +852,15 @@ export const EducationLogsTab: React.FC = () => {
                 <div className="p-3 rounded-xl bg-card border border-border space-y-1.5">
                   <div className="text-muted-foreground font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-primary" />
-                    <span>التوقيت والجلسة</span>
+                    <span>{isEn ? "Timestamp & Session" : "التوقيت والجلسة"}</span>
                   </div>
                   <div className="space-y-1 text-[11px]">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">التاريخ:</span>
+                      <span className="text-muted-foreground">{isEn ? "Date:" : "التاريخ:"}</span>
                       <span className="text-foreground">{formatDateTime(selectedLog.createdAt).date}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">الوقت:</span>
+                      <span className="text-muted-foreground">{isEn ? "Time:" : "الوقت:"}</span>
                       <span className="text-foreground">{formatDateTime(selectedLog.createdAt).time}</span>
                     </div>
                     {selectedLog.metadata?.client?.ip && (
@@ -856,7 +877,7 @@ export const EducationLogsTab: React.FC = () => {
               {selectedLog.metadata && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-foreground">بيانات العملية التفصيلية (Metadata):</span>
+                    <span className="font-semibold text-foreground">{isEn ? "Detailed Payload (Metadata):" : "بيانات العملية التفصيلية (Metadata):"}</span>
                     <button
                       type="button"
                       onClick={() =>
@@ -867,17 +888,17 @@ export const EducationLogsTab: React.FC = () => {
                       {copiedKey === "metadata" ? (
                         <>
                           <Check className="w-3 h-3 text-emerald-500" />
-                          <span>تم النسخ</span>
+                          <span>{isEn ? "Copied" : "تم النسخ"}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>نسخ JSON</span>
+                          <span>{isEn ? "Copy JSON" : "نسخ JSON"}</span>
                         </>
                       )}
                     </button>
                   </div>
-                  <pre className="p-3 rounded-xl bg-muted/60 border border-border font-mono text-[11px] overflow-x-auto text-foreground max-h-60">
+                  <pre className="p-3 rounded-xl bg-muted/60 border border-border font-mono text-[11px] overflow-x-auto text-foreground max-h-60" dir="ltr">
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
                 </div>
@@ -891,7 +912,7 @@ export const EducationLogsTab: React.FC = () => {
                 onClick={() => setSelectedLog(null)}
                 className="px-4 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
               >
-                إغلاق
+                {isEn ? "Close" : "إغلاق"}
               </button>
             </div>
           </div>
