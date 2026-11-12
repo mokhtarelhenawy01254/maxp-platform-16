@@ -628,7 +628,29 @@ python -m scripts.seed_agent_templates
 
 ---
 
-## ❽.11 معيار 2026: الصلاحيات تقود السلوك (Capability-Driven Authority) والتحويل الواعي بالبيئة (Topology-Aware Handoff)
+## ❽.11 باج overwrite تعليمات النسخة بالقالب في مسار الداشبورد (Template-Instructions Fallback-Only Law) + بوابات اختبار الوكلاء بدون SSH (2026-11-12)
+
+### 🛑 الخلل المكتشف في الإنتاج (جلسة توظيف «نور» لكودتريبس):
+* **السيناريو:** توظيف وكيل مخصص (persona JSONB بحقائق ثابتة: عنوان المركز، السن المقبول، Demo Day) على شركة تعليم، ثم اختباره عبر `/admin/agents/chat` — الوكيل رد بنبرة صحيحة لكن **سؤال العنوان ما اتجاوبش** رغم أن الحقيقة موجودة حرفياً في `persona.soulInstructions`.
+* **السبب الجذري:** في `_load_chat_agent` (`apps/ai-service/src/api/admin/agents.py`)، كتلة "template instructions sync" كانت تعمل **overwrite غير مشروط**: `overrides["instructions"]["soul"] = tpl.instructions_soul` — أي أن soul القالب يطغى على تعليمات النسخة الحية بعد أن بناها `_instructions_from_persona`، وهذا **يناقض المعيار الموثق** في `_agent_config_from_record` («persona JSONB is the single source of truth»).
+* **التناقض بين المسارين:** مسار الفيس (`_resolve_channel_agent` → `_build_runtime_agent_from_db`) يأخذ `persona.soulInstructions` أولاً بشكل صحيح، بينما مسار الداشبورد يبطله — فالأداء يختلف حسب قناة الوصول لنفس الوكيل!
+* **الإصلاح المنفذ (commit `da4f8d90c`):** القالب أصبح **fallback-only** — يكمل فقط التعليمات الناقصة (`if not inst.get("soul")`) ولا يطغى أبداً على ما حددته النسخة. متوافق 100% مع النسخ القديمة التي لا تمتلك persona (تحصل على القالب كما كانت).
+
+### ✅ المعيار الإلزامي (Template Fallback-Only):
+1. **persona JSONB يتفوق دائماً** على instructions القالب في كل مسارات التشغيل (داشبورد، فيسبوك، واتساب، widget) — القالب يملأ الفراغ فقط.
+2. عند توظيف وكيل مخصص لشركة معينة بحقائق ثابتة، تُحقن الحقائق في `persona.soulInstructions` (Static Prefix — أسرع وأرخص من RAG) والأسعار/البيانات المتغيرة تُجبر على الأدوات (`education_info` وغيرها) مع حظر صريح لاختراع الأرقام.
+3. **اختبار ما بعد التوظيف إلزامي:** سؤال حقيقة ثابتة من الـ soul («مكانكم فين؟») + سؤال سعر (يجبر استدعاء أداة) + probe كشف البوت — في مسارين على الأقل.
+
+### 🔑 بوابات اختبار الوكلاء عبر الـ API العام بدون SSH (موثقة للإنتاج):
+* **Service Fast-Path:** `verifyToken.authenticateToken` يقبل توكن خدمة (`AI_SERVICE_TOKEN`/`MAXP_SERVICE_TOKEN`) في `Authorization: Bearer` + هيدر `X-Company-Id` → صلاحية AI_SERVICE على أي شركة (احترس: توكن ai-service ≠ توكن الباكند في الإنتاج — اختبر بالقيمة من env الباكند).
+* **JWT مِنت محلياً:** سِر `JWT_SECRET` موجود في `apps/backend/.env.production` (ملف الديبلوي) — يمكن توليد JWT قصير المدة لأي مستخدم بـ HMAC-SHA256 بالـ payload `{id, email, role, companyId, iat, exp}`.
+* **المسارات:** `POST /api/v1/proxy/ai-service/agents/chat` (اختبار مسار الداشبورد، body: `{agentId, message}`) · `GET /api/v1/proxy/ai-service/agents` (قائمة + حالة الوكلاء) · `PATCH /api/v1/agent/agents/:id/status` (تفعيل/إيقاف — `{"status":"ACTIVE"}`).
+* **نقطة ai-service الداخلية `/chat`:** تفرض هيدر `X-Customer-Id` إلزامياً (`deps.py`) — تمرير customer_id في الـ body لا يكفي؛ وهي غير قابلة للوصول من الخارج (البورت محجوب — الاختبار من داخل السيرفر فقط).
+* **حالة الوكيل بعد التوظيف المباشر بـ SQL:** راقبها دائماً عبر `GET /agents` — الوكلاء الجدد قد يتوقفون (INACTIVE) من واجهة فريق العميل أو أتمتة خلال دقائق؛ أعد التفعيل عبر PATCH وافحص اللوجز لاحقاً لمعرفة مَن أوقفه.
+
+---
+
+## ❽.12 معيار 2026: الصلاحيات تقود السلوك (Capability-Driven Authority) والتحويل الواعي بالبيئة (Topology-Aware Handoff)
 
 ### 🛑 الخلل العملي المكتشف في بيئة الإنتاج:
 * **سيناريو الواقع:** قام التاجر بتفعيل أداة تسعير الشحن `shipping_zone_set` لوكيل المنتجات والكتالوج ("أكرم") من لوحة التحكم، ثم طلب منه ضبط أسعار الشحن من ورقة أسعار شركة الشحن عبر الدردشة.
@@ -682,7 +704,7 @@ python -m scripts.seed_agent_templates
 
 ---
 
-## ❽.12 أدوات إدارة المتجر (Storefront Management Tools Standard)
+## ❽.13 أدوات إدارة المتجر (Storefront Management Tools Standard)
 
 * **المعيار الإلزامي (The 2026 Storefront Tool Standard):**
   1. **إعدادات تطبيقات الماركت بليس تُكتب بـ Read-Merge-Write فقط (CompanyApp Read-Merge-Write Law):**
@@ -697,7 +719,7 @@ python -m scripts.seed_agent_templates
 
 ---
 
-## ❽.13 بوابة الموافقات إلزامية في مسار الشات (Pipeline Approval Gate Law)
+## ❽.14 بوابة الموافقات إلزامية في مسار الشات (Pipeline Approval Gate Law)
 
 * 🛑 **الخلل المكتشف في الإنتاج (Swan 2026-09-22، أداة `conversion_tool_set_threshold`):**
   * مسار شات الوكلاء (`force_pipeline=True` → `process_with_skills`) كان ينفّذ الأدوات **مباشرة** عبر `registry.resolve()` + `tool.func()` في `skills_pipeline._execute_one_tool` — **متجاوزًا بوابة `ToolGateway` بالكامل**، فأدوات الكتابة `always_require` (إلغاء طلبات، تسوية مخزون، تكوين دفع...) كانت تُنفَّذ فورًا بدون موافقة التاجر.
@@ -736,7 +758,7 @@ python -m scripts.seed_agent_templates
 
 ---
 
-## ❽.14 جسر القدرات: التغطية التلقائية وأدوات الكتالوج (Capability Bridge — Auto-Exposure & Catalog Tools Standard 2026-09-30)
+## ❽.15 جسر القدرات: التغطية التلقائية وأدوات الكتالوج (Capability Bridge — Auto-Exposure & Catalog Tools Standard 2026-09-30)
 
 * **قانون التغطية التلقائية (Auto-Exposure Law):** أي endpoint جديد في الباكند يظهر **تلقائيًا** في `ai.agent_tool_catalog` عبر كاشف الانجراف (`src/tools/drift.py` — يقرأ `GET /api/v1/internal/capabilities` المبني على عكس route-stack مع ميتاداتا `_maxpMeta` من `requireDbPermission`/`checkAppAccess`). **القراءة تتفعل فورًا (`active`)، والكتابة تبقى مسودة (`draft`) بضغطة مراجعة** من تاب «تغطية القدرات» في AI Hub (`POST /capability-catalog/:name/activate`) — سياسة معتمدة من مختار (2026-09-30).
 * **مصدر الحقيقة الوحيد (Single Source of Truth):** جدول `ai.agent_tool_catalog` — صفوف `tracked` مرآة للأدوات الكودية (للتغطية فقط، لا يُعاد تسجيلها)، وصفوف `active` تُسجَّل وقت الإقلاع كـ FunctionTools جسرية (`src/tools/catalog.py::register_catalog_tools`) مع **حارس تصادم أسماء صارم** (الريجستري يكتب فوق بصمت — أي تصادم يُسقَط ويُسجَّل خطأ).
