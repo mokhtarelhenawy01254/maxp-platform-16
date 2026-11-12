@@ -60,6 +60,8 @@ async function queryChannelDuplicates(prisma, { channel, metadataKey, windowHour
       SELECT
         m."conversationId",
         ${extExpr} AS ext_id,
+        m."type"::text AS msg_type,
+        COALESCE(m."content", '') AS msg_content,
         m."createdAt"
       FROM "messages" m
       WHERE m."isFromCustomer" = true
@@ -77,22 +79,49 @@ async function queryChannelDuplicates(prisma, { channel, metadataKey, windowHour
       WHERE ext_id IS NOT NULL AND ext_id <> ''
       GROUP BY "conversationId", ext_id
       HAVING COUNT(*) > 1
+    ),
+    windowed AS (
+      SELECT
+        ext_id,
+        LAG("createdAt") OVER (PARTITION BY "conversationId", msg_type, msg_content ORDER BY "createdAt") AS prev_at,
+        LAG(ext_id) OVER (PARTITION BY "conversationId", msg_type, msg_content ORDER BY "createdAt") AS prev_ext_id,
+        "createdAt"
+      FROM extracted
+    ),
+    pairs_10s AS (
+      SELECT
+        COUNT(*)::int AS total_10s_extra_rows,
+        COUNT(*) FILTER (WHERE ext_id IS NOT NULL AND ext_id = prev_ext_id)::int AS same_ext_id_10s,
+        COUNT(*) FILTER (WHERE ext_id IS NULL OR prev_ext_id IS NULL OR ext_id = '' OR prev_ext_id = '')::int AS missing_ext_id_10s,
+        COUNT(*) FILTER (WHERE ext_id IS NOT NULL AND prev_ext_id IS NOT NULL AND ext_id <> '' AND prev_ext_id <> '' AND ext_id <> prev_ext_id)::int AS diff_ext_id_10s
+      FROM windowed
+      WHERE prev_at IS NOT NULL AND "createdAt" - prev_at <= INTERVAL '10 seconds'
     )
     SELECT
-      COUNT(*)::int AS duplicate_groups,
-      COALESCE(SUM(row_count - 1), 0)::int AS extra_rows,
-      COALESCE(SUM(row_count), 0)::int AS total_rows_in_groups
-    FROM dupes;
+      (SELECT COUNT(*)::int FROM dupes) AS duplicate_groups,
+      (SELECT COALESCE(SUM(row_count - 1), 0)::int FROM dupes) AS extra_rows,
+      (SELECT COALESCE(SUM(row_count), 0)::int FROM dupes) AS total_rows_in_groups,
+      p.total_10s_extra_rows,
+      p.same_ext_id_10s,
+      p.missing_ext_id_10s,
+      p.diff_ext_id_10s
+    FROM pairs_10s p;
   `;
 
   const rows = await prisma.$queryRawUnsafe(sql, windowHours);
-  const summary = rows && rows[0] ? rows[0] : { duplicate_groups: 0, extra_rows: 0, total_rows_in_groups: 0 };
+  const summary = rows && rows[0] ? rows[0] : {};
   return {
     channel,
     windowHours,
     duplicateGroups: Number(summary.duplicate_groups || 0),
     extraRows: Number(summary.extra_rows || 0),
     totalRowsInGroups: Number(summary.total_rows_in_groups || 0),
+    within10sBreakdown: {
+      totalExtraRows: Number(summary.total_10s_extra_rows || 0),
+      sameExternalId: Number(summary.same_ext_id_10s || 0),
+      missingExternalId: Number(summary.missing_ext_id_10s || 0),
+      differentExternalId: Number(summary.diff_ext_id_10s || 0),
+    },
   };
 }
 
@@ -131,8 +160,12 @@ async function main() {
       console.log(JSON.stringify(report, null, 2));
     } else {
       console.log(`=== Inbound Duplicate Audit (Read-Only | Window: ${report.windowLabel}) ===`);
-      console.log(`WhatsApp : groups=${whatsapp.duplicateGroups}, extraRows=${whatsapp.extraRows}`);
-      console.log(`Messenger: groups=${messenger.duplicateGroups}, extraRows=${messenger.extraRows}`);
+      console.log(
+        `WhatsApp : groups=${whatsapp.duplicateGroups}, extraRows=${whatsapp.extraRows} | 10s_pairs=${whatsapp.within10sBreakdown.totalExtraRows} (same_ext=${whatsapp.within10sBreakdown.sameExternalId}, missing_ext=${whatsapp.within10sBreakdown.missingExternalId}, diff_ext=${whatsapp.within10sBreakdown.differentExternalId})`
+      );
+      console.log(
+        `Messenger: groups=${messenger.duplicateGroups}, extraRows=${messenger.extraRows} | 10s_pairs=${messenger.within10sBreakdown.totalExtraRows} (same_ext=${messenger.within10sBreakdown.sameExternalId}, missing_ext=${messenger.within10sBreakdown.missingExternalId}, diff_ext=${messenger.within10sBreakdown.differentExternalId})`
+      );
       console.log(`Total    : groups=${report.totalDuplicateGroups}, extraRows=${report.totalExtraRows}`);
     }
   } finally {
@@ -143,10 +176,14 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((err) => {
-    console.error('❌ [AUDIT-DUPLICATE-INBOUND] Failed:', err.message);
-    process.exit(1);
-  });
+  main()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('❌ [AUDIT-DUPLICATE-INBOUND] Failed:', err.message);
+      process.exit(1);
+    });
 }
 
 module.exports = { parseArgs, hasExternalIdColumn, queryChannelDuplicates };

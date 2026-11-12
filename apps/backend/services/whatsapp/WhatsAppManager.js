@@ -29,6 +29,12 @@ const telegramAlertService = require('../telegramAlertService');
 const MetaCloudProvider = require('./providers/MetaCloudProvider');
 const WhatsAppReactionService = require('./WhatsAppReactionService');
 const { buildConversationMetadata } = require('../whatsappInboxMetadata');
+const {
+    claimInboundMessage,
+    releaseInboundClaim,
+    filterUnclaimedAutoReplyEntries,
+    logDuplicateSkipped
+} = require('../inboundDeduplicationGuard');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
@@ -3028,7 +3034,29 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 continue;
             }
 
-            const savedMessage = await prisma.whatsAppMessage.upsert({
+            let inboundClaim = null;
+            if (!fromMe && !importHistory && companyId && messageId) {
+                const claimResult = await claimInboundMessage({
+                    companyId,
+                    channel: 'whatsapp',
+                    externalMessageId: messageId,
+                    prisma
+                });
+                if (claimResult.duplicate) {
+                    logDuplicateSkipped({
+                        channel: 'whatsapp',
+                        externalMessageId: messageId,
+                        companyId
+                    });
+                    result.skipped++;
+                    continue;
+                }
+                inboundClaim = claimResult.claim;
+            }
+
+            let savedMessage;
+            try {
+                savedMessage = await prisma.whatsAppMessage.upsert({
                 where: { messageId },
                 update: {
                     remoteJid,
@@ -3066,7 +3094,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     metadata: JSON.stringify(msg),
                     updatedAt: new Date()
                 }
-            });
+                });
+            } catch (upsertErr) {
+                if (inboundClaim?.id) {
+                    await releaseInboundClaim(inboundClaim.id, prisma);
+                }
+                throw upsertErr;
+            }
             result.created += isNewMessage ? 1 : 0;
 
             if (messageStatusFromPayload) {
@@ -3096,9 +3130,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             // ✅ SYNC TO MAIN CRM (Persistent Storage)
             let syncedCustomer = null;
             let syncedConversation = null;
+            let syncResult = null;
             if (!options.skipCrmSync) {
                 try {
-                    const syncResult = await WhatsAppSyncService.syncMessage(
+                    syncResult = await WhatsAppSyncService.syncMessage(
                         companyId,
                         sessionId,
                         remoteJid,
@@ -3111,7 +3146,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             mediaMimeType: messageContent.mimetype,
                             mediaFileName: messageContent.fileName,
                             timestamp: messageTimestamp,
-                            pushName: msg.pushName
+                            pushName: msg.pushName,
+                            _inboundClaim: inboundClaim
                         },
                         !fromMe, // isIncoming
                         isNewMessage
@@ -3122,6 +3158,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     console.error('Failed to sync incoming message to CRM:', syncErr);
                 }
             }
+            const isDuplicateFromSync = syncResult?.wasCreated === false && !syncResult?.error;
+            const shouldNotifyAndReply = isNewMessage && !isDuplicateFromSync;
 
             // 🛡️ Human Handover Protocol for WhatsApp Phone/Web replies:
             // When staff replies directly from the phone/web WhatsApp client (fromMe: true),
@@ -3171,8 +3209,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const contact = await updateOrCreateContact(sessionId, remoteJid, msg, sock, {
                 isOutgoing: fromMe,
                 customerId: syncedCustomer?.id,
-                suppressUnread: importHistory || !isNewMessage,
-                incrementCounters: isNewMessage,
+                suppressUnread: importHistory || !shouldNotifyAndReply,
+                incrementCounters: shouldNotifyAndReply,
                 lastMessageAt: messageTimestamp,
                 lastMessagePreview: previewText,
                 skipProfilePic: importHistory
@@ -3194,7 +3232,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
-            if (!options.skipRealtimeEvents && isNewMessage) {
+            if (!options.skipRealtimeEvents && shouldNotifyAndReply) {
                 // إرسال الرسالة عبر Socket.IO
                 // console.log(`🔌 [DEBUG] Emitting whatsapp:message:new to company_${companyId}`, {
                 //     sessionId,
@@ -3223,7 +3261,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // 🔔 إنشاء إشعار للرسالة الجديدة (فقط للرسائل الواردة)
-            if (!fromMe && !options.skipNotifications && isNewMessage) {
+            if (!fromMe && !options.skipNotifications && shouldNotifyAndReply) {
                 try {
                     // جلب إعدادات الإشعارات
                     const settings = await executeWithRetry(async () => {
@@ -3327,7 +3365,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
             // ── AI auto-reply with debounce (Baileys sessions) ────────────────────
             const isNewsletter = isJidNewsletter?.(remoteJid);
-            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId && !isNewsletter) {
+            if (!fromMe && !importHistory && shouldNotifyAndReply && messageContent.type === 'TEXT' && syncedCustomer?.companyId && !isNewsletter) {
                 setImmediate(async () => {
                     try {
                         const prisma = getSharedPrismaClient();
@@ -3355,6 +3393,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
 
                         accumulate(key, {
                             message: messageContent.text,
+                            messageId,
                             customerId: syncedCustomer.id,
                             customerPhone: syncedCustomer?.phone || remoteJid.split('@')[0],
                             conversationId: syncedConversation?.id,
@@ -3364,7 +3403,6 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         }, async (entries) => {
                             if (entries.length === 0) return;
 
-                            const combinedMessage = entries.map(e => e.message).join('\n---\n');
                             const first = entries[0];
 
                             console.log(`🟢 [BAILEYS-DEBOUNCE] Processing ${entries.length} debounced message(s)`);
@@ -3454,6 +3492,18 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 }
                             }
 
+                            const { entriesToProcess } = await filterUnclaimedAutoReplyEntries({
+                                companyId: first.companyId,
+                                channel: 'whatsapp',
+                                entries,
+                                conversationId: first.conversationId,
+                                prisma: getSharedPrismaClient(),
+                            });
+                            if (entriesToProcess.length === 0) {
+                                return;
+                            }
+                            const combinedMessage = entriesToProcess.map(e => e.message).join('\n---\n');
+
                             const aiSdkClient = require('../aiSdkClient');
                             const result = await aiSdkClient.sendChatMessage({
                                 companyId: first.companyId,
@@ -3516,10 +3566,10 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             }
 
             // معالجة التفاعلات (أزرار/قوائم) إذا كان مفعلاً
-            if (!fromMe && !importHistory && (messageContent.type === 'BUTTON_RESPONSE' || messageContent.type === 'LIST_RESPONSE')) {
+            if (!fromMe && !importHistory && shouldNotifyAndReply && (messageContent.type === 'BUTTON_RESPONSE' || messageContent.type === 'LIST_RESPONSE')) {
                 const WhatsAppInteractionService = require('./WhatsAppInteractionService');
                 await WhatsAppInteractionService.handleButtonResponse(sessionId, companyId, remoteJid, messageContent.interactiveData);
-                return;
+                continue;
             }
 
         } catch (error) {

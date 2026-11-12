@@ -16,7 +16,11 @@ const {
   claimInboundMessage,
   commitInboundClaim,
   releaseInboundClaim,
+  claimInboundAutoReply,
+  filterUnclaimedAutoReplyEntries,
   logDuplicateSkipped,
+  getDailyDuplicateCount,
+  resetDailyDuplicateCounts,
   ensureInboundDedupeSchema,
   resetSchemaEnsureState,
 } = require('../../services/inboundDeduplicationGuard');
@@ -25,6 +29,7 @@ describe('inboundDeduplicationGuard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetSchemaEnsureState();
+    resetDailyDuplicateCounts();
   });
 
   test('claims a new (companyId, channel, externalMessageId) and returns duplicate: false', async () => {
@@ -139,26 +144,89 @@ describe('inboundDeduplicationGuard', () => {
     });
   });
 
-  test('logDuplicateSkipped prints single-line audit log with channel, externalMessageId, companyId, conversationId', () => {
+  test('logDuplicateSkipped prints single-line audit log with channel, externalMessageId, companyId, conversationId and dailyCount', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    logDuplicateSkipped({
+    const first = logDuplicateSkipped({
       channel: 'whatsapp',
       externalMessageId: 'wamid.789',
       companyId: 'comp-1',
       conversationId: 'conv-1',
     });
+    const second = logDuplicateSkipped({
+      channel: 'whatsapp',
+      externalMessageId: 'wamid.790',
+      companyId: 'comp-1',
+      conversationId: 'conv-1',
+    });
 
-    expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(logSpy).toHaveBeenCalledWith(
-      '[INBOUND-DEDUPE] duplicate_skipped channel=whatsapp externalMessageId=wamid.789 companyId=comp-1 conversationId=conv-1'
+    expect(first.dailyCount).toBe(1);
+    expect(second.dailyCount).toBe(2);
+    expect(getDailyDuplicateCount({ channel: 'whatsapp', date: first.date })).toBe(2);
+    expect(logSpy).toHaveBeenCalledTimes(2);
+    expect(logSpy).toHaveBeenNthCalledWith(
+      1,
+      `[INBOUND-DEDUPE] duplicate_skipped channel=whatsapp externalMessageId=wamid.789 companyId=comp-1 conversationId=conv-1 date=${first.date} dailyCount=1`
     );
     logSpy.mockRestore();
+  });
+
+  test('claimInboundAutoReply uses :autoreply namespace and blocks duplicate bot/AI replies', async () => {
+    const p2002Error = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+    mockPrisma.messageInboundDedupe.create
+      .mockResolvedValueOnce({ id: 'ar-claim-1' })
+      .mockRejectedValueOnce(p2002Error);
+    mockPrisma.messageInboundDedupe.updateMany.mockResolvedValue({ count: 1 });
+
+    const first = await claimInboundAutoReply({
+      companyId: 'comp-1',
+      channel: 'facebook',
+      externalMessageId: 'm_mid_1',
+      conversationId: 'conv-1',
+    });
+    const second = await claimInboundAutoReply({
+      companyId: 'comp-1',
+      channel: 'facebook',
+      externalMessageId: 'm_mid_1',
+      conversationId: 'conv-1',
+    });
+
+    expect(first).toEqual({ duplicate: false, claim: { id: 'ar-claim-1' } });
+    expect(second).toEqual({ duplicate: true, claim: null });
+    expect(mockPrisma.messageInboundDedupe.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          channel: 'facebook:autoreply',
+          externalMessageId: 'm_mid_1',
+        }),
+      })
+    );
+  });
+
+  test('filterUnclaimedAutoReplyEntries drops already-claimed external IDs from debounce batch', async () => {
+    const p2002Error = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+    mockPrisma.messageInboundDedupe.create
+      .mockResolvedValueOnce({ id: 'ar-1' })
+      .mockRejectedValueOnce(p2002Error);
+    mockPrisma.messageInboundDedupe.updateMany.mockResolvedValue({ count: 1 });
+
+    const { entriesToProcess, skippedIds } = await filterUnclaimedAutoReplyEntries({
+      companyId: 'comp-1',
+      channel: 'facebook',
+      conversationId: 'conv-1',
+      entries: [
+        { fbMessageId: 'mid.fresh', message: 'hello' },
+        { fbMessageId: 'mid.dup', message: 'hello' },
+      ],
+    });
+
+    expect(entriesToProcess).toEqual([{ fbMessageId: 'mid.fresh', message: 'hello' }]);
+    expect(skippedIds).toEqual(['mid.dup']);
   });
 
   test('ensureInboundDedupeSchema runs idempotent DDL once per process lifecycle', async () => {
     await ensureInboundDedupeSchema(mockPrisma);
     await ensureInboundDedupeSchema(mockPrisma);
 
-    expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(7);
+    expect(mockPrisma.$executeRawUnsafe).toHaveBeenCalledTimes(8);
   });
 });

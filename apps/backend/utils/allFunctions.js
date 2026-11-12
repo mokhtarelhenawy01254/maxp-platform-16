@@ -15,6 +15,8 @@ const {
   claimInboundMessage,
   commitInboundClaim,
   releaseInboundClaim,
+  claimInboundAutoReply,
+  filterUnclaimedAutoReplyEntries,
   logDuplicateSkipped
 } = require('../services/inboundDeduplicationGuard');
 
@@ -1517,6 +1519,29 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       }
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${Date.now() - blockedCheckStartTime}ms] ✅ [BLOCKED] Customer not blocked`);
 
+      // ⚡ CRITICAL DEDUPLICATION BEFORE MUTATION: claim (companyId, 'facebook', mid)
+      // before reactivating or incrementing unreadCount on conversation.
+      const earlyFbMessageId = webhookEvent.message?.mid || null;
+      let preInboundClaim = null;
+      if (earlyFbMessageId && customer?.companyId) {
+        const preClaimResult = await claimInboundMessage({
+          companyId: customer.companyId,
+          channel: 'facebook',
+          externalMessageId: earlyFbMessageId,
+          conversationId: null
+        });
+        if (preClaimResult.duplicate) {
+          logDuplicateSkipped({
+            channel: 'facebook',
+            externalMessageId: earlyFbMessageId,
+            companyId: customer.companyId,
+            conversationId: ''
+          });
+          return;
+        }
+        preInboundClaim = preClaimResult.claim;
+      }
+
       // Find or create conversation
       const conversationStartTime = Date.now();
       let conversation = await safeQuery(async () => {
@@ -1904,9 +1929,9 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         }
       }
 
-      // ⚡ CRITICAL DEDUPLICATION: Atomic DB claim on (companyId, channel, externalMessageId)
-      let inboundClaim = null;
-      if (fbMessageId) {
+      // ⚡ CRITICAL DEDUPLICATION: Reuse pre-claim (or claim now if earlier customer.companyId wasn't set)
+      let inboundClaim = preInboundClaim || null;
+      if (fbMessageId && !inboundClaim) {
         const claimResult = await claimInboundMessage({
           companyId: customer.companyId,
           channel: 'facebook',
@@ -1940,6 +1965,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         metadata: JSON.stringify({
           platform: 'facebook',
           channel: 'facebook',
+          mid: fbMessageId || null,
           externalMessageId: fbMessageId || null,
           source: 'messenger',
           senderId: senderId,
@@ -1968,6 +1994,19 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           await commitInboundClaim(inboundClaim.id, newMessage.id);
         }
       } catch (saveErr) {
+        const isUniqueViolation =
+          saveErr?.code === 'P2002' ||
+          saveErr?.code === '23505' ||
+          (saveErr?.message && saveErr.message.includes('Unique constraint'));
+        if (isUniqueViolation && fbMessageId) {
+          logDuplicateSkipped({
+            channel: 'facebook',
+            externalMessageId: fbMessageId,
+            companyId: customer.companyId,
+            conversationId: conversation.id
+          });
+          return;
+        }
         if (inboundClaim?.id) {
           await releaseInboundClaim(inboundClaim.id);
         }
@@ -2226,8 +2265,27 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           });
 
           if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
-            const { sendFacebookRichMessage } = require('../services/botMessageSender');
-            const fbResult = evaluation.buttons && evaluation.buttons.length > 0
+            let botReplyClaimDup = false;
+            let botAutoClaim = null;
+            if (fbMessageId) {
+              try {
+                const autoClaim = await claimInboundAutoReply({
+                  companyId: customer.companyId,
+                  channel: 'facebook',
+                  externalMessageId: fbMessageId,
+                  conversationId: conversation.id
+                });
+                botReplyClaimDup = Boolean(autoClaim?.duplicate);
+                botAutoClaim = autoClaim?.claim || null;
+              } catch (claimErr) {
+                console.warn('⚠️ [BOT-RULES] Auto-reply claim check failed:', claimErr.message);
+              }
+            }
+            if (botReplyClaimDup) {
+              botHandledFb = true;
+            } else {
+              const { sendFacebookRichMessage } = require('../services/botMessageSender');
+              const fbResult = evaluation.buttons && evaluation.buttons.length > 0
               ? await sendFacebookRichMessage({
                   senderId,
                   pageId: messagePageId,
@@ -2243,6 +2301,9 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   messagePageId,
                   pageData.pageAccessToken
                 );
+            if (!fbResult?.success && botAutoClaim?.id) {
+              await releaseInboundClaim(botAutoClaim.id).catch(() => {});
+            }
             if (fbResult?.success) {
               const replySource = evaluation.kind === 'smart_reply'
                 ? 'smart_reply'
@@ -2319,6 +2380,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
               botHandledFb = true;
             }
           }
+          }
         } catch (e) {
           console.error('❌ [BOT-RULES] Error in Facebook bot automation:', e.message);
         }
@@ -2327,12 +2389,36 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       if (!botHandledFb && customer?.id) {
         try {
           const { onCustomerReply } = require('../services/botFlowRuntime');
+          let fbFlowAutoReplyChecked = false;
+          let fbFlowAutoReplyAllowed = true;
           const flowResult = await onCustomerReply({
             companyId: customer.companyId,
             customerId: customer.id,
             channel: 'FACEBOOK',
             text: fbBotText,
             sendStep: async (step) => {
+              if (fbMessageId) {
+                if (!fbFlowAutoReplyChecked) {
+                  fbFlowAutoReplyChecked = true;
+                  try {
+                    const flowClaim = await claimInboundAutoReply({
+                      companyId: customer.companyId,
+                      channel: 'facebook',
+                      externalMessageId: fbMessageId,
+                      conversationId: conversation.id,
+                    });
+                    if (flowClaim?.duplicate) {
+                      fbFlowAutoReplyAllowed = false;
+                      console.log(`⏭️ [INBOUND-DEDUPE] flow_reply_skipped channel=facebook externalMessageId=${fbMessageId} companyId=${customer.companyId} conversationId=${conversation.id}`);
+                      return;
+                    }
+                  } catch (flowClaimErr) {
+                    console.warn('⚠️ [BOT-FLOW] Auto-reply claim check failed:', flowClaimErr.message);
+                  }
+                } else if (!fbFlowAutoReplyAllowed) {
+                  return;
+                }
+              }
               const { sendFacebookRichMessage } = require('../services/botMessageSender');
               if (step.buttons && step.buttons.length > 0) {
                 await sendFacebookRichMessage({
@@ -2437,13 +2523,9 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             }, async (entries) => {
               if (entries.length === 0) return;
 
-              const combinedMessage = entries.map(e => e.message).join('\n---\n');
-              const combinedAttachments = entries.flatMap(e => e.attachments || []).filter(Boolean);
               const first = entries[0];
               const latestPageData = await getPageToken(first.messagePageId);
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
-
-              console.log(`🤖 [AI-AUTOREPLY] Processing ${entries.length} debounced message(s) as one request`);
 
               if (first.conversationId) {
                 const prisma = getSharedPrismaClient();
@@ -2479,6 +2561,21 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   return;
                 }
               }
+
+              const { entriesToProcess } = await filterUnclaimedAutoReplyEntries({
+                companyId: first.companyId,
+                channel: 'facebook',
+                entries,
+                conversationId: first.conversationId
+              });
+              if (entriesToProcess.length === 0) {
+                console.log(`🤖 [AI-AUTOREPLY] Skipping duplicate auto-reply batch for conversation ${first.conversationId}`);
+                return;
+              }
+
+              const combinedMessage = entriesToProcess.map(e => e.message).join('\n---\n');
+              const combinedAttachments = entriesToProcess.flatMap(e => e.attachments || []).filter(Boolean);
+              console.log(`🤖 [AI-AUTOREPLY] Processing ${entriesToProcess.length} debounced message(s) as one request`);
 
               // Pre-fetch fresh Facebook image attachments into Base64 data URLs
               // to prevent DeepSeek and vision providers from failing on external CDN downloads

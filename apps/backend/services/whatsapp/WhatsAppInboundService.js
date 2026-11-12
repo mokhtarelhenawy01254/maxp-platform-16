@@ -15,7 +15,13 @@ const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const WhatsAppReactionService = require('./WhatsAppReactionService');
 const aiSdkClient = require('../aiSdkClient');
 const { getEffectiveAiAutoReplySetting } = require('../aiSettingsResolver');
-const { logDuplicateSkipped } = require('../inboundDeduplicationGuard');
+const {
+  claimInboundMessage,
+  releaseInboundClaim,
+  claimInboundAutoReply,
+  filterUnclaimedAutoReplyEntries,
+  logDuplicateSkipped
+} = require('../inboundDeduplicationGuard');
 
 const getIO = () => socketService.getIO();
 
@@ -110,41 +116,67 @@ async function saveIncomingMessage(payload) {
 
   const { normalizedJid } = normalizeWhatsAppContactIdentity(remoteJid);
 
-  const savedMessage = await getSharedPrismaClient().whatsAppMessage.upsert({
-    where: { messageId },
-    update: {
-      messageType,
-      content,
-      mediaUrl,
-      mediaType,
-      mediaMimeType,
-      mediaFileName,
-      quotedMessageId,
-      quotedContent,
-      interactiveData: interactiveData ? JSON.stringify(interactiveData) : undefined,
-      metadata: metadata ? JSON.stringify(metadata) : undefined,
-      updatedAt: new Date()
-    },
-    create: {
-      sessionId,
-      remoteJid: normalizedJid,
-      messageId,
-      fromMe: false,
-      messageType,
-      content,
-      mediaUrl,
-      mediaType,
-      mediaMimeType,
-      mediaFileName,
-      quotedMessageId,
-      quotedContent,
-      interactiveData: interactiveData ? JSON.stringify(interactiveData) : undefined,
-      timestamp: timestamp ? new Date(timestamp) : new Date(),
-      status: 'DELIVERED',
-      metadata: metadata ? JSON.stringify(metadata) : undefined,
-      updatedAt: new Date()
+  let inboundClaim = null;
+  if (companyId && messageId) {
+    const claimResult = await claimInboundMessage({
+      companyId,
+      channel: 'whatsapp',
+      externalMessageId: messageId
+    });
+    if (claimResult.duplicate) {
+      logDuplicateSkipped({
+        channel: 'whatsapp',
+        externalMessageId: messageId,
+        companyId
+      });
+      return { duplicate: true };
     }
-  });
+    inboundClaim = claimResult.claim;
+  }
+
+  let savedMessage;
+  try {
+    savedMessage = await getSharedPrismaClient().whatsAppMessage.upsert({
+      where: { messageId },
+      update: {
+        messageType,
+        content,
+        mediaUrl,
+        mediaType,
+        mediaMimeType,
+        mediaFileName,
+        quotedMessageId,
+        quotedContent,
+        interactiveData: interactiveData ? JSON.stringify(interactiveData) : undefined,
+        metadata: metadata ? JSON.stringify(metadata) : undefined,
+        updatedAt: new Date()
+      },
+      create: {
+        sessionId,
+        remoteJid: normalizedJid,
+        messageId,
+        fromMe: false,
+        messageType,
+        content,
+        mediaUrl,
+        mediaType,
+        mediaMimeType,
+        mediaFileName,
+        quotedMessageId,
+        quotedContent,
+        interactiveData: interactiveData ? JSON.stringify(interactiveData) : undefined,
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        status: 'DELIVERED',
+        metadata: metadata ? JSON.stringify(metadata) : undefined,
+        updatedAt: new Date()
+      }
+    });
+  } catch (upsertErr) {
+    if (inboundClaim?.id) {
+      await releaseInboundClaim(inboundClaim.id);
+    }
+    throw upsertErr;
+  }
 
   // Handle incoming REACTION: apply to target message and notify clients
   if (messageType === 'REACTION' && quotedMessageId) {
@@ -166,22 +198,24 @@ async function saveIncomingMessage(payload) {
   let syncedCustomer = null;
   let syncedConversation = null;
   let syncResult = null;
+  const syncPayload = {
+    messageId,
+    type: messageType,
+    content,
+    mediaUrl,
+    mediaType,
+    mediaMimeType,
+    mediaFileName,
+    timestamp: timestamp ? new Date(timestamp) : new Date(),
+    pushName,
+    _inboundClaim: inboundClaim
+  };
   try {
     syncResult = await WhatsAppSyncService.syncMessage(
       companyId,
       sessionId,
       normalizedJid,
-      {
-        messageId,
-        type: messageType,
-        content,
-        mediaUrl,
-        mediaType,
-        mediaMimeType,
-        mediaFileName,
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
-        pushName
-      },
+      syncPayload,
       true
     );
     syncedCustomer = syncResult?.customer;
@@ -190,7 +224,7 @@ async function saveIncomingMessage(payload) {
     console.error('❌ Failed to sync inbound message to CRM:', error.message);
   }
 
-  if (syncResult?.wasCreated === false) {
+  if (syncResult?.wasCreated === false && !syncResult?.error) {
     if (!syncResult.duplicateLogged) {
       logDuplicateSkipped({
         channel: 'whatsapp',
@@ -200,6 +234,9 @@ async function saveIncomingMessage(payload) {
       });
     }
     return { duplicate: true };
+  }
+  if (syncResult?.error) {
+    console.warn(`⚠️ [WhatsAppInbound] CRM sync returned error for ${messageId}: ${syncResult.reason || 'unknown'}`);
   }
 
   const contact = await upsertContact(sessionId, normalizedJid, {
@@ -352,53 +389,91 @@ async function saveIncomingMessage(payload) {
       });
 
       if (evaluation?.kind && (evaluation.replyText || evaluation.mediaUrl)) {
-        const { buildWhatsAppButtons } = require('../botMessageSender');
-        const waButtons = buildWhatsAppButtons(evaluation.buttons);
-        if (evaluation.replyType === 'IMAGE' && evaluation.mediaUrl) {
-          await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, evaluation.mediaUrl, evaluation.replyText || '', {
-            isAIResponse: false,
-          });
-        } else if (waButtons.length > 0) {
-          await WhatsAppMessageHandler.sendButtons(
-            sessionId,
-            normalizedJid,
-            evaluation.replyText || '',
-            waButtons,
-            { isAIResponse: false }
-          );
+        const autoReplyClaim = await claimInboundAutoReply({
+          companyId: syncedCustomer.companyId,
+          channel: 'whatsapp',
+          externalMessageId: messageId,
+          conversationId: syncedConversation?.id,
+          prisma,
+        });
+        if (autoReplyClaim.duplicate) {
+          console.log(`⏭️ [INBOUND-DEDUPE] bot_reply_skipped channel=whatsapp externalMessageId=${messageId} companyId=${syncedCustomer.companyId} conversationId=${syncedConversation?.id || ''}`);
+          botHandled = true;
         } else {
-          await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
-            isAIResponse: false,
-          });
+          try {
+            const { buildWhatsAppButtons } = require('../botMessageSender');
+            const waButtons = buildWhatsAppButtons(evaluation.buttons);
+            if (evaluation.replyType === 'IMAGE' && evaluation.mediaUrl) {
+              await WhatsAppMessageHandler.sendImage(sessionId, normalizedJid, evaluation.mediaUrl, evaluation.replyText || '', {
+                isAIResponse: false,
+              });
+            } else if (waButtons.length > 0) {
+              await WhatsAppMessageHandler.sendButtons(
+                sessionId,
+                normalizedJid,
+                evaluation.replyText || '',
+                waButtons,
+                { isAIResponse: false }
+              );
+            } else {
+              await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, evaluation.replyText, {
+                isAIResponse: false,
+              });
+            }
+          } catch (botSendErr) {
+            if (autoReplyClaim?.claim?.id) {
+              await releaseInboundClaim(autoReplyClaim.claim.id, prisma);
+            }
+            throw botSendErr;
+          }
+          if (syncedConversation?.id) {
+            prisma.message.create({
+              data: {
+                conversationId: syncedConversation.id,
+                content: evaluation.replyText,
+                type: 'TEXT',
+                isFromCustomer: false,
+                metadata: JSON.stringify({
+                  platform: 'whatsapp',
+                  source: evaluation.kind === 'smart_reply' ? 'smart_reply' : (evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply')),
+                  ruleId: evaluation.ruleId || null,
+                  templateName: evaluation.templateName || null,
+                  matchedKeyword: evaluation.matchedKeyword || null,
+                }),
+              },
+            }).catch((e) => console.error('[BOT-RULES] Failed to save bot reply:', e.message));
+          }
+          botHandled = true;
         }
-        if (syncedConversation?.id) {
-          prisma.message.create({
-            data: {
-              conversationId: syncedConversation.id,
-              content: evaluation.replyText,
-              type: 'TEXT',
-              isFromCustomer: false,
-              metadata: JSON.stringify({
-                platform: 'whatsapp',
-                source: evaluation.kind === 'smart_reply' ? 'smart_reply' : (evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply')),
-                ruleId: evaluation.ruleId || null,
-                templateName: evaluation.templateName || null,
-                matchedKeyword: evaluation.matchedKeyword || null,
-              }),
-            },
-          }).catch((e) => console.error('[BOT-RULES] Failed to save bot reply:', e.message));
-        }
-        botHandled = true;
       }
 
       if (!botHandled && syncedCustomer?.id) {
         const { onCustomerReply } = require('../botFlowRuntime');
+        let flowAutoReplyChecked = false;
+        let flowAutoReplyAllowed = true;
         const flowResult = await onCustomerReply({
           companyId: syncedCustomer.companyId,
           customerId: syncedCustomer.id,
           channel: 'WHATSAPP',
           text: content,
           sendStep: async (step) => {
+            if (!flowAutoReplyChecked) {
+              flowAutoReplyChecked = true;
+              const flowClaim = await claimInboundAutoReply({
+                companyId: syncedCustomer.companyId,
+                channel: 'whatsapp',
+                externalMessageId: messageId,
+                conversationId: syncedConversation?.id,
+                prisma,
+              });
+              if (flowClaim.duplicate) {
+                flowAutoReplyAllowed = false;
+                console.log(`⏭️ [INBOUND-DEDUPE] flow_reply_skipped channel=whatsapp externalMessageId=${messageId} companyId=${syncedCustomer.companyId} conversationId=${syncedConversation?.id || ''}`);
+                return;
+              }
+            } else if (!flowAutoReplyAllowed) {
+              return;
+            }
             const { buildWhatsAppButtons } = require('../botMessageSender');
             const waButtons = buildWhatsAppButtons(step.buttons);
             if (waButtons.length > 0) {
@@ -469,6 +544,7 @@ async function saveIncomingMessage(payload) {
 
         accumulateWA(syncedCustomer.companyId, sessionId, normalizedJid, {
           message: content,
+          messageId,
           customerId: syncedCustomer.id,
           customerPhone: syncedCustomer?.phone || normalizedJid.split('@')[0],
           conversationId: syncedConversation?.id,
@@ -478,7 +554,6 @@ async function saveIncomingMessage(payload) {
         }, async (entries) => {
           if (entries.length === 0) return;
 
-          const combinedMessage = entries.map(e => e.message).join('\n---\n');
           const first = entries[0];
 
           console.log(`🟢 [WA-DEBOUNCE] Processing ${entries.length} debounced message(s) as one request`);
@@ -568,6 +643,18 @@ async function saveIncomingMessage(payload) {
               console.warn('[WA-DEBOUNCE] Error checking session agent:', err.message);
             }
           }
+
+          const { entriesToProcess } = await filterUnclaimedAutoReplyEntries({
+            companyId: first.companyId,
+            channel: 'whatsapp',
+            entries,
+            conversationId: first.conversationId,
+            prisma,
+          });
+          if (entriesToProcess.length === 0) {
+            return;
+          }
+          const combinedMessage = entriesToProcess.map(e => e.message).join('\n---\n');
 
           const result = await aiSdkClient.sendChatMessage({
             companyId: first.companyId,

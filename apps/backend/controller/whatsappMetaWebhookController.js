@@ -407,6 +407,10 @@ async function postWebhook(req, res) {
             pushName: value.contacts?.[0]?.profile?.name || null
           });
 
+          if (savedMessage?.duplicate) {
+            continue;
+          }
+
           // 🚨 PRODUCTION-FIX: معالجة أزرار القوالب (QUICK_REPLY) من Meta webhook.
           // سابقاً كانت الرسالة تُحفظ فقط (BUTTON) بدون أي معالجة للزر —
           // لذا ضغط "تأكيد الأوردر" لم يكن يحوّل الطلب ولا يبعت تأكيداً.

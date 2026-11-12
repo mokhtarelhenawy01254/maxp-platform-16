@@ -258,8 +258,9 @@ const WhatsAppSyncService = {
   },
 
   async syncMessage(companyId, sessionId, remoteJid, messageData, isIncoming, isNewMessage = true) {
+    const prisma = getSharedPrismaClient();
+    let claim = messageData._inboundClaim || null;
     try {
-      const prisma = getSharedPrismaClient();
 
       if (String(remoteJid || '').includes('@lid')) {
         console.warn(`⚠️ Skipping CRM sync for unresolved WhatsApp LID: ${remoteJid}`);
@@ -300,8 +301,7 @@ const WhatsAppSyncService = {
       const baseMetadata = (typeof messageData.metadata === 'string' ? JSON.parse(messageData.metadata) : (messageData.metadata || {})) || {};
       const crmMetadata = { ...baseMetadata, whatsAppMessageId: waMessageId, channel: 'whatsapp', externalMessageId: waMessageId };
 
-      let claim = null;
-      if (waMessageId) {
+      if (waMessageId && !claim) {
         const claimResult = await claimInboundMessage({
           companyId,
           channel: 'whatsapp',
@@ -324,33 +324,45 @@ const WhatsAppSyncService = {
       let wasCreated = false;
       let message = null;
       try {
-        message = await executeWithRetry(async () => {
-          wasCreated = true;
-          return prisma.message.create({
-            data: {
-              conversationId: conversation.id,
-              channel: 'whatsapp',
-              externalMessageId: waMessageId,
-              type: this.mapMessageType(messageData.type),
-              content: messageData.content || '',
-              attachments: messageData.mediaUrl ? JSON.stringify({
-                url: messageData.mediaUrl,
-                type: messageData.mediaType,
-                mime: messageData.mediaMimeType,
-                name: messageData.mediaFileName
-              }) : null,
-              metadata: JSON.stringify(crmMetadata),
-              isFromCustomer: isIncoming,
-              senderId: isIncoming ? null : (messageData.senderId || null),
-              createdAt: messageData.timestamp || new Date(),
-              isRead: !isIncoming
-            }
-          });
+        wasCreated = true;
+        message = await prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            channel: 'whatsapp',
+            externalMessageId: waMessageId,
+            type: this.mapMessageType(messageData.type),
+            content: messageData.content || '',
+            attachments: messageData.mediaUrl ? JSON.stringify({
+              url: messageData.mediaUrl,
+              type: messageData.mediaType,
+              mime: messageData.mediaMimeType,
+              name: messageData.mediaFileName
+            }) : null,
+            metadata: JSON.stringify(crmMetadata),
+            isFromCustomer: isIncoming,
+            senderId: isIncoming ? null : (messageData.senderId || null),
+            createdAt: messageData.timestamp || new Date(),
+            isRead: !isIncoming
+          }
         });
         if (claim?.id && message?.id) {
           await commitInboundClaim(claim.id, message.id, prisma);
+          messageData._claimCommitted = true;
         }
       } catch (createErr) {
+        const isUniqueViolation =
+          createErr?.code === 'P2002' ||
+          createErr?.code === '23505' ||
+          (createErr?.message && createErr.message.includes('Unique constraint'));
+        if (isUniqueViolation && waMessageId) {
+          logDuplicateSkipped({
+            channel: 'whatsapp',
+            externalMessageId: waMessageId,
+            companyId,
+            conversationId: conversation.id
+          });
+          return { customer, conversation, message: null, wasCreated: false, duplicateLogged: true };
+        }
         if (claim?.id) {
           await releaseInboundClaim(claim.id, prisma);
         }
@@ -433,8 +445,11 @@ const WhatsAppSyncService = {
 
       return { customer, conversation: updatedConversation, message, wasCreated: true };
     } catch (error) {
+      if (claim?.id && !messageData?._claimCommitted) {
+        await releaseInboundClaim(claim.id, prisma);
+      }
       console.error('❌ Error syncing to central DB:', error);
-      return null;
+      return { error: true, wasCreated: false, reason: error.message };
     }
   },
 

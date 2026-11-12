@@ -10,6 +10,24 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 
 let schemaEnsured = false;
 let schemaEnsurePromise = null;
+const dailyDuplicateCounts = new Map();
+
+function getUtcDateKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function pruneOldDailyCounts(currentDateKey) {
+  if (dailyDuplicateCounts.size <= 32) return;
+  const cutoff = new Date(`${currentDateKey}T00:00:00.000Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 7);
+  const cutoffKey = getUtcDateKey(cutoff);
+  for (const key of dailyDuplicateCounts.keys()) {
+    const [datePart] = key.split(':');
+    if (datePart && datePart < cutoffKey) {
+      dailyDuplicateCounts.delete(key);
+    }
+  }
+}
 
 /**
  * Idempotently ensures the message_inbound_dedupe table, unique index, and message columns exist.
@@ -43,14 +61,15 @@ async function ensureInboundDedupeSchema(customPrisma) {
       `CREATE INDEX IF NOT EXISTS "message_inbound_dedupe_firstSeenAt_idx" ON "message_inbound_dedupe"("firstSeenAt");`,
       `ALTER TABLE "messages" ADD COLUMN IF NOT EXISTS "channel" TEXT;`,
       `ALTER TABLE "messages" ADD COLUMN IF NOT EXISTS "externalMessageId" TEXT;`,
-      `CREATE INDEX IF NOT EXISTS "messages_conversationId_externalMessageId_idx" ON "messages"("conversationId", "externalMessageId");`
+      `CREATE INDEX IF NOT EXISTS "messages_conversationId_externalMessageId_idx" ON "messages"("conversationId", "externalMessageId");`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS "messages_conversationId_externalMessageId_unique_idx" ON "messages"("conversationId", "externalMessageId") WHERE "externalMessageId" IS NOT NULL;`
     ];
 
     for (const sql of ddlStatements) {
       try {
         await prisma.$executeRawUnsafe(sql);
       } catch (err) {
-        // Table or index already exists or running in an environment without DDL permissions
+        console.warn('[INBOUND-DEDUPE] Schema DDL ensure note:', err?.message || err);
       }
     }
     schemaEnsured = true;
@@ -173,26 +192,114 @@ async function releaseInboundClaim(claimId, customPrisma) {
   }
 }
 
+function incrementDailyDuplicateCount(channel = 'unknown', date = new Date()) {
+  const dateKey = getUtcDateKey(date);
+  const normalizedChannel = String(channel || 'unknown').toLowerCase();
+  const mapKey = `${dateKey}:${normalizedChannel}`;
+  const nextCount = (dailyDuplicateCounts.get(mapKey) || 0) + 1;
+  dailyDuplicateCounts.set(mapKey, nextCount);
+  pruneOldDailyCounts(dateKey);
+  return { date: dateKey, dailyCount: nextCount };
+}
+
+function getDailyDuplicateCount({ channel = 'unknown', date = new Date() } = {}) {
+  const dateKey = typeof date === 'string' ? date : getUtcDateKey(date);
+  const normalizedChannel = String(channel || 'unknown').toLowerCase();
+  return dailyDuplicateCounts.get(`${dateKey}:${normalizedChannel}`) || 0;
+}
+
+function resetDailyDuplicateCounts() {
+  dailyDuplicateCounts.clear();
+}
+
 /**
- * Logs a standard single-line duplicate_skipped audit record.
+ * Logs a standard single-line duplicate_skipped audit record with a per-day counter.
  *
  * @param {Object} params
  * @param {string} params.channel
  * @param {string} params.externalMessageId
  * @param {string} params.companyId
  * @param {string} [params.conversationId]
+ * @returns {{ date: string, dailyCount: number }}
  */
 function logDuplicateSkipped({ channel, externalMessageId, companyId, conversationId }) {
+  const { date, dailyCount } = incrementDailyDuplicateCount(channel);
   console.log(
-    `[INBOUND-DEDUPE] duplicate_skipped channel=${channel || ''} externalMessageId=${externalMessageId || ''} companyId=${companyId || ''} conversationId=${conversationId || ''}`
+    `[INBOUND-DEDUPE] duplicate_skipped channel=${channel || ''} externalMessageId=${externalMessageId || ''} companyId=${companyId || ''} conversationId=${conversationId || ''} date=${date} dailyCount=${dailyCount}`
   );
+  return { date, dailyCount };
+}
+
+function buildAutoReplyChannel(channel) {
+  return `${String(channel || 'inbound').toLowerCase()}:autoreply`;
+}
+
+/**
+ * Atomically claims the single auto-reply/bot dispatch slot for an inbound externalMessageId.
+ */
+async function claimInboundAutoReply({ companyId, channel, externalMessageId, conversationId, prisma: customPrisma }) {
+  if (!externalMessageId || !companyId || !channel) {
+    return { duplicate: false, claim: null };
+  }
+  return claimInboundMessage({
+    companyId,
+    channel: buildAutoReplyChannel(channel),
+    externalMessageId,
+    conversationId,
+    prisma: customPrisma
+  });
+}
+
+/**
+ * Filters debounced inbound entries so each externalMessageId triggers at most one AI/bot reply.
+ */
+async function filterUnclaimedAutoReplyEntries({ companyId, channel, entries = [], conversationId, prisma: customPrisma }) {
+  const entriesToProcess = [];
+  const skippedIds = [];
+
+  for (const entry of entries) {
+    const extId = entry?.fbMessageId || entry?.messageId || entry?.externalMessageId || null;
+    if (!extId || !companyId || !channel) {
+      entriesToProcess.push(entry);
+      continue;
+    }
+
+    try {
+      const claimResult = await claimInboundAutoReply({
+        companyId,
+        channel,
+        externalMessageId: extId,
+        conversationId: conversationId || entry?.conversationId || null,
+        prisma: customPrisma
+      });
+
+      if (claimResult.duplicate) {
+        skippedIds.push(extId);
+        console.log(
+          `[INBOUND-DEDUPE] duplicate_autoreply_skipped channel=${channel} externalMessageId=${extId} companyId=${companyId} conversationId=${conversationId || entry?.conversationId || ''}`
+        );
+        continue;
+      }
+
+      entriesToProcess.push(entry);
+    } catch (err) {
+      console.warn('[INBOUND-DEDUPE] Auto-reply claim check failed, proceeding safely:', err.message);
+      entriesToProcess.push(entry);
+    }
+  }
+
+  return { entriesToProcess, skippedIds };
 }
 
 module.exports = {
   claimInboundMessage,
   commitInboundClaim,
   releaseInboundClaim,
+  claimInboundAutoReply,
+  filterUnclaimedAutoReplyEntries,
   logDuplicateSkipped,
+  getDailyDuplicateCount,
+  resetDailyDuplicateCounts,
   ensureInboundDedupeSchema,
   resetSchemaEnsureState
 };

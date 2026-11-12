@@ -11,6 +11,7 @@ const {
 } = require('../utils/webhookSignature');
 const { getFacebookAppSecret, getFacebookWebhookVerifyTokens } = require('../config/facebookAppConfig');
 const whatsappMetaWebhookController = require('./whatsappMetaWebhookController');
+const { logDuplicateSkipped } = require('../services/inboundDeduplicationGuard');
 
 // ⚠️ CRITICAL: Always use safeQuery() instead of direct prisma calls
 // This ensures proper connection management and retry logic
@@ -421,6 +422,12 @@ const postWebhook = async (req, res) => {
                     if (messageId) {
                       const isDup = await isWebhookEventDuplicate('facebook', messageId, eventAppKey);
                       if (isDup || inFlightMessages.has(messageId)) {
+                        logDuplicateSkipped({
+                          channel: 'facebook',
+                          externalMessageId: messageId,
+                          companyId: pageExists?.companyId || '',
+                          conversationId: ''
+                        });
                         continue;
                       }
                       inFlightMessages.add(messageId);
