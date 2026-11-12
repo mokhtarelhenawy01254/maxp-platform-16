@@ -43,7 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [currentVersion, setCurrentVersion] = useState('1.0.0');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateResult, setUpdateResult] = useState<{
-    status: 'idle' | 'checking' | 'dev' | 'update-available' | 'downloaded' | 'up-to-date' | 'error';
+    status: 'idle' | 'checking' | 'dev' | 'update-available' | 'ahead-of-published' | 'downloaded' | 'up-to-date' | 'error';
     message?: string;
     version?: string;
   }>({ status: 'idle' });
@@ -500,6 +500,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         ? 'rgba(56, 189, 248, 0.1)'
                         : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
                         ? 'var(--accent-green-bg)'
+                        : updateResult.status === 'ahead-of-published'
+                        ? 'rgba(245, 158, 11, 0.12)'
                         : updateResult.status === 'error'
                         ? 'var(--accent-red-bg)'
                         : 'var(--border-subtle)',
@@ -508,6 +510,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         ? 'rgba(56, 189, 248, 0.25)'
                         : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
                         ? 'var(--accent-green-border)'
+                        : updateResult.status === 'ahead-of-published'
+                        ? 'rgba(245, 158, 11, 0.4)'
                         : updateResult.status === 'error'
                         ? 'var(--accent-red-border)'
                         : 'var(--border-strong)',
@@ -561,6 +565,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-green)' }}>
                       <CheckCircle2 size={13} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    </div>
+                  )}
+
+                  {updateResult.status === 'ahead-of-published' && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, color: '#f59e0b', maxWidth: '100%' }}>
+                      <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span style={{ fontSize: 11, fontWeight: 500, wordBreak: 'break-word', lineHeight: 1.4 }}>{updateResult.message}</span>
                     </div>
                   )}
 

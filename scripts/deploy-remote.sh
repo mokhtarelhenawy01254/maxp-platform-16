@@ -1315,8 +1315,12 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   else
     echo "✅ Admin app serves the deployed build (br: ${SERVED_ENTRY_BR:-n/a}, identity: ${SERVED_ENTRY_ID:-n/a})"
   fi
+else
+  echo "⚠️ Nginx config archive not found, skipping Nginx config sync (downloads guards still run)"
+fi
 
-  echo "🔎 Running downloads & auto-updater smoke tests..."
+# ── حراس التحديث/التحميل — إجباري خارج شرط أرشيف nginx (fail-closed) ──
+echo "🔎 Running downloads & auto-updater smoke tests..."
   DOWNLOADS_YML_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -o /tmp/smoke_latest.yml -w '%{http_code}' "https://maxp.online/downloads/latest.yml" 2>/dev/null || echo "000")"
   DOWNLOAD_APK_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -s -o /dev/null -w '%{http_code}' "https://maxp.online/download/maxp.apk" 2>/dev/null || echo "000")"
   DOWNLOADS_APK_STATUS="$(curl -ksS --max-time 15 --resolve "maxp.online:443:127.0.0.1" -s -o /dev/null -w '%{http_code}' "https://maxp.online/downloads/maxp.apk" 2>/dev/null || echo "000")"
@@ -1335,9 +1339,32 @@ if [ -f "$DEPLOY_STAGING/nginx-configs.tar.gz" ]; then
   fi
   PUBLISHED_DESKTOP_VER="$(grep -E '^version:' /tmp/smoke_latest.yml | awk '{print $2}' | tr -d '\r"')"
   echo "✅ Downloads verification OK (Published Desktop: v${PUBLISHED_DESKTOP_VER}, APK accessible)"
-else
-  echo "⚠️ Nginx config archive not found, skipping Nginx sync"
-fi
+
+  # 🛡️ حارس المانيفست (fail-closed): لازم إصدار منشور صالح >= إصدار الريبو
+  VERSION_RE='^[0-9]+(\.[0-9]+)*$'
+  if [ -z "${EXPECTED_DESKTOP_VERSION:-}" ]; then
+    echo "❌ Desktop manifest guard: EXPECTED_DESKTOP_VERSION is missing — refusing to deploy without the repo version"
+    exit 1
+  fi
+  if ! printf '%s' "$EXPECTED_DESKTOP_VERSION" | grep -Eq "$VERSION_RE"; then
+    echo "❌ Desktop manifest guard: EXPECTED_DESKTOP_VERSION '$EXPECTED_DESKTOP_VERSION' is not a valid numeric version"
+    exit 1
+  fi
+  if [ -z "$PUBLISHED_DESKTOP_VER" ]; then
+    echo "❌ Desktop manifest guard: could not parse a version from /downloads/latest.yml — refusing to deploy"
+    exit 1
+  fi
+  if ! printf '%s' "$PUBLISHED_DESKTOP_VER" | grep -Eq "$VERSION_RE"; then
+    echo "❌ Desktop manifest guard: published version '$PUBLISHED_DESKTOP_VER' in /downloads/latest.yml is malformed"
+    exit 1
+  fi
+  NEWEST_VER="$(printf '%s\n%s\n' "$PUBLISHED_DESKTOP_VER" "$EXPECTED_DESKTOP_VERSION" | sort -V | tail -n1)"
+  if [ "$NEWEST_VER" != "$PUBLISHED_DESKTOP_VER" ]; then
+    echo "❌ Desktop manifest regression: published v$PUBLISHED_DESKTOP_VER < repo v$EXPECTED_DESKTOP_VERSION"
+    echo "   /var/www/maxp-downloads/latest.yml must be republished (release-desktop workflow) before site deploys are allowed."
+    exit 1
+  fi
+  echo "✅ Desktop manifest guard OK: published v$PUBLISHED_DESKTOP_VER >= repo v$EXPECTED_DESKTOP_VERSION"
 
 # Clear error trap and remove rollback backup on successful deployment
 trap - ERR

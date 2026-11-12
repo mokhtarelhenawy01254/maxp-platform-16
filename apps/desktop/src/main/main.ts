@@ -1868,10 +1868,10 @@ function registerIpcHandlers(): void {
         } else if (cmp < 0) {
           return {
             success: true,
-            status: 'up-to-date',
+            status: 'ahead-of-published',
             currentVersion,
             latestVersion: publishedVersion,
-            message: `أنت تستخدم إصداراً أحدث (v${currentVersion}) من الإصدار المنشور (v${publishedVersion}). نظامك محدث بالكامل.`,
+            message: `نسختك المثبّتة v${currentVersion} أحدث من آخر إصدار منشور على خادم التحديثات v${publishedVersion}. مفيش تحديث مطلوب دلوقتي — هيتاح تلقائيًا أول ما يُنشر إصدار أحدث من v${currentVersion}.`,
           };
         }
       }

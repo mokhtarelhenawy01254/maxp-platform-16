@@ -121,7 +121,7 @@ declare global {
       getDeviceInfo: () => Promise<{ hostname: string; platform: string; release: string; appVersion: string }>;
       checkForUpdates: () => Promise<{
         success: boolean;
-        status: 'dev' | 'update-available' | 'up-to-date' | 'error';
+        status: 'dev' | 'update-available' | 'ahead-of-published' | 'up-to-date' | 'error';
         currentVersion: string;
         latestVersion?: string;
         message: string;
