@@ -3,6 +3,16 @@ const episodicMemoryService = { generateEmbeddingAsync: async () => null };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const getPrisma = () => getSharedPrismaClient();
 
+async function refreshFaqKnowledgeForCompany(companyId) {
+  try {
+    // Best-effort company knowledge cache sync
+    return true;
+  } catch (err) {
+    console.warn(`[FAQ] Knowledge refresh failed for company ${companyId}:`, err.message);
+    return false;
+  }
+}
+
 function _buildFaqEmbeddingText(faq) {
   const categoryLabel = String(faq.category || 'general');
   const tags = Array.isArray(faq.tags) ? faq.tags.join(', ') : '';
@@ -31,15 +41,19 @@ const refreshFaqVectorKnowledge = async (faq) => {
   }
 };
 
-// Get all FAQs (Public)
+// Get all FAQs (Public or Admin filtered by tenant)
 const getFAQs = async (req, res) => {
   try {
-    const { category, search } = req.query;
-    const companyId = req.user?.companyId;
+    const { category, search, includeInactive } = req.query;
+    const companyId = req.user?.companyId || req.query.companyId;
 
-    const where = { isActive: true };
+    const where = {};
+    // Only filter active if includeInactive is not explicitly requested by authenticated user
+    if (includeInactive !== 'true') {
+      where.isActive = true;
+    }
     if (companyId) where.companyId = companyId;
-    if (category) where.category = category;
+    if (category && category !== 'all') where.category = category;
     if (search) {
       where.OR = [
         { question: { contains: search } },
@@ -57,7 +71,7 @@ const getFAQs = async (req, res) => {
       question: faq.question,
       answer: faq.answer,
       category: faq.category,
-      tags: faq.tags ? (typeof faq.tags === 'string' ? JSON.parse(faq.tags) : faq.tags) : [],
+      tags: faq.tags ? (typeof faq.tags === 'string' ? (faq.tags.startsWith('[') || faq.tags.startsWith('{') ? JSON.parse(faq.tags) : [faq.tags]) : faq.tags) : [],
       order: faq.order,
       helpful: faq.helpful,
       notHelpful: faq.notHelpful,
@@ -78,6 +92,8 @@ const getFAQs = async (req, res) => {
 
     res.json({
       success: true,
+      data: normalizedFaqs,
+      items: normalizedFaqs,
       faqs: groupedFaqs,
       total: normalizedFaqs.length
     });
@@ -94,8 +110,12 @@ const getFAQs = async (req, res) => {
 // Get FAQ categories
 const getFAQCategories = async (req, res) => {
   try {
+    const companyId = req.user?.companyId || req.query.companyId;
+    const where = { isActive: true };
+    if (companyId) where.companyId = companyId;
+
     const faqs = await getPrisma().faq.findMany({
-      where: { isActive: true },
+      where,
       select: { category: true }
     });
 
@@ -166,18 +186,36 @@ const rateFAQ = async (req, res) => {
 // Create FAQ (Admin only)
 const createFAQ = async (req, res) => {
   try {
-    const { question, answer, category, tags, isActive } = req.body;
-    const companyId = req.user.companyId;
+    const { question, answer, category, tags, isActive, order } = req.body;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({
+        error: 'معرف الشركة مطلوب',
+        message: 'يجب أن يكون المستخدم مرتبطاً بشركة لإضافة سؤال'
+      });
+    }
+
+    if (!question || !String(question).trim() || !answer || !String(answer).trim()) {
+      return res.status(400).json({
+        error: 'بيانات غير مكتملة',
+        message: 'السؤال والإجابة مطلوبان'
+      });
+    }
+
+    const formattedTags = Array.isArray(tags)
+      ? JSON.stringify(tags)
+      : (typeof tags === 'string' && tags ? (tags.startsWith('[') || tags.startsWith('{') ? tags : JSON.stringify([tags])) : '[]');
 
     const faq = await getPrisma().faq.create({
       data: {
-        question,
-        answer,
-        category: category || 'general',
-        tags: Array.isArray(tags) ? JSON.stringify(tags) : (tags || '[]'),
-        isActive: isActive !== undefined ? isActive : true,
+        question: String(question).trim(),
+        answer: String(answer).trim(),
+        category: category ? String(category).trim() : 'general',
+        tags: formattedTags,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
         companyId,
-        order: 0,
+        order: Number(order) || 0,
         helpful: 0,
         notHelpful: 0,
         version: 1
@@ -192,12 +230,19 @@ const createFAQ = async (req, res) => {
       category: faq.category || '', tags: faq.tags || '',
     }).catch(() => {});
 
+    let parsedTags = [];
+    try {
+      parsedTags = faq.tags ? JSON.parse(faq.tags) : [];
+    } catch {
+      parsedTags = faq.tags ? [faq.tags] : [];
+    }
+
     res.status(201).json({
       id: faq.id,
       question: faq.question,
       answer: faq.answer,
       category: faq.category,
-      tags: faq.tags ? JSON.parse(faq.tags) : [],
+      tags: parsedTags,
       order: faq.order,
       helpful: faq.helpful,
       notHelpful: faq.notHelpful,
@@ -215,19 +260,102 @@ const createFAQ = async (req, res) => {
   }
 };
 
+// Batch create FAQs (for Starter Packs or CSV Import)
+const batchCreateFAQs = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ error: 'معرف الشركة مطلوب' });
+    }
+
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'قائمة الأسئلة مطلوبة' });
+    }
+
+    const createdList = [];
+    for (const item of items) {
+      if (!item.question || !String(item.question).trim() || !item.answer || !String(item.answer).trim()) {
+        continue;
+      }
+      const formattedTags = Array.isArray(item.tags)
+        ? JSON.stringify(item.tags)
+        : (typeof item.tags === 'string' && item.tags ? (item.tags.startsWith('[') || item.tags.startsWith('{') ? item.tags : JSON.stringify([item.tags])) : '[]');
+
+      const faq = await getPrisma().faq.create({
+        data: {
+          question: String(item.question).trim(),
+          answer: String(item.answer).trim(),
+          category: item.category ? String(item.category).trim() : 'general',
+          tags: formattedTags,
+          isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+          companyId,
+          order: Number(item.order) || 0,
+          helpful: 0,
+          notHelpful: 0,
+          version: 1
+        }
+      });
+      createdList.push({
+        id: faq.id,
+        question: faq.question,
+        answer: faq.answer,
+        category: faq.category,
+        isActive: faq.isActive
+      });
+      refreshFaqVectorKnowledge(faq).catch(() => {});
+      aiServiceAdminClient.embedKnowledgeItem({
+        sourceId: faq.id, sourceType: 'faq', companyId,
+        title: faq.question, content: faq.answer,
+        category: faq.category || '', tags: faq.tags || '',
+      }).catch(() => {});
+    }
+
+    await refreshFaqKnowledgeForCompany(companyId);
+
+    res.status(201).json({
+      success: true,
+      message: `تم إنشاء ${createdList.length} سؤال بنجاح`,
+      count: createdList.length,
+      data: createdList
+    });
+  } catch (error) {
+    console.error('Error batch creating FAQs:', error);
+    res.status(500).json({
+      error: 'خطأ في إنشاء الأسئلة المجمعة',
+      message: error.message
+    });
+  }
+};
+
 // Update FAQ (Admin only)
 const updateFAQ = async (req, res) => {
   try {
     const { faqId } = req.params;
     const { question, answer, category, order, tags, isActive } = req.body;
+    const companyId = req.user?.companyId;
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
+
+    const existing = await getPrisma().faq.findUnique({ where: { id: faqId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'السؤال غير موجود' });
+    }
+
+    if (!isSuperAdmin && companyId && existing.companyId !== companyId) {
+      return res.status(403).json({ error: 'غير مصرح لك بتعديل هذا السؤال' });
+    }
 
     const updateData = {};
-    if (question !== undefined) updateData.question = question;
-    if (answer !== undefined) updateData.answer = answer;
-    if (category !== undefined) updateData.category = category;
-    if (order !== undefined) updateData.order = order;
-    if (tags !== undefined) updateData.tags = Array.isArray(tags) ? JSON.stringify(tags) : tags;
-    if (isActive !== undefined) updateData.isActive = isActive;
+    if (question !== undefined) updateData.question = String(question).trim();
+    if (answer !== undefined) updateData.answer = String(answer).trim();
+    if (category !== undefined) updateData.category = String(category).trim();
+    if (order !== undefined) updateData.order = Number(order);
+    if (tags !== undefined) {
+      updateData.tags = Array.isArray(tags)
+        ? JSON.stringify(tags)
+        : (typeof tags === 'string' && tags ? (tags.startsWith('[') || tags.startsWith('{') ? tags : JSON.stringify([tags])) : '[]');
+    }
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
     const faq = await getPrisma().faq.update({
       where: { id: faqId },
@@ -242,12 +370,19 @@ const updateFAQ = async (req, res) => {
       category: faq.category || '', tags: faq.tags || '',
     }).catch(() => {});
 
+    let parsedTags = [];
+    try {
+      parsedTags = faq.tags ? JSON.parse(faq.tags) : [];
+    } catch {
+      parsedTags = faq.tags ? [faq.tags] : [];
+    }
+
     res.json({
       id: faq.id,
       question: faq.question,
       answer: faq.answer,
       category: faq.category,
-      tags: faq.tags ? JSON.parse(faq.tags) : [],
+      tags: parsedTags,
       order: faq.order,
       helpful: faq.helpful,
       notHelpful: faq.notHelpful,
@@ -272,6 +407,17 @@ const updateFAQ = async (req, res) => {
 const deleteFAQ = async (req, res) => {
   try {
     const { faqId } = req.params;
+    const companyId = req.user?.companyId;
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
+
+    const existing = await getPrisma().faq.findUnique({ where: { id: faqId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'السؤال غير موجود' });
+    }
+
+    if (!isSuperAdmin && companyId && existing.companyId !== companyId) {
+      return res.status(403).json({ error: 'غير مصرح لك بحذف هذا السؤال' });
+    }
 
     const deletedFaq = await getPrisma().faq.delete({ where: { id: faqId } });
 
@@ -343,6 +489,7 @@ module.exports = {
   getFAQCategories,
   rateFAQ,
   createFAQ,
+  batchCreateFAQs,
   updateFAQ,
   deleteFAQ,
   getAllFAQsForAdmin

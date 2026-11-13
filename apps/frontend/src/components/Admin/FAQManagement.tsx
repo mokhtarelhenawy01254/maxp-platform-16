@@ -1,119 +1,141 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Plus,
   Pencil,
   Trash2,
   ThumbsUp,
-  X,
   HelpCircle,
   CheckCircle2,
   Search,
+  Sparkles,
+  Download,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
-
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-  tags?: string[];
-  order?: number;
-  helpful?: number;
-  notHelpful?: number;
-  isActive: boolean;
-  createdAt?: string;
-}
-
-const CATEGORIES = [
-  { value: "all", label: "جميع الفئات" },
-  { value: "shipping", label: "الشحن والتوصيل" },
-  { value: "payment", label: "المدفوعات والفواتير" },
-  { value: "returns", label: "الاستبدال والاسترجاع" },
-  { value: "general", label: "أسئلة عامة" },
-];
-
-const DEFAULT_FAQS: FAQ[] = [
-  {
-    id: "faq-1",
-    question: "كيف يمكنني تتبع حالة شحنة طلبي بعد إتمام الدفع؟",
-    answer: "ستصلك رسالة نصية وواتساب تحتوي على رابط التتبع اللحظي بمجرد خروج الشحنة مع مندوب شركة بوسطة أو أرامكس.",
-    category: "shipping",
-    tags: ["شحن", "تتبع", "بوسطة"],
-    helpful: 48,
-    notHelpful: 1,
-    isActive: true,
-  },
-  {
-    id: "faq-2",
-    question: "ما هي شروط الاستبدال والاسترجاع للبضائع؟",
-    answer: "يحق للعميل استبدال أو إرجاع المنتج خلال 14 يوماً من الاستلام بشرط سلامة العبوة الأصلية وعدم استخدام المنتج.",
-    category: "returns",
-    tags: ["استرجاع", "ضمان", "استبدال"],
-    helpful: 64,
-    notHelpful: 2,
-    isActive: true,
-  },
-  {
-    id: "faq-3",
-    question: "ما هي طرق الدفع المتاحة داخل المتجر الإلكتروني؟",
-    answer: "نوفر الدفع عند الاستلام، إنستاباي (InstaPay)، فودافون كاش، وبطاقات ميزة وفيزا وماستركارد البنكية بأمان تام.",
-    category: "payment",
-    tags: ["دفع", "إنستاباي", "كاش"],
-    helpful: 29,
-    notHelpful: 0,
-    isActive: true,
-  },
-];
+import FAQModal, { FAQItem } from "./faq/FAQModal";
+import FAQStarterPackModal from "./faq/FAQStarterPackModal";
+import { StarterQuestion } from "./faq/faqPresets";
 
 export default function FAQManagement() {
-  const [faqs, setFaqs] = useState<FAQ[]>(DEFAULT_FAQS);
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [search, setSearch] = useState("");
+
+  // Modals state
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
+  const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [starterPackOpen, setStarterPackOpen] = useState(false);
+  const [isInstallingPack, setIsInstallingPack] = useState(false);
 
-  // Form state
-  const [formQuestion, setFormQuestion] = useState("");
-  const [formAnswer, setFormAnswer] = useState("");
-  const [formCategory, setFormCategory] = useState("general");
+  // Fetch FAQs from database
+  const fetchFaqs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get("/faqs", {
+        params: { includeInactive: "true" },
+      });
+      const raw: any = res?.data;
+      let list: FAQItem[] = [];
 
-  useEffect(() => {
-    let active = true;
-    const fetchFaqs = async () => {
-      try {
-        const res = await apiClient.get("/faqs").catch(() => null);
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0 && active) {
-          setFaqs(res.data);
-        }
-      } catch {
-        // Fallbacks active
+      if (Array.isArray(raw)) {
+        list = raw as FAQItem[];
+      } else if (raw?.data && Array.isArray(raw.data)) {
+        list = raw.data as FAQItem[];
+      } else if (raw?.items && Array.isArray(raw.items)) {
+        list = raw.items as FAQItem[];
+      } else if (raw?.faqs && typeof raw.faqs === "object") {
+        list = Object.values(raw.faqs).flat() as FAQItem[];
       }
-    };
-    fetchFaqs();
-    return () => { active = false; };
+
+      setFaqs(list);
+    } catch {
+      toast.error("فشل تحميل الأسئلة من السيرفر");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const openAddModal = () => {
+  useEffect(() => {
+    fetchFaqs();
+  }, [fetchFaqs]);
+
+  // Dynamic Categories from data
+  const dynamicCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    faqs.forEach((f) => {
+      const cat = f.category?.trim() || "عام";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [faqs]);
+
+  // Filtered FAQs
+  const filtered = useMemo(() => {
+    return faqs.filter((f) => {
+      const catMatch = selectedCat === "all" || (f.category?.trim() || "عام") === selectedCat;
+      const statusMatch =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? f.isActive : !f.isActive);
+      const searchLower = search.toLowerCase().trim();
+      const searchMatch =
+        !searchLower ||
+        f.question?.toLowerCase().includes(searchLower) ||
+        f.answer?.toLowerCase().includes(searchLower) ||
+        (Array.isArray(f.tags) && f.tags.some((t) => t.toLowerCase().includes(searchLower)));
+
+      return catMatch && statusMatch && searchMatch;
+    });
+  }, [faqs, selectedCat, statusFilter, search]);
+
+  // Actions
+  const handleOpenAdd = () => {
     setEditingFaq(null);
-    setFormQuestion("");
-    setFormAnswer("");
-    setFormCategory("general");
     setModalOpen(true);
   };
 
-  const openEditModal = (faq: FAQ) => {
+  const handleOpenEdit = (faq: FAQItem) => {
     setEditingFaq(faq);
-    setFormQuestion(faq.question);
-    setFormAnswer(faq.answer);
-    setFormCategory(faq.category);
     setModalOpen(true);
+  };
+
+  const handleSaveFAQ = async (formData: {
+    question: string;
+    answer: string;
+    category: string;
+    tags: string[];
+    isActive: boolean;
+  }) => {
+    setIsSaving(true);
+    try {
+      if (editingFaq) {
+        const res = await apiClient.put(`/faqs/${editingFaq.id}`, formData);
+        const updated = (res?.data && (res.data as any).id) ? (res.data as FAQItem) : { ...editingFaq, ...formData };
+        setFaqs((prev) => prev.map((f) => (f.id === editingFaq.id ? updated : f)));
+        toast.success("تم تحديث السؤال وتحديث قاعدة المعرفة");
+      } else {
+        const res = await apiClient.post("/faqs", formData);
+        const created = (res?.data && (res.data as any).id)
+          ? (res.data as FAQItem)
+          : { id: `faq-${Date.now()}`, ...formData, helpful: 0 };
+        setFaqs((prev) => [created, ...prev]);
+        toast.success("تمت إضافة السؤال وحفظه في قاعدة المعرفة بنجاح");
+      }
+      setModalOpen(false);
+    } catch {
+      toast.error("حدث خطأ أثناء حفظ السؤال");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا السؤال؟")) return;
+    if (!window.confirm("هل أنت متأكد من حذف هذا السؤال نهائياً من قاعدة المعرفة؟")) return;
     try {
-      await apiClient.delete(`/faqs/${id}`).catch(() => null);
+      await apiClient.delete(`/faqs/${id}`);
       setFaqs((prev) => prev.filter((f) => f.id !== id));
       toast.success("تم حذف السؤال بنجاح");
     } catch {
@@ -121,52 +143,64 @@ export default function FAQManagement() {
     }
   };
 
-  const toggleActive = async (faq: FAQ) => {
-    const updated = { ...faq, isActive: !faq.isActive };
+  const toggleActive = async (faq: FAQItem) => {
+    const newStatus = !faq.isActive;
     try {
-      await apiClient.put(`/faqs/${faq.id}`, { isActive: updated.isActive }).catch(() => null);
-      setFaqs((prev) => prev.map((f) => (f.id === faq.id ? updated : f)));
-      toast.success(updated.isActive ? "تم تفعيل السؤال" : "تم تعطيل السؤال");
+      await apiClient.put(`/faqs/${faq.id}`, { isActive: newStatus });
+      setFaqs((prev) =>
+        prev.map((f) => (f.id === faq.id ? { ...f, isActive: newStatus } : f))
+      );
+      toast.success(newStatus ? "تم تفعيل السؤال" : "تم تعطيل السؤال");
     } catch {
-      toast.error("فشل تغيير الحالة");
+      toast.error("فشل تغيير حالة السؤال");
     }
   };
 
-  const handleSave = () => {
-    if (!formQuestion.trim() || !formAnswer.trim()) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+  const handleInstallStarterPack = async (questions: StarterQuestion[]) => {
+    setIsInstallingPack(true);
+    try {
+      await apiClient.post("/faqs/batch", { items: questions });
+      toast.success(`تم تثبيت ${questions.length} سؤال بنجاح في قاعدة المعرفة`);
+      setStarterPackOpen(false);
+      await fetchFaqs();
+    } catch {
+      toast.error("فشل تثبيت حزمة الأسئلة");
+    } finally {
+      setIsInstallingPack(false);
+    }
+  };
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (faqs.length === 0) {
+      toast.error("لا توجد أسئلة لتصديرها");
       return;
     }
-
-    const item: FAQ = {
-      id: editingFaq?.id || `faq-${Date.now()}`,
-      question: formQuestion.trim(),
-      answer: formAnswer.trim(),
-      category: formCategory || "general",
-      isActive: true,
-      helpful: editingFaq?.helpful || 0,
-    };
-
-    if (editingFaq) {
-      setFaqs((prev) => prev.map((f) => (f.id === editingFaq.id ? item : f)));
-      toast.success("تم تحديث السؤال");
-    } else {
-      setFaqs((prev) => [item, ...prev]);
-      toast.success("تمت إضافة السؤال");
-    }
-    setModalOpen(false);
+    const headers = ["السؤال", "الإجابة", "التصنيف", "الكلمات المفتاحية", "الحالة", "التقييم"];
+    const rows = faqs.map((f) => [
+      `"${(f.question || "").replace(/"/g, '""')}"`,
+      `"${(f.answer || "").replace(/"/g, '""')}"`,
+      `"${(f.category || "عام").replace(/"/g, '""')}"`,
+      `"${(Array.isArray(f.tags) ? f.tags.join(", ") : "").replace(/"/g, '""')}"`,
+      f.isActive ? "نشط" : "معطل",
+      f.helpful || 0,
+    ]);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `faqs-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("تم تصدير الأسئلة بنجاح");
   };
 
-  const filtered = useMemo(() => {
-    return faqs.filter((f) => {
-      const matchCat = selectedCat === "all" || f.category === selectedCat;
-      const matchSearch = !search || f.question.includes(search) || f.answer.includes(search);
-      return matchCat && matchSearch;
-    });
-  }, [faqs, selectedCat, search]);
-
+  // KPIs
   const activeCount = faqs.filter((f) => f.isActive).length;
   const totalHelpful = faqs.reduce((acc, f) => acc + (f.helpful || 0), 0);
+  const categoriesCount = dynamicCategories.length;
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
@@ -175,33 +209,51 @@ export default function FAQManagement() {
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-0.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              إدارة الأسئلة الشائعة (FAQ)
+              إدارة الأسئلة الشائعة وقاعدة المعرفة
             </h1>
             <p className="text-xs text-muted-foreground">
-              قاعدة الأسئلة المتكررة المعروضة في المتجر الإلكتروني والمستخدمة في ردود الذكاء الاصطناعي
+              الأسئلة المعتمدة للردود الآلية للذكاء الاصطناعي (WhatsApp/Chatbot) والمعروضة للعملاء
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openAddModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة سؤال جديد
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-card border border-border/80 text-foreground text-xs font-semibold rounded-xl hover:bg-muted transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
+              تصدير CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => setStarterPackOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-muted/80 transition cursor-pointer border border-border/70"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              حزم الأنشطة الجاهزة
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              إضافة سؤال جديد
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4">
         {/* KPI Ribbon */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>إجمالي الأسئلة</span>
               <HelpCircle className="w-4 h-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{faqs.length}</div>
-            <div className="text-[11px] text-muted-foreground">سؤال مسجل في القاعدة</div>
+            <div className="text-[11px] text-muted-foreground">سؤال في قاعدة المعرفة</div>
           </div>
 
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
@@ -212,87 +264,197 @@ export default function FAQManagement() {
             <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
               {activeCount}
             </div>
-            <div className="text-[11px] text-muted-foreground">معروضة للعملاء الآن</div>
+            <div className="text-[11px] text-muted-foreground">متاحة لردود الذكاء الاصطناعي</div>
           </div>
 
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>تقييمات الفائدة الإيجابية</span>
+              <span>التصنيفات المخصصة</span>
+              <Layers className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
+              {categoriesCount}
+            </div>
+            <div className="text-[11px] text-muted-foreground">تصنيف نشط لنشاطك</div>
+          </div>
+
+          <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>تقييمات الفائدة</span>
               <ThumbsUp className="w-4 h-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono tabular-nums text-primary">
               {totalHelpful}
             </div>
-            <div className="text-[11px] text-muted-foreground">تفاعل إيجابي من الزوار</div>
+            <div className="text-[11px] text-muted-foreground">تفاعل إيجابي من العملاء</div>
           </div>
         </div>
 
-        {/* Filter Controls & Table */}
-        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-3 border-b border-border/70 bg-muted/20 flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+        {/* Filter Controls Bar */}
+        <div className="bg-card border border-border/70 rounded-xl p-3 shadow-xs space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[240px] max-w-md">
               <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث في نصوص الأسئلة والإجابات..."
+                placeholder="بحث في السؤال، الإجابة، أو الكلمات المفتاحية..."
                 className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setSelectedCat(c.value)}
-                  className={`px-2.5 py-1 rounded-lg text-xs transition-colors whitespace-nowrap cursor-pointer ${
-                    selectedCat === c.value
-                      ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
+            {/* Status Filter */}
+            <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-border/60">
+              <button
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "all"
+                    ? "bg-background text-foreground font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                الكل ({faqs.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("active")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "active"
+                    ? "bg-background text-emerald-600 dark:text-emerald-400 font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                نشط ({activeCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("inactive")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "inactive"
+                    ? "bg-background text-rose-600 dark:text-rose-400 font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                معطل ({faqs.length - activeCount})
+              </button>
             </div>
           </div>
 
+          {/* Dynamic Category Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 border-t border-border/60">
+            <button
+              type="button"
+              onClick={() => setSelectedCat("all")}
+              className={`px-2.5 py-1 rounded-lg text-xs transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                selectedCat === "all"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              جميع الفئات
+              <span className="font-mono tabular-nums text-[10px] opacity-80">({faqs.length})</span>
+            </button>
+            {dynamicCategories.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => setSelectedCat(c.name)}
+                className={`px-2.5 py-1 rounded-lg text-xs transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  selectedCat === c.name
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {c.name}
+                <span className="font-mono tabular-nums text-[10px] opacity-80">({c.count})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ Table / List */}
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground">
                   <th className="py-2.5 px-4 font-semibold">السؤال والإجابة</th>
                   <th className="py-2.5 px-3 font-semibold text-center">التصنيف</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">الكلمات المفتاحية والـ AI</th>
                   <th className="py-2.5 px-3 font-semibold text-center">التقييم</th>
                   <th className="py-2.5 px-3 font-semibold text-center">الحالة</th>
                   <th className="py-2.5 px-4 font-semibold text-left">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filtered.map((faq) => {
-                  const catLabel = CATEGORIES.find((c) => c.value === faq.category)?.label || faq.category;
-                  return (
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-muted-foreground">
+                      جاري تحميل الأسئلة من قاعدة المعرفة...
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 space-y-2">
+                      <div className="text-sm font-semibold text-foreground">لا توجد أسئلة تطابق البحث الحالي</div>
+                      <p className="text-xs text-muted-foreground">
+                        يمكنك إضافة سؤال جديد أو اختيار حزمة أسئلة جاهزة متوافقة مع نشاطك بضغطة زر واحدة
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setStarterPackOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-semibold rounded-xl hover:bg-primary/20 transition cursor-pointer mt-2"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        تصفح حزم الأنشطة الجاهزة
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((faq) => (
                     <tr key={faq.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-4 font-medium text-foreground max-w-md">
+                      <td className="py-3.5 px-4 font-medium text-foreground max-w-md">
                         <div className="font-semibold text-xs leading-snug">{faq.question}</div>
-                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
                           {faq.answer}
                         </p>
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] bg-muted/60 text-muted-foreground border border-border/60">
-                          {catLabel}
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] bg-muted text-foreground border border-border/60 font-medium">
+                          {faq.category || "عام"}
                         </span>
+                      </td>
+                      <td className="py-3 px-3 text-center max-w-xs">
+                        {Array.isArray(faq.tags) && faq.tags.length > 0 ? (
+                          <div className="flex flex-wrap items-center justify-center gap-1">
+                            {faq.tags.slice(0, 3).map((t, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-muted/60 text-muted-foreground font-mono"
+                              >
+                                #{t}
+                              </span>
+                            ))}
+                            {faq.tags.length > 3 && (
+                              <span className="text-[10px] text-muted-foreground font-mono">
+                                +{faq.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/60">—</span>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-center font-mono tabular-nums text-foreground">
                         <span className="text-emerald-600 dark:text-emerald-400">+{faq.helpful || 0}</span>
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => toggleActive(faq)}
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors cursor-pointer ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition cursor-pointer ${
                             faq.isActive
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                               : "bg-muted text-muted-foreground border-border"
@@ -301,12 +463,12 @@ export default function FAQManagement() {
                           {faq.isActive ? "نشط" : "معطل"}
                         </button>
                       </td>
-                      <td className="py-3 px-4 text-left">
+                      <td className="py-3 px-4 text-left whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => openEditModal(faq)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+                            onClick={() => handleOpenEdit(faq)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
                             title="تعديل"
                             aria-label="تعديل السؤال"
                           >
@@ -315,7 +477,7 @@ export default function FAQManagement() {
                           <button
                             type="button"
                             onClick={() => handleDelete(faq.id)}
-                            className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 cursor-pointer"
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition cursor-pointer"
                             title="حذف"
                             aria-label="حذف السؤال"
                           >
@@ -324,14 +486,7 @@ export default function FAQManagement() {
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
-                {!filtered.length && (
-                  <tr>
-                    <td colSpan={5} className="text-center py-12 text-muted-foreground">
-                      لا توجد أسئلة مطابقة للبحث في هذا التصنيف
-                    </td>
-                  </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -339,82 +494,23 @@ export default function FAQManagement() {
         </div>
       </div>
 
-      {/* Modal */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-lg space-y-4 p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-border/70">
-              <h2 className="text-sm font-bold text-foreground">
-                {editingFaq ? "تعديل السؤال" : "إضافة سؤال جديد"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted cursor-pointer"
-                aria-label="إغلاق النافذة"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-foreground mb-1">السؤال *</label>
-                <input
-                  value={formQuestion}
-                  onChange={(e) => setFormQuestion(e.target.value)}
-                  placeholder="اكتب صيغة السؤال بوضوح..."
-                  className="w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold text-foreground mb-1">الإجابة المعتمدة *</label>
-                <textarea
-                  rows={3}
-                  value={formAnswer}
-                  onChange={(e) => setFormAnswer(e.target.value)}
-                  placeholder="اكتب الإجابة المفصلة..."
-                  className="w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                />
-              </div>
-              <div>
-                <label className="block font-semibold text-foreground mb-1">التصنيف</label>
-                <select
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full bg-background border border-border/80 rounded-xl p-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="shipping">الشحن والتوصيل</option>
-                  <option value="payment">المدفوعات والفواتير</option>
-                  <option value="returns">الاستبدال والاسترجاع</option>
-                  <option value="general">أسئلة عامة</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="px-3.5 py-1.5 text-xs rounded-xl border border-border/80 text-foreground hover:bg-muted/50 transition cursor-pointer"
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition shadow-xs cursor-pointer"
-              >
-                {editingFaq ? "حفظ التعديلات" : "إضافة السؤال"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Edit / Add Modal */}
+      <FAQModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveFAQ}
+        editingFaq={editingFaq}
+        existingCategories={dynamicCategories.map((c) => c.name)}
+        isSaving={isSaving}
+      />
+
+      {/* Starter Pack Modal */}
+      <FAQStarterPackModal
+        isOpen={starterPackOpen}
+        onClose={() => setStarterPackOpen(false)}
+        onInstall={handleInstallStarterPack}
+        isInstalling={isInstallingPack}
+      />
     </div>
   );
 }
