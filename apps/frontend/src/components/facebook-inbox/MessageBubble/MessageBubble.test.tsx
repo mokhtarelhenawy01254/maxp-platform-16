@@ -325,8 +325,8 @@ describe("MessageBubble", () => {
     );
 
     expect(screen.getByText("المساعد الذكي (AI)")).toBeDefined();
-    expect(screen.getByText("🤖 رد تلقائي من الوكيل")).toBeDefined();
-    expect(screen.getByText("✏️ تصحيح الرد")).toBeDefined();
+    expect(screen.getByText("رد تلقائي من الوكيل")).toBeDefined();
+    expect(screen.getByText("تصحيح الرد")).toBeDefined();
   });
 
   it("renders Meta badge and suppresses AI correction badge when message is from Facebook externally", () => {
@@ -349,8 +349,8 @@ describe("MessageBubble", () => {
 
     expect(screen.getByText("فيسبوك (Meta)")).toBeDefined();
     expect(screen.queryByText("المساعد الذكي (AI)")).toBeNull();
-    expect(screen.queryByText("🤖 رد تلقائي من الوكيل")).toBeNull();
-    expect(screen.queryByText("✏️ تصحيح الرد")).toBeNull();
+    expect(screen.queryByText("رد تلقائي من الوكيل")).toBeNull();
+    expect(screen.queryByText("تصحيح الرد")).toBeNull();
   });
 
   it("renders Staff badge with employee name for dashboard manual replies", () => {
@@ -375,6 +375,6 @@ describe("MessageBubble", () => {
     expect(screen.getByText("أحمد علي")).toBeDefined();
     expect(screen.queryByText("المساعد الذكي (AI)")).toBeNull();
     expect(screen.queryByText("فيسبوك (Meta)")).toBeNull();
-    expect(screen.queryByText("🤖 رد تلقائي من الوكيل")).toBeNull();
+    expect(screen.queryByText("رد تلقائي من الوكيل")).toBeNull();
   });
 });

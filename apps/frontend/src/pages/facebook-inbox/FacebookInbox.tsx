@@ -300,6 +300,7 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
             onPrimaryAction={() => handleTriggerVerticalAction(capabilities.primaryAction.id)}
             onOpenServiceOrder={hasServiceOrderAction ? () => modals.setShowServiceOrderModal(true) : undefined}
             onOpenTasks={hasTaskAction ? () => modals.setShowQuickTaskModal(true) : undefined}
+            onInsertSnippet={modals.setComposerDraft}
           />
         )}
       </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { User, ShoppingBag, Activity } from "lucide-react";
+import { User, ShoppingBag, Activity, Sparkles } from "lucide-react";
 import { useCustomerProfile } from "../../../hooks/inbox/useCustomerProfile";
 import { ConversationStatus } from "../../../types/inbox.types";
 import { apiClient } from "../../../services/apiClient";
@@ -13,6 +13,7 @@ import {
   CustomerOrdersTab,
   CustomerTimelineTab,
   CustomerVerticalRecordsTab,
+  CustomerVerticalActionsTab,
   extractVerticalRecords,
   BlockCustomerModal,
 } from "./customer-profile";
@@ -62,8 +63,9 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({
   onPrimaryAction,
   onOpenServiceOrder,
   onOpenTasks,
+  onInsertSnippet,
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>("timeline");
+  const [activeTab, setActiveTab] = useState<Tab>("actions");
   const [syncingMessages, setSyncingMessages] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [editingPhone, setEditingPhone] = useState(false);
@@ -226,17 +228,20 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({
       />
 
       <div className="business-inbox-tabs mx-2 my-1">
-        <button type="button" onClick={() => setActiveTab("timeline")} className="business-inbox-tab" data-active={activeTab === "timeline" ? "true" : "false"}>
-          <span className="flex items-center justify-center gap-1"><Activity size={14} /> نشاط</span>
+        <button type="button" onClick={() => setActiveTab("actions")} className="business-inbox-tab" data-active={activeTab === "actions" ? "true" : "false"}>
+          <span className="flex items-center justify-center gap-1"><Sparkles size={13} className="text-primary" /> أدوات النشاط</span>
         </button>
         <button type="button" onClick={() => setActiveTab("orders")} className="business-inbox-tab" data-active={activeTab === "orders" ? "true" : "false"}>
           <span className="flex items-center justify-center gap-1">
-            <ShoppingBag size={14} /> {recordsTabLabel}
+            <ShoppingBag size={13} /> {recordsTabLabel}
             {recordsCount > 0 && <span className="business-inbox-tab-count tabular-nums">{recordsCount}</span>}
           </span>
         </button>
         <button type="button" onClick={() => setActiveTab("info")} className="business-inbox-tab" data-active={activeTab === "info" ? "true" : "false"}>
-          <span className="flex items-center justify-center gap-1"><User size={14} /> معلومات</span>
+          <span className="flex items-center justify-center gap-1"><User size={13} /> معلومات</span>
+        </button>
+        <button type="button" onClick={() => setActiveTab("timeline")} className="business-inbox-tab" data-active={activeTab === "timeline" ? "true" : "false"}>
+          <span className="flex items-center justify-center gap-1"><Activity size={13} /> سجل</span>
         </button>
       </div>
 
@@ -247,6 +252,20 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({
           </div>
         ) : (
           <>
+            {activeTab === "actions" && (
+              <CustomerVerticalActionsTab
+                conversation={conversation}
+                verticalCapabilities={verticalCapabilities}
+                onPrimaryAction={onPrimaryAction}
+                onCreateOrder={onCreateOrder}
+                onOpenServiceOrder={onOpenServiceOrder}
+                onOpenTasks={onOpenTasks}
+                onInsertSnippet={onInsertSnippet}
+                syncMessage={syncMessage}
+                syncingMessages={syncingMessages}
+                onSyncMessages={handleSyncMessages}
+              />
+            )}
             {activeTab === "info" && (
               <CustomerInfoTab
                 customer={customer}

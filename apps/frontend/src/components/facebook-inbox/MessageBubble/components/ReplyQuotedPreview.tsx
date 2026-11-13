@@ -1,4 +1,5 @@
 import React from "react";
+import { CornerDownLeft } from "lucide-react";
 import { ReplyReference } from "./types";
 import { buildProxyImageUrl } from "@/utils/imageUrl";
 
@@ -17,6 +18,12 @@ export const ReplyQuotedPreview: React.FC<ReplyQuotedPreviewProps> = ({
   isCustomer,
   onScrollToMessage,
 }) => {
+  const authorLabel = replyTo.senderName
+    ? replyTo.senderName
+    : isCustomer
+      ? "رسالة سابقة"
+      : "العميل";
+
   return (
     <div
       onClick={() => {
@@ -24,17 +31,17 @@ export const ReplyQuotedPreview: React.FC<ReplyQuotedPreviewProps> = ({
           onScrollToMessage(replyToResolvedId);
         }
       }}
-      className={`mb-2 text-xs rounded-xl p-2 flex items-center justify-between gap-2.5 transition-all ${
+      className={`mb-2.5 text-xs rounded-lg p-2.5 flex items-center justify-between gap-2.5 transition-all select-none ${
         replyToResolvedId && onScrollToMessage
-          ? "cursor-pointer hover:opacity-90 active:scale-[0.99]"
+          ? "cursor-pointer hover:opacity-95 active:scale-[0.99]"
           : ""
       }`}
       style={{
         background: isCustomer
-          ? "color-mix(in srgb, var(--color-foreground) 6%, transparent)"
-          : "rgba(0, 0, 0, 0.2)",
+          ? "rgba(0, 0, 0, 0.05)"
+          : "rgba(0, 0, 0, 0.25)",
         borderInlineStart: `3px solid ${
-          isCustomer ? "var(--color-primary)" : "rgba(255, 255, 255, 0.9)"
+          isCustomer ? "var(--color-primary, #6366f1)" : "rgba(255, 255, 255, 0.8)"
         }`,
       }}
       title={
@@ -45,18 +52,20 @@ export const ReplyQuotedPreview: React.FC<ReplyQuotedPreviewProps> = ({
     >
       <div className="flex-1 min-w-0">
         <div
-          className="font-bold truncate mb-0.5 text-[11px]"
+          className="flex items-center gap-1 font-semibold truncate mb-1 text-[11px]"
           style={{
-            color: isCustomer ? "var(--color-primary)" : "#ffffff",
+            color: isCustomer ? "var(--color-primary, #4f46e5)" : "#ffffff",
           }}
         >
-          {replyTo.senderName || "موظف"}
+          <CornerDownLeft className="w-3 h-3 shrink-0 opacity-70" />
+          <span className="opacity-80 text-[10px]">رد على:</span>
+          <span className="truncate">{authorLabel}</span>
         </div>
         <div
-          className="truncate text-[11px]"
+          className="line-clamp-2 text-[11px] leading-relaxed break-words"
           style={{
             color: isCustomer
-              ? "var(--color-muted-foreground)"
+              ? "var(--color-muted-foreground, #4b5563)"
               : "rgba(255, 255, 255, 0.85)",
           }}
         >
@@ -65,7 +74,7 @@ export const ReplyQuotedPreview: React.FC<ReplyQuotedPreviewProps> = ({
               replyTo.content !== "📷 صورة" &&
               replyTo.content !== "مرفق/صورة"
               ? replyTo.content
-              : "📷 صورة"
+              : "📷 صورة مقتبسة"
             : replyTo.type === "text"
               ? replyTo.content
               : replyTo.content || "مرفق/صورة"}

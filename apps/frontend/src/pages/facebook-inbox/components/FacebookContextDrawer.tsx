@@ -41,6 +41,7 @@ interface FacebookContextDrawerProps {
   onPrimaryAction?: () => void;
   onOpenServiceOrder?: () => void;
   onOpenTasks?: () => void;
+  onInsertSnippet?: (text: string) => void;
 }
 
 export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
@@ -77,6 +78,7 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
   onPrimaryAction,
   onOpenServiceOrder,
   onOpenTasks,
+  onInsertSnippet,
 }) => {
   const { t } = useTranslation();
 
@@ -122,6 +124,7 @@ export const FacebookContextDrawer: React.FC<FacebookContextDrawerProps> = ({
     onPrimaryAction,
     onOpenServiceOrder,
     onOpenTasks,
+    onInsertSnippet,
   };
 
   return (

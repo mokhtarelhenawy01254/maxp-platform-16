@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Bot, Pencil } from "lucide-react";
 import { apiClient } from "@/services/apiClient";
 
 export interface AICorrectionBoxProps {
@@ -23,16 +24,18 @@ export const AICorrectionBadge: React.FC<AICorrectionBadgeProps> = ({
       className="mt-2 pt-1.5 flex justify-between items-center text-[10px]"
       style={{ borderTop: "1px solid rgba(255, 255, 255, 0.2)" }}
     >
-      <span style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-        🤖 رد تلقائي من الوكيل
+      <span className="inline-flex items-center gap-1" style={{ color: "rgba(255, 255, 255, 0.75)" }}>
+        <Bot className="w-3 h-3 text-white/70" />
+        <span>رد تلقائي من الوكيل</span>
       </span>
       {!isEditing && (
         <button
           type="button"
           onClick={onStartEditing}
-          className="hover:underline font-medium cursor-pointer text-white"
+          className="inline-flex items-center gap-1 hover:underline font-medium cursor-pointer text-white"
         >
-          ✏️ تصحيح الرد
+          <Pencil className="w-2.5 h-2.5 text-white/80" />
+          <span>تصحيح الرد</span>
         </button>
       )}
     </div>

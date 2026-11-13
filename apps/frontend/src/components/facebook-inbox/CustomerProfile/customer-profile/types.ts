@@ -92,9 +92,10 @@ export interface CustomerProfileProps {
   onPrimaryAction?: () => void;
   onOpenServiceOrder?: () => void;
   onOpenTasks?: () => void;
+  onInsertSnippet?: (text: string) => void;
 }
 
-export type Tab = "info" | "orders" | "timeline";
+export type Tab = "actions" | "orders" | "info" | "timeline";
 
 export interface ApiErrorLike {
   response?: {

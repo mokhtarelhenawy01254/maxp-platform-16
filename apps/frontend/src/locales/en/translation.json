@@ -2172,19 +2172,14 @@
     },
     "settingsTab": {
       "loading": "Loading education settings...",
-      "badge": "Interface & Sections Customization",
-      "title": "Education System Labels & Sections Settings",
-      "description": "Full control over system branding, sidebar section labels, display order, and visibility.",
+      "title": "Labels & Sections",
       "resetDefaults": "Reset Defaults",
       "saveChanges": "Save Changes",
-      "modeTitle": "Operation Mode & Academic Sections",
-      "modeDesc": "Define how your educational system operates: courses and packages directly, or academic center with subjects",
-      "presetsTitle": "One-Click Quick Terminology Presets",
-      "presetsSub": "Pick a preset tailored to your institution to apply labels instantly",
-      "systemNameTitle": "Main System Title (shown in sidebar and header)",
-      "sectionsTitle": "Customize, Reorder and Toggle System Sections",
-      "sectionsHint": "Use ⬆ ⬇ arrows to reorder, or eye icon to toggle visibility",
-      "previewTitle": "Sidebar Real-time Preview"
+      "modeTitle": "Operation Mode",
+      "presetsTitle": "Quick Presets",
+      "systemNameTitle": "Main System Title",
+      "sectionsTitle": "System Sections",
+      "previewTitle": "Sidebar Preview"
     }
   },
   "EducationTeacherPaymentsPage": {
@@ -7221,6 +7216,14 @@
       "edit": "Edit",
       "personaLabel": "Store Custom Instructions",
       "personaOverrideHint": "Additional guidelines the agent adheres to in its replies to reflect your store policies",
+      "reasoningTitle": "AI Reasoning & Thinking Effort",
+      "reasoningHint": "Sets the depth of deliberation for DeepSeek Flash 4 before producing replies or actions",
+      "reasoningNone": "Fast (No Thinking)",
+      "reasoningNoneDesc": "Lightning-fast (< 2s) — Recommended for customer support, WhatsApp & Messenger",
+      "reasoningLow": "Balanced Thinking",
+      "reasoningLowDesc": "Quick review — Recommended for order issues, disputes & returns",
+      "reasoningHigh": "Deep Reasoning",
+      "reasoningHighDesc": "Deep logical analysis & calculations — Recommended for Media Buyers, Pricing & CEO",
       "lockedByAdmin": "🔒 Locked by admin"
     },
     "quickTest": {
