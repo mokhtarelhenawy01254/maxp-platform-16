@@ -2698,7 +2698,9 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 },
               });
 
-              // Silent Escalation with Polite Customer Reassurance
+              // Silent Escalation — aligned with the WhatsApp pattern (2026-11-13):
+              // flag the thread + notify the team instantly, send NOTHING to the customer.
+              // The human team is the recovery layer; no canned promises, no robotic notices.
               if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
                 const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
                 await flagThreadForHumanTakeover({
@@ -2709,34 +2711,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   customerMessage: combinedMessage,
                   channel: 'FACEBOOK',
                 });
-
-                if (accessToken) {
-                  const handoverNotice = 'ثواني بس هحول حضرتك لأحد زملائنا في خدمة العملاء عشان يتابع معاك ويفيدك بالتفصيل فوراً 🙏';
-                  try {
-                    await sendFacebookMessage(first.senderId, handoverNotice, 'TEXT', first.messagePageId, first.fbMessageId);
-                    const prisma = getSharedPrismaClient();
-                    await prisma.message.create({
-                      data: {
-                        id: require('crypto').randomUUID(),
-                        content: handoverNotice,
-                        type: 'TEXT',
-                        conversationId: first.conversationId,
-                        isFromCustomer: false,
-                        senderId: null,
-                        metadata: JSON.stringify({
-                          platform: 'facebook',
-                          source: 'handover_reassurance',
-                          isFacebookReply: true,
-                          timestamp: new Date()
-                        }),
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                      }
-                    }).catch(() => {});
-                  } catch (e) {
-                    console.error('❌ [AI-AUTOREPLY] Failed to send handover reassurance:', e.message);
-                  }
-                }
+                console.log('🔴 [AI-AUTOREPLY] escalated → team notified, customer untouched (WhatsApp-aligned)');
                 return;
               }
 
