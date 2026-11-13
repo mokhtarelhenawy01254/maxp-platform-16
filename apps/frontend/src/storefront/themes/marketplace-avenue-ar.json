@@ -20,8 +20,8 @@
       "ring": "23 27% 53%"
     },
     "typography": {
-      "headingFont": "\"Urbanist\", \"Tajawal\", sans-serif",
-      "bodyFont": "\"Albert Sans\", \"Tajawal\", sans-serif",
+      "headingFont": "\"Tajawal\", \"Urbanist\", sans-serif",
+      "bodyFont": "\"Tajawal\", \"Albert Sans\", sans-serif",
       "baseSize": "15px",
       "direction": "rtl"
     },

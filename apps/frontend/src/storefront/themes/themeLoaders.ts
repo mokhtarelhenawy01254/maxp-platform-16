@@ -108,6 +108,14 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "tpl-002-marketplace-multi-women-fashion": () => import("./tpl-002-marketplace-multi-women-fashion.json"),
   "tpl-003-local-market-women-fashion": () => import("./tpl-003-local-market-women-fashion.json"),
   "tpl-004-original-women-fashion": () => import("./tpl-004-original-women-fashion.json"),
+  "menswear-bespoke": () => import("./menswear-bespoke.json"),
+  "menswear-dapper": () => import("./menswear-dapper.json"),
+  "menswear-oxford": () => import("./menswear-oxford.json"),
+  "menswear-regent": () => import("./menswear-regent.json"),
+  "tpl-025-cinematic-fragrance-perfume": () => import("./tpl-025-cinematic-fragrance-perfume.json"),
+  "tpl-026-paper-fragrance-perfume": () => import("./tpl-026-paper-fragrance-perfume.json"),
+  "tpl-027-attar-market-perfume": () => import("./tpl-027-attar-market-perfume.json"),
+  "tpl-028-ritual-apothecary-perfume": () => import("./tpl-028-ritual-apothecary-perfume.json"),
 };
 
 const THEME_CACHE = new Map<string, StorefrontTheme>();
