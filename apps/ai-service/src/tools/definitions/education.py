@@ -38,7 +38,7 @@ class CancelSessionInput(BaseModel):
 
 
 async def education_info(input_data: InfoInput) -> dict[str, Any]:
-    """Returns ALL education center info: subjects and their packages."""
+    """Returns ALL education center info: subjects and their packages, plus upcoming demo days (dates, times, available seats) — ALWAYS call this for any question about programs, prices, levels, packages, or the demo day schedule."""
     return await education_tools.get_center_info(input_data.company_id)
 
 async def education_enroll(input_data: EnrollInput) -> dict[str, Any]:
