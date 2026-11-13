@@ -49,6 +49,47 @@ function pickEnum(value, allowed) {
   return allowed.includes(normalized) ? normalized : null;
 }
 
+// 🆕 Wave 2b-1: infer leadSource from channel IDs for legacy leads still marked OTHER
+async function backfillChannelSources() {
+  console.log(`[sources] start dryRun=${dryRun} batch=${BATCH}`);
+  const channelMap = [
+    { field: 'facebookId', source: 'FACEBOOK' },
+    { field: 'instagramId', source: 'INSTAGRAM' },
+    { field: 'whatsappId', source: 'WHATSAPP' },
+    { field: 'tiktokId', source: 'TIKTOK' }
+  ];
+  let cursor = null;
+  let scanned = 0;
+  let updated = 0;
+
+  for (;;) {
+    const customers = await prisma.customer.findMany({
+      where: {
+        leadSource: 'OTHER',
+        OR: channelMap.map((c) => ({ [c.field]: { not: null } }))
+      },
+      select: { id: true, facebookId: true, instagramId: true, whatsappId: true, tiktokId: true },
+      take: BATCH,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {})
+    });
+    if (customers.length === 0) break;
+    cursor = customers[customers.length - 1].id;
+
+    for (const customer of customers) {
+      scanned += 1;
+      const match = channelMap.find((m) => customer[m.field]);
+      if (!match) continue;
+      updated += 1;
+      console.log(`[sources] ${customer.id} -> ${match.source}`);
+      if (!dryRun) {
+        await prisma.customer.update({ where: { id: customer.id }, data: { leadSource: match.source } });
+      }
+    }
+  }
+
+  console.log(`\n[sources] done scanned=${scanned} updated=${updated} dryRun=${dryRun}`);
+}
+
 async function main() {
   console.log(`[backfill] start dryRun=${dryRun} batch=${BATCH}`);
   let cursor = null;
@@ -99,9 +140,18 @@ async function main() {
   console.log(`\n[backfill] done scanned=${scanned} updated=${updated} dryRun=${dryRun}`);
 }
 
-main()
-  .catch((e) => {
-    console.error('[backfill] failed:', e);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+if (args.includes('--sources')) {
+  backfillChannelSources()
+    .catch((e) => {
+      console.error('[sources] failed:', e);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+} else {
+  main()
+    .catch((e) => {
+      console.error('[backfill] failed:', e);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

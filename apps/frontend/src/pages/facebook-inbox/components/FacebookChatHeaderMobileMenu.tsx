@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  ExternalLink,
   Star,
   StickyNote,
   Trash2,
@@ -23,6 +24,7 @@ interface FacebookChatHeaderMobileMenuProps {
   onToggleAi: () => void;
   primaryAction?: InboxVerticalAction;
   availableActions?: InboxVerticalAction[];
+  onOpenCRM?: () => void;
   onTriggerVerticalAction?: (actionId: InboxVerticalActionId) => void;
   onOpenQuickOrderModal?: () => void;
   conversationId: string;
@@ -46,6 +48,7 @@ export const FacebookChatHeaderMobileMenu: React.FC<FacebookChatHeaderMobileMenu
   availableActions,
   onTriggerVerticalAction,
   onOpenQuickOrderModal,
+  onOpenCRM,
   conversationId,
   onCopyConversationLink,
   copiedLink,
@@ -118,6 +121,19 @@ export const FacebookChatHeaderMobileMenu: React.FC<FacebookChatHeaderMobileMenu
             <span>{action.label}</span>
           </button>
         ))}
+
+        {/* 🆕 Wave 2b-1: افتح الليد في CRM */}
+        <button
+          type="button"
+          className={itemCls}
+          onClick={() => {
+            setShowMobileActionMenu(false);
+            if (onOpenCRM) onOpenCRM();
+          }}
+        >
+          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          <span>افتح الليد في CRM</span>
+        </button>
 
         <button
           type="button"

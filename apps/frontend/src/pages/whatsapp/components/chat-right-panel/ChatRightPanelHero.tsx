@@ -1,12 +1,14 @@
 import React from 'react';
 import {
   Activity,
+  ExternalLink,
   Plus,
   ShoppingBag,
   Tag,
   Wrench,
   X,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { getInboxExternalImageUrl } from '@/utils/imageUrl';
@@ -54,6 +56,14 @@ export const ChatRightPanelHero: React.FC<ChatRightPanelHeroProps> = ({
 }) => {
   const customerStatus = contact.customer?.status || 'LEAD';
   const statusMeta = STATUS_MAP[customerStatus] || STATUS_MAP.LEAD;
+  const navigate = useNavigate();
+
+  // 🆕 Wave 2b-1: من شات واتساب → سجل الليد في CRM مباشرة
+  const handleOpenCRMLead = () => {
+    if (contact.customer?.id) {
+      navigate(`/customers/${contact.customer.id}`);
+    }
+  };
 
   return (
     <div className="shrink-0 border-b border-border/50 bg-card/60">
@@ -109,6 +119,19 @@ export const ChatRightPanelHero: React.FC<ChatRightPanelHeroProps> = ({
             <ShoppingBag className="size-3.5 text-primary" />
             <span>طلب جديد</span>
           </Button>
+
+          {/* 🆕 Wave 2b-1: افتح الليد في CRM */}
+          {contact.customer?.id && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenCRMLead}
+              className="h-7 gap-1 px-2.5 text-[11px] font-semibold"
+            >
+              <ExternalLink className="size-3.5 text-muted-foreground" />
+              <span>افتح في CRM</span>
+            </Button>
+          )}
 
           {onOpenServiceOrder && (
             <Button

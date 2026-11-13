@@ -1239,7 +1239,8 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
                                 phone: cleanPhone,
                                 phoneNormalized: cleanPhone,
                                 whatsappId: normalizedLidJid,
-                                status: 'LEAD'
+                                status: 'LEAD',
+                                leadSource: 'WHATSAPP'
                             },
                             select: { id: true }
                         });

@@ -1,10 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Bot,
   Check,
   Copy,
+  ExternalLink,
   MoreHorizontal,
   PanelRightClose,
   PanelRightOpen,
@@ -83,6 +85,14 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
   updating,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  // 🆕 Wave 2b-1: من المحادثة في الانبوكس → سجل الليد في CRM مباشرة
+  const handleOpenCRMLead = () => {
+    if (selectedConversation.customerId) {
+      navigate(`/customers/${selectedConversation.customerId}`);
+    }
+  };
 
   const isFacebook = !selectedConversation.platform || selectedConversation.platform === 'facebook';
   let isWindowExpired = Boolean(selectedConversation.isWindowExpired);
@@ -405,6 +415,18 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                 <StickyNote className="h-4 w-4" />
               </button>
 
+              {/* 🆕 Wave 2b-1: افتح الليد في CRM */}
+              <button
+                type="button"
+                onClick={handleOpenCRMLead}
+                className={iconBtnCls}
+                title="افتح الليد في CRM"
+                aria-label="افتح الليد في CRM"
+                disabled={!selectedConversation.customerId}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
+
               <ConversationActionsBar
                 isPriority={selectedConversation.priority}
                 onTogglePriority={onTogglePriority}
@@ -447,6 +469,7 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
         availableActions={availableActions}
         onTriggerVerticalAction={onTriggerVerticalAction}
         onOpenQuickOrderModal={onOpenQuickOrderModal}
+        onOpenCRM={handleOpenCRMLead}
         conversationId={selectedConversation.id}
         onCopyConversationLink={onCopyConversationLink}
         copiedLink={copiedLink}

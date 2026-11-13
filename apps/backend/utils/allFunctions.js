@@ -913,6 +913,7 @@ async function handleFacebookComment(commentData, pageId = null) {
                   lastName: '',
                   email: null,
                   phone: null,
+                  leadSource: 'FACEBOOK',
                   companyId: pageData.companyId,
                   metadata: JSON.stringify({
                     source: 'facebook_comment',
@@ -3174,6 +3175,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
               lastName: 'إنستجرام',
               email: null,
               phone: '',
+              leadSource: 'INSTAGRAM',
               companyId,
               metadata: JSON.stringify({ source: 'instagram_dm', senderId })
             }
@@ -3714,6 +3716,7 @@ async function handleTikTokMessage(inbound, companyId) {
               lastName: 'تيك توك',
               email: null,
               phone: '',
+              leadSource: 'TIKTOK',
               companyId,
               metadata: JSON.stringify({ source: 'tiktok_dm', senderId })
             }

@@ -130,7 +130,8 @@ const WhatsAppSyncService = {
               phoneNormalized: null,
               whatsappId: phoneNumber ? String(phoneNumber) : null,
               avatar: profilePicUrl,
-              status: 'LEAD'
+              status: 'LEAD',
+              leadSource: 'WHATSAPP'
             }
           });
         } else {
@@ -142,7 +143,8 @@ const WhatsAppSyncService = {
             phoneNormalized: canonicalPhone,
             whatsappId: cleanPhone,
             avatar: profilePicUrl,
-            status: 'LEAD'
+            status: 'LEAD',
+            leadSource: 'WHATSAPP'
           };
 
           try {
