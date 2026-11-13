@@ -222,7 +222,7 @@ const LeadsFollowUps: React.FC = () => {
       ) : leads.length === 0 ? (
         /* Empty state per bucket */
         <div className="bg-card border border-border/70 rounded-2xl p-12 text-center shadow-2xs">
-          <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center text-muted-foreground mx-auto mb-3 border border-border/60">
+          <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground mx-auto mb-3">
             <CalendarClock className="h-6 w-6" />
           </div>
           <h3 className="text-sm font-bold text-foreground mb-1">{activeEmpty}</h3>

@@ -238,27 +238,25 @@ const LeadsList: React.FC = () => {
         )}
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-card p-3 rounded-2xl border border-border/70 shadow-2xs">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <form onSubmit={handleSearch} className="flex-1">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="البحث بالاسم، الهاتف أو البريد..."
-                className="w-full pr-9 pl-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground placeholder:text-muted-foreground focus:outline-hidden"
-              />
-            </div>
-          </form>
-
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl border border-border/60">
-            <Users className="h-3.5 w-3.5 text-primary" />
-            <span>عرض العملاء بحالة:</span>
-            <span className="font-bold text-foreground">عميل محتمل (LEAD)</span>
+      {/* Search & Filter Bar — سطح واحد بدون بوكس غلاف (المعلم القياسي) */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <form onSubmit={handleSearch} className="flex-1">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="البحث بالاسم، الهاتف أو البريد..."
+              className="w-full pr-9 pl-3 py-2 text-xs border border-border/70 rounded-xl bg-muted/20 text-foreground placeholder:text-muted-foreground focus:outline-hidden"
+            />
           </div>
+        </form>
+
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-xl">
+          <Users className="h-3.5 w-3.5 text-primary" />
+          <span>عرض العملاء بحالة:</span>
+          <span className="font-bold text-foreground">عميل محتمل (LEAD)</span>
         </div>
       </div>
 
@@ -269,7 +267,7 @@ const LeadsList: React.FC = () => {
         </div>
       ) : customers.length === 0 ? (
         <div className="bg-card border border-border/70 rounded-2xl p-12 text-center shadow-2xs">
-          <div className="h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center text-muted-foreground mx-auto mb-3 border border-border/60">
+          <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center text-muted-foreground mx-auto mb-3">
             <Users className="h-6 w-6" />
           </div>
           <h3 className="text-sm font-bold text-foreground mb-1">لا يوجد عملاء محتملين حالياً</h3>
