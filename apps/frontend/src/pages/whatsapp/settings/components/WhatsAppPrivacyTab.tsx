@@ -61,7 +61,6 @@ export const WhatsAppPrivacyTab: React.FC<WhatsAppPrivacyTabProps> = ({
     <div className="space-y-4">
       <WhatsAppSurfaceCard
         title={ts("whatsappSettings.privacySettings")}
-        description={ts("whatsappSettings.privacySettings")}
         action={
           <SessionScopeSelector
             label={t("whatsappSettings.selectSession")}
@@ -87,7 +86,7 @@ export const WhatsAppPrivacyTab: React.FC<WhatsAppPrivacyTabProps> = ({
               <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[color:var(--color-card)]/70 p-4 sm:p-5 space-y-4 shadow-none">
                 <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pb-3">
                   <h3 className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
-                    {ts("whatsappSettings.privacySettings")}
+                    {ts("whatsappSettings.privacyVisibilityTitle")}
                   </h3>
                   <p className="text-xs text-[color:var(--color-muted-foreground)]">
                     {currentScopedSession?.name ||
@@ -200,8 +199,8 @@ export const WhatsAppPrivacyTab: React.FC<WhatsAppPrivacyTabProps> = ({
           </div>
         ) : (
           <EmptyScopedSessionAlert
-            title={t("whatsappSettings.selectSession")}
-            message={t("whatsappSettings.selectSession")}
+            title={t("whatsappSettings.privacyUnavailableTitle")}
+            message={t("whatsappSettings.privacyUnavailableBody")}
           />
         )}
       </WhatsAppSurfaceCard>

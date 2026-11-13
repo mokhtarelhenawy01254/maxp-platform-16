@@ -9,7 +9,11 @@ import {
   RefreshCcw,
   AlertTriangle,
 } from "lucide-react";
-import { customerService, Customer } from "../../services/customerService";
+import {
+  customerService,
+  Customer,
+  type LeadAnalytics,
+} from "../../services/customerService";
 
 type StageKey =
   | "NEW_LEAD"
@@ -77,6 +81,18 @@ const PRIORITY_FILTERS: { key: PriorityFilter; label: string }[] = [
 const dateFmt = new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" });
 const waDigits = (phone?: string | null) => (phone || "").replace(/\D/g, "");
 
+const SOURCE_LABELS: Record<string, string> = {
+  WHATSAPP: "واتساب",
+  FACEBOOK: "فيسبوك",
+  INSTAGRAM: "انستجرام",
+  TIKTOK: "تيك توك",
+  CALL: "اتصال",
+  WEBSITE: "موقع",
+  REFERRAL: "توصية",
+  WALK_IN: "زيارة",
+  OTHER: "أخرى",
+};
+
 const LeadsPipeline: React.FC = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -84,8 +100,24 @@ const LeadsPipeline: React.FC = () => {
   const [error, setError] = useState("");
   const [dragOverStage, setDragOverStage] = useState<StageKey | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("ALL");
+  const [analytics, setAnalytics] = useState<LeadAnalytics | null>(null);
   const draggingRef = useRef<Customer | null>(null);
   const didDragRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    customerService
+      .getLeadAnalytics()
+      .then((data) => {
+        if (!cancelled) setAnalytics(data);
+      })
+      .catch(() => {
+        // non-blocking: strip stays hidden on error
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadBoard = useCallback(async () => {
     setIsLoading(true);
@@ -268,6 +300,40 @@ const LeadsPipeline: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Analytics strip (hidden on fetch error) */}
+      {analytics && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-muted/40 text-muted-foreground border border-border/70 tabular-nums whitespace-nowrap">
+            إجمالي {analytics.totalLeads} ليد
+          </span>
+          {Object.entries(analytics.bySource || {})
+            .filter(([, count]) => count > 0)
+            .map(([source, count]) => (
+              <span
+                key={source}
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-card text-muted-foreground border border-border/70 tabular-nums whitespace-nowrap"
+              >
+                {SOURCE_LABELS[source] || source}
+                <span className="font-semibold text-foreground">{count}</span>
+              </span>
+            ))}
+          <span
+            className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border tabular-nums whitespace-nowrap ${
+              analytics.conversionRate > 0
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                : "bg-muted/40 text-muted-foreground border-border/70"
+            }`}
+          >
+            معدل التحويل {analytics.conversionRate}%
+          </span>
+          {analytics.avgFirstResponseHours !== null && (
+            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-card text-muted-foreground border border-border/70 tabular-nums whitespace-nowrap">
+              متوسط أول رد: {analytics.avgFirstResponseHours} ساعة
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Inline error banner */}
       {error && (

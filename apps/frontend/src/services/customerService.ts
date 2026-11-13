@@ -113,6 +113,16 @@ interface DueFollowUpsBucket {
   };
 }
 
+interface LeadAnalytics {
+  byStage: Record<string, number>;
+  bySource: Record<string, number>;
+  totalLeads: number;
+  converted: number;
+  conversionRate: number;
+  avgFirstResponseHours: number | null;
+  firstContactTracked: boolean;
+}
+
 interface CustomerFilters {
   page?: number;
   limit?: number;
@@ -361,6 +371,31 @@ class CustomerService {
       message: response.data?.message,
     };
   }
+
+  /**
+   * Get lead pipeline analytics (stage/source breakdown, conversion rate)
+   */
+  async getLeadAnalytics(): Promise<LeadAnalytics> {
+    const response = await apiClient.get(`/customers/lead-analytics`);
+    return response.data?.data;
+  }
+
+  /**
+   * Merge a duplicate customer (source) into a target customer — manager only
+   */
+  async mergeCustomers(
+    targetCustomerId: string,
+    sourceId: string,
+  ): Promise<{ data: any; message?: string }> {
+    const response = await apiClient.post(
+      `/customers/${targetCustomerId}/merge`,
+      { sourceId },
+    );
+    return {
+      data: response.data?.data,
+      message: response.data?.message,
+    };
+  }
 }
 
 export const customerService = new CustomerService();
@@ -373,4 +408,5 @@ export type {
   CustomerFilters,
   DueFollowUpLead,
   DueFollowUpsBucket,
+  LeadAnalytics,
 };

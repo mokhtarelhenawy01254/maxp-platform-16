@@ -459,6 +459,9 @@ router.post('/lead-forms', facebookAdsController.createLeadForm);
 // GET /api/v1/facebook-ads/lead-forms/:id/leads - جلب Leads
 router.get('/lead-forms/:id/leads', facebookAdsController.getLeads);
 
+// 🆕 Wave 2b: POST /lead-forms/:id/import - استيراد Leads النموذج إلى CRM كعملاء محتملين
+router.post('/lead-forms/:id/import', facebookAdsController.importLeadsToCRM);
+
 // --- Conversion API (v22.0) ---
 // POST /api/v1/facebook-ads/conversions - إرسال Conversion Event
 router.post('/conversions', facebookAdsController.sendConversionEvent);

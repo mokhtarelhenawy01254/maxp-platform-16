@@ -61,6 +61,7 @@ export const useCustomerDetailsController = () => {
   const [companyUsersLoaded, setCompanyUsersLoaded] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [showQuickOrder, setShowQuickOrder] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
   const companyId = user?.companyId || user?.company?.id || null;
 
   const ensureCompanyUsers = useCallback(async () => {
@@ -404,6 +405,10 @@ export const useCustomerDetailsController = () => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const handleMerged = () => {
+    loadCustomerDetails();
+  };
+
   const customer = data?.customer || ({} as CustomerDetailsData["customer"]);
   const stats = data?.stats || {
     ordersCount: 0,
@@ -483,5 +488,8 @@ export const useCustomerDetailsController = () => {
     isAssigning,
     showQuickOrder,
     setShowQuickOrder,
+    showMergeModal,
+    setShowMergeModal,
+    handleMerged,
   };
 };

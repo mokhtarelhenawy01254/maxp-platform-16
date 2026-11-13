@@ -16,6 +16,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Customer } from '../../services/customerService';
+import { LEAD_STAGE_LABELS } from './LeadsMobileCard';
 
 interface LeadsTableProps {
   customers: Customer[];
@@ -86,11 +87,10 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; class: string }> = {
-      LEAD: { label: 'عميل محتمل', class: 'bg-primary/10 text-primary border-primary/20' },
-      NEW: { label: 'جديد', class: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-      CONTACTED: { label: 'تم التواصل', class: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-      QUALIFIED: { label: 'مؤهل للشراء', class: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-      LOST: { label: 'مفقود', class: 'bg-destructive/10 text-destructive border-destructive/20' },
+      LEAD: { label: 'عميل محتمل', class: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+      ACTIVE: { label: 'عميل', class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+      INACTIVE: { label: 'غير نشط', class: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20' },
+      BLOCKED: { label: 'محجوب', class: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
     };
     const s = statusMap[status] || { label: status, class: 'bg-muted/40 text-muted-foreground border-border/70' };
     return (
@@ -100,9 +100,18 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     );
   };
 
+  const getLeadStageChip = (leadStage?: string) => {
+    if (!leadStage || !LEAD_STAGE_LABELS[leadStage]) return null;
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 mt-0.5 w-fit">
+        {LEAD_STAGE_LABELS[leadStage]}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-2xs">
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-2xs">
         <table className="w-full text-xs">
           <thead className="bg-muted/40 border-b border-border/70 text-muted-foreground">
             <tr>
@@ -148,6 +157,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   )}
                   <td className="px-4 py-3">
                     <div className="font-semibold text-foreground text-xs">{fullName}</div>
+                    {getLeadStageChip(customer.leadStage)}
                     {customer.email && (
                       <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5" dir="ltr">
                         <Mail className="w-3 h-3 text-muted-foreground" />

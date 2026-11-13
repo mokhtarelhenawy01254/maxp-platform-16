@@ -58,7 +58,7 @@ export const WhatsAppBusinessTab: React.FC<WhatsAppBusinessTabProps> = ({
     <div className="space-y-4">
       <WhatsAppSurfaceCard
         title={ts("whatsappSettings.businessProfile")}
-        description={ts("whatsappSettings.businessProfileAlert")}
+        description={ts("whatsappSettings.businessProfileDescription")}
         action={
           <SessionScopeSelector
             label={t("whatsappSettings.selectSession")}

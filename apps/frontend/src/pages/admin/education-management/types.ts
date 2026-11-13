@@ -222,3 +222,29 @@ export const MODAL_CLS =
 export const INPUT_CLS =
   "w-full bg-background border border-input rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
 export const CELL_CLS = "py-2.5 px-3 sm:py-3 sm:px-4 text-xs";
+
+export interface EducationTabConfig {
+  id: string;
+  key: string;
+  defaultLabelAr: string;
+  defaultLabelEn: string;
+  labelAr: string;
+  labelEn: string;
+  order: number;
+  visible: boolean;
+  locked?: boolean;
+  iconName: string;
+}
+
+export interface EducationSettingsData {
+  systemTitle: string;
+  systemTitleEn: string;
+  educationMode?: "COURSES" | "ACADEMIC";
+  enableSubjects?: boolean;
+  enableDemoDay?: boolean;
+  pushFirstSaveWhatsApp?: boolean;
+  companySlug?: string | null;
+  publicCode?: string | null;
+  customDomain?: string | null;
+  tabs: EducationTabConfig[];
+}

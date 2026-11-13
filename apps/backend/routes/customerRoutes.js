@@ -104,6 +104,9 @@ router.post('/recalculate-all-ratings', verifyToken.authenticateToken, requireDb
 router.get('/follow-ups/due', verifyToken.authenticateToken, requireDbPermission('customers.view'), checkAppAccess('crm-basic'), customerController.getDueLeadFollowUps);
 router.post('/bulk-assign', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.bulkAssignLeads);
 
+// 🆕 Wave 3 — تحليلات الليدز (مصادر + قمع + معدل تحويل + زمن أول رد)
+router.get('/lead-analytics', verifyToken.authenticateToken, requireDbPermission('customers.view'), checkAppAccess('crm-basic'), customerController.getLeadAnalytics);
+
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), checkAppAccess('crm-basic'), customerController.getCustomerDetails);
 
@@ -112,6 +115,9 @@ router.post('/:customerId/recalculate-rating', verifyToken.authenticateToken, re
 
 // 👤 إسناد الليد لموظف (أو إلغاء الإسناد بـ assignedToId: null)
 router.post('/:customerId/assign', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.assignLead);
+
+// 🔗 دمج عميل مكرر في هذا العميل (body: { sourceId })
+router.post('/:customerId/merge', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.mergeCustomers);
 
 // جلب طلبات العميل
 router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);

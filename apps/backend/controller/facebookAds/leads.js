@@ -425,6 +425,130 @@ const getLeadFormDetail = async (req, res) => {
  */
 
 /**
+ * POST /api/v1/facebook-ads/lead-forms/:id/import
+ * 🆕 Wave 2b: استيراد Leads نموذج فيسبوك إلى CRM كعملاء محتملين
+ * (dedupe بـ leadgen id في metadata + fallback برقم الهاتف المطبّع)
+ */
+const importLeadsToCRM = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { id } = req.params;
+    if (!companyId) {
+      return res.status(403).json({ success: false, error: "companyId مطلوب" });
+    }
+
+    const accessToken = await getCompanyAdsAccessToken(companyId);
+    if (!accessToken) {
+      return res.status(400).json({ success: false, error: "Facebook Access Token not found" });
+    }
+
+    const adAccount = await getSharedPrismaClient().facebookAdAccount.findFirst({
+      where: { companyId, isActive: true },
+    });
+    const adsService = new FacebookAdsService(accessToken, adAccount?.accountId);
+    const result = await adsService.getLeads(id);
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+
+    const { mapLeadgenFieldData } = require("../webhookController");
+    const { toCanonicalE164 } = require("../../utils/phoneNormalization");
+    const prisma = getSharedPrismaClient();
+
+    let imported = 0;
+    let skippedDuplicates = 0;
+    let linkedToExisting = 0;
+    const errors = [];
+
+    for (const lead of result.data || []) {
+      const leadgenId = lead?.id;
+      const answers = mapLeadgenFieldData(lead?.field_data);
+      const firstName = String(answers.firstName || answers.fullName || "ليد إعلان").trim().slice(0, 80);
+      const lastName = String(answers.lastName || "").trim().slice(0, 80);
+      const phone = (answers.phone || "").trim() || null;
+      const email = (answers.email || "").trim() || null;
+      const phoneNormalized = phone ? toCanonicalE164(phone) : null;
+
+      try {
+        if (leadgenId) {
+          const dupByLeadgen = await prisma.customer.findFirst({
+            where: { companyId, metadata: { contains: leadgenId } },
+            select: { id: true },
+          });
+          if (dupByLeadgen) {
+            skippedDuplicates += 1;
+            continue;
+          }
+        }
+
+        let linkedCustomer = null;
+        if (phoneNormalized) {
+          linkedCustomer = await prisma.customer.findFirst({
+            where: { companyId, phoneNormalized },
+            select: { id: true },
+          });
+        }
+
+        if (linkedCustomer) {
+          await prisma.customer.update({
+            where: { id: linkedCustomer.id },
+            data: {
+              metadata: JSON.stringify({
+                lastLeadFormId: id,
+                lastLeadgenId: leadgenId || null,
+                leadFormAnswers: answers.raw,
+              }),
+            },
+          });
+          linkedToExisting += 1;
+          continue;
+        }
+
+        await prisma.customer.create({
+          data: {
+            firstName,
+            lastName,
+            email,
+            phone,
+            phoneNormalized,
+            status: "LEAD",
+            leadSource: "FACEBOOK",
+            leadStage: "NEW_LEAD",
+            companyId,
+            tags: JSON.stringify(["lead_ad", `form_${id}`]),
+            metadata: JSON.stringify({
+              source: "facebook_lead_ads",
+              leadgenId: leadgenId || null,
+              formId: id,
+              adId: lead?.ad_id || null,
+              adName: lead?.ad_name || null,
+              campaignName: lead?.campaign_name || null,
+              formAnswers: answers.raw,
+            }),
+          },
+        });
+        imported += 1;
+      } catch (leadError) {
+        if (leadError?.code === "P2002") {
+          skippedDuplicates += 1;
+        } else {
+          errors.push(leadError.message);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: { imported, linkedToExisting, skippedDuplicates, errors: errors.slice(0, 5) },
+      message: `تم استيراد ${imported} ليد جديد${linkedToExisting ? ` وربط ${linkedToExisting} عميل موجود` : ""}${skippedDuplicates ? ` (تم تجاهل ${skippedDuplicates} مكرر)` : ""}`,
+    });
+  } catch (error) {
+    console.error("❌ Error importing Lead Form leads to CRM:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
  * POST /api/v1/facebook-ads/conversions
  * إرسال Conversion Event
  */
@@ -432,6 +556,7 @@ const getLeadFormDetail = async (req, res) => {
 module.exports = {
   createLeadForm,
   getLeads,
+  importLeadsToCRM,
   listLeadForms,
   getLeadFormDetail,
 };

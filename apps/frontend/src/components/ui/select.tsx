@@ -6,7 +6,58 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react";
 
-const Select = SelectPrimitive.Root;
+/**
+ * Root wrapper that derives the `items` map from the rendered <SelectItem>
+ * children when the caller did not pass one.
+ *
+ * Why: Base UI renders the RAW value inside the trigger unless `items` is
+ * provided, so every caller that forgot it showed database ids / enum
+ * constants to the user (`cmvf96xqk01zfju01oxibizex`, `SMART_FALLBACK`, …).
+ * Deriving the map here fixes every Select at once instead of patching
+ * hundreds of call sites.
+ */
+type SelectItemEntry = { value: unknown; label: React.ReactNode };
+
+function isSelectItemElement(
+  child: React.ReactElement<{ value?: unknown; children?: React.ReactNode }>,
+): boolean {
+  const type = child.type as { __selectItem?: boolean } | string | undefined;
+  if (!type || typeof type === "string") return false;
+  return type === (SelectItem as unknown) || (type as { __selectItem?: boolean }).__selectItem === true;
+}
+
+function collectSelectItems(
+  node: React.ReactNode,
+  acc: SelectItemEntry[] = [],
+): SelectItemEntry[] {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement<{ value?: unknown; children?: React.ReactNode }>(child)) {
+      return;
+    }
+    if (isSelectItemElement(child)) {
+      if (child.props.value !== undefined) {
+        acc.push({ value: child.props.value, label: child.props.children });
+      }
+      return;
+    }
+    if (child.props?.children) collectSelectItems(child.props.children, acc);
+  });
+  return acc;
+}
+
+const Select = ((props: React.ComponentProps<typeof SelectPrimitive.Root>) => {
+  const { items, children, ...rest } = props;
+  const derivedItems = React.useMemo(
+    () => items ?? collectSelectItems(children),
+    [items, children],
+  );
+
+  return (
+    <SelectPrimitive.Root {...rest} items={derivedItems}>
+      {children}
+    </SelectPrimitive.Root>
+  );
+}) as typeof SelectPrimitive.Root;
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -304,6 +355,10 @@ function SelectScrollDownButton({
     </SelectPrimitive.ScrollDownArrow>
   );
 }
+
+// Marker so the Root wrapper can recognise this item even if it is re-exported
+// or wrapped by another module.
+(SelectItem as unknown as { __selectItem?: boolean }).__selectItem = true;
 
 export {
   Select,

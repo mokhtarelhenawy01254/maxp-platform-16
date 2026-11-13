@@ -99,6 +99,20 @@ export function useFacebookOAuthController() {
         },
       );
 
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const isGatewayError =
+          response.status === 502 || response.status === 503 || response.status === 504 || response.status === 520;
+        setError(
+          t("facebookOAuth.loadStatusError", {
+            error: isGatewayError
+              ? "الخادم غير متاح مؤقتاً، يرجى المحاولة بعد قليل"
+              : `HTTP ${response.status}`,
+          }),
+        );
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -137,9 +151,12 @@ export function useFacebookOAuthController() {
         },
       );
 
-      const data = await response.json();
-      if (data.success && data.skippedPages) {
-        setSkippedPages(data.skippedPages);
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.success && data.skippedPages) {
+          setSkippedPages(data.skippedPages);
+        }
       }
     } catch {
       // silent catch for background telemetry

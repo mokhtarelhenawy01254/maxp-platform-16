@@ -140,38 +140,6 @@ export default function EducationManagementPage() {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {systemSubtitle}
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {t("education.subtitle", isEn ? "Comprehensive system for managing subjects, session packages, instructors, students, and recurring schedules" : "نظام متكامل لإدارة المواد، باقات الحصص، الكوادر التعليمية، والطلاب وجداول الحصص الدورية")}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("logs")}
-            title={t("education.logs", isEn ? "Education System Logs" : "سجلات النظام التعليمي")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              activeTab === "logs"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            {t("education.logs", isEn ? "System Logs" : "سجلات النظام التعليمي")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("settings")}
-            title={t("education.settings", isEn ? "Customize Sections & Settings" : "إعدادات وتخصيص السكاشن")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              activeTab === "settings"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            {t("education.settings", isEn ? "Settings" : "إعدادات وتخصيص السكاشن")}
-          </button>
         </div>
       </div>
 

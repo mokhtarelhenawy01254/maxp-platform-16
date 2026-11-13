@@ -203,7 +203,7 @@ export function WhatsAppMetricCard({
             className={cn(
               "font-mono text-3xl leading-none tracking-tight tabular-nums sm:text-4xl",
               isZero
-                ? "font-medium text-[color:var(--color-muted-foreground)]/60 text-xl sm:text-2xl"
+                ? "font-medium text-[color:var(--color-muted-foreground)]/75"
                 : "font-bold text-[color:var(--color-foreground)]",
             )}
           >
@@ -219,7 +219,7 @@ export function WhatsAppMetricCard({
           className={cn(
             "flex size-9 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] sm:size-11 sm:rounded-2xl",
             isZero
-              ? "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]/60"
+              ? "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]/75"
               : toneClasses[tone],
           )}
         >

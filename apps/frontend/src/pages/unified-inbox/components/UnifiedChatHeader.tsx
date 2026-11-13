@@ -154,12 +154,14 @@ export const UnifiedChatHeader: React.FC<UnifiedChatHeaderProps> = ({
                   className="text-xs"
                   style={{ color: 'var(--color-muted-foreground)' }}
                 >
-                  {t(
-                    `unifiedInbox.status.${selectedConversation.status.toLowerCase()}`,
-                    {
-                      defaultValue: selectedConversation.status,
-                    },
-                  )}
+                  {selectedConversation.status
+                    ? t(
+                        `unifiedInbox.status.${String(selectedConversation.status).toLowerCase()}`,
+                        {
+                          defaultValue: String(selectedConversation.status),
+                        },
+                      )
+                    : null}
                 </span>
               </div>
             </div>

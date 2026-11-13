@@ -116,7 +116,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     <>
       <Button
         variant="outline"
-        className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
+        className="min-h-[36px] rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
         onClick={() => void data.handleRefresh()}
         disabled={data.refreshing}
       >
@@ -127,7 +127,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         <>
           <Button
             variant="outline"
-            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium gap-1.5"
+            aria-label="بيانات Webhook"
+            className="min-h-[36px] rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium gap-1.5"
             onClick={() => {
               const metaSession =
                 data.sessions.find((s) => s.provider === "META_CLOUD") || null;
@@ -139,7 +140,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             <span className="hidden sm:inline">بيانات Webhook</span>
           </Button>
           <Button
-            className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
+            className="min-h-[36px] rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
             onClick={data.handleOpenCreateSessionDialog}
             disabled={data.sessions.length >= (data.settings?.maxSessions || 9999)}
           >
@@ -337,7 +338,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         onTabChange={handleTabChange}
       />
 
-      <div className="w-full min-w-0 space-y-4">
+      <div
+        role="tabpanel"
+        id={`wa-settings-panel-${activeTab}`}
+        aria-labelledby={`wa-settings-tab-${activeTab}`}
+        tabIndex={0}
+        className="w-full min-w-0 space-y-4"
+      >
         {renderActiveTabContent()}
       </div>
 

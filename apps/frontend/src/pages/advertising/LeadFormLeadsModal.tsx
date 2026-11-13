@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Download, Loader2, Users, X } from "lucide-react";
+import { Download, Loader2, Users, X, Import } from "lucide-react";
 import {
   facebookAdsService,
   type LeadFormSummary,
@@ -27,6 +27,34 @@ export const LeadFormLeadsModal: React.FC<LeadFormLeadsModalProps> = ({
 }) => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportToCRM = async () => {
+    setIsImporting(true);
+    try {
+      const res = (await facebookAdsService.importFormLeadsToCRM(
+        form.id,
+      )) as {
+        success?: boolean;
+        data?: { imported?: number; linkedToExisting?: number };
+        message?: string;
+      };
+      toast.success(res?.message || "تم استيراد العملاء المحتملين للـ CRM");
+      // Refresh leads list in place
+      try {
+        const fresh = (await facebookAdsService.getLeads(form.id)) as Lead[];
+        setLeads(fresh);
+      } catch {
+        // keep current list if refresh fails
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "فشل استيراد العملاء المحتملين للـ CRM",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +111,18 @@ export const LeadFormLeadsModal: React.FC<LeadFormLeadsModalProps> = ({
             <p className="text-gray-500">{form.name}</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleImportToCRM}
+              disabled={isImporting}
+              className="flex items-center gap-2 px-3 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-[0.97]"
+            >
+              {isImporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Import className="w-4 h-4" />
+              )}
+              استيراد للـ CRM
+            </button>
             <button
               onClick={exportLeadsToCSV}
               disabled={leads.length === 0}

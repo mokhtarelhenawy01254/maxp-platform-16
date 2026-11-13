@@ -335,7 +335,6 @@ const inventoryRoutes = require("./routes/inventoryRoutes");
 const messageFixRoutes = require("./routes/messageFixRoutes");
 const notificationRoutes = require("./routes/notifications-simple");
 const notificationSettingsRoutes = require("./routes/notificationRoutes");
-const opportunitiesRoutes = require("./routes/opportunitiesRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const agentWorkspaceRoutes = require("./routes/agentWorkspaceRoutes");
 const procurementRoutes = require("./routes/procurementRoutes");

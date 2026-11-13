@@ -483,11 +483,11 @@ class DashboardService {
           }
         }),
 
-        // Total leads (those without orders)
+        // Total leads (status = LEAD) — 🆕 Wave 3: was "customers without orders" (dishonest), now the real lead status
         this.prisma.customer.count({
           where: {
             companyId,
-            orders: { none: {} }
+            status: 'LEAD'
           }
         }),
 
@@ -662,6 +662,10 @@ class DashboardService {
         case 'LEARNING_INSIGHTS':
           return await this.getLearningInsights(filters);
 
+        // 🆕 Wave 3: real lead pipeline funnel (was falling into default/mock)
+        case 'SALES_FUNNEL':
+          return await this.getLeadFunnel(filters);
+
         default:
           return await this.getDefaultWidgetData(widget, filters);
       }
@@ -675,6 +679,53 @@ class DashboardService {
         error: 'فشل في تحميل البيانات'
       };
     }
+  }
+
+  // 🆕 Wave 3: real lead-stage funnel from Customer.leadStage
+  async getLeadFunnel(filters) {
+    const companyId = filters.companyId;
+    if (!companyId) {
+      return { stages: [], totalLeads: 0, converted: 0, error: 'companyId مطلوب' };
+    }
+
+    const grouped = await this.prisma.customer.groupBy({
+      by: ['leadStage'],
+      where: { companyId },
+      _count: { _all: true }
+    });
+
+    const counts = {};
+    for (const row of grouped) {
+      counts[row.leadStage] = row._count._all;
+    }
+
+    const stageLabels = {
+      NEW_LEAD: 'ليد جديد',
+      CONTACTED: 'تم التواصل',
+      INTERESTED: 'مهتم',
+      FOLLOW_UP_SCHEDULED: 'متابعة مجدولة',
+      PROPOSAL_SENT: 'عرض مُرسل',
+      NEGOTIATION: 'تفاوض',
+      CONVERTED: 'اتحول لعميل',
+      NOT_INTERESTED: 'غير مهتم',
+      LOST: 'مفقود'
+    };
+    const stageOrder = Object.keys(stageLabels);
+    const totalLeads = stageOrder.reduce((sum, stage) => sum + (counts[stage] || 0), 0);
+
+    return {
+      stages: stageOrder.map((stage) => ({
+        key: stage,
+        label: stageLabels[stage],
+        count: counts[stage] || 0
+      })),
+      totalLeads,
+      converted: counts.CONVERTED || 0,
+      conversionRate: totalLeads > 0
+        ? parseFloat((((counts.CONVERTED || 0) / totalLeads) * 100).toFixed(1))
+        : 0,
+      lastUpdated: new Date()
+    };
   }
 
   async getConversationsToday(filters) {

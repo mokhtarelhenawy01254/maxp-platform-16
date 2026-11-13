@@ -2828,6 +2828,34 @@ export const getLeads = async (formId: string): Promise<unknown[]> => {
   }
 };
 
+export interface ImportFormLeadsResult {
+  imported: number;
+  linkedToExisting: number;
+  skippedDuplicates: number;
+  errors: string[];
+}
+
+/**
+ * استيراد Leads من Form إلى الـ CRM كعملاء محتملين
+ */
+export const importFormLeadsToCRM = async (
+  formId: string,
+): Promise<{
+  success: boolean;
+  data?: ImportFormLeadsResult;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(
+      `/facebook-ads/lead-forms/${formId}/import`,
+    );
+    return response.data;
+  } catch (error: unknown) {
+    console.error("❌ Error importing form leads to CRM:", error);
+    throw error;
+  }
+};
+
 export interface LeadFormSummary {
   id: string;
   name: string;
@@ -3786,6 +3814,7 @@ export const facebookAdsService = {
   // v22.0: Lead Generation
   createLeadForm,
   getLeads,
+  importFormLeadsToCRM,
   getLeadForms,
   getLeadFormDetail,
 

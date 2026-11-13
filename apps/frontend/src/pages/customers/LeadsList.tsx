@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -22,11 +22,13 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import CustomerImportModal from "./CustomerImportModal";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { LeadsTable } from "./LeadsTable";
+import { LeadsMobileCard } from "./LeadsMobileCard";
 
 const LeadsList: React.FC = () => {
   const { t } = useTranslation();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
     user?.role || "",
   );
@@ -285,7 +287,18 @@ const LeadsList: React.FC = () => {
           )}
         </div>
       ) : (
-        <LeadsTable
+        <>
+          {/* Mobile cards (below md) */}
+          <div className="md:hidden space-y-2">
+            {customers.map((c) => (
+              <LeadsMobileCard
+                key={c.id}
+                customer={c}
+                onOpen={(cust) => navigate(`/customers/${cust.id}`)}
+              />
+            ))}
+          </div>
+          <LeadsTable
           customers={customers}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
@@ -297,6 +310,7 @@ const LeadsList: React.FC = () => {
           onPageChange={handlePageChange}
           assigneeNameById={assigneeNameById}
         />
+        </>
       )}
 
       {/* Customer Import Modal */}

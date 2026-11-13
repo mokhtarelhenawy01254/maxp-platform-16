@@ -16,6 +16,8 @@ import { CustomerRatingBadge } from "@/components/orders/CustomerRatingBadge";
 import { CustomerDetailsData } from "./types";
 import { CustomerBlockRule } from "@/services/customerBlocklistService";
 import QuickOrderModal from "@/components/facebook-inbox/Modals/QuickOrderModal";
+import { GitMerge } from "lucide-react";
+import MergeCustomerModal from "./MergeCustomerModal";
 
 interface CustomerDetailsHeaderProps {
   customer: CustomerDetailsData["customer"];
@@ -39,6 +41,11 @@ interface CustomerDetailsHeaderProps {
   onOpenQuickOrder?: () => void;
   onCloseQuickOrder?: () => void;
   onOrderCreated?: () => void;
+  // Merge duplicates (optional, additive)
+  showMergeModal?: boolean;
+  onOpenMergeModal?: () => void;
+  onCloseMergeModal?: () => void;
+  onMerged?: () => void;
 }
 
 export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
@@ -62,6 +69,10 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
   onOpenQuickOrder,
   onCloseQuickOrder,
   onOrderCreated,
+  showMergeModal,
+  onOpenMergeModal,
+  onCloseMergeModal,
+  onMerged,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -189,6 +200,21 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
               </button>
             ))}
 
+          {/* Merge Duplicates Button (ghost, admin only) */}
+          {onOpenMergeModal && (
+            <button
+              onClick={onOpenMergeModal}
+              disabled={!isAdmin}
+              title={
+                isAdmin ? "دمج عميل مكرر في هذا العميل" : "متاح للمدير فقط"
+              }
+              className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 active:scale-[0.97]"
+            >
+              <GitMerge className="h-4 w-4 ml-1.5" />
+              دمج مكرر
+            </button>
+          )}
+
           {/* Export Button */}
           <button
             onClick={onExport}
@@ -258,6 +284,16 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
           customerId={customer.id}
           platform="whatsapp"
           onOrderCreated={handleOrderCreated}
+        />
+      )}
+
+      {/* Merge Duplicates Modal */}
+      {showMergeModal && onCloseMergeModal && (
+        <MergeCustomerModal
+          isOpen={showMergeModal}
+          onClose={onCloseMergeModal}
+          targetCustomer={customer}
+          onMerged={() => onMerged?.()}
         />
       )}
     </div>

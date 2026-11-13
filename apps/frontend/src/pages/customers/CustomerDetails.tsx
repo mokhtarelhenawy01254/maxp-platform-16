@@ -67,6 +67,10 @@ const CustomerDetails: React.FC = () => {
         onOpenQuickOrder={() => ctrl.setShowQuickOrder(true)}
         onCloseQuickOrder={() => ctrl.setShowQuickOrder(false)}
         onOrderCreated={ctrl.loadCustomerDetails}
+        showMergeModal={ctrl.showMergeModal}
+        onOpenMergeModal={() => ctrl.setShowMergeModal(true)}
+        onCloseMergeModal={() => ctrl.setShowMergeModal(false)}
+        onMerged={ctrl.handleMerged}
       />
 
       {/* Stats Cards */}

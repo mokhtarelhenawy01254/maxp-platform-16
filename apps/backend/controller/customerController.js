@@ -3410,12 +3410,173 @@ const bulkAssignLeads = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🆕 Wave 3 — Manager visibility: source analytics + duplicate merge
+// ═══════════════════════════════════════════════════════════════════════════════
+const getLeadAnalytics = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+    const prisma = getSharedPrismaClient();
+
+    const [byStage, bySource, firstResponseAgg] = await Promise.all([
+      prisma.customer.groupBy({
+        by: ['leadStage'],
+        where: { companyId },
+        _count: { _all: true }
+      }),
+      prisma.customer.groupBy({
+        by: ['leadSource'],
+        where: { companyId },
+        _count: { _all: true }
+      }),
+      prisma.customer.aggregate({
+        where: { companyId, firstContactAt: { not: null } },
+        _avg: { successScore: true },
+        _count: { _all: true }
+      }).then(async () => {
+        // first response time = avg (firstContactAt - createdAt) in hours
+        const rows = await prisma.customer.findMany({
+          where: { companyId, firstContactAt: { not: null } },
+          select: { createdAt: true, firstContactAt: true },
+          take: 2000,
+          orderBy: { createdAt: 'desc' }
+        });
+        const totalHours = rows.reduce((sum, r) => {
+          if (!r.firstContactAt) return sum;
+          return sum + (new Date(r.firstContactAt) - new Date(r.createdAt)) / 3600000;
+        }, 0);
+        return rows.length > 0 ? parseFloat((totalHours / rows.length).toFixed(1)) : null;
+      })
+    ]);
+
+    const stageCounts = {};
+    for (const row of byStage) stageCounts[row.leadStage] = row._count._all;
+    const sourceCounts = {};
+    for (const row of bySource) sourceCounts[row.leadSource] = row._count._all;
+
+    const totalLeads = Object.values(stageCounts).reduce((a, b) => a + b, 0);
+    const converted = stageCounts.CONVERTED || 0;
+
+    res.json({
+      success: true,
+      data: {
+        byStage: stageCounts,
+        bySource: sourceCounts,
+        totalLeads,
+        converted,
+        conversionRate: totalLeads > 0 ? parseFloat(((converted / totalLeads) * 100).toFixed(1)) : 0,
+        avgFirstResponseHours: firstResponseAgg,
+        firstContactTracked: firstResponseAgg !== null
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error building lead analytics:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تحليلات الليدز', error: error.message });
+  }
+};
+
+const CHANNEL_UNIQUE_FIELDS = ['facebookId', 'instagramId', 'whatsappId', 'telegramId', 'tiktokId'];
+
+const mergeCustomers = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+    const canAssign = await _canAssignLeads(companyId, _getActorId(req));
+    if (!canAssign) {
+      return res.status(403).json({ success: false, message: 'الدمج متاح للمديرين فقط' });
+    }
+
+    const targetId = req.params.customerId;
+    const { sourceId } = req.body || {};
+    if (!sourceId || sourceId === targetId) {
+      return res.status(400).json({ success: false, message: 'حدد عميل مكرر مختلف لدمجه' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [target, source] = await Promise.all([
+      prisma.customer.findFirst({ where: { id: targetId, companyId } }),
+      prisma.customer.findFirst({ where: { id: sourceId, companyId } })
+    ]);
+    if (!target || !source) {
+      return res.status(404).json({ success: false, message: 'أحد العميلين غير موجود في هذه الشركة' });
+    }
+
+    // 1. Move child records to target
+    await Promise.all([
+      prisma.order.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }),
+      prisma.conversation.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }),
+      prisma.customerNote.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }),
+      prisma.formSubmission.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }).catch(() => {}),
+      prisma.leadFollowUpEnrollment.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }).catch(() => {}),
+      prisma.activityLog.updateMany({ where: { customerId: source.id }, data: { customerId: target.id } }).catch(() => {})
+    ]);
+
+    // 2. Carry over identity: empty fields on target take the source's values
+    const targetUpdate = {};
+    if (!target.phone && source.phone) {
+      targetUpdate.phone = source.phone;
+      targetUpdate.phoneNormalized = source.phoneNormalized;
+    }
+    if (!target.email && source.email) targetUpdate.email = source.email;
+    for (const field of CHANNEL_UNIQUE_FIELDS) {
+      if (!target[field] && source[field]) targetUpdate[field] = source[field];
+    }
+
+    // 3. Merge lead metadata (followUpLog + legacy lead fields)
+    let mergedMetadata = null;
+    try {
+      const targetMeta = target.metadata ? JSON.parse(target.metadata) : {};
+      const sourceMeta = source.metadata ? JSON.parse(source.metadata) : {};
+      const mergedLog = [
+        ...(Array.isArray(sourceMeta.followUpLog) ? sourceMeta.followUpLog : []),
+        ...(Array.isArray(targetMeta.followUpLog) ? targetMeta.followUpLog : [])
+      ];
+      mergedMetadata = JSON.stringify({
+        ...sourceMeta,
+        ...targetMeta,
+        ...(mergedLog.length > 0 ? { followUpLog: mergedLog } : {}),
+        mergedFromId: source.id,
+        mergedAt: new Date().toISOString()
+      });
+    } catch (metaError) {
+      mergedMetadata = target.metadata;
+    }
+    if (mergedMetadata) targetUpdate.metadata = mergedMetadata;
+
+    // Lead fields: keep the "strongest" values on target
+    if (target.leadStage === 'NEW_LEAD' && source.leadStage !== 'NEW_LEAD') targetUpdate.leadStage = source.leadStage;
+    if (source.assignedToId && !target.assignedToId) targetUpdate.assignedToId = source.assignedToId;
+    if (source.nextFollowUpDate && !target.nextFollowUpDate) targetUpdate.nextFollowUpDate = source.nextFollowUpDate;
+
+    const updatedTarget = await prisma.customer.update({ where: { id: target.id }, data: targetUpdate });
+
+    // 4. Remove the duplicate
+    await prisma.customer.delete({ where: { id: source.id } });
+
+    res.json({
+      success: true,
+      data: { mergedId: source.id, target: updatedTarget },
+      message: 'تم دمج العميل المكرر بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ Error merging customers:', error);
+    res.status(500).json({ success: false, message: 'خطأ في دمج العملاء', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
   getDueLeadFollowUps,
   assignLead,
   bulkAssignLeads,
+  getLeadAnalytics,
+  mergeCustomers,
   exportCustomers,
   deleteAllConversations,
   deleteAllCustomers,

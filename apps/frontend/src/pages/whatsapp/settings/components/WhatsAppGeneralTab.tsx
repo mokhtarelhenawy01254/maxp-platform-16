@@ -78,7 +78,7 @@ export const WhatsAppGeneralTab: React.FC<WhatsAppGeneralTabProps> = ({
                   {t("whatsappSettings.autoNotifications")}
                 </p>
                 <p className="text-sm leading-6 text-emerald-800">
-                  {t("whatsappSettings.autoNotificationsDesc")}
+                  {t("whatsappSettings.autoNotificationsAlert")}
                 </p>
                 <Button
                   variant="outline"

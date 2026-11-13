@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { WhatsAppSurfaceCard } from "../../components/WhatsAppPageShell";
 import type { Session, WorkspaceSettings } from "../types/whatsAppSettingsTypes";
 import {
@@ -67,6 +68,10 @@ export const WhatsAppSessionsTab: React.FC<WhatsAppSessionsTabProps> = ({
   onDeleteSession,
 }) => {
   const { t } = useTranslation();
+  // قطع الاتصال بيوقف استقبال الرسائل فورًا، فبيلزمه تأكيد بدل ضغطة واحدة.
+  const [pendingDisconnect, setPendingDisconnect] = React.useState<Session | null>(
+    null,
+  );
 
   return (
     <div className="w-full min-w-0 space-y-4">
@@ -256,7 +261,7 @@ export const WhatsAppSessionsTab: React.FC<WhatsAppSessionsTabProps> = ({
                         variant="outline"
                         size="sm"
                         className="h-9 min-h-[36px] w-full whitespace-nowrap rounded-full border-rose-300/70 bg-rose-500/10 text-xs font-medium text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200 sm:text-sm"
-                        onClick={() => onDisconnectSession(session.id)}
+                        onClick={() => setPendingDisconnect(session)}
                       >
                         <Link2Off className="size-3.5 ms-1 shrink-0" />
                         <span>{t("whatsappSettings.disconnect")}</span>
@@ -371,6 +376,26 @@ export const WhatsAppSessionsTab: React.FC<WhatsAppSessionsTabProps> = ({
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDisconnect !== null}
+        title={t("whatsappSettings.dialogs.disconnectConfirmTitle")}
+        content={t("whatsappSettings.dialogs.disconnectConfirmBody", {
+          phone:
+            pendingDisconnect?.phoneNumber ||
+            pendingDisconnect?.metaDisplayPhoneNumber ||
+            pendingDisconnect?.name ||
+            "",
+        })}
+        confirmLabel={t("whatsappSettings.dialogs.disconnectConfirmAction")}
+        cancelLabel={t("whatsappSettings.dialogs.cancel")}
+        confirmColor="error"
+        onConfirm={() => {
+          if (pendingDisconnect) onDisconnectSession(pendingDisconnect.id);
+          setPendingDisconnect(null);
+        }}
+        onCancel={() => setPendingDisconnect(null)}
+      />
     </div>
   );
 };
