@@ -82,14 +82,14 @@ const CustomerDetails: React.FC = () => {
         walletBalance={ctrl.walletBalance}
       />
 
-      {/* Tabs Container */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800 overflow-hidden">
+      {/* Tabs — سطح واحد: شريط التابات بفاصل سفلي والمحتوى مباشرة تحته (بدون بوكس محيط) */}
+      <div>
         <CustomerDetailsTabsNav
           activeTab={ctrl.activeTab}
           onTabChange={ctrl.setActiveTab}
         />
 
-        <div className="p-4 sm:p-6">
+        <div className="pt-5">
           {ctrl.activeTab === "info" && (
             <CustomerInfoTab
               customer={ctrl.customer}

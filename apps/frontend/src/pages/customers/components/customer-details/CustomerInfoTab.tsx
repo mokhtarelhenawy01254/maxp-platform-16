@@ -265,9 +265,9 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
         </div>
       </div>
 
-      {/* Section: Customer Interests & Work Inquiries */}
-      <div className="md:col-span-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 sm:p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+      {/* Section: Customer Interests & Work Inquiries — سطح واحد بفواصل (بدون بوكس داخل بوكس) */}
+      <div className="md:col-span-2 space-y-4">
+        <div className="flex items-center justify-between border-b border-zinc-200/70 dark:border-zinc-800 pb-2">
           <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
             <span>اهتمامات واستفسارات العميل عن الشغل</span>
           </h3>
@@ -276,25 +276,25 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           {/* Customer Job / Field */}
-          <div className="p-3 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">طبيعة عمل العميل / مجاله:</span>
+          <div className="space-y-0.5">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">طبيعة عمل العميل / مجاله:</span>
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
               {customer.customerJob || "غير مسجل"}
             </span>
           </div>
 
           {/* Interests */}
-          <div className="p-3 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">الخدمات والمنتجات المطلوبة:</span>
+          <div className="space-y-0.5">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">الخدمات والمنتجات المطلوبة:</span>
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
               {customer.customerInterests || "غير محدد"}
             </span>
           </div>
 
           {/* Expected Budget */}
-          <div className="p-3 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block mb-1">الميزانية المتوقعة / حجم الطلب:</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="space-y-0.5">
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">الميزانية المتوقعة / حجم الطلب:</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
               {customer.expectedBudget || "غير محدد"}
             </span>
           </div>
@@ -302,7 +302,7 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
 
         {/* Detailed Inquiries */}
         {customer.inquiryDetails ? (
-          <div className="p-3 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60 space-y-1">
+          <div className="space-y-1">
             <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">تفاصيل الاستفسار وكل ما سأل عنه العميل:</span>
             <p className="text-zinc-800 dark:text-zinc-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
               {customer.inquiryDetails}
@@ -315,18 +315,18 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
         )}
       </div>
 
-      {/* Section: Pipeline & Follow-Up Quick Summary */}
-      <div className="md:col-span-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 p-4 sm:p-5 space-y-3">
-        <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+      {/* Section: Pipeline & Follow-Up Quick Summary — سطح واحد بفواصل */}
+      <div className="md:col-span-2 space-y-3">
+        <div className="flex items-center justify-between border-b border-zinc-200/70 dark:border-zinc-800 pb-2">
           <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-white">
             مسار المبيعات وموعد المتابعة القادمة
           </h3>
           <span className="text-[11px] text-zinc-500">حالة المتابعة والجدول الزمني</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-2.5 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">مرحلة المتابعة:</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">مرحلة المتابعة:</span>
             <span className="font-semibold text-purple-600 dark:text-purple-400">
               {customer.leadStage === "NEW_LEAD" && "عميل محتمل جديد"}
               {customer.leadStage === "CONTACTED" && "تم التواصل المبدئي"}
@@ -341,8 +341,8 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
             </span>
           </div>
 
-          <div className="p-2.5 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">أولوية العميل:</span>
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">أولوية العميل:</span>
             <span className="font-semibold">
               {customer.leadPriority === "HOT" && "🔥 ساخن (مهتم جداً)"}
               {customer.leadPriority === "WARM" && "⚡ دافئ (متوسط)"}
@@ -351,8 +351,8 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
             </span>
           </div>
 
-          <div className="p-2.5 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">مصدر العميل:</span>
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">مصدر العميل:</span>
             <span className="font-semibold text-zinc-800 dark:text-zinc-200">
               {customer.leadSource === "WHATSAPP" && "واتساب"}
               {customer.leadSource === "FACEBOOK" && "فيسبوك ومسنجر"}
@@ -366,9 +366,9 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
             </span>
           </div>
 
-          <div className="p-2.5 bg-white dark:bg-zinc-800/80 rounded-lg border border-zinc-200/70 dark:border-zinc-700/60">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block mb-1">المتابعة القادمة:</span>
-            <span className="font-semibold text-blue-600 dark:text-blue-400 font-mono">
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">المتابعة القادمة:</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400 tabular-nums">
               {customer.nextFollowUpDate
                 ? new Date(customer.nextFollowUpDate).toLocaleString("ar-EG", {
                     dateStyle: "short",

@@ -20,6 +20,8 @@ interface CustomerDetailsStatsProps {
   walletBalance: number;
 }
 
+// 🆕 المعلم القياسي: شريط إحصائيات واحد بسطح واحد — كل مؤشر رقم + ليبل + أيقونة
+// بدون بوكسات متداخلة (Ban Nested Border Nesting — AGENTS.md)
 export const CustomerDetailsStats: React.FC<CustomerDetailsStatsProps> = ({
   customer,
   stats,
@@ -36,134 +38,118 @@ export const CustomerDetailsStats: React.FC<CustomerDetailsStatsProps> = ({
     customer.totalOrdersCount ?? stats.totalOrdersCount ?? stats.ordersCount;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      {/* Delivery Reliability Card */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-              <CheckCircleIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-                نسبة الاستلام
-              </p>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono">
-                  {deliveryRate}%
-                </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
-                  ({deliveredCount} من {totalOrders})
-                </span>
-              </div>
-            </div>
+    <div className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 sm:px-5 py-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-6 gap-y-3">
+      {/* Delivery Reliability */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+          <CheckCircleIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            نسبة الاستلام
+          </p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+              {deliveryRate}%
+            </span>
+            <span className="text-[10px] text-zinc-400 tabular-nums whitespace-nowrap">
+              ({deliveredCount} من {totalOrders})
+            </span>
           </div>
         </div>
       </div>
 
       {/* Orders count */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-            <ShoppingBagIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              {t("sidebar.orders")}
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono mt-0.5">
-              {stats.ordersCount}
-            </p>
-          </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+          <ShoppingBagIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            {t("sidebar.orders")}
+          </p>
+          <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+            {stats.ordersCount}
+          </p>
         </div>
       </div>
 
       {/* Conversations count */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200/60 dark:border-teal-800/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
-            <ChatBubbleLeftRightIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              {t("sidebar.conversations")}
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono mt-0.5">
-              {stats.conversationsCount}
-            </p>
-          </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
+          <ChatBubbleLeftRightIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            {t("sidebar.conversations")}
+          </p>
+          <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+            {stats.conversationsCount}
+          </p>
         </div>
       </div>
 
       {/* Total spent */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-            <CurrencyDollarIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              {t("customers.totalSpent")}
-            </p>
-            <p className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono mt-0.5">
-              {formatCurrency(stats.totalSpent)}
-            </p>
-          </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+          <CurrencyDollarIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            {t("customers.totalSpent")}
+          </p>
+          <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+            {formatCurrency(stats.totalSpent)}
+          </p>
         </div>
       </div>
 
       {/* Average order */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/40 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
-            <ChartBarIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              {t("customers.averageOrder")}
-            </p>
-            <p className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono mt-0.5">
-              {formatCurrency(stats.averageOrderValue)}
-            </p>
-          </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-purple-50 dark:bg-purple-950/40 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+          <ChartBarIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            {t("customers.averageOrder")}
+          </p>
+          <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+            {formatCurrency(stats.averageOrderValue)}
+          </p>
         </div>
       </div>
 
       {/* Loyalty points */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-            <StarIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              نقاط الولاء
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono mt-0.5">
-              {loyaltyPoints}
-            </p>
-          </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="h-8 w-8 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+          <StarIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            نقاط الولاء
+          </p>
+          <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+            {loyaltyPoints}
+          </p>
         </div>
       </div>
 
       {/* Cashback & wallet */}
-      <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-2xs border border-zinc-200/80 dark:border-zinc-800 sm:col-span-2">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-            <BanknotesIcon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              الكاش باك المحقق
-            </p>
-            <div className="flex items-baseline gap-3 mt-0.5">
-              <span className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white tabular-nums font-mono">
-                {formatCurrency(cashbackAmount)}
-              </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
-                رصيد المحفظة: {formatCurrency(walletBalance)}
-              </span>
-            </div>
+      <div className="flex items-center gap-2.5 min-w-0 col-span-2 sm:col-span-1">
+        <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+          <BanknotesIcon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium leading-tight">
+            الكاش باك المحقق
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
+              {formatCurrency(cashbackAmount)}
+            </span>
+            <span className="text-[10px] text-zinc-400 tabular-nums whitespace-nowrap">
+              المحفظة: {formatCurrency(walletBalance)}
+            </span>
           </div>
         </div>
       </div>
