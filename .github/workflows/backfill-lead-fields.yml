@@ -51,5 +51,9 @@ jobs:
             set -euo pipefail
             cd /var/www/backend2
             echo "Current backend dir: $(pwd)"
-            echo "Running lead fields backfill with DRY_RUN=$DRY_RUN"
+            echo "── Verify wave-0 columns exist on prod DB ──"
+            node -e "const {PrismaClient}=require('./prisma/generated/postgresql_v2');const p=new PrismaClient();p.\$queryRawUnsafe(\"SELECT column_name FROM information_schema.columns WHERE table_name='customers' AND column_name IN ('leadStage','leadPriority','leadSource','assignedToId','nextFollowUpDate','followUpReminderSentAt','firstContactAt')\").then(r=>{const names=r.map(c=>c.column_name);console.log('COLUMNS FOUND:',names.join(','));if(names.length<7){console.error('MISSING COLUMNS — deploy db push incomplete');process.exit(2);}return p.\$disconnect();}).catch(e=>{console.error('DB CHECK FAILED:',e.message);process.exit(1);})"
+            echo "── Verify lead crons started on server ──"
+            pm2 logs --nostream --lines 300 2>/dev/null | grep -aE "LEAD-REMINDER-CRON|CART-RECOVERY-CRON" | head -6 || echo "(no cron lines in recent logs — check restart time)"
+            echo "── Running lead fields backfill with DRY_RUN=$DRY_RUN ──"
             node scripts/one-off/backfill-lead-fields.cjs --batch=500
