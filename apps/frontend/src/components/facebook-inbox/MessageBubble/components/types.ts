@@ -87,6 +87,7 @@ export interface Message {
   attachments?: MessageAttachment[];
   isStarred?: boolean;
   isAIResponse?: boolean;
+  senderType?: 'AI' | 'META_EXTERNAL' | 'STAFF' | 'CUSTOMER';
   deliveryStatus?: 'PENDING' | 'SENT' | 'FAILED';
   failureReason?: string | null;
   facebookMessageId?: string | null;

@@ -235,6 +235,32 @@ const getMessages = async (req, res) => {
                 const failureReason = msg.failureReason || metadata?.failureReason || metadata?.messengerError || metadata?.facebookErrorMessage || null;
                 const facebookMessageId = metadata?.facebookMessageId || metadata?.messengerMessageId || null;
 
+                // Sender type and identity resolution:
+                let senderType = 'CUSTOMER';
+                let isAIResponse = false;
+                let resolvedSenderName = msg.isFromCustomer ? 'العميل' : 'موظف';
+
+                if (!msg.isFromCustomer) {
+                    const source = metadata?.source;
+                    const isAi = source === 'ai_reply' || metadata?.isAIResponse === true || metadata?.senderType === 'AI' || msg.senderId === 'ai';
+                    const isMetaExternal = !isAi && (source === 'page_reply' || metadata?.senderType === 'META_EXTERNAL' || (!msg.senderId && !metadata?.employeeId && (metadata?.isFacebookReply || metadata?.platform === 'facebook')));
+
+                    if (isAi) {
+                        senderType = 'AI';
+                        isAIResponse = true;
+                        resolvedSenderName = metadata?.employeeName || 'الذكاء الاصطناعي';
+                    } else if (isMetaExternal) {
+                        senderType = 'META_EXTERNAL';
+                        isAIResponse = false;
+                        resolvedSenderName = metadata?.employeeName || 'فيسبوك (Meta)';
+                    } else {
+                        senderType = 'STAFF';
+                        isAIResponse = false;
+                        resolvedSenderName = employeeName ||
+                            (msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : 'موظف');
+                    }
+                }
+
                 return {
                     ...normalizeMessageMediaForResponse(msg),
                     type: msg.type === 'IMAGE' ? 'image' : msg.type.toLowerCase(),
@@ -243,12 +269,9 @@ const getMessages = async (req, res) => {
                     failureReason,
                     facebookMessageId,
                     status: deliveryStatus === 'SENT' ? 'sent' : (deliveryStatus === 'FAILED' ? 'error' : 'pending'),
-
-                    // Ensure frontend compatibility fields
-                    // Priority: metadata.employeeName > sender relation > fallback
-                    senderName: employeeName ||
-                        (msg.user ? `${msg.user.firstName} ${msg.user.lastName}` :
-                            (msg.isFromCustomer ? 'Customer' : 'موظف'))
+                    senderType,
+                    isAIResponse,
+                    senderName: resolvedSenderName
                 };
             }),
             pagination: {

@@ -1232,7 +1232,8 @@ async function handlePageReply(webhookEvent, pageId = null) {
         (hasAttachments && webhookEvent.message?.attachments?.some(a => a.payload?.url && isRecentAiSentImageUrl(a.payload.url)));
       const echoSource = isAiEcho ? 'ai_reply' : 'page_reply';
       const resolvedSenderId = isAiEcho ? null : senderUserId;
-      const resolvedSenderName = isAiEcho ? 'الذكاء الاصطناعي' : senderUserName;
+      const resolvedSenderType = isAiEcho ? 'AI' : (resolvedSenderId ? 'STAFF' : 'META_EXTERNAL');
+      const resolvedSenderName = isAiEcho ? 'الذكاء الاصطناعي' : (senderUserName || 'فيسبوك (Meta)');
 
       // If not found, create new (Standard behavior for manual replies or business suite)
       return await prisma.message.create({
@@ -1247,6 +1248,8 @@ async function handlePageReply(webhookEvent, pageId = null) {
           metadata: JSON.stringify({
             platform: 'facebook',
             source: echoSource,
+            senderType: resolvedSenderType,
+            isAIResponse: isAiEcho,
             senderId: pageSenderId, // Facebook page ID
             employeeId: resolvedSenderId, // 🆕 معرف الموظف
             employeeName: resolvedSenderName, // 🆕 اسم الموظف
@@ -1380,6 +1383,9 @@ async function handlePageReply(webhookEvent, pageId = null) {
           attachments: pageReplyMessage.attachments, // Keep as string for frontend to parse
           isFacebookReply: true, // Mark as Facebook page reply for frontend
           facebookMessageId: messageId, // Include Facebook message ID
+          senderType: resolvedSenderType,
+          senderName: resolvedSenderName,
+          isAIResponse: isAiEcho,
           // 🆕 Add flags for unread tab filtering
           lastMessageIsFromCustomer: pageReplyMessage.isFromCustomer,
           lastCustomerMessageIsUnread: pageReplyMessage.isFromCustomer && !pageReplyMessage.isRead,

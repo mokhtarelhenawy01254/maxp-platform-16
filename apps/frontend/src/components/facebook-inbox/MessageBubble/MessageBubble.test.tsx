@@ -305,4 +305,76 @@ describe("MessageBubble", () => {
     expect(screen.getByAltText("صورة")).toBeDefined();
     expect(screen.queryByText(/proxy-image/i)).toBeNull();
   });
+
+  it("renders AI badge and correction badge when message is from AI", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          id: "msg-ai-1",
+          isFromCustomer: false,
+          senderType: "AI",
+          isAIResponse: true,
+          content: "أهلاً بك، كيف يمكنني مساعدتك اليوم؟",
+          metadata: {
+            source: "ai_reply",
+            employeeName: "الذكاء الاصطناعي",
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("المساعد الذكي (AI)")).toBeDefined();
+    expect(screen.getByText("🤖 رد تلقائي من الوكيل")).toBeDefined();
+    expect(screen.getByText("✏️ تصحيح الرد")).toBeDefined();
+  });
+
+  it("renders Meta badge and suppresses AI correction badge when message is from Facebook externally", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          id: "msg-meta-1",
+          isFromCustomer: false,
+          senderType: "META_EXTERNAL",
+          isAIResponse: false,
+          content: "تم الرد من تطبيق فيسبوك بيزنس سويت",
+          metadata: {
+            source: "page_reply",
+            isFacebookReply: true,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("فيسبوك (Meta)")).toBeDefined();
+    expect(screen.queryByText("المساعد الذكي (AI)")).toBeNull();
+    expect(screen.queryByText("🤖 رد تلقائي من الوكيل")).toBeNull();
+    expect(screen.queryByText("✏️ تصحيح الرد")).toBeNull();
+  });
+
+  it("renders Staff badge with employee name for dashboard manual replies", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          id: "msg-staff-1",
+          isFromCustomer: false,
+          senderId: "user-100",
+          senderType: "STAFF",
+          senderName: "أحمد علي",
+          content: "تم تأكيد طلبك مع مندوب الشحن",
+          metadata: {
+            source: "manual_reply",
+            employeeName: "أحمد علي",
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("أحمد علي")).toBeDefined();
+    expect(screen.queryByText("المساعد الذكي (AI)")).toBeNull();
+    expect(screen.queryByText("فيسبوك (Meta)")).toBeNull();
+    expect(screen.queryByText("🤖 رد تلقائي من الوكيل")).toBeNull();
+  });
 });

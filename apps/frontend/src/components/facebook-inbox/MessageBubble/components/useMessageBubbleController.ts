@@ -239,10 +239,29 @@ export function useMessageBubbleController({
   );
   const orderNum = metadata?.orderNumber || orderNumMatch?.[1];
 
+  const parsedMetaAny = metadata as any;
+  const rawSource = parsedMetaAny?.source;
+  const isMetaExternal =
+    message.senderType === 'META_EXTERNAL' ||
+    parsedMetaAny?.senderType === 'META_EXTERNAL' ||
+    rawSource === 'page_reply' ||
+    (!isCustomer && !message.senderId && parsedMetaAny?.isFacebookReply && rawSource !== 'ai_reply');
+
   const isAIResponse =
-    !message.senderId ||
-    message.senderId === "ai" ||
-    Boolean(message.isAIResponse);
+    !isMetaExternal &&
+    (message.senderType === 'AI' ||
+      parsedMetaAny?.senderType === 'AI' ||
+      message.senderId === 'ai' ||
+      rawSource === 'ai_reply' ||
+      Boolean(message.isAIResponse));
+
+  const resolvedSenderType: 'AI' | 'META_EXTERNAL' | 'STAFF' | 'CUSTOMER' = isCustomer
+    ? 'CUSTOMER'
+    : isAIResponse
+      ? 'AI'
+      : isMetaExternal
+        ? 'META_EXTERNAL'
+        : 'STAFF';
 
   return {
     isCustomer,
@@ -269,5 +288,7 @@ export function useMessageBubbleController({
     isOrderConfirmation,
     orderNum,
     isAIResponse,
+    isMetaExternal,
+    senderType: resolvedSenderType,
   };
 }

@@ -1,5 +1,5 @@
 import React, { memo, useState, useRef, useEffect, useMemo } from "react";
-import { Star } from "lucide-react";
+import { Star, Bot, Globe, User } from "lucide-react";
 import LinkifiedText from "../../common/LinkifiedText";
 import {
   MessageBubbleProps,
@@ -61,6 +61,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       isOrderConfirmation,
       orderNum,
       isAIResponse,
+      isMetaExternal,
+      senderType,
     } = useMessageBubbleController({
       message,
       parentMessage,
@@ -171,11 +173,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
           />
 
           {!isCustomer && (
-            <div
-              className="text-xs mb-1 text-left"
-              style={{ color: "var(--color-muted-foreground)" }}
-            >
-              {message.senderName}
+            <div className="flex items-center gap-1.5 mb-1.5 text-xs select-none">
+              {isAIResponse ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 shadow-2xs"
+                  title="تم الرد آلياً بواسطة المساعد الذكي (MaxP AI)"
+                >
+                  <Bot className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                  <span>المساعد الذكي (AI)</span>
+                </span>
+              ) : isMetaExternal ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/15 text-sky-800 dark:text-sky-300 border border-sky-500/30 shadow-2xs"
+                  title="تم الرد مباشرة من تطبيق فيسبوك أو Meta Business Suite خارج المنصة"
+                >
+                  <Globe className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                  <span>فيسبوك (Meta)</span>
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted/80 text-foreground/80 border border-border/60"
+                  title="رد يدوي من موظف عبر لوحة التحكم"
+                >
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span>{message.senderName || "موظف"}</span>
+                </span>
+              )}
             </div>
           )}
 
@@ -320,7 +343,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
               </div>
             )}
 
-            {!isCustomer && isAIResponse && (
+            {!isCustomer && isAIResponse && !isMetaExternal && (
               <AICorrectionBadge
                 isEditing={isEditing}
                 onStartEditing={startEditing}
@@ -352,6 +375,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = memo(
       prevProps.message.failureReason === nextProps.message.failureReason &&
       prevProps.onRetry === nextProps.onRetry &&
       prevProps.message.type === nextProps.message.type &&
+      prevProps.message.senderType === nextProps.message.senderType &&
+      prevProps.message.isAIResponse === nextProps.message.isAIResponse &&
+      prevProps.message.senderName === nextProps.message.senderName &&
       prevProps.message.fileUrl === nextProps.message.fileUrl &&
       prevProps.message.attachments === nextProps.message.attachments &&
       prevProps.message.metadata === nextProps.message.metadata &&
