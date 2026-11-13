@@ -1278,6 +1278,9 @@ const BrandIdentitySettings = React.lazy(
 const EducationFunnelPage = React.lazy(
   () => import("./pages/admin/EducationFunnelPage"),
 );
+const EducationFlowsPage = React.lazy(
+  () => import("./pages/admin/EducationFlowsPage"),
+);
 const HotelManagementPage = React.lazy(
   () => import("./pages/admin/HotelManagementPage"),
 );
@@ -9577,6 +9580,14 @@ const AppContent = () => {
                       <AppAccessRoute requiredAppSlugs={['academy-app']}>
                         <AcademyDashboardPage />
                       </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/flows"
+                  element={
+                    <Layout fullWidth>
+                      <EducationFlowsPage />
                     </Layout>
                   }
                 />

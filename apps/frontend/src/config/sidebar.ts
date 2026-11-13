@@ -1908,6 +1908,7 @@ export const getSidebarConfig = (
                 { to: '/admin/education/sessions', itemId: 'education-sessions', icon: Clock, label: t('sidebar.educationSessions') },
                 { to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, label: t('sidebar.educationCalendar') },
                 { to: '/admin/education/demo-day', itemId: 'education-demo-day', icon: Presentation, label: t('sidebar.educationDemoDay', 'الديمو داي'), hidden: true },
+                { to: '/admin/education/flows', itemId: 'education-flows', icon: GitBranch, label: t('sidebar.educationFlows', 'مسارات الرسايل والأتمتة') },
                 { to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, label: t('sidebar.educationFunnel') },
                 { to: '/admin/education/settings', itemId: 'education-settings', icon: Settings, label: t('sidebar.educationSettings', 'إعدادات وتخصيص السكاشن') },
                 { to: '/admin/education/logs', itemId: 'education-logs', icon: History, label: t('sidebar.educationLogs', 'سجلات النظام التعليمي') },
