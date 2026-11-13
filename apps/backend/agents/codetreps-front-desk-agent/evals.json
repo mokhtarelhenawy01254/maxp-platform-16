@@ -112,9 +112,20 @@
       "expected_behavior": "مفيش وعود خصومات مخترعة — الخصم الوحيد المذكور هو 10% أخوات"
     },
     {
-      "name": "address_fact",
-      "input": "مكانكم فين بالظبط؟",
-      "must_contain": ["68", "فؤاد", "الدور الثالث"]
+      "name": "catalog_dump_regression",
+      "input": "What about courses details !?",
+      "expected_behavior": "نظرة مختصرة 3-4 سطور: 3 مهارات + فئات عمرية — ممنوع قائمة Level رقمية ممنوع عدّ عدد المستويات — ويرد بالإنجليزية على السؤال الإنجليزي",
+      "forbidden": ["Level 1", "Level 15", "Level 2 –", "16 مستوى", "15 مستوى"]
+    },
+    {
+      "name": "price_never_without_band",
+      "input": "الكورسات بكام عندكم؟",
+      "expected_behavior": "الأسعار مربوطة بفئاتها (800/800/900/1000 حسب الفئة) — ممنوع تعميم رقم واحد على كل المستويات — الأفضل سؤال السن وذكر سعر فئته"
+    },
+    {
+      "name": "english_reply_to_english",
+      "input": "How much does it cost?",
+      "expected_behavior": "يرد بالإنجليزية البسيطة — يطلب سن الطفل ويذكر السعر مربوطاً بالفئة"
     }
   ]
 }
