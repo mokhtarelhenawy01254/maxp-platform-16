@@ -16,6 +16,8 @@ import {
   TABS,
 } from "./education-management";
 import { api, fetchJson } from "./education-management/api";
+import type { TabId } from "./education-management/types";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EducationGroupsPage from "./EducationGroupsPage";
 
 export default function EducationManagementPage() {
@@ -84,6 +86,8 @@ export default function EducationManagementPage() {
 
   const [educationSettings, setEducationSettings] = useState<EducationSettingsData | null>(null);
   const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
+  const [settingsDirty, setSettingsDirty] = useState<boolean>(false);
+  const [pendingTabAfterWarning, setPendingTabAfterWarning] = useState<TabId | null>(null);
   const enableSubjects = educationSettings?.enableSubjects ?? false;
 
   useEffect(() => {
@@ -155,7 +159,13 @@ export default function EducationManagementPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (settingsDirty && tab.id !== activeTab) {
+                  setPendingTabAfterWarning(tab.id);
+                  return;
+                }
+                setActiveTab(tab.id);
+              }}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-xs"
@@ -174,6 +184,7 @@ export default function EducationManagementPage() {
           onSaved={(updated) => {
             setEducationSettings(updated);
           }}
+          onDirtyChange={setSettingsDirty}
         />
       ) : activeTab === "logs" ? (
         <EducationLogsTab />
@@ -349,6 +360,27 @@ export default function EducationManagementPage() {
           )}
         </>
       )}
+
+      {/* Guard: leaving settings with unsaved edits */}
+      <ConfirmDialog
+        open={pendingTabAfterWarning !== null}
+        title={isEn ? "Leave with unsaved changes?" : "الخروج بتعديلات غير محفوظة؟"}
+        content={
+          isEn
+            ? "You have unsaved edits in the settings tab. Leaving now discards them — you can save from the sticky bar first."
+            : "لديك تعديلات غير محفوظة في تاب الإعدادات — الخروج الآن سيضيعها. يمكنك حفظها من الشريط السفلي أولًا."
+        }
+        confirmLabel={isEn ? "Leave without saving" : "خروج بدون حفظ"}
+        cancelLabel={isEn ? "Stay" : "ابقَ هنا"}
+        confirmColor="warning"
+        onConfirm={() => {
+          const target = pendingTabAfterWarning;
+          setPendingTabAfterWarning(null);
+          setSettingsDirty(false);
+          if (target) setActiveTab(target);
+        }}
+        onCancel={() => setPendingTabAfterWarning(null)}
+      />
     </div>
   );
 }

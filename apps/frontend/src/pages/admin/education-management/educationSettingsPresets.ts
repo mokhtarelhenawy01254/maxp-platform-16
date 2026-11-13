@@ -42,6 +42,7 @@ interface PresetLabel {
 
 export interface EducationPreset {
   id: string;
+  mode: "COURSES" | "ACADEMIC";
   name: string;
   nameEn: string;
   desc: string;
@@ -56,6 +57,7 @@ export interface EducationPreset {
 export const PRESETS: EducationPreset[] = [
   {
     id: "school",
+    mode: "ACADEMIC",
     name: "مراكز تعليمية ومدارس",
     nameEn: "Educational Centers & Schools",
     desc: "المعلمين، الطلاب، الحصص، والمواد الدراسية",
@@ -79,6 +81,7 @@ export const PRESETS: EducationPreset[] = [
   },
   {
     id: "engineering",
+    mode: "ACADEMIC",
     name: "مراكز تدريب هندسي وتقني",
     nameEn: "Engineering & Technical Centers",
     desc: "المهندسين، المتدربين، الورش والمشاريع",
@@ -102,6 +105,7 @@ export const PRESETS: EducationPreset[] = [
   },
   {
     id: "academy",
+    mode: "COURSES",
     name: "أكاديميات تدريب وكورسات",
     nameEn: "Training Academies & Courses",
     desc: "المدربين، الدارسين، البرامج والكورسات",
@@ -125,6 +129,7 @@ export const PRESETS: EducationPreset[] = [
   },
   {
     id: "institute",
+    mode: "ACADEMIC",
     name: "معاهد وجامعات أكاديمية",
     nameEn: "Academic Institutes & Universities",
     desc: "هيئة التدريس، الطلاب، والمقررات",

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { toast } from "sonner";
-import { ChevronUp, ChevronDown, RotateCcw, Lock, GraduationCap } from "lucide-react";
+import { ChevronUp, ChevronDown, RotateCcw, Lock, GraduationCap, GripVertical } from "lucide-react";
 import { Switch } from "../../../components/ui/switch";
 import { SECTION_ICON_MAP } from "./educationSettingsPresets";
 import type { EducationTabConfig } from "./types";
@@ -9,10 +10,14 @@ interface EducationSectionRowProps {
   index: number;
   total: number;
   isEn: boolean;
+  dragging: boolean;
+  over: boolean;
   onMove: (index: number, direction: "up" | "down") => void;
   onToggleVisibility: (index: number) => void;
   onLabel: (index: number, lang: "ar" | "en", value: string) => void;
   onReset: (index: number) => void;
+  /** Begin pointer-based drag (parent tracks pointermove/pointerup globally). */
+  onDragStart: (index: number) => void;
 }
 
 export function EducationSectionRow({
@@ -20,11 +25,15 @@ export function EducationSectionRow({
   index,
   total,
   isEn,
+  dragging,
+  over,
   onMove,
   onToggleVisibility,
   onLabel,
   onReset,
+  onDragStart,
 }: EducationSectionRowProps) {
+  const [enOpen, setEnOpen] = useState(false);
   const Icon = SECTION_ICON_MAP[tab.iconName] || GraduationCap;
   const isFirst = index === 0;
   const isLast = index === total - 1;
@@ -47,9 +56,10 @@ export function EducationSectionRow({
 
   return (
     <div
-      className={`flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-3 py-2.5 ${
+      className={`flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-3 py-2.5 transition-colors ${
         tab.visible ? "" : "opacity-55"
-      }`}
+      } ${dragging ? "opacity-40" : ""} ${over ? "ring-2 ring-primary/40 ring-inset rounded-lg" : ""}`}
+      data-testid={`education-section-row-${tab.id}`}
     >
       {/* Order + Reorder */}
       <div className="flex items-center gap-1 shrink-0">
@@ -75,6 +85,22 @@ export function EducationSectionRow({
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
         </div>
+        {/* Drag handle: pointer-based, works with mouse and touch */}
+        <span
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            onDragStart(index);
+          }}
+          data-testid={`education-section-drag-${tab.id}`}
+          role="button"
+          tabIndex={0}
+          aria-label={isEn ? `Drag to reorder ${currentLabel}` : `اسحب لإعادة ترتيب ${currentLabel}`}
+          title={isEn ? "Drag to reorder" : "اسحب لإعادة الترتيب"}
+          className="flex items-center justify-center w-5 h-7 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted touch-none select-none"
+        >
+          <GripVertical className="w-3.5 h-3.5" aria-hidden="true" />
+        </span>
         <span className="w-6 text-center text-[10px] text-muted-foreground tabular-nums">
           #{index + 1}
         </span>
@@ -95,6 +121,13 @@ export function EducationSectionRow({
             aria-label={isEn ? "Locked tab" : "تاب أساسي"}
           />
         )}
+        {isCustomized && !tab.locked && (
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"
+            title={isEn ? "Modified label" : "معدّل — استعادة الاسم الأصلي"}
+            aria-label={isEn ? "Modified label" : "معدّل"}
+          />
+        )}
       </div>
 
       {/* AR / EN label editors */}
@@ -109,17 +142,30 @@ export function EducationSectionRow({
           aria-label={`${currentLabel} — ${isEn ? "Arabic label" : "الاسم بالعربية"}`}
           className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
-        <input
-          type="text"
-          value={tab.labelEn}
-          onChange={(e) => onLabel(index, "en", e.target.value)}
-          placeholder={tab.defaultLabelEn}
-          title={`${isEn ? "Default" : "الأصل"}: ${tab.defaultLabelEn}`}
-          maxLength={60}
-          dir="ltr"
-          aria-label={`${currentLabel} — ${isEn ? "English label" : "الاسم بالإنجليزية"}`}
-          className="w-full bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <input
+            type="text"
+            value={tab.labelEn}
+            onChange={(e) => onLabel(index, "en", e.target.value)}
+            placeholder={tab.defaultLabelEn}
+            title={`${isEn ? "Default" : "الأصل"}: ${tab.defaultLabelEn}`}
+            maxLength={60}
+            dir="ltr"
+            aria-label={`${currentLabel} — ${isEn ? "English label" : "الاسم بالإنجليزية"}`}
+            className={`w-full min-w-0 bg-background border border-input rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary ${
+              enOpen ? "block" : "hidden sm:block"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setEnOpen((v) => !v)}
+            aria-expanded={enOpen}
+            aria-label={`${currentLabel} — ${isEn ? "Toggle English label" : "إظهار الاسم بالإنجليزية"}`}
+            className="sm:hidden shrink-0 px-2 py-1.5 rounded-lg border border-border text-[10px] font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            EN
+          </button>
+        </div>
       </div>
 
       {/* Reset + Visibility */}

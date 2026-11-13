@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Briefcase, School, Check } from "lucide-react";
 
 export type EducationMode = "COURSES" | "ACADEMIC";
@@ -36,9 +37,21 @@ const MODE_OPTIONS: Array<{
 ];
 
 export function EducationModeSelector({ mode, isEn, disabled, onChange }: EducationModeSelectorProps) {
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const handleKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    const dir = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const next = (idx + dir + MODE_OPTIONS.length) % MODE_OPTIONS.length;
+    const nextMode = MODE_OPTIONS[next];
+    refs.current[next]?.focus();
+    if (nextMode && nextMode.id !== mode) onChange(nextMode.id);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5" role="radiogroup" aria-label={isEn ? "Operation mode" : "نمط التشغيل"}>
-      {MODE_OPTIONS.map((opt) => {
+      {MODE_OPTIONS.map((opt, idx) => {
         const Icon = opt.icon;
         const selected = mode === opt.id;
         return (
@@ -47,9 +60,14 @@ export function EducationModeSelector({ mode, isEn, disabled, onChange }: Educat
             type="button"
             role="radio"
             aria-checked={selected}
+            tabIndex={selected ? 0 : -1}
             disabled={disabled}
+            ref={(el) => {
+              refs.current[idx] = el;
+            }}
             onClick={() => !selected && onChange(opt.id)}
-            className={`relative flex items-center gap-2.5 rounded-xl border p-3 text-start transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
+            onKeyDown={(e) => handleKeyDown(e, idx)}
+            className={`relative flex items-center gap-2.5 rounded-xl border p-3 text-start transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 ${
               selected
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/40 hover:bg-muted/30"

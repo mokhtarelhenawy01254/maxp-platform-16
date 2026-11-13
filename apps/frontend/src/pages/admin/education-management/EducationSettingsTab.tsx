@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { toast } from "sonner";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Settings,
@@ -13,18 +12,19 @@ import {
   Eye,
   type LucideIcon,
 } from "lucide-react";
-import { api, fetchJson } from "./api";
-import { useSidebarSettings } from "../../../contexts/SidebarSettingsContext";
 import { PortalInviteAndPushCard } from "./PortalInviteAndPushCard";
 import { Switch } from "../../../components/ui/switch";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { PRESETS } from "./educationSettingsPresets";
-import { EducationModeSelector, type EducationMode } from "./EducationModeSelector";
+import { EducationModeSelector } from "./EducationModeSelector";
 import { EducationSectionRow } from "./EducationSectionRow";
-import type { EducationTabConfig, EducationSettingsData } from "./types";
+import { useEducationSettingsController } from "./useEducationSettingsController";
+import type { EducationSettingsData } from "./types";
 
 interface EducationSettingsTabProps {
   onSaved?: (newSettings: EducationSettingsData) => void;
+  /** Notifies the page shell so it can guard tab switches while dirty (additive, optional). */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const sbTheme = {
@@ -45,366 +45,90 @@ function SectionHeader({ icon: Icon, children }: { icon: LucideIcon; children: R
   );
 }
 
-export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
+export function EducationSettingsTab({ onSaved, onDirtyChange }: EducationSettingsTabProps) {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
-  const { refreshSettings } = useSidebarSettings();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [systemTitle, setSystemTitle] = useState("النظام التعليمي");
-  const [systemTitleEn, setSystemTitleEn] = useState("Education System");
-  const [educationMode, setEducationMode] = useState<EducationMode>("COURSES");
-  const [enableSubjects, setEnableSubjects] = useState<boolean>(false);
-  const [enableDemoDay, setEnableDemoDay] = useState<boolean>(false);
-  const [pushFirstSaveWhatsApp, setPushFirstSaveWhatsApp] = useState<boolean>(true);
-  const [companySlug, setCompanySlug] = useState<string | null>(null);
-  const [publicCode, setPublicCode] = useState<string | null>(null);
-  const [customDomain, setCustomDomain] = useState<string | null>(null);
-  const [tabs, setTabs] = useState<EducationTabConfig[]>([]);
-  const [initialData, setInitialData] = useState<EducationSettingsData | null>(null);
-  const [savedSnap, setSavedSnap] = useState<string | null>(null);
+  const c = useEducationSettingsController(onSaved);
 
-  const [savingMode, setSavingMode] = useState<EducationMode | null>(null);
-  const [savingPushFirst, setSavingPushFirst] = useState<boolean>(false);
-  const [savingDemoDay, setSavingDemoDay] = useState<boolean>(false);
-  const [pendingMode, setPendingMode] = useState<EducationMode | null>(null);
-
-  const anySaving = saving || savingMode !== null || savingPushFirst || savingDemoDay;
-
-  const snapshotOf = (title: string, titleEn: string, tabsList: EducationTabConfig[]) =>
-    JSON.stringify([title, titleEn, tabsList.map((tb) => [tb.id, tb.labelAr, tb.labelEn, tb.visible, tb.order])]);
-
-  const applyData = (data: EducationSettingsData) => {
-    const mode = data.educationMode || (data.enableSubjects ? "ACADEMIC" : "COURSES");
-    setSystemTitle(data.systemTitle || "النظام التعليمي");
-    setSystemTitleEn(data.systemTitleEn || "Education System");
-    setEducationMode(mode);
-    setEnableSubjects(data.enableSubjects !== undefined ? Boolean(data.enableSubjects) : mode === "ACADEMIC");
-    setEnableDemoDay(
-      data.enableDemoDay !== undefined
-        ? Boolean(data.enableDemoDay)
-        : Boolean(data.tabs?.find((tb: any) => tb.id === "demo-day")?.visible),
-    );
-    setPushFirstSaveWhatsApp(
-      data.pushFirstSaveWhatsApp !== undefined ? Boolean(data.pushFirstSaveWhatsApp) : true,
-    );
-    setCompanySlug(data.companySlug ?? null);
-    setPublicCode(data.publicCode ?? null);
-    setCustomDomain(data.customDomain ?? null);
-    setTabs(data.tabs || []);
-    setInitialData(data);
-    setSavedSnap(snapshotOf(data.systemTitle || "", data.systemTitleEn || "", data.tabs || []));
-  };
-
-  const fetchSettings = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchJson(api("settings"));
-      if (data) applyData(data);
-    } catch (err: any) {
-      toast.error(err.message || (isEn ? "Failed to load education system settings" : "تعذر جلب إعدادات النظام التعليمي"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const dragIndexRef = useRef<number | null>(null);
+  const overIndexRef = useRef<number | null>(null);
+  const moveRef = useRef(c.moveTabTo);
+  moveRef.current = c.moveTabTo;
 
   useEffect(() => {
-    fetchSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    onDirtyChange?.(c.isDirty);
+  }, [c.isDirty, onDirtyChange]);
 
-  // Single source of truth for the settings PUT payload
-  const buildPayload = (
-    o: Partial<{
-      educationMode: EducationMode;
-      enableSubjects: boolean;
-      enableDemoDay: boolean;
-      pushFirstSaveWhatsApp: boolean;
-      tabsOverride: EducationTabConfig[];
-      demoVisible: boolean;
-    }> = {},
-  ) => {
-    const mode = o.educationMode ?? educationMode;
-    const subjects = o.enableSubjects ?? enableSubjects;
-    const source = o.tabsOverride ?? tabs;
-    const payload = {
-      systemTitle: systemTitle.trim(),
-      systemTitleEn: systemTitleEn.trim(),
-      educationMode: mode,
-      enableSubjects: subjects,
-      pushFirstSaveWhatsApp: o.pushFirstSaveWhatsApp ?? pushFirstSaveWhatsApp,
-      tabs: source.map((tb, idx) => {
-        const id = tb.id.toLowerCase();
-        return {
-          id: tb.id,
-          key: tb.key,
-          labelAr: tb.labelAr.trim() || tb.defaultLabelAr,
-          labelEn: tb.labelEn.trim() || tb.defaultLabelEn,
-          order: idx,
-          visible:
-            id === "subjects"
-              ? subjects
-              : id === "demo-day" && o.demoVisible !== undefined
-                ? o.demoVisible
-                : tb.locked
-                  ? true
-                  : tb.visible,
-        };
-      }),
+  const beginDrag = (index: number) => {
+    dragIndexRef.current = index;
+    overIndexRef.current = index;
+    setDragIndex(index);
+    setOverIndex(index);
+  };
+
+  // Pointer-based reorder tracking (works for mouse and touch)
+  useEffect(() => {
+    if (dragIndex === null) return;
+    const onMove = (e: PointerEvent) => {
+      const rows = Array.from(document.querySelectorAll("[data-testid^='education-section-row-']"));
+      let idx: number | null = null;
+      rows.forEach((r, i) => {
+        const rect = r.getBoundingClientRect();
+        if (e.clientY >= rect.top && e.clientY <= rect.bottom) idx = i;
+      });
+      overIndexRef.current = idx;
+      setOverIndex(idx);
     };
-    // enableDemoDay is only sent by its own toggle handler (matches previous payloads exactly)
-    return o.enableDemoDay !== undefined ? { ...payload, enableDemoDay: o.enableDemoDay } : payload;
-  };
+    const onUp = () => {
+      const from = dragIndexRef.current;
+      const to = overIndexRef.current;
+      if (from !== null && to !== null && from !== to) moveRef.current(from, to);
+      dragIndexRef.current = null;
+      overIndexRef.current = null;
+      setDragIndex(null);
+      setOverIndex(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [dragIndex]);
 
-  const emitUpdated = async (payload: object, saved: EducationSettingsData) => {
-    if (refreshSettings) await refreshSettings();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("education-settings-updated", { detail: payload }));
-    }
-    if (onSaved) onSaved(saved);
-  };
-
-  const doModeChange = async (mode: EducationMode) => {
-    if (anySaving) return;
-    const subjectsOn = mode === "ACADEMIC";
-    setEducationMode(mode);
-    setEnableSubjects(subjectsOn);
-    const updatedTabs = tabs.map((tb) =>
-      tb.id.toLowerCase() === "subjects" ? { ...tb, visible: subjectsOn } : tb,
-    );
-    setTabs(updatedTabs);
-
-    setSavingMode(mode);
-    try {
-      const payload = buildPayload({
-        educationMode: mode,
-        enableSubjects: subjectsOn,
-        tabsOverride: updatedTabs,
-      });
-      await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
-      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, updatedTabs));
-      toast.success(
-        mode === "COURSES"
-          ? isEn
-            ? "Courses & packages mode activated (subjects hidden)"
-            : "تم تفعيل نمط الأكاديمية والكورسات بنجاح (المواد مخفية)"
-          : isEn
-            ? "Academic center mode activated (subjects enabled)"
-            : "تم تفعيل نمط السنتر والمواد الدراسية بنجاح (المواد مفعلة)",
-      );
-      await emitUpdated(payload, {
-        systemTitle: payload.systemTitle,
-        systemTitleEn: payload.systemTitleEn,
-        educationMode: mode,
-        enableSubjects: subjectsOn,
-        pushFirstSaveWhatsApp,
-        companySlug,
-        publicCode,
-        customDomain,
-        tabs: payload.tabs as EducationTabConfig[],
-      });
-    } catch (err: any) {
-      toast.error(err.message || (isEn ? "Failed to apply mode change" : "فشل تطبيق وحفظ نمط النظام"));
-    } finally {
-      setSavingMode(null);
-    }
-  };
-
-  const handleModeChange = (mode: EducationMode) => {
-    if (anySaving || mode === educationMode) return;
-    if (isDirty) {
-      setPendingMode(mode);
-      return;
-    }
-    doModeChange(mode);
-  };
-
-  const handleTogglePushFirst = async (next: boolean) => {
-    if (anySaving) return;
-    const prev = pushFirstSaveWhatsApp;
-    setPushFirstSaveWhatsApp(next);
-    setSavingPushFirst(true);
-    try {
-      const payload = buildPayload({ pushFirstSaveWhatsApp: next });
-      await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
-      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, tabs));
-      toast.success(
-        next
-          ? isEn
-            ? "Portal push-first notifications enabled"
-            : "تم تفعيل إشعارات البوابة أولاً"
-          : isEn
-            ? "Portal push-first notifications disabled"
-            : "تم إيقاف إشعارات البوابة أولاً",
-      );
-      await emitUpdated(payload, {
-        systemTitle: payload.systemTitle,
-        systemTitleEn: payload.systemTitleEn,
-        educationMode,
-        enableSubjects,
-        pushFirstSaveWhatsApp: next,
-        companySlug,
-        publicCode,
-        customDomain,
-        tabs: payload.tabs as EducationTabConfig[],
-      });
-    } catch (err: any) {
-      setPushFirstSaveWhatsApp(prev);
-      toast.error(err.message || (isEn ? "Failed to update notification setting" : "فشل تحديث إعداد الإشعارات"));
-    } finally {
-      setSavingPushFirst(false);
-    }
-  };
-
-  const handleToggleDemoDay = async (next: boolean) => {
-    if (anySaving) return;
-    const prev = enableDemoDay;
-    setEnableDemoDay(next);
-    setSavingDemoDay(true);
-    const updatedTabs = tabs.map((tb) =>
-      tb.id.toLowerCase() === "demo-day" ? { ...tb, visible: next } : tb,
-    );
-    setTabs(updatedTabs);
-    try {
-      const payload = buildPayload({
-        enableDemoDay: next,
-        demoVisible: next,
-        tabsOverride: updatedTabs,
-      });
-      await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
-      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, updatedTabs));
-      toast.success(
-        next
-          ? isEn
-            ? "Demo Day section activated (visible in sidebar & education menu)"
-            : "تم تفعيل قسم الديمو داي بنجاح (ظاهر بالقائمة الجانبية)"
-          : isEn
-            ? "Demo Day section hidden"
-            : "تم تعطيل وإخفاء قسم الديمو داي",
-      );
-      await emitUpdated(payload, {
-        systemTitle: payload.systemTitle,
-        systemTitleEn: payload.systemTitleEn,
-        educationMode,
-        enableSubjects,
-        enableDemoDay: next,
-        pushFirstSaveWhatsApp,
-        companySlug,
-        publicCode,
-        customDomain,
-        tabs: payload.tabs as EducationTabConfig[],
-      });
-    } catch (err: any) {
-      setEnableDemoDay(prev);
-      toast.error(err.message || (isEn ? "Failed to toggle Demo Day section" : "فشل تعديل حالة سيكشن الديمو داي"));
-    } finally {
-      setSavingDemoDay(false);
-    }
-  };
-
-  const applyPreset = (preset: typeof PRESETS[0]) => {
-    setSystemTitle(preset.systemTitle);
-    setSystemTitleEn(preset.systemTitleEn);
-    setTabs((prev) =>
-      prev.map((tab) => {
-        const replacement = (preset.labels as any)[tab.id];
-        return replacement ? { ...tab, labelAr: replacement.ar, labelEn: replacement.en } : tab;
-      }),
-    );
-    const presetName = isEn ? preset.nameEn || preset.name : preset.name;
-    toast.success(
-      isEn
-        ? `Applied "${presetName}" preset — click Save to apply changes`
-        : `تم تطبيق قالب "${presetName}" — اضغط حفظ لتطبيق التغييرات`,
-    );
-  };
-
-  const moveTab = (index: number, direction: "up" | "down") => {
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= tabs.length) return;
-    const newTabs = [...tabs];
-    const [moved] = newTabs.splice(index, 1);
-    if (!moved) return;
-    newTabs.splice(targetIndex, 0, moved);
-    setTabs(newTabs.map((tb, idx) => ({ ...tb, order: idx })));
-  };
-
-  const toggleVisibility = (index: number) => {
-    setTabs((prev) => prev.map((tb, i) => (i === index ? { ...tb, visible: !tb.visible } : tb)));
-  };
-
-  const updateLabel = (index: number, lang: "ar" | "en", value: string) => {
-    setTabs((prev) =>
-      prev.map((tb, i) => (i === index ? (lang === "ar" ? { ...tb, labelAr: value } : { ...tb, labelEn: value }) : tb)),
-    );
-  };
-
-  const resetTabToDefault = (index: number) => {
-    setTabs((prev) =>
-      prev.map((tb, i) =>
-        i === index ? { ...tb, labelAr: tb.defaultLabelAr, labelEn: tb.defaultLabelEn } : tb,
-      ),
-    );
-    toast.info(isEn ? "Restored default label for this item" : "تمت استعادة الاسم الافتراضي لهذا العنصر");
-  };
-
-  const resetAllToDefaults = () => {
-    setSystemTitle("النظام التعليمي");
-    setSystemTitleEn("Education System");
-    setTabs((prev) =>
-      prev.map((tb, i) => ({ ...tb, labelAr: tb.defaultLabelAr, labelEn: tb.defaultLabelEn, visible: true, order: i })),
-    );
-    toast.info(isEn ? "All labels and tabs restored to system defaults" : "تمت استعادة كافة المسميات والتابات الافتراضية");
-  };
-
-  const discardChanges = () => {
-    if (initialData) applyData(initialData);
-    toast.info(isEn ? "Unsaved changes discarded" : "تم تجاهل التعديلات غير المحفوظة");
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const payload = buildPayload();
-      await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
-      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, tabs));
-      toast.success(
-        isEn
-          ? "Education settings saved and sidebar updated successfully"
-          : "تم حفظ إعدادات النظام التعليمي وتحديث القائمة الجانبية بنجاح",
-      );
-      await emitUpdated(payload, {
-        systemTitle: payload.systemTitle,
-        systemTitleEn: payload.systemTitleEn,
-        educationMode,
-        enableSubjects,
-        pushFirstSaveWhatsApp,
-        companySlug,
-        publicCode,
-        customDomain,
-        tabs: payload.tabs as EducationTabConfig[],
-      });
-    } catch (err: any) {
-      toast.error(err.message || (isEn ? "Failed to save education settings" : "فشل حفظ إعدادات النظام التعليمي"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const visibleCount = useMemo(() => tabs.filter((tb) => tb.visible).length, [tabs]);
-
-  const isDirty = useMemo(() => {
-    if (savedSnap === null) return false;
-    return snapshotOf(systemTitle, systemTitleEn, tabs) !== savedSnap;
-  }, [savedSnap, systemTitle, systemTitleEn, tabs]);
-
-  if (loading) {
+  if (c.loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3 text-muted-foreground">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs">
-          {t("education.settingsTab.loading", isEn ? "Loading education settings..." : "جاري تحميل إعدادات النظام التعليمي...")}
-        </span>
+      <div className="space-y-4 animate-pulse" dir={isEn ? "ltr" : "rtl"} aria-busy="true">
+        <div className="flex items-center justify-between gap-3">
+          <div className="h-5 w-64 rounded-lg bg-muted" />
+          <div className="h-5 w-28 rounded-lg bg-muted" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="lg:col-span-8 rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2.5">
+                <div className="h-4 w-40 rounded-md bg-muted" />
+                {i === 4 ? (
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((j) => (
+                      <div key={j} className="h-9 rounded-lg bg-muted/70" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-16 rounded-xl bg-muted/70" />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="lg:col-span-4">
+            <div className="h-4 w-44 rounded-md bg-muted mb-2" />
+            <div className="h-72 rounded-xl border border-border bg-card" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -419,12 +143,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
             {t("education.settingsTab.title", isEn ? "Labels & Sections" : "مسميات وسكاشن النظام التعليمي")}
           </span>
           <span className="text-[11px] font-medium text-muted-foreground tabular-nums shrink-0">
-            {isEn ? `${visibleCount}/${tabs.length} visible` : `${visibleCount}/${tabs.length} ظاهر`}
+            {isEn ? `${c.visibleCount}/${c.tabs.length} visible` : `${c.visibleCount}/${c.tabs.length} ظاهر`}
           </span>
         </h3>
         <button
           type="button"
-          onClick={resetAllToDefaults}
+          onClick={c.resetAllToDefaults}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
         >
           <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
@@ -441,7 +165,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               <SectionHeader icon={GraduationCap}>
                 {t("education.settingsTab.modeTitle", isEn ? "Operation Mode" : "نمط تشغيل المنظومة")}
               </SectionHeader>
-              <EducationModeSelector mode={educationMode} isEn={isEn} disabled={anySaving} onChange={handleModeChange} />
+              <EducationModeSelector
+                mode={c.educationMode}
+                isEn={isEn}
+                disabled={c.anySaving}
+                onChange={c.handleModeChange}
+              />
             </section>
 
             {/* 2. Terminology presets */}
@@ -456,7 +185,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                     <button
                       key={preset.id}
                       type="button"
-                      onClick={() => applyPreset(preset)}
+                      onClick={() => c.applyPreset(preset)}
                       title={isEn ? preset.descEn || preset.desc : preset.desc}
                       className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2 text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all active:scale-[0.98]"
                     >
@@ -485,13 +214,13 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {savingDemoDay && (
+                  {c.savingDemoDay && (
                     <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   )}
                   <Switch
-                    checked={enableDemoDay}
-                    disabled={anySaving}
-                    onCheckedChange={(v) => handleToggleDemoDay(Boolean(v))}
+                    checked={c.enableDemoDay}
+                    disabled={c.anySaving}
+                    onCheckedChange={(v) => c.handleToggleDemoDay(Boolean(v))}
                     aria-label={isEn ? "Toggle Demo Day section" : "تبديل تفعيل سيكشن الديمو داي"}
                   />
                 </div>
@@ -510,8 +239,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                   </label>
                   <input
                     type="text"
-                    value={systemTitle}
-                    onChange={(e) => setSystemTitle(e.target.value)}
+                    value={c.systemTitle}
+                    onChange={(e) => c.setSystemTitle(e.target.value)}
                     placeholder={isEn ? "e.g. النظام التعليمي" : "مثال: النظام التعليمي أو أكاديمية التدريب"}
                     maxLength={60}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -523,8 +252,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                   </label>
                   <input
                     type="text"
-                    value={systemTitleEn}
-                    onChange={(e) => setSystemTitleEn(e.target.value)}
+                    value={c.systemTitleEn}
+                    onChange={(e) => c.setSystemTitleEn(e.target.value)}
                     placeholder="e.g. Education System"
                     maxLength={60}
                     dir="ltr"
@@ -534,23 +263,26 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               </div>
             </section>
 
-            {/* 5. Sections list */}
+            {/* 5. Sections list (drag & drop reorder) */}
             <section className="p-4 sm:p-5 space-y-1">
               <SectionHeader icon={Layers}>
                 {t("education.settingsTab.sectionsTitle", isEn ? "System Sections" : "سكاشن النظام والقائمة الجانبية")}
               </SectionHeader>
               <div className="divide-y divide-border/60">
-                {tabs.map((tab, index) => (
+                {c.tabs.map((tab, index) => (
                   <EducationSectionRow
                     key={tab.id}
                     tab={tab}
                     index={index}
-                    total={tabs.length}
+                    total={c.tabs.length}
                     isEn={isEn}
-                    onMove={moveTab}
-                    onToggleVisibility={toggleVisibility}
-                    onLabel={updateLabel}
-                    onReset={resetTabToDefault}
+                    dragging={dragIndex === index}
+                    over={dragIndex !== null && overIndex === index && dragIndex !== index}
+                    onMove={c.moveTab}
+                    onToggleVisibility={c.toggleVisibility}
+                    onLabel={c.updateLabel}
+                    onReset={c.resetTabToDefault}
+                    onDragStart={beginDrag}
                   />
                 ))}
               </div>
@@ -558,12 +290,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           </div>
 
           <PortalInviteAndPushCard
-            companySlug={companySlug}
-            publicCode={publicCode}
-            customDomain={customDomain}
-            pushFirstSaveWhatsApp={pushFirstSaveWhatsApp}
-            onTogglePushFirst={handleTogglePushFirst}
-            savingPushFirst={savingPushFirst}
+            companySlug={c.companySlug}
+            publicCode={c.publicCode}
+            customDomain={c.customDomain}
+            pushFirstSaveWhatsApp={c.pushFirstSaveWhatsApp}
+            onTogglePushFirst={c.handleTogglePushFirst}
+            savingPushFirst={c.savingPushFirst}
             isEn={isEn}
           />
         </div>
@@ -591,15 +323,15 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-bold truncate">
-                  {isEn ? systemTitleEn || systemTitle : systemTitle || "النظام التعليمي"}
+                  {isEn ? c.systemTitleEn || c.systemTitle : c.systemTitle || "النظام التعليمي"}
                 </div>
                 <div className="text-[10px] truncate" style={{ color: sbTheme.muted }}>
-                  {isEn ? systemTitle : systemTitleEn || "Education System"}
+                  {isEn ? c.systemTitle : c.systemTitleEn || "Education System"}
                 </div>
               </div>
             </div>
             <div className="p-1.5 space-y-0.5">
-              {tabs
+              {c.tabs
                 .filter((tb) => tb.visible)
                 .map((tab, idx) => {
                   const active = idx === 0;
@@ -613,14 +345,19 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
                           : { color: sbTheme.text }
                       }
                     >
-                      <span className="w-6 text-center text-[9px] tabular-nums shrink-0" style={{ color: active ? undefined : sbTheme.muted }}>
+                      <span
+                        className="w-6 text-center text-[9px] tabular-nums shrink-0"
+                        style={{ color: active ? undefined : sbTheme.muted }}
+                      >
                         #{idx + 1}
                       </span>
-                      <span className="truncate">{isEn ? tab.labelEn || tab.defaultLabelEn || tab.labelAr : tab.labelAr || tab.defaultLabelAr}</span>
+                      <span className="truncate">
+                        {isEn ? tab.labelEn || tab.defaultLabelEn || tab.labelAr : tab.labelAr || tab.defaultLabelAr}
+                      </span>
                     </div>
                   );
                 })}
-              {visibleCount === 0 && (
+              {c.visibleCount === 0 && (
                 <div className="px-2.5 py-3 text-[11px] text-center" style={{ color: sbTheme.muted }}>
                   {isEn ? "No visible sections" : "لا توجد سكاشن ظاهرة"}
                 </div>
@@ -631,27 +368,27 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       </div>
 
       {/* Sticky save bar — appears only with unsaved changes */}
-      {isDirty && (
+      {c.isDirty && (
         <div className="sticky bottom-3 z-20">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 backdrop-blur px-3.5 py-2 shadow-lg">
             <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-              {isEn ? "Unsaved changes" : "تعديلات غير محفوظة"}
+              {isEn ? "Unsaved changes — Ctrl+S to save" : "تعديلات غير محفوظة — Ctrl+S للحفظ"}
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={discardChanges}
+                onClick={c.discardChanges}
                 className="px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
               >
                 {isEn ? "Discard" : "تجاهل"}
               </button>
               <button
                 type="button"
-                onClick={handleSave}
-                disabled={saving}
+                onClick={c.handleSave}
+                disabled={c.saving}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-all active:scale-[0.97] disabled:opacity-50"
               >
-                {saving ? (
+                {c.saving ? (
                   <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Save className="w-3.5 h-3.5" aria-hidden="true" />
@@ -664,7 +401,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       )}
 
       <ConfirmDialog
-        open={pendingMode !== null}
+        open={c.pendingMode !== null}
         title={isEn ? "Switch operation mode?" : "تغيير نمط التشغيل؟"}
         content={
           isEn
@@ -674,12 +411,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         confirmLabel={isEn ? "Save & Switch" : "حفظ وتغيير"}
         cancelLabel={isEn ? "Cancel" : "إلغاء"}
         confirmColor="primary"
-        onConfirm={() => {
-          const mode = pendingMode;
-          setPendingMode(null);
-          if (mode) doModeChange(mode);
-        }}
-        onCancel={() => setPendingMode(null)}
+        onConfirm={() => void c.confirmPendingMode()}
+        onCancel={() => c.setPendingMode(null)}
       />
     </div>
   );
