@@ -628,3 +628,58 @@ roles:
     - offers_list_active
     - coupon_validate
     - knowledge_search
+
+  DENTAL:
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
+    - agent_handoff_to
+    - knowledge_search
+
+  AESTHETIC:
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
+    - agent_handoff_to
+    - knowledge_search
+
+  MEDICAL_LAB:
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
+    - agent_handoff_to
+    - knowledge_search
+
+  MENTAL_HEALTH:
+    - booking_info
+    - booking_slots
+    - booking_reserve
+    - booking_status
+    - agent_handoff_to
+    - knowledge_search
+
+  ACADEMY_GRADER:
+    - get_current_lesson_exercise
+    - get_lesson_rubric
+
+  COURSE_COACH:
+    - get_current_lesson_script
+    - get_course_outline
+
+  STOCK_TARGET_MONITOR:
+    - order_target_settings
+    - order_target_progress
+    - inventory_variant_stock_scan
+    - inventory_burn_rate_forecast
+    - product_low_stock
+    - inventory_check
+    - inventory_adjust
+    - order_summary
+    - order_recent_list
+    - sales_revenue
+    - company_snapshot
+    - whatsapp_send
+    - agent_handoff_to

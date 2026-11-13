@@ -529,3 +529,129 @@ roles:
     memory_policy:
       retain_days: 30
       auto_embed: true
+
+  DENTAL:
+    label: "منسق حجوزات واستشارات الأسنان"
+    domain: "CLINIC"
+    playbook_id: "dental_care_playbook"
+    playbook_title: "كتيب استشارات وحجوزات الأسنان"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  AESTHETIC:
+    label: "استشاري التجميل والعناية بالبشرة"
+    domain: "CLINIC"
+    playbook_id: "aesthetic_care_playbook"
+    playbook_title: "كتيب استشارات التجميل والعناية بالبشرة"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  MEDICAL_LAB:
+    label: "مستشار التحاليل الطبية والمختبر"
+    domain: "CLINIC"
+    playbook_id: "medical_lab_playbook"
+    playbook_title: "كتيب استشارات وحجوزات التحاليل الطبية"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  MENTAL_HEALTH:
+    label: "منسق الدعم النفسي والاستشارات"
+    domain: "CLINIC"
+    playbook_id: "mental_health_playbook"
+    playbook_title: "كتيب استشارات وجلسات الدعم النفسي"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  ACADEMY_GRADER:
+    label: "مصحح تمارين وتقييمات الأكاديمية"
+    domain: "EDUCATION"
+    playbook_id: "academy_grader_playbook"
+    playbook_title: "كتيب تصحيح وتقييم تمارين الأكاديمية"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["EDUCATION"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  COURSE_COACH:
+    label: "كوتش وموجه الدورات التعليمية"
+    domain: "EDUCATION"
+    playbook_id: "course_coach_playbook"
+    playbook_title: "كتيب الإرشاد التعليمي وشرح الدروس"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["EDUCATION"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  STOCK_TARGET_MONITOR:
+    label: "مراقب المخزون ومستهدفات الأوردرات"
+    domain: "STORE_OPS"
+    playbook_id: "stock_target_monitor_playbook"
+    playbook_title: "كتيب مراقبة المخزون ومستهدفات الأوردرات"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["STORE_OPS", "INVENTORY", "ORDERS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true

@@ -52,7 +52,7 @@ class _TemplateAdapter:
         company_id: str,
     ) -> _TemplateAdapter:
         if template is None:
-            from src.tools.registry import get_tool_names_for_role
+            from src.tools.role_config import get_tool_names_for_role
             role_name = slug.upper().replace("-", "_")
             fallback_tools = get_tool_names_for_role(role_name) or get_tool_names_for_role(slug.upper())
             return cls(

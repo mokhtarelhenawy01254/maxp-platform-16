@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str = Field(..., description="Postgres connection URL")
+    db_pool_size: int = Field(default=10, description="Postgres connection pool size")
+    db_max_overflow: int = Field(default=20, description="Max overflow connections beyond pool size")
+    db_pool_timeout: int = Field(default=30, description="Pool connection acquire timeout in seconds")
+    db_pool_recycle: int = Field(default=1800, description="Pool recycle timeout in seconds")
 
     maxp_api_url: str = Field(..., description="MaxP backend API base URL")
     maxp_service_token: str = Field(
