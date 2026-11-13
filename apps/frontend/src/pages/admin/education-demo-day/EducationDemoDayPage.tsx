@@ -51,6 +51,7 @@ export default function EducationDemoDayPage() {
   const [viewTab, setViewTab] = useState<"EVENTS" | "ATTENDEES">("EVENTS");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
 
   // Lookups
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
@@ -65,11 +66,17 @@ export default function EducationDemoDayPage() {
   const [convertModalOpen, setConvertModalOpen] = useState<boolean>(false);
   const [targetAttendeeForConvert, setTargetAttendeeForConvert] = useState<DemoDayAttendee | null>(null);
 
+  // Debounce search so typing does not fire an API call per keystroke
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 400);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [eventsData, lookups] = await Promise.all([
-        fetchDemoDays({ status: statusFilter, search: searchQuery }),
+        fetchDemoDays({ status: statusFilter, search: debouncedSearch }),
         fetchEducationLookup().catch(() => ({ subjects: [], teachers: [], packages: [] })),
       ]);
       setEvents(eventsData);
@@ -77,15 +84,15 @@ export default function EducationDemoDayPage() {
       setTeachers(lookups.teachers || []);
       setPackages(lookups.packages || []);
 
-      if (eventsData.length && !selectedEventId) {
-        setSelectedEventId(eventsData[0].id);
+      if (eventsData.length) {
+        setSelectedEventId((prev) => prev ?? eventsData[0].id);
       }
     } catch (err: any) {
       toast.error(err.message || (isEn ? "Failed to load Demo Day data" : "فشل تحميل بيانات الديمو داي"));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery, isEn, selectedEventId]);
+  }, [statusFilter, debouncedSearch, isEn]);
 
   useEffect(() => {
     loadData();
@@ -212,23 +219,13 @@ export default function EducationDemoDayPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/80">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-              <Presentation className="w-3.5 h-3.5" />
-              {isEn ? "Demo Day & Open Sessions" : "الديمو داي والفعاليات التجريبية"}
-            </span>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {stats.totalAttendees} {isEn ? "registrants" : "مسجل"}
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <Presentation className="w-3.5 h-3.5" />
+            {isEn ? "Demo Day & Open Sessions" : "الديمو داي والفعاليات التجريبية"}
+          </span>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            {isEn ? "Demo Day & Lead Conversion Cockpit" : "إدارة فعاليات الديمو داي وتحويل العملاء المحتملين"}
+            {isEn ? "Demo Day & Lead Conversion" : "إدارة فعاليات الديمو داي وتحويل العملاء المحتملين"}
           </h1>
-          <p className="text-xs text-muted-foreground max-w-2xl">
-            {isEn
-              ? "Schedule open sessions, track attendance, capture CRM Leads automatically, and convert prospective students into enrolled packages with one click."
-              : "جدولة الأيام التعريفية، متابعة الحضور، تحصيل العملاء المحتملين تلقائياً في الـ CRM، وتحويل المهتمين لاشتراكات رسمية بنقرة واحدة."}
-          </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-center">
@@ -236,7 +233,8 @@ export default function EducationDemoDayPage() {
             type="button"
             onClick={loadData}
             title={isEn ? "Refresh data" : "تحديث البيانات"}
-            className="p-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label={isEn ? "Refresh data" : "تحديث البيانات"}
+            className="p-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -246,7 +244,7 @@ export default function EducationDemoDayPage() {
               setEditingEvent(null);
               setEventModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{isEn ? "New Demo Day" : "جدولة ديمو داي"}</span>
@@ -354,14 +352,16 @@ export default function EducationDemoDayPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isEn ? "Search events..." : "بحث في الفعاليات..."}
+              placeholder={isEn ? "Search events…" : "بحث في الفعاليات…"}
               className="w-full bg-background border border-input rounded-xl pr-8 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label={isEn ? "Search events" : "بحث في الفعاليات"}
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            aria-label={isEn ? "Filter by status" : "تصفية حسب الحالة"}
             className="bg-background border border-input rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium"
           >
             <option value="ALL">{isEn ? "All Statuses" : "كل الحالات"}</option>
@@ -418,7 +418,8 @@ export default function EducationDemoDayPage() {
                 <button
                   type="button"
                   onClick={() => copyPublicLink(selectedEventDetail.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+                  aria-label={isEn ? "Copy public registration link" : "نسخ رابط التسجيل الخارجي"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>{isEn ? "Copy Public Form Link" : "نسخ رابط التسجيل الخارجي"}</span>
@@ -429,7 +430,7 @@ export default function EducationDemoDayPage() {
                     setTargetEventForAttendee(selectedEventDetail);
                     setAddAttendeeModalOpen(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isEn ? "Register Attendee" : "إضافة حاضر"}</span>

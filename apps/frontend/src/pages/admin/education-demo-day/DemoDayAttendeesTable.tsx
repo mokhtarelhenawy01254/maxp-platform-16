@@ -46,23 +46,26 @@ export function DemoDayAttendeesTable({
     let clean = phone.replace(/[^\d]/g, "");
     if (clean.startsWith("01")) clean = "20" + clean.slice(1);
     const msg = encodeURIComponent(
-      `أهلاً بك، بخصوص حجز اليوم التجريبي (الديمو داي) للطالب ${studentName}...`
+      isEn
+        ? `Hello, regarding the Demo Day reservation for student ${studentName}…`
+        : `أهلاً بك، بخصوص حجز اليوم التجريبي (الديمو داي) للطالب ${studentName}…`
     );
     window.open(`https://wa.me/${clean}?text=${msg}`, "_blank");
   };
 
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xs">
+      {/* min-w keeps columns readable on phones: the table scrolls as one unit instead of wrapping mid-word */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs text-right divide-y divide-border/60">
+        <table className="w-full min-w-[680px] text-xs text-right divide-y divide-border/60">
           <thead className="bg-muted/40 text-muted-foreground text-[11px] font-semibold">
             <tr>
-              <th className="py-3 px-3.5">{isEn ? "Student / Guardian" : "الطالب / ولي الأمر"}</th>
-              <th className="py-3 px-3.5">{isEn ? "Phone & WhatsApp" : "الهاتف والواتساب"}</th>
-              <th className="py-3 px-3.5">{isEn ? "Age / Grade" : "السن والمرحلة"}</th>
-              <th className="py-3 px-3.5">{isEn ? "Attendance" : "حالة الحضور"}</th>
-              <th className="py-3 px-3.5">{isEn ? "Lead Status" : "حالة العميل المحتمل"}</th>
-              <th className="py-3 px-3.5 text-center">{isEn ? "Actions" : "الإجراءات"}</th>
+              <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? "Student / Guardian" : "الطالب / ولي الأمر"}</th>
+              <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? "Phone & WhatsApp" : "الهاتف والواتساب"}</th>
+              <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? "Age / Grade" : "السن والمرحلة"}</th>
+              <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? "Attendance" : "حالة الحضور"}</th>
+              <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? "Lead Status" : "حالة العميل المحتمل"}</th>
+              <th className="py-3 px-3.5 text-center whitespace-nowrap">{isEn ? "Actions" : "الإجراءات"}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40 text-foreground">
@@ -103,7 +106,8 @@ export function DemoDayAttendeesTable({
                         type="button"
                         onClick={() => openWhatsApp(att.phone, att.studentName)}
                         title={isEn ? "Chat on WhatsApp" : "مراسلة عبر واتساب"}
-                        className="p-1 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                        aria-label={isEn ? `Chat with ${att.studentName} on WhatsApp` : `مراسلة ${att.studentName} عبر واتساب`}
+                        className="p-1 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                       </button>
@@ -130,6 +134,7 @@ export function DemoDayAttendeesTable({
                     <select
                       value={att.attendanceStatus}
                       onChange={(e) => onUpdateStatus(att.id, { attendanceStatus: e.target.value })}
+                      aria-label={isEn ? `Attendance status of ${att.studentName}` : `حالة حضور ${att.studentName}`}
                       className={`text-[11px] font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer transition-colors ${
                         att.attendanceStatus === "ATTENDED"
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
@@ -150,6 +155,7 @@ export function DemoDayAttendeesTable({
                     <select
                       value={att.conversionStatus}
                       onChange={(e) => onUpdateStatus(att.id, { conversionStatus: e.target.value })}
+                      aria-label={isEn ? `Lead status of ${att.studentName}` : `حالة العميل المحتمل ${att.studentName}`}
                       className={`text-[11px] font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer transition-colors ${
                         att.conversionStatus === "CONVERTED"
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold"
@@ -173,7 +179,8 @@ export function DemoDayAttendeesTable({
                           type="button"
                           onClick={() => onConvertLead(att)}
                           title={isEn ? "Convert lead to official student" : "تحويل العميل المحتمل إلى طالب رسمي"}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors"
+                          aria-label={isEn ? `Convert ${att.studentName} to official student` : `تحويل ${att.studentName} إلى طالب رسمي`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97] text-white shadow-2xs transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                           <span>{isEn ? "Convert" : "تحويل لطالب"}</span>
@@ -192,7 +199,8 @@ export function DemoDayAttendeesTable({
                           }
                         }}
                         title={isEn ? "Delete attendee" : "حذف الحاضر"}
-                        className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        aria-label={isEn ? `Delete attendee ${att.studentName}` : `حذف الحاضر ${att.studentName}`}
+                        className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

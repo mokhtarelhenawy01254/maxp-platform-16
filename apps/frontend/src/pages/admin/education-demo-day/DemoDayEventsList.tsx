@@ -66,7 +66,8 @@ export function DemoDayEventsList({
   const formatDateTime = (dtStr: string) => {
     try {
       const d = new Date(dtStr);
-      return d.toLocaleDateString(isEn ? "en-US" : "ar-EG", {
+      // -u-nu-latn keeps digits Latin so dates match the tabular KPI numerals
+      return d.toLocaleDateString(isEn ? "en-US" : "ar-EG-u-nu-latn", {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -119,8 +120,17 @@ export function DemoDayEventsList({
         return (
           <div
             key={evt.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`${evt.title}${isEn ? " — open attendees" : " — فتح قائمة الحضور"}`}
             onClick={() => onSelectEvent(evt.id)}
-            className={`group p-4 bg-card rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3.5 shadow-2xs hover:shadow-xs relative overflow-hidden ${
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectEvent(evt.id);
+              }
+            }}
+            className={`group p-4 bg-card rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3.5 shadow-2xs hover:shadow-xs relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               isSelected
                 ? "border-primary ring-1 ring-primary bg-primary/2"
                 : "border-border/80 hover:border-primary/40"
@@ -137,7 +147,8 @@ export function DemoDayEventsList({
                   type="button"
                   onClick={(e) => copyPublicLink(evt.id, e)}
                   title={isEn ? "Copy public registration link" : "نسخ رابط التسجيل الخارجي"}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={isEn ? "Copy public registration link" : "نسخ رابط التسجيل الخارجي"}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Copy className="w-3.5 h-3.5" />
                 </button>
@@ -148,7 +159,8 @@ export function DemoDayEventsList({
                     onEditEvent(evt);
                   }}
                   title={isEn ? "Edit event" : "تعديل الفعالية"}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={isEn ? "Edit event" : "تعديل الفعالية"}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
@@ -161,7 +173,8 @@ export function DemoDayEventsList({
                     }
                   }}
                   title={isEn ? "Delete event" : "حذف الفعالية"}
-                  className="p-1.5 rounded-lg text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  aria-label={isEn ? "Delete event" : "حذف الفعالية"}
+                  className="p-1.5 rounded-lg text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -186,7 +199,7 @@ export function DemoDayEventsList({
                 <Clock className="w-3.5 h-3.5 text-primary" />
                 <span>{formatDateTime(evt.scheduledAt)}</span>
                 <span className="text-[11px] text-muted-foreground font-normal">
-                  ({evt.durationMinutes} دقيقة)
+                  ({evt.durationMinutes} {isEn ? "min" : "دقيقة"})
                 </span>
               </div>
 
@@ -251,7 +264,7 @@ export function DemoDayEventsList({
                     e.stopPropagation();
                     onAddAttendee(evt);
                   }}
-                  className="inline-flex items-center gap-1 text-primary hover:underline font-semibold"
+                  className="inline-flex items-center gap-1 text-primary hover:underline font-semibold active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
                 >
                   <Plus className="w-3 h-3" />
                   {isEn ? "Add Attendee" : "تسجيل حاضر"}

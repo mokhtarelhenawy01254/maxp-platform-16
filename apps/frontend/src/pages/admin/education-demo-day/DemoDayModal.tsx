@@ -177,6 +177,7 @@ export function DemoDayModal({
               <select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
+                aria-label={isEn ? "Subject or track" : "المادة أو المسار التعليمي"}
                 className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
               >
                 <option value="">{isEn ? "-- Select Subject (Optional) --" : "-- اختر المادة (اختياري) --"}</option>
@@ -193,6 +194,7 @@ export function DemoDayModal({
               <select
                 value={teacherId}
                 onChange={(e) => setTeacherId(e.target.value)}
+                aria-label={isEn ? "Instructor or presenter" : "المحاضر أو المدرب المسؤول"}
                 className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
               >
                 <option value="">{isEn ? "-- Select Instructor (Optional) --" : "-- اختر المدرب (اختياري) --"}</option>
@@ -335,7 +337,7 @@ export function DemoDayModal({
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={isEn ? "What students will learn in this demo session..." : "ما سيتعلمه الطالب خلال هذه الجلسة التجريبية..."}
+                placeholder={isEn ? "What students will learn in this demo session…" : "ما سيتعلمه الطالب خلال هذه الجلسة التجريبية…"}
               className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
             />
           </div>
@@ -347,7 +349,7 @@ export function DemoDayModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             {isEn ? "Cancel" : "إلغاء"}
           </button>
@@ -355,7 +357,7 @@ export function DemoDayModal({
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             {loading ? (
               <div className="w-3.5 h-3.5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />

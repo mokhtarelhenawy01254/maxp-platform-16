@@ -125,7 +125,7 @@ export function ConvertLeadModal({
               <option value="">{isEn ? "-- No package right now --" : "-- بدون باقة حالياً (تسجيل ملف طالب فقط) --"}</option>
               {packages.map((pkg) => (
                 <option key={pkg.id} value={pkg.id}>
-                  {pkg.name} ({pkg.hoursCount} ساعة - {pkg.price} ج.م)
+                  {pkg.name} ({pkg.hoursCount} {isEn ? "hrs" : "ساعة"} - {pkg.price} {isEn ? "EGP" : "ج.م"})
                 </option>
               ))}
             </select>
@@ -166,7 +166,7 @@ export function ConvertLeadModal({
                 />
                 {selectedPkg && (
                   <p className="text-[11px] text-muted-foreground">
-                    {isEn ? "Package Price:" : "سعر الباقة الإجمالي:"} {selectedPkg.price} ج.م
+                    {isEn ? "Package Price:" : "سعر الباقة الإجمالي:"} {selectedPkg.price} {isEn ? "EGP" : "ج.م"}
                   </p>
                 )}
               </div>
@@ -188,7 +188,7 @@ export function ConvertLeadModal({
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97] text-white transition-all shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1"
           >
             {loading ? (
               <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
