@@ -33,7 +33,17 @@ export function applyClientSideFilters(
     }
 
     if (filters.windowStatus && filters.windowStatus !== 'all') {
-      const isExpired = conv.isWindowExpired ?? (conv.windowExpiresAt ? Date.now() > new Date(conv.windowExpiresAt).getTime() : false);
+      let isExpired = Boolean(conv.isWindowExpired);
+      if (conv.windowExpiresAt) {
+        isExpired = Date.now() > new Date(conv.windowExpiresAt).getTime();
+      } else if (conv.lastInboundAt) {
+        isExpired = Date.now() > new Date(conv.lastInboundAt).getTime() + 24 * 60 * 60 * 1000;
+      } else if (conv.lastMessageIsFromCustomer && conv.lastMessageTime) {
+        const msgTime = new Date(conv.lastMessageTime).getTime();
+        if (!isNaN(msgTime) && (Date.now() - msgTime) <= 24 * 60 * 60 * 1000) {
+          isExpired = false;
+        }
+      }
       if (filters.windowStatus === 'open' && isExpired) return false;
       if (filters.windowStatus === 'expired' && !isExpired) return false;
     }

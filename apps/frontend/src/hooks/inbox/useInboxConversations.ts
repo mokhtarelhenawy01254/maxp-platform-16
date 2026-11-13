@@ -375,7 +375,21 @@ export const useInboxConversations = () => {
               postDetailsUnavailable: false,
               lastInboundAt: conv.lastInboundAt || null,
               windowExpiresAt: conv.windowExpiresAt || null,
-              isWindowExpired: conv.isWindowExpired ?? (conv.windowExpiresAt ? Date.now() > new Date(conv.windowExpiresAt).getTime() : false),
+              isWindowExpired: (() => {
+                if (conv.windowExpiresAt) {
+                  return Date.now() > new Date(conv.windowExpiresAt).getTime();
+                }
+                if (conv.lastInboundAt) {
+                  return Date.now() > new Date(conv.lastInboundAt).getTime() + 24 * 60 * 60 * 1000;
+                }
+                if (conv.lastMessageIsFromCustomer && (conv.lastMessageTime || conv.updatedAt)) {
+                  const msgTime = safeDate(conv.lastMessageTime || conv.updatedAt).getTime();
+                  if (Date.now() - msgTime <= 24 * 60 * 60 * 1000) {
+                    return false;
+                  }
+                }
+                return Boolean(conv.isWindowExpired);
+              })(),
               hasFailedDelivery: Boolean(conv.hasFailedDelivery || conv.lastMessageDeliveryStatus === 'FAILED'),
               lastMessageDeliveryStatus: conv.lastMessageDeliveryStatus || null,
               lastMessageFailureReason: conv.lastMessageFailureReason || null,
@@ -573,6 +587,10 @@ export const useInboxConversations = () => {
           updatedConversation.unreadCount !== selectedConversation.unreadCount ||
           updatedConversation.lastMessageTime.getTime() !==
             selectedConversation.lastMessageTime.getTime() ||
+          updatedConversation.isWindowExpired !== selectedConversation.isWindowExpired ||
+          updatedConversation.windowExpiresAt !== selectedConversation.windowExpiresAt ||
+          updatedConversation.hasFailedDelivery !== selectedConversation.hasFailedDelivery ||
+          updatedConversation.lastMessageDeliveryStatus !== selectedConversation.lastMessageDeliveryStatus ||
           updatedMetadataSnapshot !== selectedMetadataSnapshot)
       ) {
         const postDetails =

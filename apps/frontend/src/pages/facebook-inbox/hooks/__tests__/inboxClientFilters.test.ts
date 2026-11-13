@@ -203,5 +203,22 @@ describe('applyClientSideFilters', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('expired-1');
     });
+
+    it('treats freshly arrived inbound customer message (<24h) as open even if isWindowExpired flag was true', () => {
+      const freshInboundConv = createConversation({
+        id: 'fresh-1',
+        isWindowExpired: true, // e.g. stale backend flag
+        lastMessageIsFromCustomer: true,
+        lastMessageTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+      });
+
+      const result = applyClientSideFilters([freshInboundConv], {
+        filters: { ...defaultFilters, windowStatus: 'open' },
+        activeTab: 'all',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('fresh-1');
+    });
   });
 });

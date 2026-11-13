@@ -103,6 +103,19 @@ export function useFacebookInboxSocket({
       }
 
       if (data.isFromCustomer) {
+        // تحديث فوري لنافذة الـ 24 ساعة وحالة المحادثة في الذاكرة لمنع قفل الرد
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        updateConversationInList(data.conversationId, {
+          isWindowExpired: false,
+          windowExpiresAt: expiresAt.toISOString(),
+          lastInboundAt: now.toISOString(),
+          lastMessageIsFromCustomer: true,
+          lastMessageTime: now,
+          lastMessage: data.content || '',
+          unreadCount: (selectedConversation?.id === data.conversationId) ? 0 : 1
+        });
+
         playNotificationSound();
         if (
           !selectedConversation ||
