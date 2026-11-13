@@ -93,3 +93,55 @@ async def test_deepseek_flash_legacy_and_safety_fallbacks():
         # 3. deepseek-v4-pro normalizes to deepseek-v4-pro
         await client_pro.generate(messages=[{"role": "user", "content": "hi"}])
         assert mock_instance.chat.completions.create.call_args.kwargs["model"] == "deepseek-v4-pro"
+
+
+def test_resolve_reasoning_effort_from_agent_config():
+    """Verify that _resolve_reasoning_effort correctly extracts preset reasoning effort from agent config."""
+    from src.pipeline.context import PipelineContext
+    from src.pipeline.stages.skills_pipeline import _resolve_reasoning_effort
+
+    # 1. From agent config dict
+    mock_agent = MagicMock()
+    mock_agent.config = {"reasoning_effort": "high"}
+    ctx = PipelineContext(
+        message="test",
+        thread_id="t1",
+        company_id="c1",
+        customer_id="cust1",
+        agent=mock_agent,
+    )
+    assert _resolve_reasoning_effort(ctx) == "high"
+
+    # 2. From agent config object attribute
+    class MockConfig:
+        reasoning_effort = "low"
+
+    mock_agent2 = MagicMock()
+    mock_agent2.config = MockConfig()
+    ctx2 = PipelineContext(
+        message="test",
+        thread_id="t1",
+        company_id="c1",
+        customer_id="cust1",
+        agent=mock_agent2,
+    )
+    assert _resolve_reasoning_effort(ctx2) == "low"
+
+    # 3. None by default when not configured
+    mock_agent3 = MagicMock()
+    mock_agent3.config = {}
+    mock_agent3.policies = {}
+    mock_agent3.default_options = {}
+    ctx3 = PipelineContext(
+        message="test",
+        thread_id="t1",
+        company_id="c1",
+        customer_id="cust1",
+        agent=mock_agent3,
+    )
+    assert _resolve_reasoning_effort(ctx3) is None
+
+    # 4. Context direct override takes highest precedence
+    ctx3.reasoning_effort = "none"
+    assert _resolve_reasoning_effort(ctx3) == "none"
+

@@ -50,6 +50,8 @@ class PipelineContext:
     # Result
     llm_result: Any = None
     llm_response: str = ""
+    reasoning_content: str | None = None
+    reasoning_effort: str | None = None
     final_reply: str | None = None
     response_attachments: list[dict[str, Any]] = field(default_factory=list)
     response_contract: Any = None  # AgentResponse Pydantic contract (SOTA 2026)

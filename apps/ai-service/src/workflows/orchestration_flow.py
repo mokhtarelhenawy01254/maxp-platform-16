@@ -502,6 +502,8 @@ async def run_orchestration(
             "thread_id": thread_id,
             "tool_results": final_ctx.executed_tools,
             "response_attachments": list(final_ctx.response_attachments or []),
+            "reasoning_content": getattr(final_ctx, "reasoning_content", None),
+            "reasoning_effort": getattr(final_ctx, "reasoning_effort", None),
             "escalation_requested": final_ctx.escalation_requested,
             "escalation_meta": {
                 "reason": final_ctx.escalation_reason,

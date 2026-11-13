@@ -37,11 +37,39 @@ export default function AgentSettingsTab({
     { key: "detailed", label: t("agentProfiles.settings.toneDetailed", "مفصل") },
   ];
 
+  const reasoningOptions = [
+    {
+      key: "none",
+      label: t("agentProfiles.settings.reasoningNone", "فوري (بدون تفكير)"),
+      desc: t("agentProfiles.settings.reasoningNoneDesc", "رد سريع كالبرق (< 2 ثانية) — موصى به لخدمة العملاء والرد السريع على واتساب وفيسبوك"),
+      icon: "⚡",
+    },
+    {
+      key: "low",
+      label: t("agentProfiles.settings.reasoningLow", "تفكير متزن"),
+      desc: t("agentProfiles.settings.reasoningLowDesc", "مراجعة سريعة — موصى به لحل مشاكل الطلبات وفحص الحسابات والمرتجعات"),
+      icon: "⚖️",
+    },
+    {
+      key: "high",
+      label: t("agentProfiles.settings.reasoningHigh", "تفكير استدلالي عميق"),
+      desc: t("agentProfiles.settings.reasoningHighDesc", "تحليل منطقي عميق وحسابات دقيقة — موصى به للميديا باير والتسعير والمدير التنفيذي"),
+      icon: "🧠",
+    },
+  ];
+
   const currentToneKey = draftConfig.soul_tone || "friendly";
   const currentToneLabel = toneOptions.find((o) => o.key === currentToneKey)?.label || currentToneKey;
 
+  const currentReasoningKey = draftConfig.reasoning_effort || "none";
+  const currentReasoningOpt = reasoningOptions.find((o) => o.key === currentReasoningKey) || reasoningOptions[0];
+
   const handleToneChange = (key: string) => {
     setDraftConfig((prev) => ({ ...prev, soul_tone: key }));
+  };
+
+  const handleReasoningChange = (key: string) => {
+    setDraftConfig((prev) => ({ ...prev, reasoning_effort: key }));
   };
 
   const handleCustomInstructionsChange = (val: string) => {
@@ -88,6 +116,24 @@ export default function AgentSettingsTab({
               </span>
               <p className="text-xs text-muted-foreground mt-1">
                 {t("agentProfiles.settings.toneHint", "تحدد الأسلوب العام الذي يتبعه الوكيل عند الرد على العملاء")}
+              </p>
+            </div>
+
+            <hr className="border-t border-border/40" />
+
+            {/* مستوى التفكير والاستدلال */}
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                {t("agentProfiles.settings.reasoningTitle", "مستوى التفكير والاستدلال المنطقي")}
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                  <span>{currentReasoningOpt.icon}</span>
+                  <span>{currentReasoningOpt.label}</span>
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {currentReasoningOpt.desc}
               </p>
             </div>
 
@@ -163,6 +209,40 @@ export default function AgentSettingsTab({
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {t("agentProfiles.settings.toneHint", "تحدد الأسلوب العام الذي يتبعه الوكيل عند الرد على العملاء")}
+              </p>
+            </div>
+
+            <hr className="border-t border-border/40" />
+
+            {/* مستوى التفكير والاستدلال */}
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                {t("agentProfiles.settings.reasoningTitle", "مستوى التفكير والاستدلال المنطقي")}
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                {reasoningOptions.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    className={`p-2.5 rounded-lg border text-start transition-all cursor-pointer flex flex-col justify-between ${
+                      currentReasoningKey === opt.key
+                        ? "border-primary bg-primary/5 shadow-xs"
+                        : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/40"
+                    }`}
+                    onClick={() => handleReasoningChange(opt.key)}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-sm">{opt.icon}</span>
+                      <span className="text-xs font-semibold text-foreground">{opt.label}</span>
+                    </div>
+                    <p className="text-[0.7rem] text-muted-foreground leading-snug">
+                      {opt.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {t("agentProfiles.settings.reasoningHint", "يحدد عمق تفكير النموذج (DeepSeek Flash 4) قبل إصدار الرد أو تنفيذ القرارات")}
               </p>
             </div>
 

@@ -195,6 +195,14 @@
     "edit": "Edit",
     "personaLabel": "Store Custom Instructions",
     "personaOverrideHint": "Additional guidelines the agent adheres to in its replies to reflect your store policies",
+    "reasoningTitle": "AI Reasoning & Thinking Effort",
+    "reasoningHint": "Sets the depth of deliberation for DeepSeek Flash 4 before producing replies or actions",
+    "reasoningNone": "Fast (No Thinking)",
+    "reasoningNoneDesc": "Lightning-fast (< 2s) — Recommended for customer support, WhatsApp & Messenger",
+    "reasoningLow": "Balanced Thinking",
+    "reasoningLowDesc": "Quick review — Recommended for order issues, disputes & returns",
+    "reasoningHigh": "Deep Reasoning",
+    "reasoningHighDesc": "Deep logical analysis & calculations — Recommended for Media Buyers, Pricing & CEO",
     "lockedByAdmin": "🔒 Locked by admin"
   },
   "quickTest": {
