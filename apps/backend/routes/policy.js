@@ -58,14 +58,14 @@ const serializePolicy = (policy) => ({
 });
 
 // Get all policies
-router.get('/', async (req, res) => {
+router.get('/', verifyToken.optionalAuth, async (req, res) => {
   try {
     const { category, isActive } = req.query;
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.query.companyId;
 
     const where = {};
     if (companyId) where.companyId = companyId;
-    if (category) where.category = category;
+    if (category && category !== 'all') where.category = category;
     if (isActive !== undefined) where.isActive = isActive === 'true';
 
     const policies = await getPrisma().policy.findMany({
@@ -73,10 +73,62 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(policies.map(serializePolicy));
+    const serialized = policies.map(serializePolicy);
+    res.json(serialized);
   } catch (error) {
     console.error('Error fetching policies:', error);
     res.status(500).json({ error: 'فشل تحميل السياسات' });
+  }
+});
+
+// Batch create policies (for Starter Packs or CSV Import)
+router.post('/batch', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ error: 'معرف الشركة مطلوب' });
+    }
+
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'قائمة السياسات مطلوبة' });
+    }
+
+    const createdList = [];
+    for (const item of items) {
+      if (!item.title || !String(item.title).trim() || !item.content || !String(item.content).trim()) {
+        continue;
+      }
+      const policy = await getPrisma().policy.create({
+        data: {
+          title: String(item.title).trim(),
+          content: String(item.content).trim(),
+          category: item.category ? String(item.category).trim() : 'general',
+          tags: normalizeTagsForWrite(item.tags),
+          isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+          effectiveAt: item.effectiveAt ? new Date(item.effectiveAt) : new Date(),
+          companyId,
+          version: 1
+        }
+      });
+      createdList.push(serializePolicy(policy));
+      _autoEmbedPolicy(policy).catch(() => {});
+      aiServiceAdminClient.embedKnowledgeItem({
+        sourceId: policy.id, sourceType: 'policy', companyId,
+        title: policy.title, content: policy.content,
+        category: policy.category || '', tags: policy.tags || '',
+      }).catch(() => {});
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `تم إنشاء ${createdList.length} سياسة بنجاح`,
+      count: createdList.length,
+      data: createdList
+    });
+  } catch (error) {
+    console.error('Error batch creating policies:', error);
+    res.status(500).json({ error: 'فشل إنشاء السياسات المجمعة' });
   }
 });
 
@@ -86,13 +138,20 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
     const { title, content, category, tags, isActive, effectiveAt, expiresAt } = req.body;
     const companyId = req.user.companyId;
 
+    if (!companyId) {
+      return res.status(400).json({ error: 'معرف الشركة مطلوب' });
+    }
+    if (!title || !String(title).trim() || !content || !String(content).trim()) {
+      return res.status(400).json({ error: 'عنوان السياسة ونصوص البنود مطلوبان' });
+    }
+
     const policy = await getPrisma().policy.create({
       data: {
-        title,
-        content,
-        category: category || 'general',
+        title: String(title).trim(),
+        content: String(content).trim(),
+        category: category ? String(category).trim() : 'general',
         tags: normalizeTagsForWrite(tags),
-        isActive: isActive !== undefined ? isActive : true,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
         effectiveAt: effectiveAt ? new Date(effectiveAt) : new Date(),
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         companyId,
@@ -118,13 +177,24 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, category, tags, isActive, effectiveAt, expiresAt } = req.body;
+    const companyId = req.user?.companyId;
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
+
+    const existing = await getPrisma().policy.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'السياسة غير موجودة' });
+    }
+
+    if (!isSuperAdmin && companyId && existing.companyId !== companyId) {
+      return res.status(403).json({ error: 'غير مصرح لك بتعديل هذه السياسة' });
+    }
 
     const updateData = {};
-    if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
-    if (category !== undefined) updateData.category = category;
+    if (title !== undefined) updateData.title = String(title).trim();
+    if (content !== undefined) updateData.content = String(content).trim();
+    if (category !== undefined) updateData.category = String(category).trim();
     if (tags !== undefined) updateData.tags = normalizeTagsForWrite(tags);
-    if (isActive !== undefined) updateData.isActive = isActive;
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
     if (effectiveAt !== undefined) updateData.effectiveAt = new Date(effectiveAt);
     if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null;
 
@@ -153,6 +223,17 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
 router.delete('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const companyId = req.user?.companyId;
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
+
+    const existing = await getPrisma().policy.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'السياسة غير موجودة' });
+    }
+
+    if (!isSuperAdmin && companyId && existing.companyId !== companyId) {
+      return res.status(403).json({ error: 'غير مصرح لك بحذف هذه السياسة' });
+    }
 
     await getPrisma().policy.delete({ where: { id } });
     aiServiceAdminClient.deleteKnowledgeEmbeddingItem(id, 'policy').catch(() => {});

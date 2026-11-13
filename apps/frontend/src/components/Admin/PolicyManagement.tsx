@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Plus,
   Pencil,
@@ -7,97 +7,133 @@ import {
   ShieldCheck,
   CheckCircle2,
   FileText,
-  X,
   Search,
+  Sparkles,
+  Download,
+  Layers,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
-
-interface Policy {
-  id: string;
-  title: string;
-  content: string;
-  category: "shipping" | "return" | "refund" | "privacy" | "terms" | string;
-  isActive: boolean;
-  version: number;
-  effectiveAt: string;
-}
-
-const CATEGORY_MAP: Record<string, { label: string; badge: string }> = {
-  shipping: { label: "الشحن والتسليم", badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" },
-  return: { label: "الاستبدال والاسترجاع", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
-  refund: { label: "رد الأموال", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  privacy: { label: "الخصوصية والبيانات", badge: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20" },
-  terms: { label: "الشروط والأحكام", badge: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20" },
-};
-
-const DEFAULT_POLICIES: Policy[] = [
-  {
-    id: "pol-1",
-    title: "سياسة الشحن والتسليم السريع لكافة المحافظات",
-    content: "يتم تسليم الطلبات داخل القاهرة والجيزة خلال 24 إلى 48 ساعة عمل، وباقي المحافظات خلال 3 إلى 4 أيام عمل عبر شركاء الشحن المعتمدين بوسطة وأرامكس.",
-    category: "shipping",
-    isActive: true,
-    version: 2,
-    effectiveAt: "2026-10-01",
-  },
-  {
-    id: "pol-2",
-    title: "سياسة الاستبدال والضمان الذهبي",
-    content: "يحق للعميل فحص المنتج واستبداله خلال 14 يوماً من تاريخ الاستلام في حالة وجود أي عيب مصنعي بدون أي مصاريف شحن إضافية.",
-    category: "return",
-    isActive: true,
-    version: 3,
-    effectiveAt: "2026-10-01",
-  },
-  {
-    id: "pol-3",
-    title: "سياسة الخصوصية وحماية بيانات المتسوقين",
-    content: "نلتزم بالحفاظ الكامل على سرية بياناتك الشخصية ومعلومات الدفع، ولا يتم مشاركة أي معلومات مع أي طرف ثالث خارج إطار تنفيذ الشحن.",
-    category: "privacy",
-    isActive: true,
-    version: 1,
-    effectiveAt: "2026-09-15",
-  },
-  {
-    id: "pol-4",
-    title: "الشروط والأحكام العامة لاستخدام المنصة والمتجر",
-    content: "استخدامك للمتجر يعتبر موافقة صريحة على شروط الشراء المعتمدة، ويحق للمتجر مراجعة أسعار وتوافر المنتجات قبل تأكيد الطلب النهائي.",
-    category: "terms",
-    isActive: true,
-    version: 2,
-    effectiveAt: "2026-09-01",
-  },
-];
+import PolicyModal, { PolicyItem } from "./policies/PolicyModal";
+import PolicyStarterPackModal from "./policies/PolicyStarterPackModal";
+import { StarterPolicy } from "./policies/policyPresets";
 
 export default function PolicyManagement() {
-  const [policies, setPolicies] = useState<Policy[]>(DEFAULT_POLICIES);
+  const [policies, setPolicies] = useState<PolicyItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [search, setSearch] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [viewPolicy, setViewPolicy] = useState<Policy | null>(null);
-  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const res = await apiClient.get("/policies").catch(() => null);
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0 && active) {
-          setPolicies(res.data);
-        }
-      } catch {
-        // Fallbacks active
+  // Modals state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<PolicyItem | null>(null);
+  const [viewPolicy, setViewPolicy] = useState<PolicyItem | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [starterPackOpen, setStarterPackOpen] = useState(false);
+  const [isInstallingPack, setIsInstallingPack] = useState(false);
+
+  // Fetch policies from database
+  const fetchPolicies = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get("/policies");
+      const raw: any = res?.data;
+      let list: PolicyItem[] = [];
+
+      if (Array.isArray(raw)) {
+        list = raw as PolicyItem[];
+      } else if (raw?.data && Array.isArray(raw.data)) {
+        list = raw.data as PolicyItem[];
       }
-    };
-    load();
-    return () => { active = false; };
+
+      setPolicies(list);
+    } catch {
+      toast.error("فشل تحميل السياسات من السيرفر");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه السياسة؟")) return;
+  useEffect(() => {
+    fetchPolicies();
+  }, [fetchPolicies]);
+
+  // Dynamic Categories from data
+  const dynamicCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    policies.forEach((p) => {
+      const cat = p.category?.trim() || "عام";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [policies]);
+
+  // Filtered Policies
+  const filtered = useMemo(() => {
+    return policies.filter((p) => {
+      const catMatch = selectedCat === "all" || (p.category?.trim() || "عام") === selectedCat;
+      const statusMatch =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? p.isActive : !p.isActive);
+      const searchLower = search.toLowerCase().trim();
+      const searchMatch =
+        !searchLower ||
+        p.title?.toLowerCase().includes(searchLower) ||
+        p.content?.toLowerCase().includes(searchLower) ||
+        (Array.isArray(p.tags) && p.tags.some((t) => t.toLowerCase().includes(searchLower)));
+
+      return catMatch && statusMatch && searchMatch;
+    });
+  }, [policies, selectedCat, statusFilter, search]);
+
+  // Actions
+  const handleOpenAdd = () => {
+    setEditingPolicy(null);
+    setModalOpen(true);
+  };
+
+  const handleOpenEdit = (policy: PolicyItem) => {
+    setEditingPolicy(policy);
+    setModalOpen(true);
+  };
+
+  const handleSavePolicy = async (formData: {
+    title: string;
+    content: string;
+    category: string;
+    tags: string[];
+    isActive: boolean;
+    effectiveAt?: string;
+  }) => {
+    setIsSaving(true);
     try {
-      await apiClient.delete(`/policies/${id}`).catch(() => null);
+      if (editingPolicy) {
+        const res = await apiClient.put(`/policies/${editingPolicy.id}`, formData);
+        const updated = (res?.data && (res.data as any).id) ? (res.data as PolicyItem) : { ...editingPolicy, ...formData };
+        setPolicies((prev) => prev.map((p) => (p.id === editingPolicy.id ? updated : p)));
+        toast.success("تم تحديث السياسة بنجاح");
+      } else {
+        const res = await apiClient.post("/policies", formData);
+        const created = (res?.data && (res.data as any).id)
+          ? (res.data as PolicyItem)
+          : { id: `pol-${Date.now()}`, ...formData, version: 1 };
+        setPolicies((prev) => [created, ...prev]);
+        toast.success("تمت إضافة السياسة وحفظها في قاعدة المعرفة بنجاح");
+      }
+      setModalOpen(false);
+    } catch {
+      toast.error("حدث خطأ أثناء حفظ السياسة");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه السياسة نهائياً؟")) return;
+    try {
+      await apiClient.delete(`/policies/${id}`);
       setPolicies((prev) => prev.filter((p) => p.id !== id));
       toast.success("تم حذف السياسة بنجاح");
     } catch {
@@ -105,51 +141,107 @@ export default function PolicyManagement() {
     }
   };
 
-  const toggleActive = async (policy: Policy) => {
-    const updated = { ...policy, isActive: !policy.isActive };
+  const toggleActive = async (policy: PolicyItem) => {
+    const newStatus = !policy.isActive;
     try {
-      await apiClient.put(`/policies/${policy.id}`, { isActive: updated.isActive }).catch(() => null);
-      setPolicies((prev) => prev.map((p) => (p.id === policy.id ? updated : p)));
-      toast.success(updated.isActive ? "تم تفعيل السياسة" : "تم تعطيل السياسة");
+      await apiClient.put(`/policies/${policy.id}`, { isActive: newStatus });
+      setPolicies((prev) =>
+        prev.map((p) => (p.id === policy.id ? { ...p, isActive: newStatus } : p))
+      );
+      toast.success(newStatus ? "تم تفعيل السياسة" : "تم تعطيل السياسة");
     } catch {
-      toast.error("فشل تغيير الحالة");
+      toast.error("فشل تغيير حالة السياسة");
     }
   };
 
-  const filtered = useMemo(() => {
-    return policies.filter((p) => {
-      const matchCat = selectedCat === "all" || p.category === selectedCat;
-      const matchSearch = !search || p.title.includes(search) || p.content.includes(search);
-      return matchCat && matchSearch;
-    });
-  }, [policies, selectedCat, search]);
+  const handleInstallStarterPack = async (policiesToInstall: StarterPolicy[]) => {
+    setIsInstallingPack(true);
+    try {
+      await apiClient.post("/policies/batch", { items: policiesToInstall });
+      toast.success(`تم تثبيت ${policiesToInstall.length} سياسات بنجاح في قاعدة المعرفة`);
+      setStarterPackOpen(false);
+      await fetchPolicies();
+    } catch {
+      toast.error("فشل تثبيت حزمة السياسات");
+    } finally {
+      setIsInstallingPack(false);
+    }
+  };
 
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (policies.length === 0) {
+      toast.error("لا توجد سياسات لتصديرها");
+      return;
+    }
+    const headers = ["العنوان", "البنود والشروط", "التصنيف", "الكلمات المفتاحية", "الحالة", "تاريخ السريان"];
+    const rows = policies.map((p) => [
+      `"${(p.title || "").replace(/"/g, '""')}"`,
+      `"${(p.content || "").replace(/"/g, '""')}"`,
+      `"${(p.category || "عام").replace(/"/g, '""')}"`,
+      `"${(Array.isArray(p.tags) ? p.tags.join(", ") : "").replace(/"/g, '""')}"`,
+      p.isActive ? "نشط" : "معطل",
+      p.effectiveAt ? p.effectiveAt.slice(0, 10) : "",
+    ]);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `policies-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("تم تصدير السياسات بنجاح");
+  };
+
+  // KPIs
   const activeCount = policies.filter((p) => p.isActive).length;
+  const categoriesCount = dynamicCategories.length;
 
   return (
     <div className="w-full min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
-      {/* Top Header Bar */}
+      {/* Header Bar */}
       <div className="border-b border-border/70 bg-card px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-0.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              السياسات والشروط القانونية للمتجر
+              إدارة السياسات والشروط والضمانات
             </h1>
             <p className="text-xs text-muted-foreground">
-              إدارة سياسات الشحن، الاستبدال والاسترجاع، الخصوصية، والشروط المنظمة لعمليات البيع
+              السياسات المعتمدة المعروضة للعملاء والمستخدمة في إرشادات الذكاء الاصطناعي وبوابات الخدمة
             </p>
           </div>
-          <button
-            onClick={() => { setEditingPolicy(null); setModalOpen(true); }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة سياسة جديدة
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-card border border-border/80 text-foreground text-xs font-semibold rounded-xl hover:bg-muted transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
+              تصدير CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => setStarterPackOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-muted/80 transition cursor-pointer border border-border/70"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              حزم السياسات الجاهزة
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              إضافة سياسة جديدة
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-4">
         {/* KPI Ribbon */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
@@ -158,146 +250,238 @@ export default function PolicyManagement() {
               <FileText className="w-4 h-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono tabular-nums text-foreground">{policies.length}</div>
-            <div className="text-[11px] text-muted-foreground">وثيقة قانونية مسجلة</div>
+            <div className="text-[11px] text-muted-foreground">سياسة مسجلة في القاعدة</div>
           </div>
 
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>السياسات النشطة</span>
+              <span>السياسات السارية</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             </div>
             <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
               {activeCount}
             </div>
-            <div className="text-[11px] text-muted-foreground">منشورة في المتجر الآن</div>
+            <div className="text-[11px] text-muted-foreground">مفعلة وتلزم الردود والعملاء</div>
           </div>
 
           <div className="bg-card border border-border/70 rounded-xl p-3.5 shadow-xs space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>الامتثال والحماية</span>
-              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              <span>التصنيفات المخصصة</span>
+              <Layers className="w-4 h-4 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400">100%</div>
-            <div className="text-[11px] text-muted-foreground">مكتملة الأركان القانونية</div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-foreground">
+              {categoriesCount}
+            </div>
+            <div className="text-[11px] text-muted-foreground">تصنيف نشط لنشاط شركتك</div>
           </div>
         </div>
 
-        {/* Filter Controls & Table */}
-        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-3 border-b border-border/70 bg-muted/20 flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+        {/* Filter Controls Bar */}
+        <div className="bg-card border border-border/70 rounded-xl p-3 shadow-xs space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[240px] max-w-md">
               <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث في أسماء ونصوص السياسات..."
-                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+                placeholder="بحث في العنوان، البنود، أو الكلمات المفتاحية..."
+                className="w-full pr-8 pl-3 py-1.5 bg-background border border-border/80 rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
-            <div className="flex items-center gap-1 overflow-x-auto">
+            {/* Status Filter */}
+            <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-border/60">
               <button
-                onClick={() => setSelectedCat("all")}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
-                  selectedCat === "all" ? "bg-primary text-primary-foreground font-semibold shadow-2xs" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                type="button"
+                onClick={() => setStatusFilter("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "all"
+                    ? "bg-background text-foreground font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                الكل
+                الكل ({policies.length})
               </button>
-              {Object.entries(CATEGORY_MAP).map(([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedCat(key)}
-                  className={`px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
-                    selectedCat === key ? "bg-primary text-primary-foreground font-semibold shadow-2xs" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                  }`}
-                >
-                  {cfg.label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("active")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "active"
+                    ? "bg-background text-emerald-600 dark:text-emerald-400 font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                سارية ({activeCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter("inactive")}
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  statusFilter === "inactive"
+                    ? "bg-background text-rose-600 dark:text-rose-400 font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                معطلة ({policies.length - activeCount})
+              </button>
             </div>
           </div>
 
+          {/* Dynamic Category Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 border-t border-border/60">
+            <button
+              type="button"
+              onClick={() => setSelectedCat("all")}
+              className={`px-2.5 py-1 rounded-lg text-xs transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                selectedCat === "all"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              جميع الفئات
+              <span className="font-mono tabular-nums text-[10px] opacity-80">({policies.length})</span>
+            </button>
+            {dynamicCategories.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => setSelectedCat(c.name)}
+                className={`px-2.5 py-1 rounded-lg text-xs transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  selectedCat === c.name
+                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {c.name}
+                <span className="font-mono tabular-nums text-[10px] opacity-80">({c.count})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Policies Table */}
+        <div className="bg-card border border-border/70 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="border-b border-border/70 bg-muted/40 text-muted-foreground">
-                  <th className="py-2.5 px-4 font-semibold">عنوان السياسة والملخص</th>
+                  <th className="py-2.5 px-4 font-semibold">عنوان السياسة والبنود</th>
                   <th className="py-2.5 px-3 font-semibold text-center">التصنيف</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">الإصدار</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">الكلمات المفتاحية والـ AI</th>
                   <th className="py-2.5 px-3 font-semibold text-center">تاريخ السريان</th>
                   <th className="py-2.5 px-3 font-semibold text-center">الحالة</th>
                   <th className="py-2.5 px-4 font-semibold text-left">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filtered.map((pol) => {
-                  const catCfg = CATEGORY_MAP[pol.category] || { label: pol.category, badge: "bg-muted text-muted-foreground border-border" };
-                  return (
-                    <tr key={pol.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="py-3 px-4 font-medium text-foreground max-w-md">
-                        <div className="font-semibold text-xs leading-snug">{pol.title}</div>
-                        <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 leading-relaxed">
-                          {pol.content}
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-muted-foreground">
+                      جاري تحميل السياسات من قاعدة المعرفة...
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 space-y-2">
+                      <div className="text-sm font-semibold text-foreground">لا توجد سياسات تطابق البحث الحالي</div>
+                      <p className="text-xs text-muted-foreground">
+                        يمكنك إضافة سياسة جديدة أو اختيار حزمة سياسات جاهزة متوافقة مع نشاط شركتك بضغطة زر واحدة
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setStarterPackOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-semibold rounded-xl hover:bg-primary/20 transition cursor-pointer mt-2"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        تصفح حزم السياسات الجاهزة
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((policy) => (
+                    <tr key={policy.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="py-3.5 px-4 font-medium text-foreground max-w-md">
+                        <div className="font-semibold text-xs leading-snug">{policy.title}</div>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                          {policy.content}
                         </p>
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] border ${catCfg.badge}`}>
-                          {catCfg.label}
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] bg-muted text-foreground border border-border/60 font-medium">
+                          {policy.category || "عام"}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-center font-mono tabular-nums text-foreground">
-                        v{pol.version || 1}.0
+                      <td className="py-3 px-3 text-center max-w-xs">
+                        {Array.isArray(policy.tags) && policy.tags.length > 0 ? (
+                          <div className="flex flex-wrap items-center justify-center gap-1">
+                            {policy.tags.slice(0, 3).map((t, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-muted/60 text-muted-foreground font-mono"
+                              >
+                                #{t}
+                              </span>
+                            ))}
+                            {policy.tags.length > 3 && (
+                              <span className="text-[10px] text-muted-foreground font-mono">
+                                +{policy.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/60">—</span>
+                        )}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono tabular-nums text-muted-foreground">
-                        {pol.effectiveAt || "—"}
+                      <td className="py-3 px-3 text-center font-mono tabular-nums text-muted-foreground whitespace-nowrap">
+                        {policy.effectiveAt ? policy.effectiveAt.slice(0, 10) : "—"}
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <button
-                          onClick={() => toggleActive(pol)}
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                            pol.isActive
+                          type="button"
+                          onClick={() => toggleActive(policy)}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition cursor-pointer ${
+                            policy.isActive
                               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                               : "bg-muted text-muted-foreground border-border"
                           }`}
                         >
-                          {pol.isActive ? "منشورة" : "مسودة"}
+                          {policy.isActive ? "سارية" : "معطلة"}
                         </button>
                       </td>
-                      <td className="py-3 px-4 text-left">
+                      <td className="py-3 px-4 text-left whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setViewPolicy(pol)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                            title="معاينة النص الكامل"
+                            type="button"
+                            onClick={() => setViewPolicy(policy)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                            title="عرض النص الكامل"
+                            aria-label="عرض السياسة"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => { setEditingPolicy(pol); setModalOpen(true); }}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            type="button"
+                            onClick={() => handleOpenEdit(policy)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
                             title="تعديل"
+                            aria-label="تعديل السياسة"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(pol.id)}
-                            className="p-1.5 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-500/10"
+                            type="button"
+                            onClick={() => handleDelete(policy.id)}
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition cursor-pointer"
                             title="حذف"
+                            aria-label="حذف السياسة"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
-                {!filtered.length && (
-                  <tr>
-                    <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                      لا توجد سياسات مطابقة للبحث
-                    </td>
-                  </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -305,86 +489,73 @@ export default function PolicyManagement() {
         </div>
       </div>
 
-      {/* View Policy Modal */}
+      {/* View Policy Full Text Modal */}
       {viewPolicy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4" onClick={() => setViewPolicy(null)}>
-          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-xl space-y-4 p-5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-3 sm:p-4"
+          onClick={() => setViewPolicy(null)}
+          dir="rtl"
+        >
+          <div
+            className="bg-card border border-border/80 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden text-foreground p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-border/70">
-              <h2 className="text-sm font-bold text-foreground">{viewPolicy.title}</h2>
-              <button onClick={() => setViewPolicy(null)} className="text-muted-foreground hover:text-foreground p-1"><X className="w-4 h-4" /></button>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                <h2 className="text-sm sm:text-base font-bold text-foreground">{viewPolicy.title}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewPolicy(null)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                aria-label="إغلاق"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto p-3 bg-muted/20 rounded-lg border border-border/60">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/60">
+                {viewPolicy.category}
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground font-mono tabular-nums">
+                تاريخ السريان: {viewPolicy.effectiveAt ? viewPolicy.effectiveAt.slice(0, 10) : "فوري"}
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-muted/20 border border-border/60 rounded-xl text-xs text-foreground leading-relaxed whitespace-pre-wrap">
               {viewPolicy.content}
             </div>
             <div className="flex justify-end pt-2">
-              <button onClick={() => setViewPolicy(null)} className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg font-semibold">إغلاق</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit/Create Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-2xs p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-card border border-border/80 rounded-xl shadow-2xl w-full max-w-lg space-y-4 p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between pb-3 border-b border-border/70">
-              <h2 className="text-sm font-bold text-foreground">{editingPolicy ? "تعديل السياسة" : "إضافة سياسة جديدة"}</h2>
-              <button onClick={() => setModalOpen(false)} className="text-muted-foreground hover:text-foreground p-1"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-medium text-foreground mb-1">عنوان السياسة *</label>
-                <input defaultValue={editingPolicy?.title || ""} placeholder="مثال: سياسة الشحن والتسليم السريع" className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="pol-t" />
-              </div>
-              <div>
-                <label className="block font-medium text-foreground mb-1">نص السياسة والشروط *</label>
-                <textarea rows={4} defaultValue={editingPolicy?.content || ""} placeholder="اكتب نصوص البنود بوضوح..." className="w-full bg-background border border-border/80 rounded-lg px-3 py-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="pol-c" />
-              </div>
-              <div>
-                <label className="block font-medium text-foreground mb-1">التصنيف</label>
-                <select defaultValue={editingPolicy?.category || "shipping"} className="w-full bg-background border border-border/80 rounded-lg p-2 text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary" id="pol-cat">
-                  <option value="shipping">الشحن والتسليم</option>
-                  <option value="return">الاستبدال والاسترجاع</option>
-                  <option value="refund">رد الأموال</option>
-                  <option value="privacy">الخصوصية والبيانات</option>
-                  <option value="terms">الشروط والأحكام</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
-              <button onClick={() => setModalOpen(false)} className="px-3.5 py-1.5 text-xs rounded-lg border border-border/80 text-foreground hover:bg-muted/50">إلغاء</button>
               <button
-                onClick={() => {
-                  const t = (document.getElementById("pol-t") as HTMLInputElement)?.value;
-                  const c = (document.getElementById("pol-c") as HTMLTextAreaElement)?.value;
-                  const cat = (document.getElementById("pol-cat") as HTMLSelectElement)?.value;
-                  if (!t || !c) return toast.error("يرجى ملء جميع الحقول المطلوبة");
-                  const item: Policy = {
-                    id: editingPolicy?.id || `pol-${Date.now()}`,
-                    title: t,
-                    content: c,
-                    category: cat || "shipping",
-                    isActive: true,
-                    version: editingPolicy ? editingPolicy.version + 1 : 1,
-                    effectiveAt: editingPolicy?.effectiveAt || new Date().toISOString().slice(0, 10),
-                  };
-                  if (editingPolicy) {
-                    setPolicies((prev) => prev.map((p) => (p.id === editingPolicy.id ? item : p)));
-                    toast.success("تم تحديث السياسة");
-                  } else {
-                    setPolicies((prev) => [item, ...prev]);
-                    toast.success("تمت إضافة السياسة");
-                  }
-                  setModalOpen(false);
-                }}
-                className="px-3.5 py-1.5 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90"
+                type="button"
+                onClick={() => setViewPolicy(null)}
+                className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-xl hover:bg-primary/90 transition cursor-pointer"
               >
-                {editingPolicy ? "حفظ التعديلات" : "إضافة السياسة"}
+                إغلاق
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit / Add Modal */}
+      <PolicyModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSavePolicy}
+        editingPolicy={editingPolicy}
+        existingCategories={dynamicCategories.map((c) => c.name)}
+        isSaving={isSaving}
+      />
+
+      {/* Starter Pack Modal */}
+      <PolicyStarterPackModal
+        isOpen={starterPackOpen}
+        onClose={() => setStarterPackOpen(false)}
+        onInstall={handleInstallStarterPack}
+        isInstalling={isInstallingPack}
+      />
     </div>
   );
 }
