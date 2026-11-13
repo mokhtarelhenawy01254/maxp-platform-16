@@ -82,6 +82,36 @@ export const useCustomerDetailsController = () => {
     }
   }, [isAdmin, ensureCompanyUsers]);
 
+  const handleAssignLead = async (assignedToId: string | null) => {
+    if (!id) return;
+    setIsAssigning(true);
+    try {
+      await customerService.assignLead(id, assignedToId);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              customer: {
+                ...prev.customer,
+                assignedToId,
+                assignedTo:
+                  companyUsers.find((u) => u.id === assignedToId) || null,
+              },
+            }
+          : prev,
+      );
+      toast.success(
+        assignedToId ? "تم إسناد الليد بنجاح" : "تم إلغاء إسناد الليد",
+      );
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || err.message || "فشل إسناد الليد",
+      );
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const loadCustomerDetails = useCallback(async () => {
     if (!id) return;
     try {
