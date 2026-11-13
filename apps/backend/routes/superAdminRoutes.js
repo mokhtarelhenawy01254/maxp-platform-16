@@ -722,11 +722,18 @@ function getDiskAgentTemplates() {
           name: manifest.name || entry.name,
           role: manifest.role || 'AGENT',
           version: manifest.version || '1.0.0',
-          allowed_tools: manifest.allowedTools || [],
-          allowed_skills: manifest.allowedSkills || [],
+          allowed_tools: manifest.allowedTools || manifest.allowed_tools || [],
+          allowed_skills: manifest.allowedSkills || manifest.allowed_skills || [],
           channels: manifest.channels || [],
           budget: manifest.budget || {},
-          persona_meta: manifest.personaMeta || {},
+          persona_meta: manifest.personaMeta || manifest.persona_meta || {},
+          model_policy: manifest.modelPolicy || manifest.model_policy || { default: "deepseek-flash" },
+          guardrails: manifest.guardrails || {},
+          human_approval: manifest.humanApproval || manifest.human_approval || {},
+          handoffs: manifest.handoffs || [],
+          mcp_servers: manifest.mcpServers || manifest.mcp_servers || [],
+          output_schema: manifest.outputSchema || manifest.output_schema || null,
+          config: manifest.config || {},
           instructions_soul: soulText,
           is_active: manifest.isActive !== false,
           companies_count: 0,
@@ -894,7 +901,16 @@ router.post("/agents/apply-template", async (req, res) => {
     const { templateSlug, companyId, model } = req.body || {};
     if (!templateSlug || !companyId)
       return res.status(400).json({ success: false, error: 'templateSlug و companyId مطلوبان' });
-    const template = await aiServiceAdminClient.getAgentTemplate(templateSlug);
+    let template = null;
+    try {
+      template = await aiServiceAdminClient.getAgentTemplate(templateSlug);
+    } catch (apiErr) {
+      // fallback to disk if ai-service template not in DB
+    }
+    if (!template) {
+      const disk = getDiskAgentTemplates();
+      template = disk.find(d => d.slug === templateSlug);
+    }
     if (!template)
       return res.status(404).json({ success: false, error: 'القالب غير موجود' });
     const result = await aiServiceAdminClient.spawnAgent({

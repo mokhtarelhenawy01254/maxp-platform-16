@@ -98,9 +98,9 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-64px)] bg-gradient-to-br from-slate-50 to-blue-50/30">
+    <div className="flex flex-col h-full bg-background min-h-0" dir={i18n.dir()}>
       {/* Header */}
-      <div className="px-4 py-2 border-b bg-white/80 backdrop-blur-sm shrink-0">
+      <div className="px-4 py-2 border-b border-border/80 bg-card/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate("/super-admin/ai-templates")}>
             <ArrowRight className="size-4 ml-1" /> العودة
@@ -108,7 +108,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
           <span className="text-3xl">{icon}</span>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-bold">{t.name}</p>
+              <p className="text-sm font-bold text-foreground">{t.name}</p>
               <span className={`text-[0.7rem] px-2 py-0.5 rounded-full font-medium ${color(t.role)}`}>{t.role}</span>
               <Badge variant="outline" className="text-[0.65rem]">v{t.version}</Badge>
               <span className="text-[0.65rem] font-mono text-muted-foreground">{t.slug}</span>
@@ -122,17 +122,17 @@ const SuperAdminAITemplateDetail: React.FC = () => {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_tools?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">أدوات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_skills?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">مهارات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.channels?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">قنوات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.65rem] text-muted-foreground">الميزانية/يوم</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.model_policy?.default || "-"}</p><p className="text-[0.65rem] text-muted-foreground">النموذج</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{(t.handoffs?.length || 0) + (t.mcp_servers?.length || 0)}</p><p className="text-[0.65rem] text-muted-foreground">تكاملات</p></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 px-4 py-2 bg-muted/20 border-b border-border/60 shrink-0 font-mono">
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary tabular-nums">{t.allowed_tools?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">أدوات</p></div>
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary tabular-nums">{t.allowed_skills?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">مهارات</p></div>
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary tabular-nums">{t.channels?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">قنوات</p></div>
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary tabular-nums">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.65rem] text-muted-foreground">الميزانية/يوم</p></div>
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary truncate">{t.model_policy?.default || "-"}</p><p className="text-[0.65rem] text-muted-foreground">النموذج</p></div>
+        <div className="rounded-lg bg-card border border-border/70 p-2 text-center"><p className="text-lg font-bold text-primary tabular-nums">{(t.handoffs?.length || 0) + (t.mcp_servers?.length || 0)}</p><p className="text-[0.65rem] text-muted-foreground">تكاملات</p></div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-4 pt-2 bg-white/50 border-b shrink-0" role="tablist">
+      <div className="flex gap-1 px-4 pt-2 bg-muted/10 border-b border-border/60 shrink-0" role="tablist">
         {TABS.map((tab, i) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -143,7 +143,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
                 if (e.key === "ArrowRight") { e.preventDefault(); setActiveTab(TABS[(i + 1) % TABS.length].id); }
                 if (e.key === "ArrowLeft") { e.preventDefault(); setActiveTab(TABS[(i - 1 + TABS.length) % TABS.length].id); }
               }}
-              className={`flex items-center gap-1 px-3 py-2 rounded-t-lg text-xs font-medium transition-all ${isActive ? "bg-white border border-b-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-medium transition-all ${isActive ? "bg-card border border-b-card text-primary shadow-2xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
               <Icon className="size-3.5" /> {tab.label}
             </button>
           );
@@ -403,19 +403,19 @@ const SuperAdminAITemplateDetail: React.FC = () => {
 };
 
 const Section: React.FC<{ title: string; icon: React.FC<{ className?: string }>; children: React.ReactNode }> = ({ title, icon: Icon, children }) => (
-  <div className="bg-white rounded-xl border p-4">
+  <div className="bg-card rounded-xl border border-border/80 p-4 shadow-2xs">
     <div className="flex items-center gap-1.5 mb-3">
       <Icon className="size-4 text-primary" />
-      <h3 className="text-xs font-bold">{title}</h3>
+      <h3 className="text-xs font-bold text-foreground">{title}</h3>
     </div>
     {children}
   </div>
 );
 
 const MetaCard: React.FC<{ label: string; value: string; className?: string }> = ({ label, value, className }) => (
-  <div className={`bg-muted/30 rounded-lg px-3 py-2 ${className || ""}`}>
+  <div className={`bg-muted/30 rounded-lg px-3 py-2 border border-border/40 ${className || ""}`}>
     <p className="text-[0.65rem] text-muted-foreground">{label}</p>
-    <p className="text-sm font-medium">{value}</p>
+    <p className="text-sm font-medium text-foreground">{value}</p>
   </div>
 );
 

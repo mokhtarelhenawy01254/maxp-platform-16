@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -11,7 +12,8 @@ import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
-import { Brain, Plus, Trash2, Send, CheckCircle, Copy, Save } from "lucide-react";
+import { Brain, Plus, Trash2, Send, CheckCircle, Copy, Save, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 const CHANNEL_OPTIONS: MultiSelectOption[] = [
   { value: "dashboard", label: "لوحة التحكم" },
@@ -27,40 +29,180 @@ const CHANNEL_OPTIONS: MultiSelectOption[] = [
 
 export const ROLE_ICONS: Record<string, string> = {
   EXECUTIVE_ASSISTANT: "⚡",
-  CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
-  MARKETING: "📢", ORDER: "📦", INVENTORY: "📊", COMPETITOR: "🔍",
-  FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
-  ORDER_CONFIRMATION: "✅", VOICE_ORDER_CONFIRMATION: "📞",
-  SHIPPING: "🚚", STOCK_TARGET_MONITOR: "📈",
+  CEO: "👔",
+  SUPPORT: "🎧",
+  SALES: "🤝",
+  SMART_SELLER: "🛒",
+  MARKETING: "📢",
+  ORDER: "📦",
+  INVENTORY: "📊",
+  COMPETITOR: "🔍",
+  FACEBOOK_SALES_SUPPORT: "💬",
+  SAS_SALES: "🛍️",
+  SALES_REP: "🛒",
+  ORDER_CONFIRMATION: "✅",
+  VOICE_ORDER_CONFIRMATION: "📞",
+  SHIPPING: "🚚",
+  STOCK_TARGET_MONITOR: "📈",
   BROWSER_COPILOT: "🌐",
+  MEDIA_BUYER: "🎯",
+  STORE_MANAGER: "🏬",
+  PRODUCT_CREATOR: "✨",
+  AOV_ANALYST: "📈",
+  AOV_AUDITOR: "🔬",
+  AOV_EXECUTOR: "🚀",
+  AOV_SPECIALIST: "💎",
+  EDUCATION_CENTER: "🎓",
+  ACADEMY_GRADER: "📝",
+  COURSE_COACH: "🧑‍🏫",
+  DENTAL: "🦷",
+  MEDICAL_CENTER: "🏥",
+  MEDICAL_CENTER_MANAGER: "⚕️",
+  MEDICAL_LAB: "🧪",
+  MENTAL_HEALTH: "🧠",
+  PHYSIOTHERAPY: "🏃",
+  AESTHETIC: "✨",
+  HOTEL: "🏨",
+  HR_ASSISTANT: "👥",
+  CUSTOM: "⚙️",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
-  EXECUTIVE_ASSISTANT: "bg-amber-100 text-amber-800",
-  CEO: "bg-blue-100 text-blue-700", SUPPORT: "bg-emerald-100 text-emerald-700",
-  SALES: "bg-amber-100 text-amber-700", SMART_SELLER: "bg-violet-100 text-violet-700",
-  MARKETING: "bg-pink-100 text-pink-700", ORDER: "bg-cyan-100 text-cyan-700",
-  ORDER_CONFIRMATION: "bg-emerald-100 text-emerald-700",
-  VOICE_ORDER_CONFIRMATION: "bg-purple-100 text-purple-700",
-  INVENTORY: "bg-slate-100 text-slate-700", COMPETITOR: "bg-red-100 text-red-700",
-  FACEBOOK_SALES_SUPPORT: "bg-indigo-100 text-indigo-700", SAS_SALES: "bg-green-100 text-green-700",
-  SALES_REP: "bg-amber-100 text-amber-700", SHIPPING: "bg-teal-100 text-teal-700",
-  STOCK_TARGET_MONITOR: "bg-emerald-100 text-emerald-800",
-  BROWSER_COPILOT: "bg-indigo-100 text-indigo-700",
+  EXECUTIVE_ASSISTANT: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+  CEO: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20",
+  SUPPORT: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+  SALES: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+  SMART_SELLER: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20",
+  MARKETING: "bg-pink-500/10 text-pink-700 dark:text-pink-400 border border-pink-500/20",
+  ORDER: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20",
+  ORDER_CONFIRMATION: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+  VOICE_ORDER_CONFIRMATION: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
+  INVENTORY: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20",
+  COMPETITOR: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20",
+  FACEBOOK_SALES_SUPPORT: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20",
+  SAS_SALES: "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20",
+  SALES_REP: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+  SHIPPING: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/20",
+  STOCK_TARGET_MONITOR: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+  BROWSER_COPILOT: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20",
+  MEDIA_BUYER: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20",
+  STORE_MANAGER: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
+  PRODUCT_CREATOR: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400 border border-fuchsia-500/20",
+  AOV_ANALYST: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20",
+  AOV_AUDITOR: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/20",
+  AOV_EXECUTOR: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
+  AOV_SPECIALIST: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20",
+  EDUCATION_CENTER: "bg-lime-500/10 text-lime-700 dark:text-lime-400 border border-lime-500/20",
+  ACADEMY_GRADER: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+  COURSE_COACH: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20",
+  DENTAL: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20",
+  MEDICAL_CENTER: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+  MEDICAL_CENTER_MANAGER: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/20",
+  MEDICAL_LAB: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20",
+  MENTAL_HEALTH: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
+  PHYSIOTHERAPY: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-500/20",
+  AESTHETIC: "bg-pink-500/10 text-pink-700 dark:text-pink-400 border border-pink-500/20",
+  HOTEL: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+  HR_ASSISTANT: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20",
+  CUSTOM: "bg-muted text-muted-foreground border border-border/60",
+};
+
+export const ROLE_LABELS: Record<string, string> = {
+  SUPPORT: "خدمة العملاء",
+  SALES: "مبيعات",
+  SMART_SELLER: "بائع ذكي",
+  MARKETING: "تسويق",
+  ORDER: "طلبات",
+  ORDER_CONFIRMATION: "تأكيد الطلبات",
+  VOICE_ORDER_CONFIRMATION: "مكالمات تأكيد الطلبات",
+  SHIPPING: "شحن ولوجستيات",
+  INVENTORY: "مخزون وتسعير",
+  STOCK_TARGET_MONITOR: "مراقب المخزون والمستهدفات",
+  BROWSER_COPILOT: "مساعد المتصفح",
+  EXECUTIVE_ASSISTANT: "مساعد تنفيذي",
+  CEO: "المدير التنفيذي",
+  STORE_MANAGER: "مدير المتجر",
+  PRODUCT_CREATOR: "إدارة وإدراج المنتجات",
+  MEDIA_BUYER: "ميديا باير (إعلانات)",
+  FACEBOOK_SALES_SUPPORT: "مبيعات ودعم فيسبوك",
+  SAS_SALES: "مبيعات وسوشيال",
+  SALES_REP: "مندوب مبيعات",
+  COMPETITOR: "تحليل المنافسين",
+  AOV_ANALYST: "محلل AOV",
+  AOV_AUDITOR: "مدقق أرقام AOV",
+  AOV_EXECUTOR: "منفذ عروض AOV",
+  AOV_SPECIALIST: "مسؤول رفع AOV",
+  EDUCATION_CENTER: "مركز تعليمي",
+  ACADEMY_GRADER: "مصحح أكاديمي",
+  COURSE_COACH: "كوتش دورات",
+  DENTAL: "عيادة أسنان",
+  MEDICAL_CENTER: "مركز طبي",
+  MEDICAL_CENTER_MANAGER: "مدير مركز طبي",
+  MEDICAL_LAB: "معمل تحاليل",
+  MENTAL_HEALTH: "دعم نفسي",
+  PHYSIOTHERAPY: "علاج طبيعي",
+  AESTHETIC: "تجميل وعناية",
+  HOTEL: "فنادق وحجوزات",
+  HR_ASSISTANT: "موارد بشرية",
+  CUSTOM: "مخصص",
 };
 
 export const ROLES = [
-  "EXECUTIVE_ASSISTANT", "CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
-  "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "INVENTORY",
-  "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP",
-  "SHIPPING", "STOCK_TARGET_MONITOR", "BROWSER_COPILOT",
+  "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
+  "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "SHIPPING",
+  "INVENTORY", "STOCK_TARGET_MONITOR", "BROWSER_COPILOT",
+  "EXECUTIVE_ASSISTANT", "CEO", "STORE_MANAGER", "PRODUCT_CREATOR",
+  "MEDIA_BUYER", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP",
+  "COMPETITOR", "AOV_ANALYST", "AOV_AUDITOR", "AOV_EXECUTOR", "AOV_SPECIALIST",
+  "EDUCATION_CENTER", "ACADEMY_GRADER", "COURSE_COACH",
+  "DENTAL", "MEDICAL_CENTER", "MEDICAL_CENTER_MANAGER", "MEDICAL_LAB",
+  "MENTAL_HEALTH", "PHYSIOTHERAPY", "AESTHETIC", "HOTEL", "HR_ASSISTANT",
+  "CUSTOM",
 ];
 
 export const toneColors: Record<string, string> = {
-  empathetic: "text-pink-600 bg-pink-50", persuasive: "text-amber-600 bg-amber-50",
-  professional: "text-blue-600 bg-blue-50", analytical: "text-slate-600 bg-slate-50",
-  creative: "text-violet-600 bg-violet-50", strategic: "text-indigo-600 bg-indigo-50",
-  friendly: "text-green-600 bg-green-50", helpful: "text-teal-600 bg-teal-50",
+  empathetic: "text-pink-600 bg-pink-50 dark:bg-pink-950/40 dark:text-pink-400",
+  persuasive: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400",
+  professional: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-400",
+  analytical: "text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-300",
+  creative: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-400",
+  strategic: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-400",
+  friendly: "text-green-600 bg-green-50 dark:bg-green-950/40 dark:text-green-400",
+  helpful: "text-teal-600 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-400",
+};
+
+export interface FormInputProps extends React.ComponentProps<typeof Input> {
+  label?: string;
+  helperText?: string;
+  error?: string;
+}
+
+export const FormInput: React.FC<FormInputProps> = ({
+  label,
+  helperText,
+  error,
+  className,
+  id,
+  ...props
+}) => {
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
+  return (
+    <div className="space-y-1">
+      {label && (
+        <label htmlFor={inputId} className="text-xs font-medium text-foreground block">
+          {label}
+        </label>
+      )}
+      <Input id={inputId} className={className} {...props} />
+      {helperText && !error && (
+        <p className="text-[10px] text-muted-foreground">{helperText}</p>
+      )}
+      {error && (
+        <p className="text-[10px] text-destructive">{error}</p>
+      )}
+    </div>
+  );
 };
 
 export interface TemplateItem {
@@ -103,35 +245,76 @@ export const CreateDialog: React.FC<{ onClose: () => void; onCreated: () => void
   const create = async () => {
     if (!form.name.trim() || !form.slug.trim() || !slugValid) return;
     setCreating(true); setErr(null);
-    try { await apiClient.post("/super-admin/agents", form); onCreated(); onClose(); }
-    catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
-    finally { setCreating(false); }
+    try {
+      await apiClient.post("/super-admin/agents", form);
+      toast.success(`تم إنشاء قالب «${form.name}» بنجاح`);
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || e.message || "حدث خطأ أثناء إنشاء القالب");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>قالب وكيل جديد</DialogTitle></DialogHeader>
         {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
         <div className="space-y-3" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); create(); } }}>
-          <Input label="اسم القالب *" value={form.name}
-            onChange={e => setForm(p => ({ ...p, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") }))} autoFocus />
-          <Input label="المعرّف (slug) *" value={form.slug}
-            onChange={e => setForm(p => ({ ...p, slug: e.target.value }))} helperText="أحرف إنجليزية وشرطات فقط" />
-          {form.slug.trim() && !slugValid && <p className="text-[0.65rem] text-destructive">slug غير صالح: أحرف صغيرة وأرقام وشرطات فقط</p>}
+          <FormInput
+            label="اسم القالب *"
+            placeholder="مثال: وكيل خدمة العملاء الذكي"
+            value={form.name}
+            onChange={e => {
+              const val = e.target.value;
+              setForm(p => {
+                const ascii = val.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+                return {
+                  ...p,
+                  name: val,
+                  slug: ascii && (!p.slug || p.slug === p.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")) ? ascii : p.slug,
+                };
+              });
+            }}
+            autoFocus
+          />
+          <FormInput
+            label="المعرّف الفريد (slug) *"
+            placeholder="customer-support-agent"
+            value={form.slug}
+            onChange={e => setForm(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
+            helperText="أحرف إنجليزية صغيرة وأرقام وشرطات فقط"
+          />
+          {form.slug.trim() && !slugValid && (
+            <p className="text-[11px] text-destructive">slug غير صالح: أحرف صغيرة وأرقام وشرطات فقط بدون مسافات أو رموز</p>
+          )}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">الدور</label>
-            <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mt-1">
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            <label className="text-xs font-medium text-foreground block mb-1">الدور الوظيفي</label>
+            <select
+              value={form.role}
+              onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+              className="w-full h-8 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground cursor-pointer"
+            >
+              {ROLES.map(r => (
+                <option key={r} value={r}>
+                  {ROLE_ICONS[r] || "🤖"} {ROLE_LABELS[r] || r} ({r})
+                </option>
+              ))}
             </select>
           </div>
-          <Input label="الإصدار" value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} />
+          <FormInput
+            label="الإصدار"
+            placeholder="1.0.0"
+            value={form.version}
+            onChange={e => setForm(p => ({ ...p, version: e.target.value }))}
+          />
         </div>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={onClose} disabled={creating}>إلغاء</Button>
           <Button onClick={create} disabled={!form.name.trim() || !form.slug.trim() || !slugValid || creating}>
-            {creating ? <LoadingSpinner size="sm" /> : <Plus className="size-4 ml-1" />} إنشاء
+            {creating ? <LoadingSpinner size="sm" /> : <Plus className="size-4 ml-1" />} إنشاء القالب
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -165,18 +348,24 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
   useEffect(() => {
     (async () => {
       try {
-        const [templateRes, toolsRes, skillsRes, modelsRes] = await Promise.all([
+        const [templateRes, toolsRes, skillsRes, modelsRes] = await Promise.allSettled([
           apiClient.get(`/super-admin/agents/${t.slug}`),
           apiClient.get("/super-admin/agents/tools"),
           apiClient.get("/super-admin/agents/skills"),
           apiClient.get("/super-admin/agents/available-models"),
         ]);
-        if (toolsRes.data.success) setAllTools(toolsRes.data.tools.map(t => ({ value: t.name, label: t.name, group: t.group })));
-        if (skillsRes.data.success) setAllSkills(skillsRes.data.skills.map(s => ({ value: s.id, label: s.displayName })));
-        if (modelsRes.data.success) setAllModels(modelsRes.data.models);
-        const d = templateRes.data;
-        if (d.agent) {
-          const a = d.agent as FullTemplate; setFull(a);
+        if (toolsRes.status === "fulfilled" && toolsRes.value.data?.success && Array.isArray(toolsRes.value.data.tools)) {
+          setAllTools(toolsRes.value.data.tools.map((x: any) => ({ value: x.name, label: x.name, group: x.group })));
+        }
+        if (skillsRes.status === "fulfilled" && skillsRes.value.data?.success && Array.isArray(skillsRes.value.data.skills)) {
+          setAllSkills(skillsRes.value.data.skills.map((s: any) => ({ value: s.id, label: s.displayName })));
+        }
+        if (modelsRes.status === "fulfilled" && modelsRes.value.data?.success && Array.isArray(modelsRes.value.data.models)) {
+          setAllModels(modelsRes.value.data.models);
+        }
+        if (templateRes.status === "fulfilled" && templateRes.value.data?.agent) {
+          const a = templateRes.value.data.agent as FullTemplate;
+          setFull(a);
           setIsActive(a.is_active !== false);
           setForm({
             name: a.name, role: a.role, version: a.version,
@@ -189,9 +378,14 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
             allowed_skills: a.allowed_skills || [], model_policy: a.model_policy || {},
             budget: a.budget || {}, guardrails: a.guardrails || {},
           });
+        } else {
+          setErr("فشل تحميل بيانات القالب");
         }
-      } catch { setErr("فشل تحميل بيانات القالب"); }
-      finally { setLoadingDetail(false); }
+      } catch {
+        setErr("فشل تحميل بيانات القالب");
+      } finally {
+        setLoadingDetail(false);
+      }
     })();
   }, [t.slug]);
 
@@ -200,10 +394,14 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
     setSaving(true); setErr(null);
     try {
       await apiClient.put(`/super-admin/agents/${t.slug}`, { ...form, is_active: isActive });
-      onUpdated(); onClose();
+      toast.success(`تم حفظ إعدادات قالب «${form.name || t.name}» بنجاح`);
+      onUpdated();
+      onClose();
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || e.message || "حدث خطأ أثناء حفظ الإعدادات");
+    } finally {
+      setSaving(false);
     }
-    catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
-    finally { setSaving(false); }
   };
 
   const modelOptions = allModels.map(m => ({
@@ -250,24 +448,28 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
         <div className="flex-1 overflow-auto px-1 py-2 space-y-3">
           {tab === "basic" && (
             <>
-              <Input label="الاسم" value={form.name || ""} onChange={e => update("name", e.target.value)} />
+              <FormInput label="الاسم *" value={form.name || ""} onChange={e => update("name", e.target.value)} />
               <div>
-                <label className="text-xs font-medium text-muted-foreground">الدور</label>
+                <label className="text-xs font-medium text-foreground block mb-1">الدور الوظيفي</label>
                 <select value={form.role || ""} onChange={e => update("role", e.target.value)}
-                  className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mt-1">
-                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  className="w-full h-8 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground cursor-pointer">
+                  {ROLES.map(r => (
+                    <option key={r} value={r}>
+                      {ROLE_ICONS[r] || "🤖"} {ROLE_LABELS[r] || r} ({r})
+                    </option>
+                  ))}
                 </select>
               </div>
-              <Input label="الإصدار" value={form.version || ""} onChange={e => update("version", e.target.value)} />
-              <div className="flex items-center gap-2">
+              <FormInput label="الإصدار" value={form.version || ""} onChange={e => update("version", e.target.value)} />
+              <div className="flex items-center gap-2 pt-1">
                 <Switch checked={isActive} onCheckedChange={setIsActive} />
-                <span className="text-xs font-medium">{isActive ? "نشط (يظهر في إنشاء الوكيل)" : "مخفي (لا يظهر في إنشاء الوكيل)"}</span>
+                <span className="text-xs font-medium">{isActive ? "نشط (يظهر في خيارات الشركات)" : "مخفي (معطل عن الظهور للشركات)"}</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input label="اللغة" value={form.persona_meta?.language || ""} onChange={e => update("persona_meta", { ...form.persona_meta, language: e.target.value })} />
-                <Input label="اللهجة" value={form.persona_meta?.dialect || ""} onChange={e => update("persona_meta", { ...form.persona_meta, dialect: e.target.value })} />
-                <Input label="النبرة" value={form.persona_meta?.tone || ""} onChange={e => update("persona_meta", { ...form.persona_meta, tone: e.target.value })} />
-                <Input label="الرسمية" value={form.persona_meta?.formality || ""} onChange={e => update("persona_meta", { ...form.persona_meta, formality: e.target.value })} />
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <FormInput label="اللغة" value={form.persona_meta?.language || ""} onChange={e => update("persona_meta", { ...form.persona_meta, language: e.target.value })} />
+                <FormInput label="اللهجة" value={form.persona_meta?.dialect || ""} onChange={e => update("persona_meta", { ...form.persona_meta, dialect: e.target.value })} />
+                <FormInput label="النبرة" value={form.persona_meta?.tone || ""} onChange={e => update("persona_meta", { ...form.persona_meta, tone: e.target.value })} />
+                <FormInput label="الرسمية" value={form.persona_meta?.formality || ""} onChange={e => update("persona_meta", { ...form.persona_meta, formality: e.target.value })} />
               </div>
             </>
           )}
@@ -293,13 +495,13 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
               <div><label className="text-xs font-medium text-muted-foreground">المهارات المسموحة</label><MultiSelect options={allSkills} selected={form.allowed_skills || []} onChange={v => update("allowed_skills", v)} placeholder="اختر المهارات..." searchPlaceholder="ابحث عن مهارة..." emptyText="لا توجد مهارات" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">النموذج الافتراضي</label>
-                  <Select value={form.model_policy?.default || ""} onValueChange={v => update("model_policy", { ...form.model_policy, default: v || undefined })}>
+                  <label className="text-xs font-medium text-foreground block mb-1">النموذج الافتراضي</label>
+                  <Select value={form.model_policy?.default || "none"} onValueChange={v => update("model_policy", { ...form.model_policy, default: v === "none" ? undefined : v })}>
                     <SelectTrigger className="mt-1" dir={isRtl ? "rtl" : "ltr"}>
                       <SelectValue placeholder="اختر النموذج..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">بدون نموذج</SelectItem>
+                      <SelectItem value="none">بدون نموذج محدد</SelectItem>
                       {allModels.map(m => (
                         <SelectItem key={m.modelName} value={m.modelName}>
                           <span className="flex items-center gap-2">
@@ -312,13 +514,13 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">النموذج البديل</label>
-                  <Select value={form.model_policy?.fallback || ""} onValueChange={v => update("model_policy", { ...form.model_policy, fallback: v || undefined })}>
+                  <label className="text-xs font-medium text-foreground block mb-1">النموذج البديل</label>
+                  <Select value={form.model_policy?.fallback || "none"} onValueChange={v => update("model_policy", { ...form.model_policy, fallback: v === "none" ? undefined : v })}>
                     <SelectTrigger className="mt-1" dir={isRtl ? "rtl" : "ltr"}>
                       <SelectValue placeholder="اختر النموذج..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">بدون نموذج</SelectItem>
+                      <SelectItem value="none">بدون نموذج بديل</SelectItem>
                       {allModels.map(m => (
                         <SelectItem key={m.modelName} value={m.modelName}>
                           <span className="flex items-center gap-2">
@@ -331,7 +533,7 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
                   </Select>
                 </div>
               </div>
-              <Input label="الميزانية اليومية ($)" type="number" value={form.budget?.dailyUsd || ""} onChange={e => update("budget", { ...form.budget, dailyUsd: e.target.value ? parseFloat(e.target.value) : undefined })} />
+              <FormInput label="الميزانية اليومية ($)" type="number" value={form.budget?.dailyUsd || ""} onChange={e => update("budget", { ...form.budget, dailyUsd: e.target.value ? parseFloat(e.target.value) : undefined })} />
               <div className="flex items-center gap-2">
                 <Switch checked={form.guardrails?.requireDraftOrders || false} onCheckedChange={v => update("guardrails", { ...form.guardrails, requireDraftOrders: v })} />
                 <span className="text-xs">يتطلب أوامر مسودة</span>
@@ -356,6 +558,7 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
    Preview Dialog
    ════════════════════════════════════════════════ */
 export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => void }> = ({ template: t, onClose }) => {
+  const navigate = useNavigate();
   const [fullSoul, setFullSoul] = useState<string | null>(null);
   const [loadingSoul, setLoadingSoul] = useState(false);
 
@@ -376,7 +579,10 @@ export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => vo
         <DialogHeader>
           <div className="flex items-center gap-3">
             <span className="text-3xl">{t.icon || ROLE_ICONS[t.role] || "🤖"}</span>
-            <div><DialogTitle className="text-lg">{t.name}</DialogTitle><p className="text-xs text-muted-foreground">{t.role} · v{t.version}</p></div>
+            <div>
+              <DialogTitle className="text-lg">{t.name}</DialogTitle>
+              <p className="text-xs text-muted-foreground">{ROLE_LABELS[t.role] || t.role} · v{t.version}</p>
+            </div>
           </div>
         </DialogHeader>
         <div className="space-y-4">
@@ -398,7 +604,21 @@ export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => vo
             </div>
           </div>
         </div>
-        <DialogFooter><Button onClick={onClose}>إغلاق</Button></DialogFooter>
+        <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              onClose();
+              navigate(`/super-admin/ai-templates/${t.slug}`);
+            }}
+            className="gap-1.5 text-xs w-full sm:w-auto"
+          >
+            <ExternalLink className="size-3.5" />
+            <span>فتح صفحة القالب الكاملة (6 أقسام)</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClose} className="w-full sm:w-auto text-xs">إغلاق</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -493,9 +713,16 @@ export const DeleteDialog: React.FC<{ template: TemplateItem; onClose: () => voi
   const [err, setErr] = useState<string | null>(null);
   const doDelete = async () => {
     setDeleting(true); setErr(null);
-    try { await apiClient.delete(`/super-admin/agents/${t.slug}`); onDeleted(); onClose(); }
-    catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
-    finally { setDeleting(false); }
+    try {
+      await apiClient.delete(`/super-admin/agents/${t.slug}`);
+      toast.success(`تم حذف قالب «${t.name}» بنجاح`);
+      onDeleted();
+      onClose();
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || e.message || "حدث خطأ أثناء حذف القالب");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -564,7 +791,7 @@ export const EditCompanyAgentDialog: React.FC<{
         if (toolsRes.data.success) setAllTools(toolsRes.data.tools.map(t => ({ value: t.name, label: t.name, group: t.group })));
         if (skillsRes.data.success) setAllSkills(skillsRes.data.skills.map(s => ({ value: s.id, label: s.displayName })));
         if (modelsRes.data.success) setAllModels(modelsRes.data.models);
-        const a = agentRes.data;
+        const a = agentRes.data as any;
         if (a) {
           setForm({
             soul: a.soul || "",
@@ -740,33 +967,52 @@ export const DuplicateDialog: React.FC<{ template: TemplateItem; onClose: () => 
     if (!newName.trim() || !newSlug.trim()) return;
     setCreating(true); setErr(null);
     try {
-      const { data } = await apiClient.get(`/super-admin/agents/${t.slug}`);
-      if (!data.agent) throw new Error("فشل تحميل بيانات القالب");
-      const { created_at, updated_at, is_active, agent_templates, ...rest } = data.agent;
+      const { data } = await apiClient.get<any>(`/super-admin/agents/${t.slug}`);
+      const resAgent = (data as any)?.agent;
+      if (!resAgent) throw new Error("فشل تحميل بيانات القالب");
+      const { created_at, updated_at, is_active, agent_templates, ...rest } = resAgent;
       await apiClient.post("/super-admin/agents", {
         ...rest,
-        slug: newSlug.trim(), name: newName.trim(), role: rest.role || t.role,
+        slug: newSlug.trim(),
+        name: newName.trim(),
+        role: rest.role || t.role,
       });
-      onCreated(); onClose();
-    } catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
-    finally { setCreating(false); }
+      toast.success(`تم نسخ قالب «${t.name}» إلى «${newName.trim()}»`);
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || e.message || "حدث خطأ أثناء نسخ القالب");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>نسخ القالب</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>نسخ قالب الوكيل</DialogTitle></DialogHeader>
         {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
-        <p className="text-sm">سيتم إنشاء نسخة من قالب <strong>{t.icon} {t.name}</strong></p>
+        <p className="text-xs text-muted-foreground">
+          سيتم إنشاء نسخة من قالب <strong>{t.icon || ROLE_ICONS[t.role] || "🤖"} {t.name}</strong>
+        </p>
         <div className="space-y-3 mt-2" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doDuplicate(); } }}>
-          <Input label="الاسم الجديد *" value={newName}
-            onChange={e => { setNewName(e.target.value); setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")); }} autoFocus />
-          <Input label="المعرّف الجديد (slug) *" value={newSlug} onChange={e => setNewSlug(e.target.value)} />
+          <FormInput
+            label="الاسم الجديد *"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            autoFocus
+          />
+          <FormInput
+            label="المعرّف الجديد (slug) *"
+            value={newSlug}
+            onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+            helperText="أحرف إنجليزية صغيرة وأرقام وشرطات فقط"
+          />
         </div>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={onClose} disabled={creating}>إلغاء</Button>
           <Button onClick={doDuplicate} disabled={!newName.trim() || !newSlug.trim() || creating}>
-            {creating ? <LoadingSpinner size="sm" /> : <Copy className="size-4 ml-1" />} نسخ
+            {creating ? <LoadingSpinner size="sm" /> : <Copy className="size-4 ml-1" />} نسخ القالب
           </Button>
         </DialogFooter>
       </DialogContent>
