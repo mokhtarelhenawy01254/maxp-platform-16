@@ -193,7 +193,7 @@ test('educationDemoDayController unit test suite', async (t) => {
     const cust = customersDb.find(c => c.id === data.data.customerId);
     assert.ok(cust);
     assert.strictEqual(cust.status, 'LEAD');
-    assert.strictEqual(cust.leadSource, 'DEMO_DAY');
+    assert.strictEqual(cust.leadSource, 'OTHER');
     assert.strictEqual(cust.phone, '01012345678');
   });
 
@@ -219,7 +219,7 @@ test('educationDemoDayController unit test suite', async (t) => {
     // Customer status promoted to ACTIVE
     const cust = customersDb.find(c => c.id === attendee.customerId);
     assert.strictEqual(cust.status, 'ACTIVE');
-    assert.strictEqual(cust.leadStage, 'WON');
+    assert.strictEqual(cust.leadStage, 'CONVERTED');
   });
 
   await t.test('multi-tenant isolation: Company 2 cannot see Company 1 demo days', async () => {

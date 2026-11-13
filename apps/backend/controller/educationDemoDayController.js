@@ -329,7 +329,7 @@ const registerAttendee = async (req, res) => {
           email: email ? String(email).trim() : null,
           status: 'LEAD',
           leadStage: 'NEW_LEAD',
-          leadSource: 'DEMO_DAY',
+          leadSource: 'OTHER',
           notes: `سجل لحضور الديمو داي: ${notes || ''}`
         }
       });
@@ -449,7 +449,7 @@ const convertAttendeeToStudent = async (req, res) => {
     } else {
       await prisma.customer.update({
         where: { id: customerId },
-        data: { status: 'ACTIVE', leadStage: 'WON' }
+        data: { status: 'ACTIVE', leadStage: 'CONVERTED' }
       }).catch(() => {});
     }
 
@@ -653,7 +653,7 @@ const registerPublicAttendee = async (req, res) => {
           email: email ? String(email).trim() : null,
           status: 'LEAD',
           leadStage: 'NEW_LEAD',
-          leadSource: 'DEMO_DAY',
+          leadSource: 'WEBSITE',
           notes: `تسجيل ذاتي عبر رابط الديمو داي: ${event.title}`
         }
       });

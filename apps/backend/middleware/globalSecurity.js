@@ -592,6 +592,11 @@ const PUBLIC_ROUTES = [
   'PATCH /api/v1/admin-api/*',
   'DELETE /api/v1/admin-api/*',
 
+  // Education Demo Day (public landing & registration)
+  'GET /api/v1/education/demo-day/public/*',
+  'POST /api/v1/education/demo-day/public/*',
+  'POST /api/v1/education/demo-day/public/*/register',
+
   // Teacher Portal (public login endpoint)
   'POST /api/v1/education/teacher-portal/login',
 
