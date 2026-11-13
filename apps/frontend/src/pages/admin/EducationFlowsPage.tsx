@@ -1,101 +1,64 @@
-import React from 'react';
-import {
-  useEducationFlowsController,
-  EducationFlowHeader,
-  EducationSubFlowSelector,
-  EducationFlowVisualCanvas,
-  EducationFlowToolMatrix,
-  EducationFlowSimulatorDrawer,
-  EducationFlowSettingsDrawer,
-} from './education-flows';
+import React, { useState } from 'react';
+import { EducationFlowTopBar } from './education-flows/EducationFlowTopBar';
+import { EducationFlowCanvas } from './education-flows/EducationFlowCanvas';
+import { EducationNodeInspectorDrawer } from './education-flows/EducationNodeInspectorDrawer';
+import { EducationFlowTestModal } from './education-flows/EducationFlowTestModal';
+import { FLOW_NODES } from './education-flows/constants';
+import type { FlowCategory } from './education-flows/types';
 
 export default function EducationFlowsPage() {
-  const {
-    activeSubFlowId,
-    activeSubFlow,
-    selectedChannel,
-    setSelectedChannel,
-    selectedNodeId,
-    handleSelectSubFlow,
-    handleSelectNode,
-    // Simulator
-    isSimulatorOpen,
-    setIsSimulatorOpen,
-    selectedScenarioId,
-    setSelectedScenarioId,
-    selectedScenario,
-    isSimulating,
-    simulationCurrentStep,
-    simulationFinished,
-    handleStartSimulation,
-    handleResetSimulation,
-    // Settings
-    settings,
-    setSettings,
-    isSettingsDrawerOpen,
-    setIsSettingsDrawerOpen,
-    isSavingSettings,
-    saveSuccessMessage,
-    handleSaveSettings,
-    // Data
-    toolsMatrix,
-    allSubFlows,
-    allScenarios,
-  } = useEducationFlowsController();
+  const [activeCategory, setActiveCategory] = useState<FlowCategory>('all');
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+
+  const selectedNode = FLOW_NODES.find((n) => n.id === selectedNodeId) || null;
+
+  const handleZoomIn = () => setZoomLevel((prev) => Math.min(1.4, prev + 0.15));
+  const handleZoomOut = () => setZoomLevel((prev) => Math.max(0.65, prev - 0.15));
+  const handleZoomReset = () => setZoomLevel(1);
+
+  const handleSaveNodeText = (nodeId: string, updatedText: string) => {
+    const target = FLOW_NODES.find((n) => n.id === nodeId);
+    if (target) {
+      if (target.type === 'message') target.messageText = updatedText;
+      if (target.type === 'delay') target.delayDetail = updatedText;
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      {/* Top Header & Channels */}
-      <EducationFlowHeader
-        selectedChannel={selectedChannel}
-        onSelectChannel={setSelectedChannel}
-        onOpenSimulator={() => setIsSimulatorOpen(true)}
-        onOpenSettings={() => setIsSettingsDrawerOpen(true)}
+    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden select-none">
+      {/* 1. Customer.io / ManyChat Style Top Control Bar */}
+      <EducationFlowTopBar
+        activeCategory={activeCategory}
+        onSelectCategory={setActiveCategory}
+        zoomLevel={zoomLevel}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onZoomReset={handleZoomReset}
+        onOpenTestModal={() => setIsTestModalOpen(true)}
       />
 
-      {/* Sub-Flow Selector Tabs */}
-      <EducationSubFlowSelector
-        subFlows={allSubFlows}
-        activeSubFlowId={activeSubFlowId}
-        onSelectSubFlow={handleSelectSubFlow}
+      {/* 2. Visual Dot-Grid Workflow Canvas */}
+      <EducationFlowCanvas
+        activeCategory={activeCategory}
+        selectedNodeId={selectedNodeId}
+        onSelectNode={(id) => setSelectedNodeId((prev) => (prev === id ? null : id))}
+        zoomLevel={zoomLevel}
       />
 
-      {/* Main Flow Canvas */}
-      <div className="flex-1 overflow-y-auto">
-        <EducationFlowVisualCanvas
-          subFlow={activeSubFlow}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={handleSelectNode}
-        />
-
-        {/* Integrated Multi-Tool Registry */}
-        <EducationFlowToolMatrix tools={toolsMatrix} />
-      </div>
-
-      {/* Interactive Simulator Slide-Over */}
-      <EducationFlowSimulatorDrawer
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-        scenarios={allScenarios}
-        selectedScenarioId={selectedScenarioId}
-        onSelectScenario={setSelectedScenarioId}
-        scenario={selectedScenario}
-        isSimulating={isSimulating}
-        currentStep={simulationCurrentStep}
-        isFinished={simulationFinished}
-        onStartSimulation={handleStartSimulation}
-        onResetSimulation={handleResetSimulation}
+      {/* 3. Node Details Inspector Drawer */}
+      <EducationNodeInspectorDrawer
+        node={selectedNode}
+        isOpen={Boolean(selectedNodeId)}
+        onClose={() => setSelectedNodeId(null)}
+        onSaveNodeText={handleSaveNodeText}
       />
 
-      {/* Settings & Policy Drawer */}
-      <EducationFlowSettingsDrawer
-        isOpen={isSettingsDrawerOpen}
-        onClose={() => setIsSettingsDrawerOpen(false)}
-        settings={settings}
-        onChangeSettings={setSettings}
-        onSave={handleSaveSettings}
-        isSaving={isSavingSettings}
-        successMessage={saveSuccessMessage}
+      {/* 4. Real WhatsApp Live Test Sender */}
+      <EducationFlowTestModal
+        isOpen={isTestModalOpen}
+        onClose={() => setIsTestModalOpen(false)}
       />
     </div>
   );
