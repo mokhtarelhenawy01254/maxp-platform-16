@@ -145,3 +145,24 @@ def test_resolve_reasoning_effort_from_agent_config():
     ctx3.reasoning_effort = "none"
     assert _resolve_reasoning_effort(ctx3) == "none"
 
+    # 5. Mapping from template model_policy thinking ('fast' -> 'none', 'balanced' -> 'low', 'deep' -> 'high')
+    mock_agent4 = MagicMock()
+    mock_agent4.config = {}
+    mock_agent4.policies = {"model_policy": {"thinking": "deep"}}
+    mock_agent4.default_options = {}
+    ctx4 = PipelineContext(
+        message="test",
+        thread_id="t1",
+        company_id="c1",
+        customer_id="cust1",
+        agent=mock_agent4,
+    )
+    assert _resolve_reasoning_effort(ctx4) == "high"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "balanced"}}
+    assert _resolve_reasoning_effort(ctx4) == "low"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "fast"}}
+    assert _resolve_reasoning_effort(ctx4) == "none"
+
+

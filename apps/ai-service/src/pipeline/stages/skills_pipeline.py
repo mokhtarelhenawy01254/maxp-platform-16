@@ -897,15 +897,33 @@ def _resolve_reasoning_effort(ctx: PipelineContext) -> str | None:
         policies = getattr(ctx.agent, "policies", None) or {}
         mp = policies.get("model_policy") or getattr(ctx.agent, "model_policy", None) or {}
         if isinstance(mp, dict):
-            val = mp.get("reasoning_effort")
+            val = mp.get("reasoning_effort") or mp.get("reasoningEffort")
             if val:
                 return str(val).lower()
+            thinking = mp.get("thinking")
+            if thinking:
+                t_str = str(thinking).lower()
+                if t_str in ("fast", "none", "off", "0"):
+                    return "none"
+                elif t_str in ("balanced", "low", "medium"):
+                    return "low"
+                elif t_str in ("deep", "high", "thinking"):
+                    return "high"
 
         default_opts = getattr(ctx.agent, "default_options", None) or {}
         if isinstance(default_opts, dict):
-            val = default_opts.get("reasoning_effort")
+            val = default_opts.get("reasoning_effort") or default_opts.get("reasoningEffort")
             if val:
                 return str(val).lower()
+            thinking = default_opts.get("thinking")
+            if thinking:
+                t_str = str(thinking).lower()
+                if t_str in ("fast", "none", "off", "0"):
+                    return "none"
+                elif t_str in ("balanced", "low", "medium"):
+                    return "low"
+                elif t_str in ("deep", "high", "thinking"):
+                    return "high"
 
     return None
 

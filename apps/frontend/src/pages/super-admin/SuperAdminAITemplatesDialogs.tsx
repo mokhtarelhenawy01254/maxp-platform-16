@@ -533,6 +533,40 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
                   </Select>
                 </div>
               </div>
+              <div>
+                <label className="text-xs font-medium text-foreground block mb-1">مستوى التفكير والاستدلال المنطقي (DeepSeek Flash 4)</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {[
+                    { key: "none", label: "فوري (بدون تفكير)", icon: "⚡" },
+                    { key: "low", label: "تفكير متزن", icon: "⚖️" },
+                    { key: "high", label: "تفكير استدلالي عميق", icon: "🧠" },
+                  ].map(opt => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      className={`p-2 rounded-lg border text-start transition-all cursor-pointer flex items-center gap-1.5 ${
+                        (form.model_policy?.reasoning_effort || form.config?.reasoning_effort || "none") === opt.key
+                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          : "border-border/60 bg-muted/20 hover:border-border text-muted-foreground"
+                      }`}
+                      onClick={() => {
+                        update("model_policy", {
+                          ...form.model_policy,
+                          reasoning_effort: opt.key,
+                          thinking: opt.key === "none" ? "fast" : opt.key === "low" ? "balanced" : "deep",
+                        });
+                        update("config", {
+                          ...form.config,
+                          reasoning_effort: opt.key,
+                        });
+                      }}
+                    >
+                      <span className="text-sm">{opt.icon}</span>
+                      <span className="text-xs">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <FormInput label="الميزانية اليومية ($)" type="number" value={form.budget?.dailyUsd || ""} onChange={e => update("budget", { ...form.budget, dailyUsd: e.target.value ? parseFloat(e.target.value) : undefined })} />
               <div className="flex items-center gap-2">
                 <Switch checked={form.guardrails?.requireDraftOrders || false} onCheckedChange={v => update("guardrails", { ...form.guardrails, requireDraftOrders: v })} />
@@ -793,10 +827,16 @@ export const EditCompanyAgentDialog: React.FC<{
         if (modelsRes.data.success) setAllModels(modelsRes.data.models);
         const a = agentRes.data as any;
         if (a) {
+          const reasoning =
+            a.config?.reasoning_effort ||
+            a.model_policy?.reasoning_effort ||
+            (a.model_policy?.thinking === "deep" ? "high" : a.model_policy?.thinking === "balanced" ? "low" : "none") ||
+            "none";
           setForm({
             soul: a.soul || "",
             rules: a.rules || "",
             model: a.model || "",
+            reasoning_effort: reasoning,
             allowed_tools: a.allowed_tools || [],
             allowed_skills: a.allowed_skills || [],
             allowed_channels: a.allowed_channels || [],
@@ -823,6 +863,14 @@ export const EditCompanyAgentDialog: React.FC<{
         soul: form.soul || null,
         rules: form.rules || null,
         model: form.model || null,
+        reasoning_effort: form.reasoning_effort || "none",
+        config: {
+          reasoning_effort: form.reasoning_effort || "none",
+        },
+        model_policy: {
+          reasoning_effort: form.reasoning_effort || "none",
+          thinking: form.reasoning_effort === "high" ? "deep" : form.reasoning_effort === "low" ? "balanced" : "fast",
+        },
         allowed_tools: form.allowed_tools,
         allowed_skills: form.allowed_skills,
         allowed_channels: form.allowed_channels,
@@ -870,6 +918,30 @@ export const EditCompanyAgentDialog: React.FC<{
               <option value="">النموذج الافتراضي (من القالب)</option>
               {allModels.map(m => <option key={m.modelName} value={m.modelName}>{m.modelName} ({m.provider})</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">مستوى التفكير والاستدلال المنطقي (DeepSeek Flash 4)</label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {[
+                { key: "none", label: "فوري (بدون تفكير)", icon: "⚡" },
+                { key: "low", label: "تفكير متزن", icon: "⚖️" },
+                { key: "high", label: "تفكير استدلالي عميق", icon: "🧠" },
+              ].map(opt => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={`p-2 rounded-lg border text-start transition-all cursor-pointer flex items-center gap-1.5 ${
+                    (form.reasoning_effort || "none") === opt.key
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-border/60 bg-muted/20 hover:border-border text-muted-foreground"
+                  }`}
+                  onClick={() => update("reasoning_effort", opt.key)}
+                >
+                  <span className="text-sm">{opt.icon}</span>
+                  <span className="text-xs">{opt.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">الشخصية (Soul)</label>

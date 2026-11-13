@@ -241,7 +241,16 @@ const SuperAdminAITemplateDetail: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <MetaCard label="النموذج الافتراضي" value={t.model_policy?.default || "-"} />
                 <MetaCard label="النموذج البديل" value={Array.isArray(t.model_policy?.fallback) ? t.model_policy.fallback.join(" → ") : (t.model_policy?.fallback || "-")} />
-                <MetaCard label="مستوى التفكير" value={t.model_policy?.thinking || "سريع (افتراضي)"} />
+                <MetaCard
+                  label="مستوى التفكير (Reasoning Effort)"
+                  value={
+                    (t.model_policy?.reasoning_effort === "high" || t.model_policy?.thinking === "deep")
+                      ? "🧠 تفكير استدلالي عميق"
+                      : (t.model_policy?.reasoning_effort === "low" || t.model_policy?.thinking === "balanced")
+                      ? "⚖️ تفكير متزن"
+                      : "⚡ فوري (بدون تفكير - DeepSeek Flash)"
+                  }
+                />
               </div>
               <ModelPolicyEditor slug={t.slug} policy={t.model_policy || {}} onSaved={fetchTemplate} />
             </Section>
@@ -632,12 +641,14 @@ const ModelPolicyEditor = ({ slug, policy, onSaved }: {
     setSaving(true); setErr("");
     try {
       const fallbackList = fallbackText.split(",").map(s => s.trim()).filter(Boolean);
+      const reasoning_effort = thinking === "fast" ? "none" : thinking === "balanced" ? "low" : "high";
       const body: Record<string, any> = {
         model_policy: {
           ...policy,
           default: defaultModel.trim(),
           fallback: fallbackList,
           thinking,
+          reasoning_effort,
         },
       };
       await apiClient.put(`/super-admin/agents/${slug}`, body);
@@ -663,12 +674,12 @@ const ModelPolicyEditor = ({ slug, policy, onSaved }: {
           <input className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={defaultModel}
             onChange={(e) => setDefaultModel(e.target.value)} placeholder="deepseek-flash" />
         </label>
-        <label className="text-xs font-medium text-muted-foreground">مستوى التفكير
+        <label className="text-xs font-medium text-muted-foreground">مستوى التفكير الاستدلالي (DeepSeek Flash 4)
           <select className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={thinking}
             onChange={(e) => setThinking(e.target.value)}>
-            <option value="fast">سريع (الرد الفوري)</option>
-            <option value="balanced">متوازن</option>
-            <option value="deep">عميق (DeepSeek Reasoner)</option>
+            <option value="fast">⚡ فوري (بدون تفكير - DeepSeek Flash 4)</option>
+            <option value="balanced">⚖️ تفكير متزن (مراجعة سريعة)</option>
+            <option value="deep">🧠 تفكير استدلالي عميق (تحليل وحسابات)</option>
           </select>
         </label>
       </div>

@@ -280,6 +280,11 @@ export const getSuperAdminMenuGroups = (
         path: "/super-admin/ai-templates", // path="/super-admin/ai-templates"
       },
       {
+        text: "بروفايلات وإعدادات الوكلاء",
+        icon: ic(Users, "h-4 w-4"),
+        path: "/admin/agent-profiles",
+      },
+      {
         text: t("superAdmin.sidebar.productEmbeddings") || "تضمين المنتجات Embeddings",
         icon: ic(Database, "h-4 w-4"),
         path: "/super-admin/product-embeddings", // path="/super-admin/product-embeddings"
