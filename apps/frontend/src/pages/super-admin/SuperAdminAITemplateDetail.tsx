@@ -240,8 +240,10 @@ const SuperAdminAITemplateDetail: React.FC = () => {
             <Section title="نموذج الذكاء الاصطناعي" icon={Brain}>
               <div className="grid grid-cols-2 gap-3">
                 <MetaCard label="النموذج الافتراضي" value={t.model_policy?.default || "-"} />
-                <MetaCard label="النموذج البديل" value={t.model_policy?.fallback || "-"} />
+                <MetaCard label="النموذج البديل" value={Array.isArray(t.model_policy?.fallback) ? t.model_policy.fallback.join(" → ") : (t.model_policy?.fallback || "-")} />
+                <MetaCard label="مستوى التفكير" value={t.model_policy?.thinking || "سريع (افتراضي)"} />
               </div>
+              <ModelPolicyEditor slug={t.slug} policy={t.model_policy || {}} onSaved={fetchTemplate} />
             </Section>
             <Section title="الميزانية" icon={CreditCard}>
               <div className="grid grid-cols-2 gap-3">
@@ -601,3 +603,86 @@ const CompaniesTab: React.FC<{ slug: string; onEditAgent: (a: any) => void; onRe
 };
 
 export default SuperAdminAITemplateDetail;
+
+// ── 2026-11-13: Model Policy editor (default model, fallback chain, thinking level) ──
+const ModelPolicyEditor = ({ slug, policy, onSaved }: {
+  slug: string;
+  policy: Record<string, any>;
+  onSaved: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [defaultModel, setDefaultModel] = useState(policy?.default || "");
+  const [fallbackText, setFallbackText] = useState(
+    Array.isArray(policy?.fallback) ? policy.fallback.join(", ") : (policy?.fallback || "")
+  );
+  const [thinking, setThinking] = useState(policy?.thinking || "fast");
+  const [err, setErr] = useState("");
+
+  React.useEffect(() => {
+    if (open) {
+      setDefaultModel(policy?.default || "");
+      setFallbackText(Array.isArray(policy?.fallback) ? policy.fallback.join(", ") : (policy?.fallback || ""));
+      setThinking(policy?.thinking || "fast");
+      setErr("");
+    }
+  }, [open]);
+
+  const save = async () => {
+    setSaving(true); setErr("");
+    try {
+      const fallbackList = fallbackText.split(",").map(s => s.trim()).filter(Boolean);
+      const body: Record<string, any> = {
+        model_policy: {
+          ...policy,
+          default: defaultModel.trim(),
+          fallback: fallbackList,
+          thinking,
+        },
+      };
+      await apiClient.put(`/super-admin/agents/${slug}`, body);
+      setOpen(false);
+      onSaved();
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || "فشل الحفظ");
+    } finally { setSaving(false); }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="outline" size="sm" className="mt-3" onClick={() => setOpen(true)}>
+        <Braces className="size-3.5 ml-1" /> تعديل سلسلة النماذج ومستوى التفكير
+      </Button>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2 border rounded-lg p-3 bg-muted/30">
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-xs font-medium text-muted-foreground">النموذج الافتراضي
+          <input className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={defaultModel}
+            onChange={(e) => setDefaultModel(e.target.value)} placeholder="deepseek-flash" />
+        </label>
+        <label className="text-xs font-medium text-muted-foreground">مستوى التفكير
+          <select className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={thinking}
+            onChange={(e) => setThinking(e.target.value)}>
+            <option value="fast">سريع (الرد الفوري)</option>
+            <option value="balanced">متوازن</option>
+            <option value="deep">عميق (DeepSeek Reasoner)</option>
+          </select>
+        </label>
+      </div>
+      <label className="block text-xs font-medium text-muted-foreground">سلسلة البدائل (بترتيب الأولوية، مفصولة بفاصلة)
+        <input className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={fallbackText}
+          onChange={(e) => setFallbackText(e.target.value)} placeholder="gemini-2.5-flash, groq/openai/gpt-oss-120b" />
+      </label>
+      {err && <p className="text-xs text-red-600">{err}</p>}
+      <div className="flex gap-2 justify-end">
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>إلغاء</Button>
+        <Button size="sm" disabled={saving || !defaultModel.trim()} onClick={save}>
+          {saving ? "جارٍ الحفظ..." : "حفظ سلسلة النماذج"}
+        </Button>
+      </div>
+    </div>
+  );
+};

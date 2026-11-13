@@ -206,6 +206,7 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         allowed_tools=effective_allowed_tools,
         allowed_skills=getattr(agent, 'allowed_skills', None) or [],
         allowed_channels=_safe_list(getattr(agent, 'channels', None)),
+        model_policy=getattr(agent, 'model_policy', None) or {},
         guardrails=getattr(agent, 'guardrails', None) or {},
         budget=getattr(agent, 'budget', None) or {},
         parent_id=agent.parent_id,
@@ -433,6 +434,17 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         if resolved:
             cfg["model"] = resolved.model_name
             logger.info("resolved_model_from_db_for_agent", agent_id=body.agent_id, model=resolved.model_name)
+
+    # 2026-11-13: thinking level → model adjustment (deepseek deep → reasoner)
+    try:
+        from src.services.thinking_level import resolve_agent_model
+        cfg["model"] = resolve_agent_model(
+            cfg.get("model"),
+            dict(cfg.get("config") or {}),
+            getattr(db_agent, "model_policy", None) or {},
+        ) or cfg.get("model")
+    except Exception:
+        pass
 
     # Auto-populate allowed_tools from role config if not explicitly set
     if not allowed_tools and cfg.get("role"):
@@ -1790,9 +1802,19 @@ async def _build_agent_files_response(
     if template_slug:
         template = await get_template(template_slug, session)
         if template:
+            # 2026-11-13: instance model_policy (incl. config.reasoning_effort) wins over template
+            _agent_mp = dict(getattr(agent_model, "model_policy", None) or {}) if agent_model else {}
+            _agent_cfg = {}
+            try:
+                _agent_cfg = json.loads(agent_raw.get("config") or "{}") if isinstance(agent_raw.get("config"), str) else (agent_raw.get("config") or {})
+            except Exception:
+                _agent_cfg = {}
+            _eff = _agent_cfg.get("reasoning_effort")
+            if _eff:
+                _agent_mp = {**_agent_mp, "thinking": _eff}
             profile = {
                 "slug": template.slug, "name": template.name, "role": template.role,
-                "version": template.version, "modelPolicy": template.model_policy or {},
+                "version": template.version, "modelPolicy": _agent_mp or template.model_policy or {},
             }
 
     persona = agent_raw.get("persona") or {}

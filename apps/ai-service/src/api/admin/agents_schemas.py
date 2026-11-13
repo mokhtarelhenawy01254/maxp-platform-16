@@ -122,6 +122,7 @@ class AgentRead(BaseModel):
     allowed_tools: list[str]
     allowed_skills: list[str]
     allowed_channels: list[str] = []
+    model_policy: dict[str, Any] = Field(default_factory=dict, alias="modelPolicy")
     guardrails: dict[str, Any]
     budget: dict[str, Any]
     parent_id: str | None = None

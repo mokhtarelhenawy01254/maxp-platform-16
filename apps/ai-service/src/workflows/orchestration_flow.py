@@ -111,6 +111,14 @@ def _build_runtime_agent_from_db(
     from src.agents.base import _load_hooks_for_template
     agent_hooks = _load_hooks_for_template(db_agent.template_slug or None)
 
+    # 2026-11-13: thinking level → model adjustment (deepseek deep → reasoner)
+    from src.services.thinking_level import resolve_agent_model
+    resolved_model = resolve_agent_model(
+        model or getattr(db_agent, "model", "deepseek-flash"),
+        db_config,
+        getattr(db_agent, "model_policy", None) or {},
+    )
+
     db_config = db_agent.config or {}
     config = BaseAgentConfig(
         id=getattr(db_agent, "id", None),
@@ -119,7 +127,7 @@ def _build_runtime_agent_from_db(
         company_id=getattr(db_agent, "company_id", None),
         allowed_tools=tool_names,
         allowed_channels=list(getattr(db_agent, "channels", []) or []),
-        model=model or getattr(db_agent, "model", "deepseek-flash"),
+        model=resolved_model,
         allowed_skills=list(getattr(db_agent, "allowed_skills", []) or []),
         tool_choice=db_config.get("toolChoice"),
         persona=getattr(db_agent, "persona", {}) or {},
