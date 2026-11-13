@@ -55,7 +55,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           script_stop: true
-          envs: DRY_RUN
+          envs: DRY_RUN,BACKFILL_MODE
           script: |
             set -euo pipefail
             cd /var/www/backend2
