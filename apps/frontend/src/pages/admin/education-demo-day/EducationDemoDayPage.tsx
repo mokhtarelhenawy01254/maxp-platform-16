@@ -15,6 +15,7 @@ import {
   Layers,
   ExternalLink,
   Copy,
+  Bell,
 } from "lucide-react";
 import { DemoDayEvent, DemoDayAttendee, DemoDayStats } from "./types";
 import {
@@ -27,6 +28,7 @@ import {
   convertAttendeeToStudent,
   deleteAttendee,
   fetchEducationLookup,
+  broadcastDemoDayReminder,
 } from "./api";
 import { DemoDayEventsList } from "./DemoDayEventsList";
 import { DemoDayAttendeesTable } from "./DemoDayAttendeesTable";
@@ -62,6 +64,28 @@ export default function EducationDemoDayPage() {
   const [targetEventForAttendee, setTargetEventForAttendee] = useState<DemoDayEvent | null>(null);
   const [convertModalOpen, setConvertModalOpen] = useState<boolean>(false);
   const [targetAttendeeForConvert, setTargetAttendeeForConvert] = useState<DemoDayAttendee | null>(null);
+  const [broadcasting, setBroadcasting] = useState<boolean>(false);
+
+  const handleBroadcastReminder = async () => {
+    if (!selectedEventDetail) return;
+    const count =
+      selectedEventDetail.attendees?.filter(
+        (a) => a.attendanceStatus === "REGISTERED" || a.attendanceStatus === "CONFIRMED"
+      ).length || 0;
+    if (!count) {
+      toast.error(isEn ? "No registered attendees to remind" : "لا يوجد مسجلين مؤهلين للتذكير في هذه الجلسة");
+      return;
+    }
+    setBroadcasting(true);
+    try {
+      const res = await broadcastDemoDayReminder(selectedEventDetail.id, "24h");
+      toast.success(res.message || (isEn ? `Reminders sent to ${res.sent} attendees` : `تم إرسال التذكيرات إلى ${res.sent} حاضر`));
+    } catch (err: any) {
+      toast.error(err.message || (isEn ? "Failed to send reminders" : "فشل إرسال التذكيرات"));
+    } finally {
+      setBroadcasting(false);
+    }
+  };
 
   // Debounce search so typing does not fire an API call per keystroke
   useEffect(() => {
@@ -411,7 +435,17 @@ export default function EducationDemoDayPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={broadcasting}
+                  onClick={handleBroadcastReminder}
+                  aria-label={isEn ? "Broadcast WhatsApp Reminder" : "إرسال تذكير واتساب للمسجلين"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50"
+                >
+                  <Bell className={`w-3.5 h-3.5 ${broadcasting ? "animate-pulse" : ""}`} />
+                  <span>{broadcasting ? (isEn ? "Sending…" : "جاري الإرسال…") : (isEn ? "WhatsApp Reminder" : "إرسال تذكير واتساب")}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => copyPublicLink(selectedEventDetail.id)}

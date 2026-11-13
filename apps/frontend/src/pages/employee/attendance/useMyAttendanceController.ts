@@ -348,7 +348,6 @@ export const useMyAttendanceController = () => {
           workMode,
           location: queuedLocation,
           method: "self_service",
-          location,
           lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,
         });
         toast.error(`لم تُسجّل — السبب: ${isNetworkErr ? "انقطاع الاتصال بالإنترنت" : "خطأ مؤقت بالسيرفر"}`, {
@@ -469,7 +468,6 @@ export const useMyAttendanceController = () => {
           workMode,
           location: queuedLocation,
           method: "self_service",
-          location,
           lastError: isNetworkErr ? "انقطاع الاتصال بالإنترنت" : `خطأ مؤقت بالسيرفر (${apiErr.response?.status})`,
         });
         toast.error(`لم تُسجّل — السبب: ${isNetworkErr ? "انقطاع الاتصال بالإنترنت" : "خطأ مؤقت بالسيرفر"}`, {

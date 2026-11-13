@@ -296,7 +296,7 @@ const registerAttendee = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
 
     const { id: demoDayId } = req.params;
-    const { studentName, guardianName, phone, phone2, email, age, grade, notes } = req.body;
+    const { studentName, guardianName, phone, phone2, email, age, grade, notes, leadSource, campaignName, adId: inputAdId, postId: inputPostId } = req.body;
 
     if (!studentName || !phone) {
       return res.status(400).json({ success: false, error: 'اسم الطالب ورقم الهاتف مطلوبان' });
@@ -318,6 +318,32 @@ const registerAttendee = async (req, res) => {
       }
     });
 
+    // Try resolving attribution data (Ad ID, Post ID, Campaign)
+    let adId = inputAdId || null;
+    let postId = inputPostId || null;
+    let campaign = campaignName || req.body.campaign || req.body.utmCampaign || null;
+    let source = leadSource || req.body.source || req.body.utmSource || null;
+
+    if (!adId && !postId && customer?.id) {
+      try {
+        const conv = await prisma.conversation.findFirst({
+          where: { customerId: customer.id, companyId },
+          orderBy: { updatedAt: 'desc' },
+          select: { metadata: true, channel: true },
+        });
+        if (conv?.metadata) {
+          const parsed = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : conv.metadata;
+          if (parsed.adId) adId = parsed.adId;
+          if (parsed.postId) postId = parsed.postId;
+          if (parsed.adRef) campaign = parsed.adRef;
+          if (parsed.adsContextData?.ad_title && !campaign) campaign = parsed.adsContextData.ad_title;
+          if (!source && conv.channel) source = conv.channel;
+        }
+      } catch (_) {}
+    }
+
+    if (!source) source = customer?.leadSource || 'OTHER';
+
     if (!customer) {
       customer = await prisma.customer.create({
         data: {
@@ -329,11 +355,15 @@ const registerAttendee = async (req, res) => {
           email: email ? String(email).trim() : null,
           status: 'LEAD',
           leadStage: 'NEW_LEAD',
-          leadSource: 'OTHER',
+          leadSource: ['WHATSAPP', 'FACEBOOK', 'INSTAGRAM', 'WEBSITE', 'OTHER'].includes(source) ? source : 'OTHER',
           notes: `سجل لحضور الديمو داي: ${notes || ''}`
         }
       });
     }
+
+    // Attach structured attribution tag to notes
+    const attrTag = `[ATTR: ${JSON.stringify({ source, campaign: campaign || 'حملة عامة', adId, postId })}]`;
+    const finalNotes = notes ? `${notes} ${attrTag}` : attrTag;
 
     const attendeeId = generateAttendeeId();
     await prisma.$executeRawUnsafe(`
@@ -346,7 +376,29 @@ const registerAttendee = async (req, res) => {
       )
     `, attendeeId, companyId, demoDayId, customer.id, studentName.trim(), guardianName ? guardianName.trim() : null,
        cleanPhone, phone2 ? String(phone2).replace(/[^\d+]/g, '').trim() : null,
-       email ? String(email).trim() : null, age ? parseInt(age, 10) : null, grade || null, notes || null);
+       email ? String(email).trim() : null, age ? parseInt(age, 10) : null, grade || null, finalNotes);
+
+    // Auto-send WhatsApp Confirmation Notification
+    try {
+      const demoDays = await prisma.$queryRawUnsafe(`
+        SELECT * FROM "education_demo_days" WHERE id = $1 AND "companyId" = $2
+      `, demoDayId, companyId);
+      if (demoDays.length > 0) {
+        const educationNotificationService = require('../services/educationNotificationService');
+        educationNotificationService.notifyDemoDayRegistered({
+          companyId,
+          demoDay: demoDays[0],
+          attendee: {
+            id: attendeeId,
+            studentName: studentName.trim(),
+            guardianName: guardianName ? guardianName.trim() : null,
+            phone: cleanPhone,
+            age: age ? parseInt(age, 10) : null,
+          },
+          leadSource: source,
+        }).catch((e) => console.warn('[DemoDayWhatsApp] Auto notification warn:', e.message));
+      }
+    } catch (_) {}
 
     await logEducationEvent({
       companyId,
@@ -634,6 +686,14 @@ const registerPublicAttendee = async (req, res) => {
 
     const cleanPhone = String(phone).replace(/[^\d+]/g, '').trim();
 
+    // Attribution for public attendee (e.g. utm_source, utm_campaign, adId)
+    const source = req.body.leadSource || req.body.utmSource || req.body.utm_source || 'WEBSITE';
+    const campaign = req.body.campaignName || req.body.campaign || req.body.utmCampaign || req.body.utm_campaign || 'الموقع العام';
+    const adId = req.body.adId || null;
+    const postId = req.body.postId || null;
+    const attrTag = `[ATTR: ${JSON.stringify({ source, campaign, adId, postId })}]`;
+    const finalNotes = notes ? `${notes} ${attrTag}` : attrTag;
+
     // CRM Lead
     let customer = await prisma.customer.findFirst({
       where: {
@@ -653,7 +713,7 @@ const registerPublicAttendee = async (req, res) => {
           email: email ? String(email).trim() : null,
           status: 'LEAD',
           leadStage: 'NEW_LEAD',
-          leadSource: 'WEBSITE',
+          leadSource: ['WHATSAPP', 'FACEBOOK', 'INSTAGRAM', 'WEBSITE', 'OTHER'].includes(source) ? source : 'WEBSITE',
           notes: `تسجيل ذاتي عبر رابط الديمو داي: ${event.title}`
         }
       });
@@ -670,7 +730,24 @@ const registerPublicAttendee = async (req, res) => {
       )
     `, attendeeId, companyId, demoDayId, customer.id, studentName.trim(), guardianName ? guardianName.trim() : null,
        cleanPhone, phone2 ? String(phone2).replace(/[^\d+]/g, '').trim() : null,
-       email ? String(email).trim() : null, age ? parseInt(age, 10) : null, grade || null, notes || null);
+       email ? String(email).trim() : null, age ? parseInt(age, 10) : null, grade || null, finalNotes);
+
+    // Auto WhatsApp confirmation for public registrant
+    try {
+      const educationNotificationService = require('../services/educationNotificationService');
+      educationNotificationService.notifyDemoDayRegistered({
+        companyId,
+        demoDay: event,
+        attendee: {
+          id: attendeeId,
+          studentName: studentName.trim(),
+          guardianName: guardianName ? guardianName.trim() : null,
+          phone: cleanPhone,
+          age: age ? parseInt(age, 10) : null,
+        },
+        leadSource: source,
+      }).catch((e) => console.warn('[DemoDayWhatsApp] Public registration notification error:', e.message));
+    } catch (_) {}
 
     res.status(201).json({
       success: true,
@@ -687,6 +764,183 @@ const registerPublicAttendee = async (req, res) => {
   }
 };
 
+// 12. Campaign & Ad Attribution Analytics
+const getAttributionAnalytics = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const prisma = getSharedPrismaClient();
+    await ensureTablesExist(prisma);
+
+    const { period = 'all' } = req.query;
+    let dateFilter = '';
+    if (period === 'today') {
+      dateFilter = `AND a."createdAt" >= CURRENT_DATE`;
+    } else if (period === '7d') {
+      dateFilter = `AND a."createdAt" >= NOW() - INTERVAL '7 days'`;
+    } else if (period === '30d') {
+      dateFilter = `AND a."createdAt" >= NOW() - INTERVAL '30 days'`;
+    }
+
+    const rawRows = await prisma.$queryRawUnsafe(`
+      SELECT 
+        a.id,
+        a."studentName",
+        a."attendanceStatus",
+        a."conversionStatus",
+        a."convertedStudentId",
+        a."notes",
+        a."createdAt",
+        c.id AS "customerId",
+        c."leadSource",
+        COALESCE(
+          (SELECT SUM("amountPaid") FROM "education_enrollments" WHERE "studentId" = a."convertedStudentId" AND "companyId" = $1),
+          0
+        )::numeric AS "revenueGenerated"
+      FROM "education_demo_attendees" a
+      LEFT JOIN "customers" c ON c.id = a."customerId"
+      WHERE a."companyId" = $1 ${dateFilter}
+      ORDER BY a."createdAt" DESC
+    `, companyId);
+
+    const channelMap = new Map();
+    let totalLeads = 0;
+    let totalAttended = 0;
+    let totalConverted = 0;
+    let totalRevenue = 0;
+
+    for (const row of rawRows) {
+      totalLeads++;
+      if (row.attendanceStatus === 'ATTENDED') totalAttended++;
+      if (row.conversionStatus === 'CONVERTED') totalConverted++;
+      const rev = Number(row.revenueGenerated || 0);
+      totalRevenue += rev;
+
+      let campaignName = 'حملة عامة / غير محددة';
+      let channel = row.leadSource || 'OTHER';
+      let adId = null;
+      let postId = null;
+
+      if (row.notes && row.notes.includes('[ATTR:')) {
+        try {
+          const match = row.notes.match(/\[ATTR:\s*({.*?})\]/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.campaign) campaignName = parsed.campaign;
+            if (parsed.source) channel = parsed.source;
+            if (parsed.adId) adId = parsed.adId;
+            if (parsed.postId) postId = parsed.postId;
+          }
+        } catch (_) {}
+      }
+
+      let channelLabel = 'أخرى / مباشر';
+      if (channel === 'WHATSAPP') channelLabel = 'إعلانات ورسائل واتساب (Click-to-WhatsApp)';
+      else if (channel === 'FACEBOOK') channelLabel = 'إعلانات وفيسبوك (Facebook Ads)';
+      else if (channel === 'MESSENGER') channelLabel = 'إعلانات ماسنجر (Messenger Ads)';
+      else if (channel === 'INSTAGRAM') channelLabel = 'إنستجرام (Instagram Direct)';
+      else if (channel === 'WEBSITE') channelLabel = 'الموقع ولاندينج بيج (Website Direct)';
+
+      const key = `${channel}:::${campaignName}`;
+      if (!channelMap.has(key)) {
+        channelMap.set(key, {
+          channel,
+          channelLabel,
+          campaignName,
+          adId,
+          postId,
+          leadsCount: 0,
+          attendedCount: 0,
+          convertedCount: 0,
+          revenueGenerated: 0,
+        });
+      }
+
+      const item = channelMap.get(key);
+      item.leadsCount++;
+      if (row.attendanceStatus === 'ATTENDED') item.attendedCount++;
+      if (row.conversionStatus === 'CONVERTED') item.convertedCount++;
+      item.revenueGenerated += rev;
+    }
+
+    const campaigns = Array.from(channelMap.values()).map((c) => ({
+      ...c,
+      attendanceRate: c.leadsCount > 0 ? ((c.attendedCount / c.leadsCount) * 100).toFixed(1) : '0.0',
+      conversionRate: c.attendedCount > 0 ? ((c.convertedCount / c.attendedCount) * 100).toFixed(1) : (c.leadsCount > 0 ? ((c.convertedCount / c.leadsCount) * 100).toFixed(1) : '0.0'),
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalLeads,
+          totalAttended,
+          totalConverted,
+          totalRevenue,
+          overallAttendanceRate: totalLeads > 0 ? ((totalAttended / totalLeads) * 100).toFixed(1) : '0.0',
+          overallConversionRate: totalAttended > 0 ? ((totalConverted / totalAttended) * 100).toFixed(1) : '0.0',
+        },
+        campaigns
+      }
+    });
+  } catch (error) {
+    console.error('Error in getAttributionAnalytics:', error);
+    res.status(500).json({ success: false, error: 'فشل جلب تحليلات مصادر الحملات' });
+  }
+};
+
+// 13. Broadcast Reminder to all registered attendees of a Demo Day
+const broadcastReminder = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+
+    const { id: demoDayId } = req.params;
+    const { type = '24h' } = req.body;
+    const prisma = getSharedPrismaClient();
+
+    const events = await prisma.$queryRawUnsafe(`
+      SELECT * FROM "education_demo_days" WHERE "id" = $1 AND "companyId" = $2
+    `, demoDayId, companyId);
+    if (!events.length) {
+      return res.status(404).json({ success: false, error: 'الفعالية غير موجودة' });
+    }
+    const demoDay = events[0];
+
+    const attendees = await prisma.$queryRawUnsafe(`
+      SELECT * FROM "education_demo_attendees"
+      WHERE "demoDayId" = $1 AND "companyId" = $2 AND "attendanceStatus" IN ('REGISTERED', 'CONFIRMED')
+    `, demoDayId, companyId);
+
+    let sentCount = 0;
+    const educationNotificationService = require('../services/educationNotificationService');
+    for (const attendee of attendees) {
+      try {
+        await educationNotificationService.notifyDemoDayReminder({
+          companyId,
+          demoDay,
+          attendee,
+          type
+        });
+        sentCount++;
+      } catch (err) {
+        console.warn(`[Broadcast] Failed for attendee ${attendee.id}:`, err.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `تم إرسال تذكير الديمو داي بنجاح إلى ${sentCount} من المسجلين`,
+      total: attendees.length,
+      sent: sentCount
+    });
+  } catch (error) {
+    console.error('Error in broadcastReminder:', error);
+    res.status(500).json({ success: false, error: 'فشل إرسال التذكيرات' });
+  }
+};
+
 module.exports = {
   getAllDemoDays,
   getDemoDayById,
@@ -698,5 +952,7 @@ module.exports = {
   convertAttendeeToStudent,
   deleteAttendee,
   getPublicDemoDay,
-  registerPublicAttendee
+  registerPublicAttendee,
+  getAttributionAnalytics,
+  broadcastReminder
 };

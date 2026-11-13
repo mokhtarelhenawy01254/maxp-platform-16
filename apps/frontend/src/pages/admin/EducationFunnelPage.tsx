@@ -58,6 +58,11 @@ const getEventLabels = (isEn: boolean): Record<string, string> => ({
   education_session_cancelled_teacher: isEn ? "Cancelled Session (Teacher)" : "إلغاء حصة (معلم)",
   education_session_reminder_teacher: isEn ? "Session Reminder (Teacher)" : "تذكير بحصة (معلم)",
   education_enrollment_created_staff: isEn ? "New Enrollment (Staff)" : "تسجيل جديد (إدارة)",
+  education_demo_day_registered: isEn ? "Demo Day Registration" : "تأكيد حجز الديمو داي",
+  education_demo_day_reminder_24h: isEn ? "Demo Day Reminder (24h)" : "تذكير الديمو داي (24 ساعة)",
+  education_demo_day_reminder_2h: isEn ? "Demo Day Reminder (2h)" : "تذكير الديمو داي (ساعتان)",
+  education_demo_day_attended_feedback: isEn ? "Demo Day Feedback" : "متابعة وتقييم حضور الديمو",
+  education_demo_day_no_show: isEn ? "Demo Day Reschedule" : "متابعة الغائبين عن الديمو",
 });
 
 const EVENT_COLORS: Record<string, string> = {
@@ -72,6 +77,11 @@ const EVENT_COLORS: Record<string, string> = {
   education_session_cancelled_teacher: "text-rose-600 dark:text-rose-400",
   education_session_reminder_teacher: "text-violet-600 dark:text-violet-400",
   education_enrollment_created_staff: "text-teal-600 dark:text-teal-400",
+  education_demo_day_registered: "text-purple-600 dark:text-purple-400",
+  education_demo_day_reminder_24h: "text-blue-600 dark:text-blue-400",
+  education_demo_day_reminder_2h: "text-amber-600 dark:text-amber-400",
+  education_demo_day_attended_feedback: "text-emerald-600 dark:text-emerald-400",
+  education_demo_day_no_show: "text-rose-600 dark:text-rose-400",
 };
 
 const getPeriodLabels = (isEn: boolean): Record<string, string> => ({
@@ -103,6 +113,7 @@ export default function EducationFunnelPage() {
   );
 
   const [funnel, setFunnel] = useState<any>(null);
+  const [attribution, setAttribution] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -130,6 +141,26 @@ export default function EducationFunnelPage() {
     newParams.set("tab", view);
     setSearchParams(newParams, { replace: true });
   };
+
+  const fetchAttributionData = useCallback(async (selectedPeriod: string) => {
+    try {
+      const base = buildApiUrl(`education/demo-day/analytics/attribution?period=${selectedPeriod}`);
+      let url: URL;
+      try {
+        url = new URL(base);
+      } catch {
+        url = new URL(base, window.location.origin);
+      }
+      const cid = getCompanyId();
+      if (cid) url.searchParams.set("companyId", cid);
+      const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+      const d = await res.json();
+      return d.success ? d.data : null;
+    } catch (err) {
+      console.warn("Attribution fetch error:", err);
+      return null;
+    }
+  }, []);
 
   const fetchFunnelData = useCallback(async (selectedPeriod: string) => {
     try {
@@ -170,12 +201,14 @@ export default function EducationFunnelPage() {
       setFetchError(null);
 
       try {
-        const [funnelData, logsData] = await Promise.all([
+        const [funnelData, logsData, attrData] = await Promise.all([
           fetchFunnelData(period),
           fetchLogsData(logLimit, eventFilter, statusFilter, phoneSearch),
+          fetchAttributionData(period),
         ]);
         setFunnel(funnelData);
         setLogs(logsData);
+        setAttribution(attrData);
       } catch (err: any) {
         setFetchError(err.message || (isEn ? "Error loading funnel data" : "حدث خطأ أثناء تحميل بيانات الفانل"));
       } finally {
@@ -183,7 +216,7 @@ export default function EducationFunnelPage() {
         setRefreshing(false);
       }
     },
-    [period, logLimit, eventFilter, statusFilter, phoneSearch, fetchFunnelData, fetchLogsData, isEn]
+    [period, logLimit, eventFilter, statusFilter, phoneSearch, fetchFunnelData, fetchLogsData, fetchAttributionData, isEn]
   );
 
   useEffect(() => {
@@ -195,8 +228,12 @@ export default function EducationFunnelPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const data = await fetchFunnelData(p);
+      const [data, attrData] = await Promise.all([
+        fetchFunnelData(p),
+        fetchAttributionData(p),
+      ]);
       setFunnel(data);
+      setAttribution(attrData);
     } catch (err: any) {
       setFetchError(err.message || (isEn ? "Error loading funnel for selected period" : "حدث خطأ أثناء تحميل بيانات الفانل للفترة المحددة"));
     } finally {
@@ -514,6 +551,47 @@ export default function EducationFunnelPage() {
                   </div>
                 </div>
 
+                {/* Demo Day Telemetry Ribbon */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-card border border-purple-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">{isEn ? "Demo Day Registered Leads" : "مسجلو الديمو داي (Leads)"}</div>
+                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+                        {activeFunnel?.funnel?.totalDemoAttendees ?? 0}
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-blue-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">{isEn ? "Demo Day Attendees (Show-up)" : "حضور الديمو داي الفعلي"}</div>
+                      <div className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums flex items-baseline gap-1">
+                        <span>{activeFunnel?.funnel?.attendedDemoAttendees ?? 0}</span>
+                        <span className="text-xs text-muted-foreground font-normal">({activeFunnel?.conversion?.demoAttendanceRate ?? "0.0"}%)</span>
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-emerald-500/30 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground">{isEn ? "Converted to Paying Students" : "المحولون لاشتراكات مدفوعة"}</div>
+                      <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums flex items-baseline gap-1">
+                        <span>{activeFunnel?.funnel?.convertedDemoAttendees ?? 0}</span>
+                        <span className="text-xs text-muted-foreground font-normal">({activeFunnel?.conversion?.demoConversionRate ?? "0.0"}%)</span>
+                      </div>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Conversion Rates & Loyalty & Test Sender */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {/* Conversion Rates */}
@@ -648,6 +726,128 @@ export default function EducationFunnelPage() {
                   </div>
                 </div>
 
+                {/* Campaign & Messaging Lead Attribution Section */}
+                <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        {isEn ? "Messaging & Ad Campaign Attribution Analysis" : "تحليل مصادر الليد وحملات الرسائل الإعلانية"}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {isEn
+                          ? "Track prospective student leads originating from Click-to-WhatsApp, Messenger, Facebook Ads, and Website forms with attendance and conversion ROI"
+                          : "تتبع مصادر العملاء المحتملين القادمين من إعلانات رسائل الواتساب، ماسنجر، فيسبوك، والموقع مع نسب الحضور والاشتراكات المحققة"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <span className="px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                        {isEn ? "Total Leads:" : "إجمالي الليدات:"} <strong className="text-foreground">{attribution?.summary?.totalLeads ?? 0}</strong>
+                      </span>
+                      <span className="px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        {isEn ? "Revenue:" : "الإيراد:"} <strong className="font-bold">{attribution?.summary?.totalRevenue ?? 0} ج.م</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Attribution Summary KPI Ribbon */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="p-3 rounded-xl bg-muted/30 border border-border/60">
+                      <div className="text-[11px] text-muted-foreground">{isEn ? "Total Leads / Attendees" : "إجمالي المسجلين (Leads)"}</div>
+                      <div className="text-lg font-bold text-foreground font-mono tabular-nums mt-0.5">
+                        {attribution?.summary?.totalLeads ?? 0}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30 border border-border/60">
+                      <div className="text-[11px] text-muted-foreground">{isEn ? "Demo Attendees (Show-up)" : "حضور الديمو داي"}</div>
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums mt-0.5 flex items-baseline gap-1">
+                        <span>{attribution?.summary?.totalAttended ?? 0}</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">({attribution?.summary?.overallAttendanceRate ?? 0}%)</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30 border border-border/60">
+                      <div className="text-[11px] text-muted-foreground">{isEn ? "Enrolled Paying Students" : "الطلاب المشتركين فعلياً"}</div>
+                      <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums mt-0.5 flex items-baseline gap-1">
+                        <span>{attribution?.summary?.totalConverted ?? 0}</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">({attribution?.summary?.overallConversionRate ?? 0}%)</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30 border border-border/60">
+                      <div className="text-[11px] text-muted-foreground">{isEn ? "Direct Generated Revenue" : "الإيرادات المحصلة"}</div>
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums mt-0.5">
+                        {attribution?.summary?.totalRevenue ?? 0} ج.م
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Campaigns Table */}
+                  <div className="w-full overflow-hidden rounded-xl border border-border/70 bg-background shadow-2xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-right divide-y divide-border/60">
+                        <thead className="bg-muted/40 text-muted-foreground text-[11px] font-semibold">
+                          <tr>
+                            <th className="py-2.5 px-3 whitespace-nowrap">{isEn ? "Campaign / Ad / Post" : "اسم الحملة / الإعلان / البوست"}</th>
+                            <th className="py-2.5 px-3 whitespace-nowrap">{isEn ? "Channel Source" : "مصدر القناة"}</th>
+                            <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Leads" : "المسجلين"}</th>
+                            <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Attended" : "الحضور الفعلي"}</th>
+                            <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Enrolled Students" : "المشتركين"}</th>
+                            <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Conversion %" : "نسبة التحويل"}</th>
+                            <th className="py-2.5 px-3 text-left whitespace-nowrap">{isEn ? "Revenue" : "العائد المالي"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/40 text-foreground">
+                          {attribution?.campaigns && attribution.campaigns.length > 0 ? (
+                            attribution.campaigns.map((camp: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                                <td className="py-2.5 px-3">
+                                  <div className="font-semibold text-foreground flex items-center gap-1.5">
+                                    <span>{camp.campaignName}</span>
+                                    {camp.adId && <span className="text-[10px] font-mono text-muted-foreground">({camp.adId})</span>}
+                                  </div>
+                                  {camp.postId && (
+                                    <div className="text-[10px] text-muted-foreground/80 font-mono">بوست: #{camp.postId}</div>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                                    camp.channel === "WHATSAPP"
+                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                      : camp.channel === "FACEBOOK" || camp.channel === "MESSENGER"
+                                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                      : "bg-muted text-muted-foreground border border-border"
+                                  }`}>
+                                    {camp.channelLabel}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-mono font-bold">{camp.leadsCount}</td>
+                                <td className="py-2.5 px-3 text-center font-mono tabular-nums">
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold">{camp.attendedCount}</span>
+                                  <span className="text-[10px] text-muted-foreground mr-1">({camp.attendanceRate}%)</span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-bold">
+                                  {camp.convertedCount}
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-mono font-bold">
+                                  <span className="px-1.5 py-0.5 rounded bg-muted text-[11px]">{camp.conversionRate}%</span>
+                                </td>
+                                <td className="py-2.5 px-3 text-left font-mono font-bold text-foreground tabular-nums">
+                                  {camp.revenueGenerated} ج.م
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={7} className="py-6 text-center text-muted-foreground text-xs">
+                                {isEn ? "No campaign attribution data for this period yet" : "لا توجد بيانات حملات مسجلة لهذه الفترة حتى الآن"}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Direct Shortcut to Template Center */}
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                   <div className="flex items-center gap-3">
@@ -673,7 +873,7 @@ export default function EducationFunnelPage() {
                     onClick={() => changeView("templates")}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0 shadow-xs"
                   >
-                    <span>{t("education.funnel.openTemplateCenter", isEn ? "Open Template Center (11 templates)" : "فتح مركز القوالب (11 قالب)")}</span>
+                    <span>{t("education.funnel.openTemplateCenter", isEn ? "Open Template Center (16 templates)" : "فتح مركز القوالب (16 قالب)")}</span>
                     <span>{isEn ? "→" : "←"}</span>
                   </button>
                 </div>

@@ -18,6 +18,22 @@ interface DemoDayAttendeesTableProps {
   isEn?: boolean;
 }
 
+function parseAttribution(notes?: string | null) {
+  if (!notes || !notes.includes("[ATTR:")) return null;
+  try {
+    const match = notes.match(/\[ATTR:\s*({.*?})\]/);
+    if (match && match[1]) {
+      return JSON.parse(match[1]);
+    }
+  } catch (_) {}
+  return null;
+}
+
+function cleanNotes(notes?: string | null) {
+  if (!notes) return "";
+  return notes.replace(/\[ATTR:\s*{.*?}\]/g, "").trim();
+}
+
 export function DemoDayAttendeesTable({
   attendees,
   onUpdateStatus,
@@ -148,8 +164,19 @@ export function DemoDayAttendeesTable({
                             {isEn ? "Guardian:" : "ولي الأمر:"} {att.guardianName}
                           </div>
                         )}
-                        {att.notes && (
-                          <div className="text-[10px] text-muted-foreground/80 italic line-clamp-1">{att.notes}</div>
+                        {(() => {
+                          const attr = parseAttribution(att.notes);
+                          if (!attr) return null;
+                          return (
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">
+                              <span>{attr.source === "WHATSAPP" ? "💬 واتساب" : attr.source === "FACEBOOK" ? "⚡ فيسبوك" : attr.source === "MESSENGER" ? "💬 ماسنجر" : "🌐 الموقع"}</span>
+                              {attr.campaign && <span>• {attr.campaign}</span>}
+                              {attr.adId && <span className="font-mono text-[9px] text-muted-foreground opacity-80">({attr.adId})</span>}
+                            </div>
+                          );
+                        })()}
+                        {cleanNotes(att.notes) && (
+                          <div className="text-[10px] text-muted-foreground/80 italic line-clamp-1">{cleanNotes(att.notes)}</div>
                         )}
                       </div>
                     </td>
@@ -238,11 +265,25 @@ export function DemoDayAttendeesTable({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 tabular-nums text-[11px]">
+              <div className="flex items-center gap-2 tabular-nums text-[11px] flex-wrap">
                 <span className="text-foreground font-medium">{att.phone}</span>
                 {att.age && <span className="text-muted-foreground">{att.age} {isEn ? "yrs" : "سنة"}</span>}
                 {att.grade && <span className="text-muted-foreground truncate">{att.grade}</span>}
+                {(() => {
+                  const attr = parseAttribution(att.notes);
+                  if (!attr) return null;
+                  return (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">
+                      <span>{attr.source === "WHATSAPP" ? "💬 واتساب" : attr.source === "FACEBOOK" ? "⚡ فيسبوك" : "🌐 الموقع"}</span>
+                      {attr.campaign && <span>• {attr.campaign}</span>}
+                    </span>
+                  );
+                })()}
               </div>
+
+              {cleanNotes(att.notes) && (
+                <div className="text-[10px] text-muted-foreground/80 italic">{cleanNotes(att.notes)}</div>
+              )}
 
               <div className="grid grid-cols-1 gap-2">
                 <select

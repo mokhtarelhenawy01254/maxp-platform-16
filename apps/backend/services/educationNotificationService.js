@@ -9,6 +9,11 @@ const EDUCATION_NOTIFICATION_EVENTS = {
   ENROLLMENT_LOW_HOURS: 'education_enrollment_low_hours',
   ENROLLMENT_EXPIRING: 'education_enrollment_expiring',
   PARENT_ACTIVATED: 'education_parent_activated',
+  DEMO_DAY_REGISTERED: 'education_demo_day_registered',
+  DEMO_DAY_REMINDER_24H: 'education_demo_day_reminder_24h',
+  DEMO_DAY_REMINDER_2H: 'education_demo_day_reminder_2h',
+  DEMO_DAY_ATTENDED_FEEDBACK: 'education_demo_day_attended_feedback',
+  DEMO_DAY_NO_SHOW: 'education_demo_day_no_show',
 };
 
 const NOTIFICATION_TEMPLATES = {
@@ -103,6 +108,65 @@ const NOTIFICATION_TEMPLATES = {
 
 يمكنك الآن متابعة الحصص ورصيد الساعات مباشرة عبر بوابة ولي الأمر.`,
   },
+  [EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REGISTERED]: {
+    parent: `أهلاً {parentName} 🎉
+
+تم تأكيد حجز مقعد لـ {studentName} في ورشة العمل التجريبية (Demo Day):
+📌 {eventTitle} ✅
+
+📅 الموعد: {eventDate}
+⏰ التوقيت: {eventTime}
+📍 المكان / الرابط: {eventLocation}
+
+نتطلع لحضوركم وتجربة تعليمية مميزة! 🌟`,
+    staff: `تسجيل جديد في الديمو داي 🎯
+
+الفعالية: {eventTitle}
+الطالب: {studentName} ({age})
+ولي الأمر: {parentName}
+الهاتف: {parentPhone}
+المصدر: {leadSource}`,
+  },
+  [EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REMINDER_24H]: {
+    parent: `تذكير بموعد الديمو داي ⏰
+
+أهلاً {parentName}،
+غداً موعد ورشة العمل لـ {studentName}:
+📌 {eventTitle}
+
+⏰ الموعد: {eventTime}
+📍 المكان / الرابط: {eventLocation}
+
+يسعدنا تأكيد حضوركم معنا! ✅`,
+  },
+  [EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REMINDER_2H]: {
+    parent: `متبقي ساعتان فقط 🚀
+
+أهلاً {parentName}،
+ورشة {studentName} في {eventTitle} تبدأ في تمام {eventTime}.
+
+📍 رابط الحضور أو العنوان:
+{eventLocation}
+
+نحن بانتظاركم!`,
+  },
+  [EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_ATTENDED_FEEDBACK]: {
+    parent: `شكراً لحضوركم اليوم! 🌟
+
+سعدنا جداً بمشاركة {studentName} في {eventTitle}.
+
+🎁 كود خصم خاص 15% عند التسجيل في الكورس الأساسي: {discountCode}
+(الكود سارٍ لمدة 48 ساعة فقط)
+
+📌 رأيكم يهمنا، شاركونا تقييمكم في دقيقة: {surveyLink}`,
+  },
+  [EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_NO_SHOW]: {
+    parent: `أهلاً {parentName} 🤍
+
+افتقدنا حضوركم اليوم في ورشة {eventTitle} لـ {studentName}.
+
+إذا كنتم ترغبون في إعادة الجدولة وحضور ديمو الأسبوع القادم، يمكنك الرد على هذه الرسالة وسنقوم بحجز مقعدكم فوراً! 🔄`,
+  },
 };
 
 // Teacher & staff notification templates
@@ -110,12 +174,14 @@ NOTIFICATION_TEMPLATES['education_session_scheduled_teacher'] = NOTIFICATION_TEM
 NOTIFICATION_TEMPLATES['education_session_cancelled_teacher'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED].teacher;
 NOTIFICATION_TEMPLATES['education_session_reminder_teacher'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.SESSION_REMINDER].teacher;
 NOTIFICATION_TEMPLATES['education_enrollment_created_staff'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED].staff;
+NOTIFICATION_TEMPLATES['education_demo_day_registered_staff'] = NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REGISTERED].staff;
 
 const STAFF_SUBSCRIBED_EVENTS = [
   EDUCATION_NOTIFICATION_EVENTS.ENROLLMENT_CREATED,
   EDUCATION_NOTIFICATION_EVENTS.SESSION_SCHEDULED,
   EDUCATION_NOTIFICATION_EVENTS.SESSION_CONFIRMED,
   EDUCATION_NOTIFICATION_EVENTS.SESSION_CANCELLED,
+  EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REGISTERED,
 ];
 
 function replaceVariables(template, vars = {}) {
@@ -763,6 +829,79 @@ async function notifySessionReminder(companyId, sessionOrId) {
   }
 }
 
+async function notifyDemoDayRegistered({ companyId, demoDay, attendee, leadSource = 'WHATSAPP' }) {
+  if (!demoDay || !attendee || !attendee.phone) return null;
+
+  const dateObj = new Date(demoDay.scheduledAt);
+  const eventDate = dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const eventTime = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  const location = demoDay.locationType === 'ONLINE'
+    ? (demoDay.meetingLink || 'رابط الحضور أونلاين (يُرسل قبل الموعد)')
+    : (demoDay.room ? `فرع المركز — قاعة ${demoDay.room}` : 'مقر المركز الرئيسي');
+
+  const vars = {
+    parentName: attendee.guardianName || attendee.studentName || 'ولي الأمر',
+    studentName: attendee.studentName || 'الطالب',
+    eventTitle: demoDay.title || 'ديمو داي وورشة العمل',
+    eventDate,
+    eventTime,
+    eventLocation: location,
+    meetLink: demoDay.meetingLink || location,
+    parentPhone: attendee.phone,
+    age: attendee.age ? `${attendee.age} سنة` : 'غير محدد',
+    leadSource: leadSource || 'محادثة',
+  };
+
+  // 1. Send to parent via WhatsApp
+  const parentResult = await sendEducationNotification({
+    companyId,
+    eventType: EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REGISTERED,
+    templates: NOTIFICATION_TEMPLATES[EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REGISTERED].parent,
+    variables: vars,
+    recipientPhone: attendee.phone,
+    recipientName: vars.parentName,
+    recipientType: 'CUSTOMER',
+  }).catch((e) => console.warn('[DemoDayNotify] Parent error:', e.message));
+
+  return parentResult;
+}
+
+async function notifyDemoDayReminder({ companyId, demoDay, attendee, type = '24h' }) {
+  if (!demoDay || !attendee || !attendee.phone) return null;
+
+  const eventType = type === '2h'
+    ? EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REMINDER_2H
+    : EDUCATION_NOTIFICATION_EVENTS.DEMO_DAY_REMINDER_24H;
+
+  const dateObj = new Date(demoDay.scheduledAt);
+  const eventDate = dateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const eventTime = dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  const location = demoDay.locationType === 'ONLINE'
+    ? (demoDay.meetingLink || 'رابط الاجتماع')
+    : (demoDay.room ? `فرع المركز — قاعة ${demoDay.room}` : 'مقر المركز الرئيسي');
+
+  const vars = {
+    parentName: attendee.guardianName || attendee.studentName || 'ولي الأمر',
+    studentName: attendee.studentName || 'الطالب',
+    eventTitle: demoDay.title || 'ورشة العمل',
+    eventDate,
+    eventTime,
+    eventLocation: location,
+    meetLink: demoDay.meetingLink || location,
+    parentPhone: attendee.phone,
+  };
+
+  return sendEducationNotification({
+    companyId,
+    eventType,
+    templates: NOTIFICATION_TEMPLATES[eventType].parent,
+    variables: vars,
+    recipientPhone: attendee.phone,
+    recipientName: vars.parentName,
+    recipientType: 'CUSTOMER',
+  });
+}
+
 async function getFunnelStats(companyId, options = {}) {
   const { period = 'all' } = options;
   const prisma = getSharedPrismaClient();
@@ -803,6 +942,22 @@ async function getFunnelStats(companyId, options = {}) {
   const confirmedSessions = await prisma.educationSession.count({ where: confirmedWhere });
   const scheduledSessions = await prisma.educationSession.count({ where: scheduledWhere });
 
+  // Demo Day funnel stats
+  let totalDemoAttendees = 0;
+  let attendedDemoAttendees = 0;
+  let convertedDemoAttendees = 0;
+  try {
+    const demoAttWhere = { companyId };
+    if (dateFilter) demoAttWhere.createdAt = dateFilter;
+    totalDemoAttendees = await prisma.educationDemoAttendee.count({ where: demoAttWhere });
+    attendedDemoAttendees = await prisma.educationDemoAttendee.count({
+      where: { ...demoAttWhere, attendanceStatus: 'ATTENDED' },
+    });
+    convertedDemoAttendees = await prisma.educationDemoAttendee.count({
+      where: { ...demoAttWhere, conversionStatus: 'CONVERTED' },
+    });
+  } catch (_) {}
+
   // Students with 2+ enrollments = repeat
   const repeatStudents = await prisma.educationStudent.count({
     where: { companyId, enrollments: { some: {} } },
@@ -822,11 +977,16 @@ async function getFunnelStats(companyId, options = {}) {
       totalEnrollments,
       scheduledSessions,
       confirmedSessions,
+      totalDemoAttendees,
+      attendedDemoAttendees,
+      convertedDemoAttendees,
     },
     conversion: {
       customersToStudents: totalCustomers > 0 ? ((totalStudents / totalCustomers) * 100).toFixed(1) : '0.0',
       studentsToEnrollments: totalStudents > 0 ? ((totalEnrollments / totalStudents) * 100).toFixed(1) : '0.0',
       completionRate: totalSessions > 0 ? ((confirmedSessions / totalSessions) * 100).toFixed(1) : '0.0',
+      demoAttendanceRate: totalDemoAttendees > 0 ? ((attendedDemoAttendees / totalDemoAttendees) * 100).toFixed(1) : '0.0',
+      demoConversionRate: attendedDemoAttendees > 0 ? ((convertedDemoAttendees / attendedDemoAttendees) * 100).toFixed(1) : (totalDemoAttendees > 0 ? ((convertedDemoAttendees / totalDemoAttendees) * 100).toFixed(1) : '0.0'),
     },
     repeat: {
       studentsWithMultipleEnrollments: multipleEnrollments.length,
@@ -854,6 +1014,8 @@ module.exports = {
   notifySessionCancelled,
   notifySessionReminder,
   notifyParentActivated,
+  notifyDemoDayRegistered,
+  notifyDemoDayReminder,
   getFunnelStats,
   sendEducationNotification,
 };

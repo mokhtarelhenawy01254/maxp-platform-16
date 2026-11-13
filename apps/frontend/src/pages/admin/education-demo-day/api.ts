@@ -148,6 +148,26 @@ export const deleteAttendee = async (attendeeId: string): Promise<void> => {
   if (!data.success) throw new Error(data.error || "فشل حذف الحاضر");
 };
 
+export const broadcastDemoDayReminder = async (demoDayId: string, type: "24h" | "2h" = "24h"): Promise<{ sent: number; total: number; message: string }> => {
+  const res = await fetch(demoDayApi(`${demoDayId}/broadcast-reminder`), {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ type }),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || "فشل إرسال التذكيرات");
+  return data;
+};
+
+export const fetchAttributionAnalytics = async (period: string = "all"): Promise<any> => {
+  const res = await fetch(demoDayApi(`analytics/attribution?period=${encodeURIComponent(period)}`), {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || "فشل جلب تحليلات مصادر الحملات");
+  return data.data;
+};
+
 export const fetchEducationLookup = async (): Promise<{ subjects: any[]; teachers: any[]; packages: any[] }> => {
   const cid = getCompanyId();
   const q = cid ? `?companyId=${cid}` : "";
