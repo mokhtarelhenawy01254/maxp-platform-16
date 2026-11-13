@@ -12,7 +12,7 @@ const socketService = require('../services/socketService');
  * 5 minutes ≈ 21x qualification odds (InsideSales/HBR) — default window 15 min.
  */
 
-const ADMIN_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'ADMIN'];
+const ADMIN_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'];
 
 function getSlaMinutes() {
   const parsed = parseInt(process.env.LEAD_FIRST_CONTACT_SLA_MINUTES || '15', 10);

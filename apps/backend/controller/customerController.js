@@ -3219,7 +3219,7 @@ const recalculateAllCustomerRatingsHandler = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🆕 Wave 2 — Lead CRM: follow-up queue + assignment
 // ═══════════════════════════════════════════════════════════════════════════════
-const LEAD_ASSIGNER_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'ADMIN'];
+const LEAD_ASSIGNER_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'];
 
 const _getActorId = (req) => req.user?.userId || req.user?.id || null;
 
