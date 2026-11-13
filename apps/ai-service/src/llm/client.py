@@ -375,6 +375,11 @@ class LLMClient:
         import httpx
         import openai
 
+        opts = dict(options)
+        if isinstance(opts.get("options"), dict):
+            nested = opts.pop("options")
+            opts.update(nested)
+
         client = openai.AsyncOpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
@@ -386,21 +391,36 @@ class LLMClient:
 
         extra_params: dict[str, Any] = {}
 
-        output_schema = options.get("output_schema")
+        output_schema = opts.get("output_schema")
         if output_schema is not None:
             extra_params["response_format"] = self._build_response_format(output_schema)
 
-        tool_choice = options.get("tool_choice")
+        tool_choice = opts.get("tool_choice")
         if openai_tools:
             extra_params["tools"] = openai_tools
             if self.provider == "DEEPSEEK":
-                extra_params["parallel_tool_calls"] = False
+                extra_params["parallel_tool_calls"] = bool(opts.get("parallel_tool_calls", False))
             else:
                 extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
 
+        reasoning_effort = opts.get("reasoning_effort")
+        if reasoning_effort is not None:
+            extra_params["reasoning_effort"] = reasoning_effort
+        elif opts.get("thinking") is not None:
+            extra_params["extra_body"] = {"thinking": opts.get("thinking")}
+
         target_model = self.model
         if (self.provider or "").upper() == "DEEPSEEK" or (self.base_url and "api.deepseek.com" in self.base_url):
-            if target_model.lower() not in ("deepseek-reasoner", "deepseek-r1"):
+            target_lower = (target_model or "").lower()
+            if target_lower in ("deepseek-flash", "deepseek-v4-flash", "deepseek-v4.1-flash", "deepseek-v4"):
+                target_model = "deepseek-flash"
+            elif target_lower in ("deepseek-v4-pro", "deepseek-pro"):
+                target_model = "deepseek-v4-pro"
+            elif target_lower in ("deepseek-reasoner", "deepseek-r1"):
+                target_model = "deepseek-reasoner"
+                if "reasoning_effort" not in extra_params:
+                    extra_params["reasoning_effort"] = "high"
+            elif target_lower in ("deepseek-chat", "deepseek-v3"):
                 target_model = "deepseek-chat"
 
         logger.info("openai_compat_request", model=target_model, messages=body_messages, extra_params=extra_params)
@@ -408,9 +428,9 @@ class LLMClient:
         response = await client.chat.completions.create(
             model=target_model,
             messages=body_messages,
-            temperature=options.get("temperature"),
-            max_tokens=options.get("max_tokens"),
-            top_p=options.get("top_p"),
+            temperature=opts.get("temperature"),
+            max_tokens=opts.get("max_tokens"),
+            top_p=opts.get("top_p"),
             **extra_params,
         )
 
