@@ -38,18 +38,18 @@ const getAllDemoDays = async (req, res) => {
         d.*,
         s.name AS "subjectName",
         t.name AS "teacherName",
-        COALESCE(a.total_attendees, 0) AS "totalAttendees",
-        COALESCE(a.attended_count, 0) AS "attendedCount",
-        COALESCE(a.converted_count, 0) AS "convertedCount"
+        COALESCE(a.total_attendees, 0)::integer AS "totalAttendees",
+        COALESCE(a.attended_count, 0)::integer AS "attendedCount",
+        COALESCE(a.converted_count, 0)::integer AS "convertedCount"
       FROM "education_demo_days" d
       LEFT JOIN "education_subjects" s ON s.id = d."subjectId" AND s."companyId" = d."companyId"
       LEFT JOIN "education_teachers" t ON t.id = d."teacherId" AND t."companyId" = d."companyId"
       LEFT JOIN (
         SELECT 
           "demoDayId",
-          COUNT(*) AS total_attendees,
-          COUNT(*) FILTER (WHERE "attendanceStatus" = 'ATTENDED') AS attended_count,
-          COUNT(*) FILTER (WHERE "conversionStatus" = 'CONVERTED') AS converted_count
+          COUNT(*)::integer AS total_attendees,
+          COUNT(*) FILTER (WHERE "attendanceStatus" = 'ATTENDED')::integer AS attended_count,
+          COUNT(*) FILTER (WHERE "conversionStatus" = 'CONVERTED')::integer AS converted_count
         FROM "education_demo_attendees"
         WHERE "companyId" = $1
         GROUP BY "demoDayId"
@@ -72,8 +72,14 @@ const getAllDemoDays = async (req, res) => {
     query += ` ORDER BY d."scheduledAt" DESC`;
 
     const demoDays = await prisma.$queryRawUnsafe(query, ...params);
+    const sanitized = (demoDays || []).map(d => ({
+      ...d,
+      totalAttendees: Number(d.totalAttendees || 0),
+      attendedCount: Number(d.attendedCount || 0),
+      convertedCount: Number(d.convertedCount || 0)
+    }));
 
-    res.json({ success: true, data: demoDays });
+    res.json({ success: true, data: sanitized });
   } catch (error) {
     console.error('Error in getAllDemoDays:', error);
     res.status(500).json({ success: false, error: 'فشل جلب فعاليات الديمو داي' });
@@ -111,7 +117,7 @@ const getDemoDayById = async (req, res) => {
         c."leadStage",
         c."leadPriority"
       FROM "education_demo_attendees" a
-      LEFT JOIN "Customer" c ON c.id = a."customerId"
+      LEFT JOIN "customers" c ON c.id = a."customerId"
       WHERE a."demoDayId" = $1 AND a."companyId" = $2
       ORDER BY a."createdAt" DESC
     `, id, companyId);
