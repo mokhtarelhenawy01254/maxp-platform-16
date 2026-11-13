@@ -75,7 +75,7 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
   });
 
   describe("StudioLeftRail", () => {
-    it("renders the 13 Pro Studio navigation tools including AI and settings", () => {
+    it("renders the 14 Pro Studio navigation tools including AI, SEO, and settings", () => {
       const onSelectTab = vi.fn();
       render(
         <StudioLeftRail
@@ -87,8 +87,8 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
       );
 
       const rail = screen.getByRole("toolbar", { name: "شريط أدوات الاستوديو" });
-      // 11 panel tools + responsive AI + store settings.
-      expect(within(rail).getAllByRole("button")).toHaveLength(13);
+      // 12 panel tools + responsive AI + store settings.
+      expect(within(rail).getAllByRole("button")).toHaveLength(14);
 
       for (const title of [
         "إضافة",
@@ -97,6 +97,7 @@ describe("Storefront Pro Studio (Design 3 - Wix Studio 2026)", () => {
         "الثيمات",
         "الهيكل",
         "صفحات",
+        "SEO",
         "الهيدر والفوتر",
         "امتثال",
         "وسائط",

@@ -20,7 +20,7 @@
       "ring": "0 0% 10%"
     },
     "typography": {
-      "headingFont": "'Outfit', 'Tajawal', sans-serif",
+      "headingFont": "'Tajawal', 'Outfit', sans-serif",
       "bodyFont": "'Inter', 'Tajawal', sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
