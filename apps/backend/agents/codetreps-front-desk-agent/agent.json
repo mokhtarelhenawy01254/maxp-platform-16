@@ -60,6 +60,7 @@
     "companyId": "cmw4rkr0o00eujuoh37tcjise",
     "instanceId": "agent_cdtreps_nour_01",
     "page": "CodeTreps (105327651894858)",
-    "notes": "الحقائق الثابتة (العنوان/السن/Demo Day) محقونة في persona.soulInstructions كـ Static Prefix — الأسعار إجبارياً من education_info (education_packages). المعرفة RAG (ai.knowledge_embeddings) تحسين لاحق عبر answer_knowledge_question endpoint."
+    "notes": "الحقائق الثابتة (العنوان/السن/Demo Day) محقونة في persona.soulInstructions كـ Static Prefix — الأسعار إجبارياً من education_info (education_packages). المعرفة RAG (ai.knowledge_embeddings) تحسين لاحق عبر answer_knowledge_question endpoint.",
+    "governance": "أُنشئت بمساعدة المنصة بطلب المالك 2026-11-12 (created_by: mokhtar) — مخالفة إجرائية للحكم المعماري اتوثقت والسياسة رُسّخت في SKILL.md ❽.16: التحرير مسلَّم لفريق كودتريبس من استوديوهم؛ أي تخصص مستقبلي بإيد الشركة أو بتوثيق موافقة صريحة"
   }
 }
