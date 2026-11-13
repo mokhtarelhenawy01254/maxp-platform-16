@@ -2653,7 +2653,35 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 }
               }
 
-              // 3. Process through Python AI service
+              // 3. Process through Python AI service with Smart Gender & Branch Context
+              const { detectGenderFromName } = require('./genderDetector');
+              const customerFullName = [customer?.firstName, customer?.lastName].filter(Boolean).join(' ') || customer?.name || '';
+              const genderInfo = detectGenderFromName(customerFullName);
+
+              let companyBranchInfo = undefined;
+              try {
+                const companyData = await prisma.company.findUnique({
+                  where: { id: first.companyId },
+                  select: {
+                    address: true,
+                    phone: true,
+                    branches: {
+                      where: { isActive: true },
+                      select: { name: true, address: true, city: true, phone: true }
+                    }
+                  }
+                });
+                if (companyData) {
+                  const parts = [];
+                  if (companyData.address) parts.push(`العنوان الرئيسي: ${companyData.address}`);
+                  if (companyData.phone) parts.push(`الهاتف: ${companyData.phone}`);
+                  if (companyData.branches && companyData.branches.length > 0) {
+                    parts.push('الفروع: ' + companyData.branches.map(b => `${b.name} (${[b.address, b.city].filter(Boolean).join('، ')}${b.phone ? ' - هاتف: ' + b.phone : ''})`).join(' | '));
+                  }
+                  if (parts.length > 0) companyBranchInfo = parts.join(' — ');
+                }
+              } catch (branchErr) {}
+
               const aiSdkClient = require('../services/aiSdkClient');
               const result = await aiSdkClient.sendChatMessage({
                 companyId: first.companyId,
@@ -2662,6 +2690,12 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 threadId: first.conversationId,
                 channel: 'FACEBOOK',
                 attachments: combinedAttachments.length > 0 ? combinedAttachments : undefined,
+                memoryContext: {
+                  customerGender: genderInfo.gender,
+                  genderInstruction: genderInfo.instruction,
+                  customerName: customerFullName || undefined,
+                  companyBranchInfo,
+                },
               });
 
               // Silent Escalation with Polite Customer Reassurance
@@ -2816,6 +2850,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                         return await prisma.message.update({
                           where: { id: savedReply.id },
                           data: {
+                            deliveryStatus: 'SENT',
                             metadata: JSON.stringify({
                               ...JSON.parse(savedReply.metadata),
                               facebookMessageId: fbResult.messageId,
@@ -2827,6 +2862,23 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                     }
                   } else {
                     console.error(`❌ [AI-AUTOREPLY] Failed to send AI reply to Facebook:`, fbResult.message || fbResult.error);
+                    try {
+                      const { enqueueOutboxDelivery } = require('../services/fbAiReplyRetryService');
+                      await enqueueOutboxDelivery({
+                        companyId: first.companyId,
+                        conversationId: first.conversationId,
+                        customerId: first.customerId,
+                        messageId: savedReply.id,
+                        pageId: first.messagePageId,
+                        recipientId: first.senderId,
+                        messageContent: textToSend,
+                        messageType: 'TEXT',
+                        fbReplyToId: first.fbMessageId,
+                        error: new Error(fbResult.message || fbResult.error || 'Failed sending Facebook message'),
+                      });
+                    } catch (outboxErr) {
+                      console.error('❌ [AI-AUTOREPLY] Failed to enqueue into retry outbox:', outboxErr.message);
+                    }
                   }
 
                   // 7b. Send image attachments from AI response natively as IMAGE messages
@@ -2916,6 +2968,23 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   }
                 } else {
                   console.error(`❌ [AI-AUTOREPLY] Missing Facebook Page Access Token for page: ${first.messagePageId}`);
+                  try {
+                    const { enqueueOutboxDelivery } = require('../services/fbAiReplyRetryService');
+                    await enqueueOutboxDelivery({
+                      companyId: first.companyId,
+                      conversationId: first.conversationId,
+                      customerId: first.customerId,
+                      messageId: savedReply.id,
+                      pageId: first.messagePageId,
+                      recipientId: first.senderId,
+                      messageContent: replyText.trim(),
+                      messageType: 'TEXT',
+                      fbReplyToId: first.fbMessageId,
+                      error: new Error(`Missing Facebook Page Access Token for page: ${first.messagePageId}`),
+                    });
+                  } catch (outboxErr) {
+                    console.error('❌ [AI-AUTOREPLY] Failed to enqueue missing-token message into retry outbox:', outboxErr.message);
+                  }
                 }
               } else {
                 console.log(`🤖 [AI-AUTOREPLY] AI service returned no reply (skipped or disabled).`);

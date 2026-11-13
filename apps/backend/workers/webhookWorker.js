@@ -113,6 +113,14 @@ if (require.main === module) {
     } catch (err) {
         console.warn(`⏰ [STALE-ORDERS] loop unavailable: ${err.message}`);
     }
+
+    // 📬 Facebook AI Delivery Retry Sweeper
+    try {
+        const { startOutboxSweeper } = require('../services/fbAiReplyRetryService');
+        startOutboxSweeper();
+    } catch (err) {
+        console.warn(`📬 [FB-OUTBOX-SWEEPER] loop unavailable: ${err.message}`);
+    }
 }
 
 module.exports = { startWebhookWorker };

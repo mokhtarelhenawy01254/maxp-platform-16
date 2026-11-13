@@ -2175,6 +2175,10 @@ async function startServer() {
       if (shouldStartInlineWebhookWorker) {
         startWebhookWorker();
         console.log("✅ [SERVER] BullMQ Webhook Worker started");
+        try {
+          const { startOutboxSweeper } = require("./services/fbAiReplyRetryService");
+          startOutboxSweeper();
+        } catch (e) {}
       } else {
         console.log("Inline webhook worker disabled for this process.");
       }

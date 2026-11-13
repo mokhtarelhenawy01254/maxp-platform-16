@@ -483,6 +483,16 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         session_state = await self.fetch_session_state(ctx)
         if session_state:
             state_lines = []
+            if session_state.get("genderInstruction"):
+                state_lines.append(f"  Customer Pronoun Rule: {session_state['genderInstruction']}")
+            elif session_state.get("customerGender"):
+                g = str(session_state["customerGender"]).upper()
+                if g == "MALE":
+                    state_lines.append("  Customer Gender: MALE. You MUST address the customer using masculine respectful Arabic pronouns only (like حضرتك، ممكن توضحلي) and NEVER address him as female (never say تقوليلي/توضحيلي).")
+                elif g == "FEMALE":
+                    state_lines.append("  Customer Gender: FEMALE. Address the customer using feminine respectful Arabic pronouns (like حضرتك، ممكن توضحيلي).")
+            if session_state.get("companyBranchInfo"):
+                state_lines.append(f"  Company Official Branches & Locations: {session_state['companyBranchInfo']}")
             if session_state.get("cart"):
                 state_lines.append(f"  Cart: {session_state['cart']}")
             if session_state.get("lastShownProductIds"):

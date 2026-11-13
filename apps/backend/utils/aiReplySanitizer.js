@@ -65,7 +65,42 @@ function sanitizeAiReply(rawReplyText, initialAttachments = []) {
     })
     .join('\n');
 
-  // 6. Collapse excessive blank lines
+  // 6. Anti-Prompt Leakage & Robotic meta-talk cleansing
+  // Replaces internal safety refusals ("مش هخمن لحضرتك") with natural human courtesies
+  // and strips robotic self-identifications.
+  const LEAKAGE_RULES = [
+    {
+      regex: /(?:وأكيد\s+|أكيد\s+)?(?:مش\s+هخمّ?ن\s+لحضرتك|مش\s+مسموح\s*(?:لي|لى)\s*(?:أخمن|بالتخمين)|ممنوع\s*أخمن)/gi,
+      replacement: 'خليني أتأكد لحضرتك من الإدارة وأرجعلك بالتفاصيل حالاً'
+    },
+    {
+      regex: /(?:بصفتي|كنموذج|لأني|باعتباري)\s+(?:ذكاء\s+اصطناعي|نموذج\s+لغوي|روبوت|مساعد\s+افتراضي|نظام\s+آلي)/gi,
+      replacement: ''
+    },
+    {
+      regex: /(?:أنا|انني|أنني)\s+(?:ذكاء\s+اصطناعي|نموذج\s+لغوي|روبوت|مساعد\s+افتراضي|نظام\s+آلي|برنامج\s+كمبيوتر)/gi,
+      replacement: 'أنا هنا لمساعدتك'
+    },
+    {
+      regex: /\b(?:As an AI(?:\s+language\s+model)?|I am an AI(?:\s+language\s+model)?)\b/gi,
+      replacement: ''
+    },
+    {
+      regex: /(?:حسب|وفقاً\s+لـ?|طبقاً\s+لـ?|بناءً\s+على)\s+(?:تعليماتي|التعليمات\s+المعطاة\s+لي|السياسة\s+المحددة\s+لي|الأوامر\s+المحددة\s+لي)/gi,
+      replacement: ''
+    }
+  ];
+
+  for (const rule of LEAKAGE_RULES) {
+    cleaned = cleaned.replace(rule.regex, rule.replacement);
+  }
+
+  // 7. Clean orphaned punctuation at line starts or redundant commas
+  cleaned = cleaned.replace(/^[\s,،.؛;]+/gm, '');
+  cleaned = cleaned.replace(/[\s,،]+([,،.؛])/g, '$1');
+
+  // 8. Collapse excessive blank lines and clean redundant spaces
+  cleaned = cleaned.replace(/[ \t]+/g, ' ');
   cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
 
   return {
