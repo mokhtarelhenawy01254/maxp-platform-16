@@ -30,6 +30,11 @@ const createPrismaMock = (overrides = {}) => ({
     count: jest.fn().mockResolvedValue(overrides.totalCount || 0),
     findFirst: jest.fn(),
   },
+  message: {
+    findMany: jest.fn().mockResolvedValue(overrides.messageRows || []),
+    findFirst: jest.fn().mockResolvedValue(overrides.lastInboundMessage || null),
+    count: jest.fn().mockResolvedValue(0),
+  },
   ...overrides.extra
 });
 
@@ -134,7 +139,7 @@ describe('conversationCrudController.getConversations', () => {
     expect(findManyCall.where.AND).toBeDefined();
     expect(findManyCall.where.AND[0].OR).toBeDefined();
     expect(findManyCall.where.AND[0].OR).toContainEqual(
-      { customer: { firstName: { contains: 'محمد' } } }
+      { customer: { firstName: { contains: 'محمد', mode: 'insensitive' } } }
     );
 
     expect(res.json).toHaveBeenCalledWith(
@@ -176,7 +181,7 @@ describe('conversationCrudController.getConversations', () => {
 
     const findManyCall = prisma.conversation.findMany.mock.calls[0][0];
     expect(findManyCall.where.AND[0].OR).toContainEqual(
-      { lastMessagePreview: { contains: 'طلب' } }
+      { lastMessagePreview: { contains: 'طلب', mode: 'insensitive' } }
     );
 
     expect(res.json).toHaveBeenCalledWith(

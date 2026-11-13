@@ -12,6 +12,7 @@ const { isPermissionError, getPermissionErrorMessage } = require('../../utils/db
 const { proxyCustomerAvatarUrl } = require('../../utils/facebookMediaProxy');
 const { normalizeConversationStatus } = require('../../utils/validator');
 const { extractContentTokens, buildConversationSearchWhere } = require('./conversationSearchWhere');
+const { computeFacebookWindow, resolveFacebookLastInboundAt } = require('../../utils/facebookWindow');
 
 const parseJsonSafely = (value, fallback = {}) => {
     if (!value || typeof value !== 'string') {
@@ -227,7 +228,7 @@ const getConversations = async (req, res) => {
         const searchActive = Boolean(search && search.trim());
         let contentIds = [];
 
-        if (searchActive) {
+        if (searchActive && prisma.message?.findMany) {
             const contentTokens = extractContentTokens(search);
             if (contentTokens.length) {
                 const rows = await executeWithRetry(() => prisma.message.findMany({
@@ -338,7 +339,8 @@ const getConversations = async (req, res) => {
                                 content: true,
                                 type: true,
                                 deliveryStatus: true,
-                                failureReason: true
+                                failureReason: true,
+                                createdAt: true
                             }
                         }
                     },
@@ -453,14 +455,21 @@ const getConversations = async (req, res) => {
             // ⏰ حساب نافذة الـ 24 ساعة لفيسبوك
             let lastInboundAt = null;
             if (conv.messages && conv.messages.length > 0 && conv.messages[0].isFromCustomer) {
-                lastInboundAt = conv.messages[0].createdAt;
-            } else {
-                const lastInboundMsg = await prisma.message.findFirst({
-                    where: { conversationId: conv.id, isFromCustomer: true },
-                    orderBy: { createdAt: 'desc' },
-                    select: { createdAt: true }
-                });
-                lastInboundAt = lastInboundMsg?.createdAt || null;
+                lastInboundAt = conv.messages[0].createdAt || null;
+            } else if (prisma?.message?.findFirst) {
+                try {
+                    const lastInboundMsg = await prisma.message.findFirst({
+                        where: { conversationId: conv.id, isFromCustomer: true },
+                        orderBy: { createdAt: 'desc' },
+                        select: { createdAt: true }
+                    });
+                    lastInboundAt = lastInboundMsg?.createdAt || null;
+                } catch (e) { }
+            }
+
+            // Fallback: If conv.lastMessageIsFromCustomer is true, use conv.lastMessageAt
+            if (!lastInboundAt && conv.lastMessageIsFromCustomer && conv.lastMessageAt) {
+                lastInboundAt = conv.lastMessageAt;
             }
 
             const isFacebookConv = !conv.channel || conv.channel === 'FACEBOOK';
@@ -471,6 +480,14 @@ const getConversations = async (req, res) => {
                 if (lastInboundAt) {
                     windowExpiresAt = new Date(new Date(lastInboundAt).getTime() + 24 * 60 * 60 * 1000);
                     isWindowExpired = Date.now() > windowExpiresAt.getTime();
+                } else if (conv.lastMessageAt && (Date.now() - new Date(conv.lastMessageAt).getTime() < 24 * 60 * 60 * 1000)) {
+                    // رسالة خلال 24 ساعة: إبقاء النافذة مفتوحة
+                    windowExpiresAt = new Date(new Date(conv.lastMessageAt).getTime() + 24 * 60 * 60 * 1000);
+                    isWindowExpired = false;
+                } else if (conv.createdAt && (Date.now() - new Date(conv.createdAt).getTime() < 24 * 60 * 60 * 1000)) {
+                    // محادثة جديدة خلال 24 ساعة: إبقاء النافذة مفتوحة
+                    windowExpiresAt = new Date(new Date(conv.createdAt).getTime() + 24 * 60 * 60 * 1000);
+                    isWindowExpired = false;
                 } else {
                     isWindowExpired = true;
                 }
@@ -559,7 +576,21 @@ const getConversation = async (req, res) => {
         const conversation = await getSharedPrismaClient().conversation.findFirst({
             where: { id, companyId }, // Ensure company isolation
             include: {
-                customer: true
+                customer: true,
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    select: {
+                        id: true,
+                        isFromCustomer: true,
+                        isRead: true,
+                        content: true,
+                        type: true,
+                        deliveryStatus: true,
+                        failureReason: true,
+                        createdAt: true
+                    }
+                }
             }
         });
 
@@ -573,29 +604,55 @@ const getConversation = async (req, res) => {
             metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {};
         } catch (e) { }
 
+        let lastMessageDeliveryStatus = null;
+        let lastMessageFailureReason = null;
+        let hasFailedDelivery = false;
+
+        if (conversation.messages && conversation.messages.length > 0) {
+            const lastMsg = conversation.messages[0];
+            if (!lastMsg.isFromCustomer) {
+                lastMessageDeliveryStatus = lastMsg.deliveryStatus || null;
+                lastMessageFailureReason = lastMsg.failureReason || null;
+                if (lastMessageDeliveryStatus === 'FAILED') {
+                    hasFailedDelivery = true;
+                }
+            }
+        }
+
+        if (!hasFailedDelivery && conversation.metadata && (conversation.metadata.includes('facebookSendError') || conversation.metadata.includes('"deliveryStatus":"FAILED"'))) {
+            hasFailedDelivery = true;
+        }
+
         // ⏰ حساب نافذة الـ 24 ساعة لفيسبوك
         const isFacebookConv = !conversation.channel || conversation.channel === 'FACEBOOK';
         let lastInboundAt = null;
         let windowExpiresAt = null;
         let isWindowExpired = false;
 
-        const lastInboundMsg = await getSharedPrismaClient().message.findFirst({
-            where: { conversationId: id, isFromCustomer: true },
-            orderBy: { createdAt: 'desc' },
-            select: { createdAt: true }
-        });
+        if (conversation.messages && conversation.messages.length > 0 && conversation.messages[0].isFromCustomer && conversation.messages[0].createdAt) {
+            lastInboundAt = conversation.messages[0].createdAt;
+        } else {
+            const prismaClient = getSharedPrismaClient();
+            if (prismaClient?.message?.findFirst) {
+                try {
+                    const lastInboundMsg = await prismaClient.message.findFirst({
+                        where: { conversationId: id, isFromCustomer: true },
+                        orderBy: { createdAt: 'desc' },
+                        select: { createdAt: true }
+                    });
+                    lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+                } catch (e) { }
+            }
+        }
 
-        if (lastInboundMsg?.createdAt) {
-            lastInboundAt = lastInboundMsg.createdAt;
+        if (!lastInboundAt) {
+            lastInboundAt = resolveFacebookLastInboundAt(conversation, null);
         }
 
         if (isFacebookConv) {
-            if (lastInboundAt) {
-                windowExpiresAt = new Date(new Date(lastInboundAt).getTime() + 24 * 60 * 60 * 1000);
-                isWindowExpired = Date.now() > windowExpiresAt.getTime();
-            } else {
-                isWindowExpired = true;
-            }
+            const windowState = computeFacebookWindow({ lastInboundAt });
+            windowExpiresAt = windowState.windowExpiresAt;
+            isWindowExpired = windowState.isWindowExpired;
         }
 
         res.json({

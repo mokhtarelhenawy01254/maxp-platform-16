@@ -39,21 +39,29 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
     let remainingHours: number | null = null;
 
     if (isFacebook) {
+      let convInboundTime = 0;
       if (conversation.windowExpiresAt) {
-        const diff = new Date(conversation.windowExpiresAt).getTime() - Date.now();
+        convInboundTime = new Date(conversation.windowExpiresAt).getTime() - 24 * 60 * 60 * 1000;
+      } else if (conversation.lastInboundAt) {
+        convInboundTime = new Date(conversation.lastInboundAt).getTime();
+      } else if (conversation.lastMessageIsFromCustomer && conversation.lastMessageTime) {
+        convInboundTime = new Date(conversation.lastMessageTime).getTime();
+      }
+
+      if (convInboundTime > 0 && !isNaN(convInboundTime)) {
+        const diff = convInboundTime + 24 * 60 * 60 * 1000 - Date.now();
         if (diff <= 0) {
           isWindowExpired = true;
+          remainingHours = null;
         } else {
           isWindowExpired = false;
           remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
         }
-      } else if (conversation.lastInboundAt) {
-        const diff = new Date(conversation.lastInboundAt).getTime() + 24 * 60 * 60 * 1000 - Date.now();
-        if (diff <= 0) {
-          isWindowExpired = true;
-        } else {
+      } else if (conversation.lastMessageTime) {
+        const lastMsgTime = new Date(conversation.lastMessageTime).getTime();
+        if (!isNaN(lastMsgTime) && Date.now() - lastMsgTime < 24 * 60 * 60 * 1000) {
           isWindowExpired = false;
-          remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+          remainingHours = Math.max(1, Math.ceil((lastMsgTime + 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60)));
         }
       }
     }

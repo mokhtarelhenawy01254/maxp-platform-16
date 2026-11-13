@@ -100,8 +100,17 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
   let hoursSinceExpiration = 0;
 
   if (isFacebook) {
+    let convInboundTime = 0;
     if (selectedConversation.windowExpiresAt) {
-      const expiresAt = new Date(selectedConversation.windowExpiresAt).getTime();
+      convInboundTime = new Date(selectedConversation.windowExpiresAt).getTime() - 24 * 60 * 60 * 1000;
+    } else if (selectedConversation.lastInboundAt) {
+      convInboundTime = new Date(selectedConversation.lastInboundAt).getTime();
+    } else if (selectedConversation.lastMessageIsFromCustomer && selectedConversation.lastMessageTime) {
+      convInboundTime = new Date(selectedConversation.lastMessageTime).getTime();
+    }
+
+    if (convInboundTime > 0 && !isNaN(convInboundTime)) {
+      const expiresAt = convInboundTime + 24 * 60 * 60 * 1000;
       const diff = expiresAt - Date.now();
       if (diff <= 0) {
         isWindowExpired = true;
@@ -110,15 +119,11 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
         isWindowExpired = false;
         remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
       }
-    } else if (selectedConversation.lastInboundAt) {
-      const expiresAt = new Date(selectedConversation.lastInboundAt).getTime() + 24 * 60 * 60 * 1000;
-      const diff = expiresAt - Date.now();
-      if (diff <= 0) {
-        isWindowExpired = true;
-        hoursSinceExpiration = Math.max(0, Math.floor((Date.now() - expiresAt) / (1000 * 60 * 60)));
-      } else {
+    } else if (selectedConversation.lastMessageTime) {
+      const lastMsgTime = new Date(selectedConversation.lastMessageTime).getTime();
+      if (!isNaN(lastMsgTime) && Date.now() - lastMsgTime < 24 * 60 * 60 * 1000) {
         isWindowExpired = false;
-        remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+        remainingHours = Math.max(1, Math.ceil((lastMsgTime + 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60)));
       }
     }
   }

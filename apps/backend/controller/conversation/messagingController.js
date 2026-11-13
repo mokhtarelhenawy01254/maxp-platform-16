@@ -12,7 +12,7 @@ const socketService = require('../../services/socketService');
 const path = require('path');
 const telegramBotService = require('../../services/TelegramBotService');
 const { sendProductionFacebookMessage } = require('../../utils/production-facebook-fix');
-const { computeFacebookWindow } = require('../../utils/facebookWindow');
+const { computeFacebookWindow, resolveFacebookLastInboundAt } = require('../../utils/facebookWindow');
 const { conversationCache } = require('../../utils/cachingUtils');
 const {
   normalizeStoredAssetUrl,
@@ -126,7 +126,7 @@ const postMessageConverstation = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
       const windowState = computeFacebookWindow({ lastInboundAt });
       const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
@@ -832,14 +832,11 @@ const uploadFile = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed for file upload in conversation ${id}. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
@@ -1386,14 +1383,11 @@ const postReply = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed in postReply for conversation ${id}. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
@@ -2027,14 +2021,11 @@ const sendExistingImage = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed for file upload in conversation ${id}. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
@@ -2263,14 +2254,11 @@ const sendMediaMessage = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed for file upload in conversation ${id}. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
@@ -2436,14 +2424,11 @@ const sendLocationMessage = async (req, res) => {
         });
       }, 3);
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
-      const windowExpiresAt = lastInboundAt ? new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000) : null;
-      const isWindowExpired = !windowExpiresAt || Date.now() > windowExpiresAt.getTime();
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
+      const windowState = computeFacebookWindow({ lastInboundAt });
+      const { windowExpiresAt, isWindowExpired, hoursSinceExpiration } = windowState;
 
       if (isWindowExpired) {
-        const hoursSinceExpiration = windowExpiresAt
-          ? Math.max(0, Math.floor((Date.now() - windowExpiresAt.getTime()) / (1000 * 60 * 60)))
-          : 24;
         console.warn(`🚫 [WINDOW_EXPIRED] Facebook 24h window closed for file upload in conversation ${id}. Rejecting without calling Meta.`);
         return res.status(409).json({
           success: false,
@@ -2664,7 +2649,7 @@ const retryMessage = async (req, res) => {
         orderBy: { createdAt: 'desc' }
       });
 
-      const lastInboundAt = lastInboundMsg ? new Date(lastInboundMsg.createdAt) : null;
+      const lastInboundAt = resolveFacebookLastInboundAt(conversation, lastInboundMsg);
       const windowState = computeFacebookWindow({ lastInboundAt });
       if (windowState.isWindowExpired) {
         console.warn(`🚫 [RETRY-BLOCKED] Facebook 24h window closed for conversation ${conversationId}. Rejecting without calling Meta.`);

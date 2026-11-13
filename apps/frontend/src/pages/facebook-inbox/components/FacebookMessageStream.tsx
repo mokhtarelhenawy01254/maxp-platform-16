@@ -88,21 +88,53 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
 
   const isFacebookConv = !selectedConversation.platform || selectedConversation.platform === 'facebook';
 
+  // Defensive calculation of window expiration from conversation metadata AND active message stream
   let isWindowExpired = Boolean(selectedConversation.isWindowExpired);
   let hoursSinceExpiration = 0;
 
   if (isFacebookConv) {
+    // 1. Look for the most recent inbound customer message in the currently loaded message stream
+    const latestStreamCustomerMsg = [...messages].reverse().find(
+      (m) => m.isFromCustomer === true || m.sender === 'customer'
+    );
+    const streamCustomerTime = latestStreamCustomerMsg
+      ? new Date(latestStreamCustomerMsg.createdAt || latestStreamCustomerMsg.timestamp || 0).getTime()
+      : 0;
+
+    // 2. Look at conversation-level timestamps
+    let convInboundTime = 0;
     if (selectedConversation.windowExpiresAt) {
-      const expiresAt = new Date(selectedConversation.windowExpiresAt).getTime();
-      if (Date.now() > expiresAt) {
-        isWindowExpired = true;
-        hoursSinceExpiration = Math.max(0, Math.floor((Date.now() - expiresAt) / (1000 * 60 * 60)));
-      }
+      convInboundTime = new Date(selectedConversation.windowExpiresAt).getTime() - 24 * 60 * 60 * 1000;
     } else if (selectedConversation.lastInboundAt) {
-      const expiresAt = new Date(selectedConversation.lastInboundAt).getTime() + 24 * 60 * 60 * 1000;
+      convInboundTime = new Date(selectedConversation.lastInboundAt).getTime();
+    } else if (selectedConversation.lastMessageIsFromCustomer && selectedConversation.lastMessageTime) {
+      convInboundTime = new Date(selectedConversation.lastMessageTime).getTime();
+    }
+
+    const effectiveInboundTime = Math.max(
+      !isNaN(streamCustomerTime) ? streamCustomerTime : 0,
+      !isNaN(convInboundTime) ? convInboundTime : 0
+    );
+
+    if (effectiveInboundTime > 0) {
+      const expiresAt = effectiveInboundTime + 24 * 60 * 60 * 1000;
       if (Date.now() > expiresAt) {
         isWindowExpired = true;
         hoursSinceExpiration = Math.max(0, Math.floor((Date.now() - expiresAt) / (1000 * 60 * 60)));
+      } else {
+        isWindowExpired = false;
+        hoursSinceExpiration = 0;
+      }
+    } else {
+      // If no inbound timestamp found, check if lastMessageTime was within 24h
+      const lastMsgTime = selectedConversation.lastMessageTime
+        ? new Date(selectedConversation.lastMessageTime).getTime()
+        : 0;
+      if (lastMsgTime > 0 && Date.now() - lastMsgTime < 24 * 60 * 60 * 1000) {
+        isWindowExpired = false;
+        hoursSinceExpiration = 0;
+      } else {
+        isWindowExpired = Boolean(selectedConversation.isWindowExpired);
       }
     }
   }

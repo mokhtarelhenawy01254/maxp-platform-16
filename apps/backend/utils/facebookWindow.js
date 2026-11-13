@@ -52,4 +52,33 @@ function computeFacebookWindow({ lastInboundAt, now } = {}) {
   };
 }
 
-module.exports = { computeFacebookWindow, WINDOW_MS };
+function resolveFacebookLastInboundAt(conversation, lastInboundMsg) {
+  if (lastInboundMsg?.createdAt) {
+    const d = new Date(lastInboundMsg.createdAt);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // إذا كانت آخر رسالة مسجلة في المحادثة من العميل، نعتمد تاريخ آخر رسالة
+  if (conversation?.lastMessageIsFromCustomer) {
+    const fallbackDate = conversation.lastMessageAt || conversation.updatedAt || conversation.createdAt;
+    if (fallbackDate) {
+      const d = new Date(fallbackDate);
+      if (!isNaN(d.getTime())) return d;
+    }
+  }
+
+  // إذا كانت المحادثة نفسها أنشئت خلال الـ 24 ساعة الماضية، تعتبر النافذة مفتوحة
+  if (conversation?.createdAt) {
+    const createdDate = new Date(conversation.createdAt);
+    if (!isNaN(createdDate.getTime())) {
+      const msSinceCreation = Date.now() - createdDate.getTime();
+      if (msSinceCreation >= 0 && msSinceCreation < WINDOW_MS) {
+        return createdDate;
+      }
+    }
+  }
+
+  return null;
+}
+
+module.exports = { computeFacebookWindow, resolveFacebookLastInboundAt, WINDOW_MS };

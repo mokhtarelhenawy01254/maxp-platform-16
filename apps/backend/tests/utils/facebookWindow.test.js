@@ -3,7 +3,7 @@
  * المرافق: apps/backend/utils/facebookWindow.js
  */
 
-const { computeFacebookWindow, WINDOW_MS } = require('../../utils/facebookWindow');
+const { computeFacebookWindow, resolveFacebookLastInboundAt, WINDOW_MS } = require('../../utils/facebookWindow');
 
 const HOUR = 60 * 60 * 1000;
 
@@ -68,5 +68,43 @@ describe('facebook 24h window (task f508775c)', () => {
     const inbound = new Date('2026-10-31T00:00:00.000Z');
     expect(computeFacebookWindow({ lastInboundAt: inbound, now: inbound.getTime() + HOUR }).isWindowExpired).toBe(false);
     expect(computeFacebookWindow({ lastInboundAt: inbound.getTime(), now: inbound.getTime() + 25 * HOUR }).isWindowExpired).toBe(true);
+  });
+
+  describe('resolveFacebookLastInboundAt', () => {
+    it('uses lastInboundMsg.createdAt when available', () => {
+      const msgDate = new Date('2026-11-01T10:00:00.000Z');
+      const conv = { lastMessageIsFromCustomer: false };
+      const resolved = resolveFacebookLastInboundAt(conv, { createdAt: msgDate });
+      expect(resolved).toEqual(msgDate);
+    });
+
+    it('falls back to conversation.lastMessageAt when lastMessageIsFromCustomer is true', () => {
+      const convDate = new Date('2026-11-01T12:00:00.000Z');
+      const conv = {
+        lastMessageIsFromCustomer: true,
+        lastMessageAt: convDate
+      };
+      const resolved = resolveFacebookLastInboundAt(conv, null);
+      expect(resolved).toEqual(convDate);
+    });
+
+    it('falls back to conversation.createdAt when conversation is newly created (<24h)', () => {
+      const recentConv = {
+        lastMessageIsFromCustomer: false,
+        createdAt: new Date(Date.now() - 2 * HOUR)
+      };
+      const resolved = resolveFacebookLastInboundAt(recentConv, null);
+      expect(resolved).toBeInstanceOf(Date);
+      expect(resolved).toEqual(recentConv.createdAt);
+    });
+
+    it('returns null when conversation is old (>24h) and has no inbound messages', () => {
+      const oldConv = {
+        lastMessageIsFromCustomer: false,
+        createdAt: new Date(Date.now() - 48 * HOUR)
+      };
+      const resolved = resolveFacebookLastInboundAt(oldConv, null);
+      expect(resolved).toBeNull();
+    });
   });
 });
