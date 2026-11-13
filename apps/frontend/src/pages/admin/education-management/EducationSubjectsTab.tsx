@@ -93,7 +93,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
             )}
             <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
               <span className="text-muted-foreground">{t("education.subjects.price", isEn ? "Subject Price:" : "سعر المادة:")}</span>
-              <span className="font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                 {typeof s.price === "number" && s.price > 0
                   ? t("education.subjects.priceWithCurrency", { price: s.price.toLocaleString(), defaultValue: isEn ? `${s.price.toLocaleString()} EGP` : `${s.price.toLocaleString()} ج.م` })
                   : (isEn ? "0 EGP" : "0 ج.م")}
@@ -126,7 +126,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                 type="button"
                 onClick={() => handleDeleteSubject(s.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -196,7 +196,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                         type="button"
                         onClick={() => setSubjectModal(s)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                        title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
+                        aria-label={t("education.actions.edit", isEn ? "Edit" : "تعديل")} title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -208,7 +208,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                             ? "text-red-600 dark:text-red-400 hover:bg-red-500/10"
                             : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
                         }`}
-                        title={s.isActive ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل") : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
+                        aria-label={s.isActive ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل") : t("education.actions.activate", isEn ? "Activate" : "تفعيل")} title={s.isActive ? t("education.actions.deactivate", isEn ? "Deactivate" : "تعطيل") : t("education.actions.activate", isEn ? "Activate" : "تفعيل")}
                       >
                         <Check className="w-3.5 h-3.5" />
                       </button>
@@ -216,7 +216,7 @@ export const EducationSubjectsTab: React.FC<EducationSubjectsTabProps> = ({
                         type="button"
                         onClick={() => handleDeleteSubject(s.id)}
                         className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                        title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                        aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

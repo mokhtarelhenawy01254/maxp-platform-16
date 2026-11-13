@@ -156,7 +156,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
       content = (
         <div className="space-y-5">
           {/* Student Profile Card */}
-          <div className="bg-muted/40 border border-border/70 rounded-xl p-4 space-y-3">
+          <div className="bg-muted/40 rounded-xl p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-base border border-primary/20 shrink-0">
@@ -251,13 +251,13 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           </div>
 
           {/* Hours Balance Summary */}
-          <div className="bg-card border border-border/80 rounded-xl p-3.5 space-y-2">
+          <div className="bg-muted/40 rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-primary" />
                 {isEn ? "Total Hours Balance" : "رصيد الساعات الإجمالي"}
               </span>
-              <span className="font-mono tabular-nums font-bold text-primary">
+              <span className="tabular-nums font-bold text-primary">
                 {totalRemainingHours} / {totalAllHours} {isEn ? "hrs" : "ساعة"}
               </span>
             </div>
@@ -334,7 +334,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                           {e.package?.subject?.name || (isEn ? "Subject" : "مادة دراسية")}
                         </div>
                       </div>
-                      <span className="font-mono text-xs font-bold tabular-nums text-primary">
+                      <span className="text-xs font-bold tabular-nums text-primary">
                         {e.remainingHours} / {e.totalHours} {isEn ? "hrs" : "س"}
                       </span>
                     </div>
@@ -566,7 +566,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
       content = (
         <div className="space-y-5">
           {/* Teacher Profile Card */}
-          <div className="bg-muted/40 border border-border/70 rounded-xl p-4 space-y-3">
+          <div className="bg-muted/40 rounded-xl p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-base border border-amber-500/20 shrink-0">
@@ -695,7 +695,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                     <span className="font-medium text-foreground">
                       {sr.subject?.name || (isEn ? "Subject" : "مادة")}
                     </span>
-                    <span className="font-mono tabular-nums font-bold text-primary">
+                    <span className="tabular-nums font-bold text-primary">
                       {sr.hourlyRate} {isEn ? "EGP/hr" : "ج.م/س"}
                     </span>
                   </div>
@@ -806,7 +806,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
       content = (
         <div className="space-y-5">
           {/* Status Header */}
-          <div className="bg-muted/40 border border-border/70 rounded-xl p-4 space-y-3">
+          <div className="bg-muted/40 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span
                 className={`px-3 py-1 rounded-full text-xs font-semibold border ${
@@ -815,7 +815,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
               >
                 {getSessionStatus(session.status, isEn).label}
               </span>
-              <span className="text-xs font-mono text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {session.actualDuration || session.plannedDuration}{" "}
                 {isEn ? "minutes" : "دقيقة"}
               </span>
@@ -839,7 +839,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           </div>
 
           {/* Student Info Card */}
-          <div className="p-3.5 rounded-xl border border-border/80 bg-card space-y-2">
+          <div className="p-3.5 rounded-xl bg-muted/40 space-y-2">
             <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
               <span>{isEn ? "Student" : "الطالب"}</span>
               {session.studentId && (
@@ -867,7 +867,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           </div>
 
           {/* Teacher Info Card */}
-          <div className="p-3.5 rounded-xl border border-border/80 bg-card space-y-2">
+          <div className="p-3.5 rounded-xl bg-muted/40 space-y-2">
             <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
               <span>{isEn ? "Instructor" : "المهندس"}</span>
               {session.teacherId && (
@@ -894,7 +894,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
 
           {/* Session Notes */}
           {session.notes && (
-            <div className="p-3.5 rounded-xl border border-border/80 bg-card space-y-1">
+            <div className="p-3.5 rounded-xl bg-muted/40 space-y-1">
               <div className="text-[11px] font-semibold text-muted-foreground">
                 {isEn ? "Session Notes" : "ملاحظات الحصة"}
               </div>
@@ -916,7 +916,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                       onClose();
                     }
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-xs transition-colors"
+                  className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs inline-flex items-center justify-center gap-2 shadow-xs transition-colors"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   {isEn ? "Confirm Attendance & Complete" : "تأكيد الحضور وإتمام الحصة"}
@@ -972,7 +972,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
 
       content = (
         <div className="space-y-5">
-          <div className="bg-muted/40 border border-border/70 rounded-xl p-4 space-y-3">
+          <div className="bg-muted/40 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground">
                 {pkg?.name || (isEn ? "Package" : "باقة دراسية")}
@@ -1004,7 +1004,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
                 <span className="text-muted-foreground">
                   {isEn ? "Hours Balance:" : "الرصيد المتبقي:"}
                 </span>
-                <span className="font-mono font-bold text-primary tabular-nums">
+                <span className="font-bold text-primary tabular-nums">
                   {enrollment.remainingHours} / {enrollment.totalHours}{" "}
                   {isEn ? "hrs" : "ساعة"}
                 </span>
@@ -1025,7 +1025,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
           </div>
 
           {/* Student & Teacher */}
-          <div className="p-3.5 rounded-xl border border-border/80 bg-card space-y-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-muted/40 space-y-3 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">
                 {isEn ? "Student:" : "الطالب:"}
@@ -1074,7 +1074,7 @@ export const EducationDetailDrawer: React.FC<EducationDetailDrawerProps> = ({
               <span className="text-muted-foreground">
                 {isEn ? "Amount Paid:" : "المبلغ المدفوع:"}
               </span>
-              <span className="font-mono font-semibold text-foreground tabular-nums">
+              <span className="font-semibold text-foreground tabular-nums">
                 {enrollment.amountPaid} {isEn ? "EGP" : "ج.م"}
               </span>
             </div>

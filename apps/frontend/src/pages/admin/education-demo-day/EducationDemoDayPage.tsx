@@ -5,13 +5,10 @@ import {
   Presentation,
   Calendar,
   Users,
-  UserCheck,
   TrendingUp,
   Plus,
   Search,
   RefreshCw,
-  Sparkles,
-  ArrowRight,
   Filter,
   CheckCircle2,
   Clock,
@@ -405,7 +402,7 @@ export default function EducationDemoDayPage() {
                   <span className="text-xs font-bold text-foreground">
                     {selectedEventDetail.title}
                   </span>
-                  <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
                     {selectedEventDetail.attendees.length} / {selectedEventDetail.capacity} {isEn ? "seats" : "مقعد"}
                   </span>
                 </div>

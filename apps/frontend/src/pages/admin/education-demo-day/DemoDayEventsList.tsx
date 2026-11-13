@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -10,11 +10,9 @@ import {
   Plus,
   Edit2,
   Trash2,
-  ChevronRight,
-  TrendingUp,
   UserCheck,
-  ExternalLink,
 } from "lucide-react";
+import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { DemoDayEvent } from "./types";
 
 interface DemoDayEventsListProps {
@@ -36,6 +34,7 @@ export function DemoDayEventsList({
   onAddAttendee,
   isEn = false,
 }: DemoDayEventsListProps) {
+  const [pendingDelete, setPendingDelete] = useState<DemoDayEvent | null>(null);
   const copyPublicLink = (eventId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/education/demo/${eventId}`;
@@ -120,17 +119,8 @@ export function DemoDayEventsList({
         return (
           <div
             key={evt.id}
-            role="button"
-            tabIndex={0}
-            aria-label={`${evt.title}${isEn ? " — open attendees" : " — فتح قائمة الحضور"}`}
             onClick={() => onSelectEvent(evt.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelectEvent(evt.id);
-              }
-            }}
-            className={`group p-4 bg-card rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3.5 shadow-2xs hover:shadow-xs relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`group p-4 bg-card rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3.5 shadow-2xs hover:shadow-xs relative overflow-hidden ${
               isSelected
                 ? "border-primary ring-1 ring-primary bg-primary/2"
                 : "border-border/80 hover:border-primary/40"
@@ -168,9 +158,7 @@ export function DemoDayEventsList({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(isEn ? "Delete this Demo Day event?" : "هل أنت متأكد من حذف هذه الفعالية؟")) {
-                      onDeleteEvent(evt.id);
-                    }
+                    setPendingDelete(evt);
                   }}
                   title={isEn ? "Delete event" : "حذف الفعالية"}
                   aria-label={isEn ? "Delete event" : "حذف الفعالية"}
@@ -183,9 +171,17 @@ export function DemoDayEventsList({
 
             {/* Event Title & Meta */}
             <div className="space-y-1.5">
-              <h3 className="text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectEvent(evt.id);
+                }}
+                aria-label={`${evt.title}${isEn ? " — open attendees" : " — فتح قائمة الحضور"}`}
+                className="block w-full text-start text-sm font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+              >
                 {evt.title}
-              </h3>
+              </button>
               {evt.description && (
                 <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                   {evt.description}
@@ -274,6 +270,24 @@ export function DemoDayEventsList({
           </div>
         );
       })}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={isEn ? "Delete Demo Day event?" : "حذف فعالية الديمو داي؟"}
+        content={
+          isEn
+            ? `This permanently removes "${pendingDelete?.title || ""}" and its attendees list.`
+            : `سيتم حذف "${pendingDelete?.title || ""}" وقائمة الحضور المسجلين بها نهائيًا.`
+        }
+        confirmLabel={isEn ? "Delete" : "حذف"}
+        cancelLabel={isEn ? "Cancel" : "إلغاء"}
+        confirmColor="error"
+        onConfirm={() => {
+          if (pendingDelete) onDeleteEvent(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

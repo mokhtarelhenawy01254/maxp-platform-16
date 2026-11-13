@@ -211,6 +211,16 @@ export const EducationLogsTab: React.FC = () => {
     loadLogs();
   }, [loadLogs]);
 
+  // Close the details modal on Escape
+  useEffect(() => {
+    if (!selectedLog) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedLog(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedLog]);
+
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -286,9 +296,6 @@ export const EducationLogsTab: React.FC = () => {
               {t("education.logsTab.title", isEn ? "Education System Activity & Audit Trail" : "سجلات النظام التعليمي (Activity & Audit Trail)")}
             </h2>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t("education.logsTab.subtitle", isEn ? "Real-time audit log tracking all operations, sessions, payments, and notifications" : "تتبع وتسجيل فوري وشامل لجميع العمليات، التعديلات، الحصص، المدفوعات، والإشعارات")}
-          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -325,7 +332,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums">
             {stats?.totalLogs ?? totalCount}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "All operations" : "كل العمليات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
@@ -336,7 +342,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-emerald-500 tabular-nums">
             {stats?.todayLogs ?? 0}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "Within 24 hours" : "خلال 24 ساعة"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
@@ -347,7 +352,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-blue-500 tabular-nums">
             {stats?.targetTypeCounts?.SESSION ?? 0}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "Scheduling & status" : "جدولة وتأكيد وإلغاء"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
@@ -358,7 +362,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-indigo-500 tabular-nums">
             {(stats?.targetTypeCounts?.STUDENT ?? 0) + (stats?.targetTypeCounts?.ENROLLMENT ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "Registrations & plans" : "تسجيل واشتراكات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
@@ -369,7 +372,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-purple-500 tabular-nums">
             {(stats?.targetTypeCounts?.TEACHER ?? 0) + (stats?.targetTypeCounts?.PAYMENT ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "Staff & payouts" : "كادر ومستحقات"}</div>
         </div>
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
@@ -380,7 +382,6 @@ export const EducationLogsTab: React.FC = () => {
           <div className="text-xl sm:text-2xl font-bold text-pink-500 tabular-nums">
             {(stats?.targetTypeCounts?.NOTIFICATION ?? 0) + (stats?.targetTypeCounts?.FUNNEL ?? 0)}
           </div>
-          <div className="text-[11px] text-muted-foreground">{isEn ? "Alerts & messages" : "تنبيهات ورسائل"}</div>
         </div>
       </div>
 
@@ -399,7 +400,7 @@ export const EducationLogsTab: React.FC = () => {
           }`}
         >
           <span>{isEn ? "All Sections" : "كل الأقسام"}</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/20 font-mono">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-background/20 font-mono">
             {stats?.totalLogs ?? totalCount}
           </span>
         </button>
@@ -425,7 +426,7 @@ export const EducationLogsTab: React.FC = () => {
               <Icon className="w-3.5 h-3.5" />
               <span>{cfg.label}</span>
               {count > 0 && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-muted font-mono tabular-nums">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted font-mono tabular-nums">
                   {count}
                 </span>
               )}
@@ -508,7 +509,7 @@ export const EducationLogsTab: React.FC = () => {
             <button
               type="button"
               onClick={() => setViewMode("timeline")}
-              title={isEn ? "Timeline view" : "عرض زمني"}
+              aria-label={isEn ? "Timeline view" : "عرض زمني"} title={isEn ? "Timeline view" : "عرض زمني"}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === "timeline" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -518,7 +519,7 @@ export const EducationLogsTab: React.FC = () => {
             <button
               type="button"
               onClick={() => setViewMode("table")}
-              title={isEn ? "Table view" : "عرض جدول"}
+              aria-label={isEn ? "Table view" : "عرض جدول"} title={isEn ? "Table view" : "عرض جدول"}
               className={`p-1.5 rounded transition-colors ${
                 viewMode === "table" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -580,11 +581,11 @@ export const EducationLogsTab: React.FC = () => {
                           {log.targetName}
                         </span>
                       )}
-                      <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium border ${severity.color}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${severity.color}`}>
                         {severity.label}
                       </span>
                       {!log.isSuccess && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-red-500/10 text-red-500 border border-red-500/20">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-500 border border-red-500/20">
                           <XCircle className="w-3 h-3" />
                           {isEn ? "Failed" : "فشل"}
                         </span>
@@ -685,7 +686,7 @@ export const EducationLogsTab: React.FC = () => {
                           type="button"
                           onClick={() => setSelectedLog(log)}
                           className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground transition-colors"
-                          title={isEn ? "View details" : "عرض التفاصيل"}
+                          aria-label={isEn ? "View details" : "عرض التفاصيل"} title={isEn ? "View details" : "عرض التفاصيل"}
                         >
                           <Eye className="w-3.5 h-3.5 text-primary" />
                         </button>
@@ -750,8 +751,18 @@ export const EducationLogsTab: React.FC = () => {
 
       {/* Inspect Log Details Modal / Drawer */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4" dir={isEn ? "ltr" : "rtl"}>
-          <div className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in-50 zoom-in-95">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+          dir={isEn ? "ltr" : "rtl"}
+          onClick={() => setSelectedLog(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={isEn ? "Log details" : "تفاصيل السجل"}
+            className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in-50 zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -762,7 +773,7 @@ export const EducationLogsTab: React.FC = () => {
                   <h3 className="text-sm sm:text-base font-bold text-foreground">
                     {isEn ? "Education Log Details" : "تفاصيل سجل النظام التعليمي"}
                   </h3>
-                  <p className="text-[11px] text-muted-foreground font-mono">
+                  <p className="text-[11px] text-muted-foreground ">
                     {isEn ? `Log ID: ${selectedLog.id}` : `معرف السجل: ${selectedLog.id}`}
                   </p>
                 </div>
@@ -779,19 +790,19 @@ export const EducationLogsTab: React.FC = () => {
             {/* Modal Body */}
             <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-sans">
               {/* Summary Box */}
-              <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 space-y-2">
+              <div className="p-3.5 rounded-xl bg-muted/40 space-y-2">
                 <div className="text-sm font-semibold text-foreground">
                   {selectedLog.description}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                  <span className="px-2 py-0.5 rounded-md bg-background border border-border text-foreground font-mono">
+                  <span className="px-2 py-0.5 rounded-md bg-background text-foreground font-mono">
                     {selectedLog.action}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                  <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary">
                     {selectedLog.targetType || (isEn ? "General" : "عام")}
                   </span>
                   {selectedLog.targetName && (
-                    <span className="px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/70">
+                    <span className="px-2 py-0.5 rounded-md bg-muted text-foreground">
                       {isEn ? `Target: ${selectedLog.targetName}` : `الهدف: ${selectedLog.targetName}`}
                     </span>
                   )}
@@ -826,7 +837,7 @@ export const EducationLogsTab: React.FC = () => {
 
               {/* Actor & Time Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-card border border-border space-y-1.5">
+                <div className="p-3 rounded-xl bg-muted/40 space-y-1.5">
                   <div className="text-muted-foreground font-semibold flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-primary" />
                     <span>{isEn ? "Actor Details" : "بيانات المنفذ (Actor)"}</span>
@@ -849,7 +860,7 @@ export const EducationLogsTab: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-card border border-border space-y-1.5">
+                <div className="p-3 rounded-xl bg-muted/40 space-y-1.5">
                   <div className="text-muted-foreground font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-primary" />
                     <span>{isEn ? "Timestamp & Session" : "التوقيت والجلسة"}</span>
@@ -898,7 +909,7 @@ export const EducationLogsTab: React.FC = () => {
                       )}
                     </button>
                   </div>
-                  <pre className="p-3 rounded-xl bg-muted/60 border border-border font-mono text-[11px] overflow-x-auto text-foreground max-h-60" dir="ltr">
+                  <pre className="p-3 rounded-xl bg-muted/60 font-mono text-[11px] overflow-x-auto text-foreground max-h-60" dir="ltr">
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
                 </div>

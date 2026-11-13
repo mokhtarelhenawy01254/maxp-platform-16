@@ -92,7 +92,7 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
               placeholder={isEn ? "e.g. Eng. Sarah Mitchell" : "مثال: م. سارة أحمد"}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
                 {t("education.teachers.phone", isEn ? "Phone Number" : "الهاتف")}
@@ -184,7 +184,7 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
                     type="button"
                     onClick={() => delRate(sr.subjectId)}
                     className="p-1 text-red-500 hover:bg-red-500/10 rounded"
-                    title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                    aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

@@ -199,7 +199,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 {studentError && (
                   <p className="text-[11px] text-red-500 font-medium">{studentError}</p>
                 )}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="text-[11px] text-muted-foreground">{t("education.students.firstName", isEn ? "First Name *" : "الاسم الأول *")}</label>
                     <input
@@ -224,7 +224,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="text-[11px] text-muted-foreground">{t("education.students.phone", isEn ? "Student Phone" : "هاتف الطالب")}</label>
                     <input
@@ -299,11 +299,6 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                       <AlertTriangle className="w-4 h-4 shrink-0" />
                       <span>{t("education.enrollments.noStudentsAlert", isEn ? "No students registered in the system yet." : "لا يوجد أي طلاب مسجلين في النظام بعد.")}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {isEn
-                        ? "To enroll in a package, add a student first. You can add them right now without leaving this screen:"
-                        : "لتسجيل باقة دراسية، يجب إضافة الطالب أولاً. يمكنك إضافته الآن مباشرة دون مغادرة هذه الشاشة:"}
-                    </p>
                     <button
                       type="button"
                       onClick={() => setIsCreatingStudent(true)}
@@ -382,7 +377,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
           </div>
 
           {/* Amount & Status */}
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
                 {t("education.enrollments.amountPaid", isEn ? "Amount Paid (EGP)" : "المبلغ المدفوع (ج.م)")}

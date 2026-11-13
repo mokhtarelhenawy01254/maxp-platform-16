@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Clock, MapPin, Link2, Users, FileText, Check, AlertCircle } from "lucide-react";
+import { X, Calendar, MapPin, Link2, Check, AlertCircle } from "lucide-react";
 import { DemoDayEvent } from "./types";
 
 interface DemoDayModalProps {
@@ -131,9 +131,6 @@ export function DemoDayModal({
                   ? (isEn ? "Edit Demo Day Event" : "تعديل فعالية الديمو داي")
                   : (isEn ? "New Demo Day Event" : "جدولة فعالية ديمو داي جديدة")}
               </h3>
-              <p className="text-xs text-muted-foreground">
-                {isEn ? "Set event details, capacity, and attendance channel" : "حدد تفاصيل اليوم التجريبي والسعة وقناة الانعقاد"}
-              </p>
             </div>
           </div>
           <button

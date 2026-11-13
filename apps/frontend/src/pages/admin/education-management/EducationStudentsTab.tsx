@@ -197,7 +197,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                 type="button"
                 onClick={() => setStudentModal(s)}
                 className="px-2.5 py-1.5 text-xs text-foreground bg-muted/60 hover:bg-muted rounded-lg transition-colors"
-                title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
+                aria-label={t("education.actions.edit", isEn ? "Edit" : "تعديل")} title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -218,7 +218,7 @@ export const EducationStudentsTab: React.FC<EducationStudentsTabProps> = ({
                 type="button"
                 onClick={() => handleDeleteStudent(s.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

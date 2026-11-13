@@ -460,7 +460,18 @@ class WooCommerceAutoExportService {
       };
 
     } catch (error) {
-      console.error(`❌ [WOOCOMMERCE-EXPORT] Error exporting order ${orderId}:`, error.message);
+      const isNetworkOrDnsError =
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ECONNREFUSED' ||
+        error.code === 'ETIMEDOUT' ||
+        error.message?.includes('getaddrinfo') ||
+        error.message?.includes('ENOTFOUND');
+
+      if (isNetworkOrDnsError) {
+        console.warn(`⚠️ [WOOCOMMERCE-EXPORT] External store unreachable for order ${orderId}:`, error.message);
+      } else {
+        console.error(`❌ [WOOCOMMERCE-EXPORT] Error exporting order ${orderId}:`, error.message);
+      }
 
       // تسجيل الخطأ
       try {

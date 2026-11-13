@@ -97,7 +97,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
               </select>
             </div>
           )}
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="space-y-1">
               <label className="text-xs font-medium text-foreground">
                 {t("education.packages.hoursCount", isEn ? "Hours Count" : "عدد الساعات")}

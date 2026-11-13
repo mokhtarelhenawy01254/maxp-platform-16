@@ -81,7 +81,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                         : "—"}
                     </span>
                     {e.student?.code && (
-                      <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20 shrink-0" dir="ltr">
+                      <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20 shrink-0" dir="ltr">
                         #{e.student.code}
                       </span>
                     )}
@@ -132,7 +132,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center justify-between text-xs ">
                   <span className="text-muted-foreground">{t("education.enrollments.remainingHours", isEn ? "Remaining Hours:" : "الساعات المتبقية:")}</span>
                   <span
                     className={`font-semibold ${
@@ -196,7 +196,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                   type="button"
                   onClick={() => handleDeleteEnrollment(e.id)}
                   className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                  title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                  aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -250,7 +250,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                             : "—"}
                         </span>
                         {e.student?.code && (
-                          <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20" dir="ltr">
+                          <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20" dir="ltr">
                             #{e.student.code}
                           </span>
                         )}
@@ -339,7 +339,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                           type="button"
                           onClick={() => setEnrollmentModal(e)}
                           className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                          title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
+                          aria-label={t("education.actions.edit", isEn ? "Edit" : "تعديل")} title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -370,7 +370,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                           type="button"
                           onClick={() => handleDeleteEnrollment(e.id)}
                           className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                          title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
+                          aria-label={t("education.actions.delete", isEn ? "Delete" : "حذف")} title={t("education.actions.delete", isEn ? "Delete" : "حذف")}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, UserPlus, Phone, User, Check, AlertCircle, Sparkles } from "lucide-react";
+import { X, UserPlus, Check, AlertCircle } from "lucide-react";
 
 interface AddAttendeeModalProps {
   isOpen: boolean;
@@ -93,16 +93,6 @@ export function AddAttendeeModal({
               <span>{error}</span>
             </div>
           )}
-
-          {/* CRM Lead Callout */}
-          <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-2.5 text-xs text-foreground">
-            <Sparkles className="w-4 h-4 text-primary shrink-0" />
-            <span>
-              {isEn
-                ? "This registrant will automatically be captured as a CRM Lead for follow-up and marketing."
-                : "سيتم تسجيل هذا الحاضر تلقائياً كعميل محتمل (Lead) في الـ CRM لسهولة المتابعة والتحويل لاشتراك."}
-            </span>
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">

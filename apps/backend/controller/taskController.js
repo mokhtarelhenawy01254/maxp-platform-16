@@ -124,6 +124,17 @@ const dateComparableValue = (value) => {
   return Number.isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
 };
 
+const parseSafeDate = (dateStr, isEndOfDay = false) => {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+  const str = String(dateStr).trim();
+  if (!str) return null;
+  const d = str.includes("T")
+    ? new Date(str)
+    : new Date(isEndOfDay ? `${str}T23:59:59.999Z` : `${str}T00:00:00.000Z`);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const buildTaskUpdateChangeSummary = (existingTask, input) => {
   const changes = [];
 
@@ -292,15 +303,21 @@ function buildLegacyTaskWhereClause(filters) {
   }
 
   if (filters.dueDateFrom) {
-    const idx = params.length + 1;
-    clauses.push(`"dueDate" >= $${idx}`);
-    params.push(new Date(`${filters.dueDateFrom}T00:00:00.000Z`));
+    const fromDate = parseSafeDate(filters.dueDateFrom, false);
+    if (fromDate) {
+      const idx = params.length + 1;
+      clauses.push(`"dueDate" >= $${idx}`);
+      params.push(fromDate);
+    }
   }
 
   if (filters.dueDateTo) {
-    const idx = params.length + 1;
-    clauses.push(`"dueDate" <= $${idx}`);
-    params.push(new Date(`${filters.dueDateTo}T23:59:59.999Z`));
+    const toDate = parseSafeDate(filters.dueDateTo, true);
+    if (toDate) {
+      const idx = params.length + 1;
+      clauses.push(`"dueDate" <= $${idx}`);
+      params.push(toDate);
+    }
   }
 
   if (filters.tag && filters.tag !== "all") {
@@ -1035,8 +1052,11 @@ const taskController = {
 
       if (dueDateFrom || dueDateTo) {
         where.dueDate = {};
-        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
-        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+        const fromDate = parseSafeDate(dueDateFrom, false);
+        const toDate = parseSafeDate(dueDateTo, true);
+        if (fromDate) where.dueDate.gte = fromDate;
+        if (toDate) where.dueDate.lte = toDate;
+        if (!fromDate && !toDate) delete where.dueDate;
       }
 
       if (tag && tag !== "all") {
@@ -2756,8 +2776,11 @@ const taskController = {
 
       if (dueDateFrom || dueDateTo) {
         where.dueDate = {};
-        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
-        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+        const fromDate = parseSafeDate(dueDateFrom, false);
+        const toDate = parseSafeDate(dueDateTo, true);
+        if (fromDate) where.dueDate.gte = fromDate;
+        if (toDate) where.dueDate.lte = toDate;
+        if (!fromDate && !toDate) delete where.dueDate;
       }
 
       if (tag && tag !== "all") {
@@ -2911,8 +2934,11 @@ const taskController = {
 
       if (dueDateFrom || dueDateTo) {
         where.dueDate = {};
-        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
-        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+        const fromDate = parseSafeDate(dueDateFrom, false);
+        const toDate = parseSafeDate(dueDateTo, true);
+        if (fromDate) where.dueDate.gte = fromDate;
+        if (toDate) where.dueDate.lte = toDate;
+        if (!fromDate && !toDate) delete where.dueDate;
       }
 
       if (tag && tag !== "all") {
@@ -3075,8 +3101,11 @@ const taskController = {
 
       if (dueDateFrom || dueDateTo) {
         baseTaskWhere.dueDate = {};
-        if (dueDateFrom) baseTaskWhere.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
-        if (dueDateTo) baseTaskWhere.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+        const fromDate = parseSafeDate(dueDateFrom, false);
+        const toDate = parseSafeDate(dueDateTo, true);
+        if (fromDate) baseTaskWhere.dueDate.gte = fromDate;
+        if (toDate) baseTaskWhere.dueDate.lte = toDate;
+        if (!fromDate && !toDate) delete baseTaskWhere.dueDate;
       }
 
       if (tag && tag !== "all") {
@@ -4549,8 +4578,11 @@ const taskController = {
 
       if (dueDateFrom || dueDateTo) {
         where.dueDate = {};
-        if (dueDateFrom) where.dueDate.gte = new Date(`${dueDateFrom}T00:00:00.000Z`);
-        if (dueDateTo) where.dueDate.lte = new Date(`${dueDateTo}T23:59:59.999Z`);
+        const fromDate = parseSafeDate(dueDateFrom, false);
+        const toDate = parseSafeDate(dueDateTo, true);
+        if (fromDate) where.dueDate.gte = fromDate;
+        if (toDate) where.dueDate.lte = toDate;
+        if (!fromDate && !toDate) delete where.dueDate;
       }
 
       if (tag && tag !== "all") {

@@ -208,7 +208,7 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-muted-foreground">{isEn ? "Remaining Balance:" : "الرصيد المتبقي:"}</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                       {isEn ? `${selectedEnrollment.remainingHours} of ${selectedEnrollment.totalHours} hours` : `${selectedEnrollment.remainingHours} من ${selectedEnrollment.totalHours} ساعة`}
                     </span>
                   </div>
@@ -337,10 +337,15 @@ export const SessionModal: React.FC<SessionModalProps> = ({
                 </span>
               </p>
               {session.actualDuration && (
-                <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                <p className="text-[11px] text-muted-foreground tabular-nums">
                   {t("education.sessions.actualDuration", { duration: session.actualDuration, defaultValue: isEn ? `Actual duration: ${session.actualDuration} minutes` : `المدة الفعلية: ${session.actualDuration} دقيقة` })}
                 </p>
               )}
+              <p className="text-[11px] text-muted-foreground">
+                {isEn
+                  ? "This session is locked — only scheduled sessions can be edited."
+                  : "هذه الحصة مقفلة — التعديل متاح للحصص المجدولة فقط."}
+              </p>
             </div>
           )}
 

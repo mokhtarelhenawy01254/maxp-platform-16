@@ -206,7 +206,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                 type="button"
                 onClick={() => setTeacherSearch("")}
                 className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-2.5 text-muted-foreground hover:text-foreground`}
-                title={isEn ? "Clear search" : "مسح البحث"}
+                aria-label={isEn ? "Clear search" : "مسح البحث"} title={isEn ? "Clear search" : "مسح البحث"}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -349,7 +349,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         {displayName}
                       </Link>
                       <span
-                        className={`inline-flex items-center px-2 py-0.2 rounded-full text-[10px] font-medium border ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
                           t.isActive
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                             : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
@@ -376,7 +376,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                             type="button"
                             onClick={(e) => handleCopyPhone(t.id, t.phone!, e)}
                             className="p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors"
-                            title={isEn ? "Copy phone" : "نسخ الرقم"}
+                            aria-label={isEn ? "Copy phone" : "نسخ الرقم"} title={isEn ? "Copy phone" : "نسخ الرقم"}
                           >
                             {copiedId === t.id ? (
                               <Check className="w-3 h-3 text-emerald-500" />
@@ -455,7 +455,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => setTeacherModal(t)}
                     className="p-1.5 text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted rounded-lg transition-colors border border-border/60"
-                    title={isEn ? "Edit Details" : "تعديل البيانات"}
+                    aria-label={isEn ? "Edit Details" : "تعديل البيانات"} title={isEn ? "Edit Details" : "تعديل البيانات"}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -469,7 +469,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
                         : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                     }`}
-                    title={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")}
+                    aria-label={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")} title={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")}
                   >
                     <Power className="w-3 h-3" />
                     <span>{t.isActive ? (isEn ? "Deactivate" : "تعطيل") : (isEn ? "Activate" : "تفعيل")}</span>
@@ -480,7 +480,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => handleDeleteTeacher(t.id)}
                     className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title={isEn ? "Delete Instructor" : "حذف المهندس"}
+                    aria-label={isEn ? "Delete Instructor" : "حذف المهندس"} title={isEn ? "Delete Instructor" : "حذف المهندس"}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

@@ -197,6 +197,8 @@ export default function EducationGroupsPage({
   const [notifyWhatsApp, setNotifyWhatsApp] = useState(true);
 
   const [financialsData, setFinancialsData] = useState<any | null>(null);
+  const [financialsError, setFinancialsError] = useState<string | null>(null);
+  const [financialsLoadingId, setFinancialsLoadingId] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [enrollStudentFilter, setEnrollStudentFilter] = useState("");
 
@@ -276,14 +278,21 @@ export default function EducationGroupsPage({
   };
 
   const fetchGroupFinancials = async (groupId: string) => {
+    setFinancialsError(null);
+    setFinancialsLoadingId(groupId);
     try {
       const res = await fetch(api(`groups/${groupId}/financials`), { headers: getAuthHeaders() });
       const json = await res.json();
       if (json.success && json.data) {
         setFinancialsData(json.data);
+      } else {
+        setFinancialsError(json.message || (isEn ? "Failed to load settlement data" : "تعذر جلب بيانات التسوية"));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch group financials:", err);
+      setFinancialsError(err?.message || (isEn ? "Failed to load settlement data" : "تعذر جلب بيانات التسوية"));
+    } finally {
+      setFinancialsLoadingId(null);
     }
   };
 
@@ -549,34 +558,28 @@ export default function EducationGroupsPage({
     <div className={`w-full max-w-[1600px] mx-auto p-4 sm:p-6 space-y-6 font-sans ${embedded ? "" : "pb-24"}`} dir={isEn ? "ltr" : "rtl"}>
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              <Users className="w-3.5 h-3.5" />
-              {t("education.groups.badge", isEn ? "Study Groups System" : "نظام المجموعات الدراسية (الجروبات)")}
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">
-              {stats.activeGroups} {t("education.groups.activeNow", isEn ? "active groups" : "مجموعة نشطة حالياً")}
-            </span>
+        {!embedded && (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                <Users className="w-3.5 h-3.5" />
+                {t("education.groups.badge", isEn ? "Study Groups System" : "نظام المجموعات الدراسية (الجروبات)")}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {stats.activeGroups} {t("education.groups.activeNow", isEn ? "active groups" : "مجموعة نشطة حالياً")}
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {t("education.groups.title", isEn ? "Study Groups Management" : "إدارة المجموعات التعليمية")}
+            </h1>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {t("education.groups.title", isEn ? "Study Groups Management" : "إدارة المجموعات التعليمية")}
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            {t(
-              "education.groups.subtitle",
-              isEn
-                ? "Manage student classrooms and groups, weekly schedules, enrollments, attendance rosters, and instructor settlements"
-                : "إدارة فصول ومجموعات الطلاب، المواعيد الأسبوعية الثابتة، التسجيل، الحضور والغياب الجماعي، وتسويات المعلمين."
-            )}
-          </p>
-        </div>
+        )}
 
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={fetchData}
-            title={t("education.common.refresh", isEn ? "Refresh Data" : "تحديث البيانات")}
+            aria-label={t("education.common.refresh", isEn ? "Refresh Data" : "تحديث البيانات")} title={t("education.common.refresh", isEn ? "Refresh Data" : "تحديث البيانات")}
             className="p-2.5 rounded-xl border border-border/70 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -658,19 +661,6 @@ export default function EducationGroupsPage({
             {t("education.groups.waitingForSeats", isEn ? "Awaiting open seats" : "طلاب بانتظار أماكن شاغرة")}
           </div>
         </div>
-
-        <div className="bg-card border border-border/70 p-4 rounded-2xl shadow-sm space-y-1 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">{t("education.groups.operatingModel", isEn ? "Operating Model" : "نظام التشغيل")}</span>
-            <CheckCircle2 className="w-4 h-4 text-primary" />
-          </div>
-          <div className="text-sm font-bold text-foreground mt-1">
-            {t("education.groups.fixedSchedules", isEn ? "Groups & Fixed Slots" : "جروبات ومواعيد ثابتة")}
-          </div>
-          <div className="text-[11px] text-muted-foreground">
-            {t("education.groups.groupAttendanceSub", isEn ? "Group roster + Subscriptions" : "حضور جماعي + اشتراك دوري")}
-          </div>
-        </div>
       </div>
 
       {/* Filters Bar */}
@@ -738,7 +728,7 @@ export default function EducationGroupsPage({
             className={`p-1.5 rounded-lg text-xs transition-colors ${
               viewMode === "grid" ? "bg-background shadow-xs text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
             }`}
-            title={t("education.groups.viewGrid", isEn ? "Grid View" : "عرض الكروت")}
+            aria-label={t("education.groups.viewGrid", isEn ? "Grid View" : "عرض الكروت")} title={t("education.groups.viewGrid", isEn ? "Grid View" : "عرض الكروت")}
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
@@ -748,7 +738,7 @@ export default function EducationGroupsPage({
             className={`p-1.5 rounded-lg text-xs transition-colors ${
               viewMode === "table" ? "bg-background shadow-xs text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
             }`}
-            title={t("education.groups.viewTable", isEn ? "Table View" : "عرض الجدول")}
+            aria-label={t("education.groups.viewTable", isEn ? "Table View" : "عرض الجدول")} title={t("education.groups.viewTable", isEn ? "Table View" : "عرض الجدول")}
           >
             <List className="w-4 h-4" />
           </button>
@@ -845,7 +835,7 @@ export default function EducationGroupsPage({
                           setGroupModalOpen(true);
                         }}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                        title={t("education.common.edit", isEn ? "Edit Group" : "تعديل المجموعة")}
+                        aria-label={t("education.common.edit", isEn ? "Edit Group" : "تعديل المجموعة")} title={t("education.common.edit", isEn ? "Edit Group" : "تعديل المجموعة")}
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
@@ -853,7 +843,7 @@ export default function EducationGroupsPage({
                         type="button"
                         onClick={() => handleDeleteGroup(group.id, group.name)}
                         className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title={t("education.common.delete", isEn ? "Delete Group" : "حذف المجموعة")}
+                        aria-label={t("education.common.delete", isEn ? "Delete Group" : "حذف المجموعة")} title={t("education.common.delete", isEn ? "Delete Group" : "حذف المجموعة")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1154,7 +1144,7 @@ export default function EducationGroupsPage({
                       <button
                         type="button"
                         onClick={() => window.print()}
-                        title={t("education.groups.printRoster", isEn ? "Print Student Roster" : "طباعة كشف طلاب المجموعة")}
+                        aria-label={t("education.groups.printRoster", isEn ? "Print Student Roster" : "طباعة كشف طلاب المجموعة")} title={t("education.groups.printRoster", isEn ? "Print Student Roster" : "طباعة كشف طلاب المجموعة")}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-muted text-foreground border border-border rounded-lg text-xs font-medium hover:bg-muted/80 transition-all"
                       >
                         <FileText className="w-3.5 h-3.5" />
@@ -1208,7 +1198,7 @@ export default function EducationGroupsPage({
                       {filteredMembers.map((member) => (
                         <div
                           key={member.id}
-                          className="bg-card border border-border/80 rounded-xl p-3 flex items-center justify-between gap-3 text-xs shadow-xs"
+                          className="bg-muted/40 rounded-xl p-3 flex items-center justify-between gap-3 text-xs shadow-xs"
                         >
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
@@ -1256,7 +1246,7 @@ export default function EducationGroupsPage({
                                 setTransferModalOpen(true);
                               }}
                               className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-colors"
-                              title={t("education.groups.transferBtn", isEn ? "Transfer to another group" : "نقل لمجموعة أخرى")}
+                              aria-label={t("education.groups.transferBtn", isEn ? "Transfer to another group" : "نقل لمجموعة أخرى")} title={t("education.groups.transferBtn", isEn ? "Transfer to another group" : "نقل لمجموعة أخرى")}
                             >
                               <ArrowRightLeft className="w-3.5 h-3.5" />
                             </button>
@@ -1265,7 +1255,7 @@ export default function EducationGroupsPage({
                               type="button"
                               onClick={() => handleRemoveMember(member.studentId, member.studentName)}
                               className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                              title={t("education.groups.removeBtn", isEn ? "Remove from group" : "إزالة من المجموعة")}
+                              aria-label={t("education.groups.removeBtn", isEn ? "Remove from group" : "إزالة من المجموعة")} title={t("education.groups.removeBtn", isEn ? "Remove from group" : "إزالة من المجموعة")}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1287,7 +1277,7 @@ export default function EducationGroupsPage({
                     <button
                       type="button"
                       onClick={handleOpenAttendanceModal}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-all shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-all shadow-xs"
                     >
                       <UserCheck className="w-3.5 h-3.5" />
                       {t("education.groups.logNewSessionBtn", isEn ? "Log New Session & Attendance" : "تسجيل محاضرة وحضور جديد")}
@@ -1312,7 +1302,7 @@ export default function EducationGroupsPage({
                       {groupDetails?.sessions?.map((session) => (
                         <div
                           key={session.id}
-                          className="bg-card border border-border/80 rounded-xl p-3 space-y-2 text-xs shadow-xs"
+                          className="bg-muted/40 rounded-xl p-3 space-y-2 text-xs shadow-xs"
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-foreground">
@@ -1353,12 +1343,25 @@ export default function EducationGroupsPage({
               {/* Tab 3: Group Financials & Settlement */}
               {drawerTab === "financials" && (
                 <div className="space-y-4">
-                  {financialsData ? (
+                  {financialsError ? (
+                    <div className="p-4 rounded-xl bg-rose-500/10 space-y-2 text-center">
+                      <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">{financialsError}</p>
+                      {activeGroup?.id && (
+                        <button
+                          type="button"
+                          onClick={() => fetchGroupFinancials(activeGroup.id)}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors"
+                        >
+                          {isEn ? "Retry" : "إعادة المحاولة"}
+                        </button>
+                      )}
+                    </div>
+                  ) : financialsData ? (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div className="bg-muted/40 p-3 rounded-xl space-y-1">
                           <span className="text-muted-foreground">{t("education.groups.collectedFees", isEn ? "Total Collected Fees" : "إجمالي الاشتراكات المحصلة")}</span>
-                          <div className="text-lg font-bold text-foreground font-mono">
+                          <div className="text-lg font-bold text-foreground ">
                             {financialsData.totalCollected} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
@@ -1368,7 +1371,7 @@ export default function EducationGroupsPage({
 
                         <div className="bg-muted/40 p-3 rounded-xl space-y-1">
                           <span className="text-muted-foreground">{t("education.groups.completedSessions", isEn ? "Executed Sessions" : "المحاضرات المنفذة")}</span>
-                          <div className="text-lg font-bold text-foreground font-mono">
+                          <div className="text-lg font-bold text-foreground ">
                             {financialsData.sessionCount} {t("education.groups.sessionsUnit", isEn ? "sessions" : "محاضرة")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
@@ -1376,11 +1379,11 @@ export default function EducationGroupsPage({
                           </span>
                         </div>
 
-                        <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl space-y-1">
+                        <div className="bg-blue-500/10 p-3 rounded-xl space-y-1">
                           <span className="text-blue-700 dark:text-blue-300 font-semibold">
                             {t("education.groups.teacherShareCalculated", isEn ? "Instructor Share Calculated" : "مستحقات المعلم المحسوبة")}
                           </span>
-                          <div className="text-xl font-bold text-blue-700 dark:text-blue-300 font-mono">
+                          <div className="text-xl font-bold text-blue-700 dark:text-blue-300 ">
                             {financialsData.teacherShare} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
@@ -1390,11 +1393,11 @@ export default function EducationGroupsPage({
                           </span>
                         </div>
 
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl space-y-1">
+                        <div className="bg-emerald-500/10 p-3 rounded-xl space-y-1">
                           <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
                             {t("education.groups.centerProfit", isEn ? "Center Net Profit" : "صافي ربح السنتر")}
                           </span>
-                          <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+                          <div className="text-xl font-bold text-emerald-700 dark:text-emerald-300 ">
                             {financialsData.centerProfit} {t("education.common.egp", isEn ? "EGP" : "ج")}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
@@ -1403,20 +1406,6 @@ export default function EducationGroupsPage({
                         </div>
                       </div>
 
-                      <div className="bg-card border border-border p-4 rounded-xl text-xs space-y-2">
-                        <h4 className="font-bold text-foreground">
-                          {t("education.groups.settlementRulesTitle", isEn ? "Group Settlement Rules:" : "قواعد التسوية للجروب:")}
-                        </h4>
-                        <ul className="list-disc list-inside text-muted-foreground space-y-1 text-[11px]">
-                          <li>{t("education.groups.settlementRule1", isEn ? "Teacher share and center net profit are automatically calculated with every collected fee." : "يتم احتساب أجر المعلم وصافي دخل السنتر آلياً مع كل اشتراك يتم تحصيله.")}</li>
-                          <li>
-                            {t("education.groups.settlementRule2", isEn ? "In percentage model: teacher share increases as more students enroll in the group." : "في نظام النسبة المئوية: تزيد مستحقات المعلم كلما زاد عدد الطلاب المسجلين في المجموعة.")}
-                          </li>
-                          <li>
-                            {t("education.groups.settlementRule3", isEn ? "In fixed rate model: rate is calculated based on executed sessions regardless of absences." : "في نظام الأجر الثابت: يتم احتساب الأجر بعدد المحاضرات المنفذة فعلياً بغض النظر عن الغياب.")}
-                          </li>
-                        </ul>
-                      </div>
                     </div>
                   ) : (
                     <div className="p-8 text-center text-xs text-muted-foreground">
@@ -1509,7 +1498,7 @@ export default function EducationGroupsPage({
                     </select>
                     {subjects.length === 0 && (
                       <span className="text-[10px] text-amber-600 dark:text-amber-400 block">
-                        ⚠️ {t("education.groups.noSubjectsAlert", isEn ? "No subjects registered yet. Add a subject first." : "لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.")}
+                        {t("education.groups.noSubjectsAlert", isEn ? "No subjects registered yet. Add a subject first." : "لا توجد مواد مسجلة بعد. أضف مادة أولاً من تبويب المواد.")}
                       </span>
                     )}
                   </div>
@@ -1830,7 +1819,7 @@ export default function EducationGroupsPage({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-blue-700"
                 >
                   {t("education.groups.confirmTransferBtn", isEn ? "Confirm Instant Transfer" : "تأكيد النقل الفوري")}
                 </button>
@@ -1956,7 +1945,7 @@ export default function EducationGroupsPage({
                       return (
                         <div
                           key={member.studentId}
-                          className="flex items-center justify-between gap-3 p-2 bg-muted/40 rounded-xl border border-border/60"
+                          className="flex items-center justify-between gap-3 p-2 bg-muted/40 rounded-xl"
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-foreground">{member.studentName}</span>
@@ -2052,7 +2041,7 @@ export default function EducationGroupsPage({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                  className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-emerald-700 shadow-md shadow-primary/20"
                 >
                   {t("education.groups.saveAttendanceBtn", isEn ? "Save Session & Attendance" : "حفظ المحاضرة والحضور")}
                 </button>

@@ -197,7 +197,12 @@ class SocketService {
       next();
 
     } catch (error) {
-      if (error?.message?.includes('jwt must be provided') || error?.name === 'JsonWebTokenError') {
+      if (
+        error?.message?.includes('jwt must be provided') ||
+        error?.message?.includes('jwt expired') ||
+        error?.name === 'JsonWebTokenError' ||
+        error?.name === 'TokenExpiredError'
+      ) {
         // 🛡️ Silent rejection for unauthenticated/expired sockets to avoid log spam
         return next(new Error('Authentication failed'));
       }

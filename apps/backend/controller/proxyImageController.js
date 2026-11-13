@@ -1039,11 +1039,20 @@ const fetchRemoteAsset = async (targetUrl) => {
       return null;
     }
 
-    const response = await fetch(currentUrl, {
-      method: "GET",
-      headers: getFacebookFriendlyHeaders(currentUrl),
-      redirect: "manual",
-    });
+    let response;
+    try {
+      response = await fetch(currentUrl, {
+        method: "GET",
+        headers: getFacebookFriendlyHeaders(currentUrl),
+        redirect: "manual",
+      });
+    } catch (networkError) {
+      console.warn("⚠️ [IMAGE-PROXY] Remote fetch network error:", {
+        url: String(currentUrl).slice(0, 120),
+        error: networkError.message,
+      });
+      return null;
+    }
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
@@ -1775,7 +1784,10 @@ const proxyImage = async (req, res) => {
       return sendCustomerAvatarFallback(req, res);
     }
 
-    return res.status(lastFailureStatus).json({
+    const resolvedStatus =
+      !lastFailureStatus || lastFailureStatus >= 500 ? 404 : lastFailureStatus;
+
+    return res.status(resolvedStatus).json({
       error: "Failed to fetch image",
       details: lastFailureText || undefined,
     });

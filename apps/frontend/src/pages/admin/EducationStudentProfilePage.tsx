@@ -277,7 +277,7 @@ export default function EducationStudentProfilePage() {
       {/* Student Profile Header Chassis */}
       <div className="bg-card border border-border/80 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-14 h-14 bg-primary/10 text-primary border border-primary/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center flex-shrink-0">
             <User className="w-7 h-7" />
           </div>
           <div className="flex-1 min-w-0 space-y-1">
@@ -286,7 +286,7 @@ export default function EducationStudentProfilePage() {
                 {activeStudent.firstName} {activeStudent.lastName}
               </h1>
               {activeStudent.code && (
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 inline-flex items-center gap-1">
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1">
                   <span>{t("education.students.codeLabel", isEn ? "Code:" : "كود الطالب:")}</span>
                   <span className="font-mono" dir="ltr">#{activeStudent.code}</span>
                 </span>
@@ -312,7 +312,7 @@ export default function EducationStudentProfilePage() {
                 </span>
               )}
               {activeStudent.phone2 && (
-                <span className="flex items-center gap-1 font-mono tabular-nums text-primary/90" dir="ltr">
+                <span className="flex items-center gap-1 tabular-nums text-primary/90" dir="ltr">
                   <Phone className="w-3.5 h-3.5 text-primary" />
                   <span>{t("education.students.secondaryPhone", isEn ? "Secondary:" : "إضافي:")} {activeStudent.phone2}</span>
                 </span>
@@ -349,7 +349,7 @@ export default function EducationStudentProfilePage() {
               </span>
             )}
             {activeStudent.customer.phone2 && (
-              <span className="font-mono tabular-nums text-primary" dir="ltr">
+              <span className="tabular-nums text-primary" dir="ltr">
                 {t("education.students.secondaryPhone", isEn ? "Secondary:" : "إضافي:")} {activeStudent.customer.phone2}
               </span>
             )}
@@ -403,19 +403,16 @@ export default function EducationStudentProfilePage() {
                 <h2 className="text-sm font-bold text-foreground">
                   {t("education.students.portalAccessTitle", isEn ? "Parent Portal Login Credentials" : "بيانات دخول بوابة ولي الأمر")}
                 </h2>
-                <p className="text-xs text-muted-foreground">
-                  {t("education.students.portalAccessSubtitle", isEn ? "Manage parent email and password to access /parent" : "إدارة البريد الإلكتروني وكلمة المرور لدخول ولي الأمر عبر /parent")}
-                </p>
               </div>
             </div>
             <div>
               {hasPortalAccess ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                   <CheckCircle2 className="w-3 h-3" />
                   {t("education.students.portalEnabled", isEn ? "Enabled" : "مفعّل")}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
                   <AlertCircle className="w-3 h-3" />
                   {t("education.students.portalNoAccess", isEn ? "No Access" : "لا يوجد دخول")}
                 </span>
@@ -498,7 +495,7 @@ export default function EducationStudentProfilePage() {
                   {s.value}
                 </div>
               </div>
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${s.color}`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${s.color}`}>
                 <Icon className="w-4 h-4" />
               </div>
             </div>
@@ -514,7 +511,7 @@ export default function EducationStudentProfilePage() {
               <Clock className="w-3.5 h-3.5 text-primary" />
               {t("education.students.hoursUsageTitle", isEn ? "Hours Balance Consumption" : "استهلاك رصيد الساعات")}
             </span>
-            <span className="font-mono tabular-nums font-bold text-foreground">
+            <span className="tabular-nums font-bold text-foreground">
               {usedHours} {t("education.students.ofTotalHours", isEn ? "of" : "من أصل")} {totalHours} {t("education.common.hour", isEn ? "hrs" : "ساعة")} ({pct}%)
             </span>
           </div>
@@ -584,9 +581,9 @@ export default function EducationStudentProfilePage() {
                     <td className="py-3 px-4 font-semibold text-foreground">{e.package?.name || "—"}</td>
                     <td className="py-3 px-4 text-foreground">{e.package?.subject?.name || "—"}</td>
                     <td className="py-3 px-4 text-muted-foreground">{e.teacher?.name || "—"}</td>
-                    <td className="py-3 px-4 font-mono tabular-nums text-foreground">{e.remainingHours || 0} {t("education.common.hour", isEn ? "hrs" : "ساعة")}</td>
-                    <td className="py-3 px-4 font-mono tabular-nums text-muted-foreground">{e.totalHours || 0} {t("education.common.hour", isEn ? "hrs" : "ساعة")}</td>
-                    <td className="py-3 px-4 font-mono tabular-nums font-medium text-foreground">
+                    <td className="py-3 px-4 tabular-nums text-foreground">{e.remainingHours || 0} {t("education.common.hour", isEn ? "hrs" : "ساعة")}</td>
+                    <td className="py-3 px-4 tabular-nums text-muted-foreground">{e.totalHours || 0} {t("education.common.hour", isEn ? "hrs" : "ساعة")}</td>
+                    <td className="py-3 px-4 tabular-nums font-medium text-foreground">
                       {(e.amountPaid || 0).toLocaleString()} {t("education.common.egp", isEn ? "EGP" : "ج.م")}
                     </td>
                     <td className="py-3 px-4">
@@ -642,7 +639,7 @@ export default function EducationStudentProfilePage() {
                         {new Date(s.scheduledAt).toLocaleDateString(isEn ? "en-US" : "ar-EG")}{" "}
                         {new Date(s.scheduledAt).toLocaleTimeString(isEn ? "en-US" : "ar-EG", { hour: "2-digit", minute: "2-digit" })}
                       </td>
-                      <td className="py-3 px-4 font-mono tabular-nums text-foreground">
+                      <td className="py-3 px-4 tabular-nums text-foreground">
                         {s.actualDuration || s.plannedDuration} {t("education.common.min", isEn ? "min" : "دقيقة")}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{s.topic || "—"}</td>

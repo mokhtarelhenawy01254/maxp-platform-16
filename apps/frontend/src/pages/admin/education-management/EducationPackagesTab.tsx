@@ -103,13 +103,13 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-1.5 text-xs">
-              <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums">
+              <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md tabular-nums">
                 {t("education.packages.hours", { count: p.hoursCount, defaultValue: isEn ? `${p.hoursCount} hours` : `${p.hoursCount} ساعة` })}
               </span>
-              <span className="bg-muted/60 text-muted-foreground px-2 py-0.5 rounded-md font-mono tabular-nums">
+              <span className="bg-muted/60 text-muted-foreground px-2 py-0.5 rounded-md tabular-nums">
                 {t("education.packages.duration", { count: p.sessionDuration, defaultValue: isEn ? `${p.sessionDuration} min/session` : `${p.sessionDuration} دقيقة/حصة` })}
               </span>
-              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono tabular-nums font-semibold">
+              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md tabular-nums font-semibold">
                 {t("education.packages.priceWithCurrency", { price: p.price, defaultValue: isEn ? `${p.price} EGP` : `${p.price} ج.م` })}
               </span>
             </div>
@@ -146,7 +146,7 @@ export const EducationPackagesTab: React.FC<EducationPackagesTabProps> = ({
                 type="button"
                 onClick={() => handleDeletePackage(p.id)}
                 className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                title={t("education.packages.deletePackage", isEn ? "Delete Package" : "حذف الباقة")}
+                aria-label={t("education.packages.deletePackage", isEn ? "Delete Package" : "حذف الباقة")} title={t("education.packages.deletePackage", isEn ? "Delete Package" : "حذف الباقة")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

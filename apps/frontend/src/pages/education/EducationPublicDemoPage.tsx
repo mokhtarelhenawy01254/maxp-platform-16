@@ -186,7 +186,7 @@ export default function EducationPublicDemoPage() {
           {/* Spots Remaining Indicator */}
           <div className="flex items-center justify-between text-xs pt-1 px-1 text-muted-foreground">
             <span>المقاعد المتبقية:</span>
-            <span className="font-mono font-bold text-foreground tabular-nums">
+            <span className="font-bold text-foreground tabular-nums">
               {event.spotsLeft} من أصل {event.capacity} مقعد
             </span>
           </div>

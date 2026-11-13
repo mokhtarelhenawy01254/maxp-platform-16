@@ -158,7 +158,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                       : "—"}
                   </span>
                   {s.student?.code && (
-                    <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20 shrink-0" dir="ltr">
+                    <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20 shrink-0" dir="ltr">
                       #{s.student.code}
                     </span>
                   )}
@@ -188,7 +188,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                   })}
                 </span>
               </div>
-              <span className="text-[11px] font-mono tabular-nums bg-muted/60 text-foreground px-2 py-0.5 rounded-md">
+              <span className="text-[11px] tabular-nums bg-muted/60 text-foreground px-2 py-0.5 rounded-md">
                 {s.actualDuration || s.plannedDuration} {isEn ? "min" : "دقيقة"}
               </span>
             </div>
@@ -214,7 +214,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                     type="button"
                     onClick={() => handleConfirmSession(s.id)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md transition-colors border border-emerald-500/20"
-                    title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
+                    aria-label={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")} title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
                   >
                     <Check className="w-3.5 h-3.5" />
                     {t("education.actions.confirm", isEn ? "Confirm" : "تأكيد")}
@@ -223,7 +223,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                     type="button"
                     onClick={() => handleCancelSession(s.id)}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors border border-red-500/20"
-                    title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
+                    aria-label={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")} title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
                   >
                     <X className="w-3.5 h-3.5" />
                     {t("education.actions.cancel", isEn ? "Cancel" : "إلغاء")}
@@ -234,7 +234,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 type="button"
                 onClick={() => setSessionModal(s)}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border/60"
-                title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
+                aria-label={t("education.actions.edit", isEn ? "Edit" : "تعديل")} title={t("education.actions.edit", isEn ? "Edit" : "تعديل")}
               >
                 <Pencil className="w-3.5 h-3.5" />
                 {t("education.actions.edit", isEn ? "Edit" : "تعديل")}
@@ -281,7 +281,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                           : "—"}
                       </span>
                       {s.student?.code && (
-                        <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20" dir="ltr">
+                        <span className="font-mono text-[10px] text-primary bg-primary/10 px-1 py-0.5 rounded border border-primary/20" dir="ltr">
                           #{s.student.code}
                         </span>
                       )}
@@ -324,7 +324,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                             type="button"
                             onClick={() => handleConfirmSession(s.id)}
                             className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors"
-                            title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
+                            aria-label={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")} title={t("education.dashboard.confirmSession", isEn ? "Confirm Attendance" : "تأكيد الحضور")}
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -332,7 +332,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                             type="button"
                             onClick={() => handleCancelSession(s.id)}
                             className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                            title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
+                            aria-label={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")} title={t("education.dashboard.cancelSession", isEn ? "Cancel Session" : "إلغاء الحصة")}
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -342,7 +342,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                         type="button"
                         onClick={() => setSessionModal(s)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                        title={t("education.actions.edit", isEn ? "Edit Details" : "تفاصيل")}
+                        aria-label={t("education.actions.edit", isEn ? "Edit Details" : "تفاصيل")} title={t("education.actions.edit", isEn ? "Edit Details" : "تفاصيل")}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>

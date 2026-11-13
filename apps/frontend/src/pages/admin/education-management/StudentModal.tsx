@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { X, Search, User, Loader2, Mail, Lock, BookOpen, Plus, Check, Phone, MapPin, Hash } from "lucide-react";
 import type { EducationStudent, Customer, EducationSubject } from "./types";
 import { MODAL_CLS, INPUT_CLS } from "./types";
@@ -106,6 +107,15 @@ export const StudentModal: React.FC<StudentModalProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Debounce customer search when typing (single source of search trigger)
   useEffect(() => {
     const query = customerSearch.trim();
@@ -159,7 +169,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
   const handleSubmit = async () => {
     if (!form.firstName.trim() || saving) return;
     if (!hasGuardian) {
-      alert(t("education.students.guardianAlert", isEn ? "Select an existing guardian, or enter a new guardian, or enable 'Student is their own guardian'." : "اختر ولي أمر موجود، أو اضغط «إدخال ولي أمر جديد» واكتب اسمه ورقمه — أو فعّل «أنا ولي الأمر»."));
+      toast.error(t("education.students.guardianAlert", isEn ? "Select an existing guardian, or enter a new guardian, or enable 'Student is their own guardian'." : "اختر ولي أمر موجود، أو اضغط «إدخال ولي أمر جديد» واكتب اسمه ورقمه — أو فعّل «أنا ولي الأمر»."));
       return;
     }
     setSaving(true);
@@ -189,6 +199,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
         payload.customerId = "";
       }
       await onSave(payload);
+    } catch (err: any) {
+      console.error("Failed to save student:", err);
+      toast.error(err?.message || (isEn ? "Failed to save student" : "فشل حفظ بيانات الطالب"));
     } finally {
       setSaving(false);
     }
@@ -200,6 +213,9 @@ export const StudentModal: React.FC<StudentModalProps> = ({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={student?.id ? (isEn ? "Edit student" : "تعديل بيانات الطالب") : isEn ? "Add student" : "إضافة طالب"}
         className={MODAL_CLS + " max-h-[90vh] overflow-y-auto"}
         onClick={(e) => e.stopPropagation()}
         dir={isEn ? "ltr" : "rtl"}
@@ -249,6 +265,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               value={form.code || ""}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               placeholder="e.g. STU-1001"
+                aria-label={t("education.students.code", isEn ? "Student Code" : "كود الطالب")}
               dir="ltr"
             />
           </div>
@@ -266,6 +283,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   setForm({ ...form, firstName: e.target.value })
                 }
                 placeholder={isEn ? "e.g. Adam" : "مثال: سفيان"}
+                aria-label={t("education.students.firstName", isEn ? "First Name" : "الاسم الأول")}
               />
             </div>
             <div className="space-y-1">
@@ -279,6 +297,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                   setForm({ ...form, lastName: e.target.value })
                 }
                 placeholder={isEn ? "e.g. Ahmed" : "مثال: أحمد"}
+                aria-label={t("education.students.lastName", isEn ? "Last Name" : "الاسم الأخير")}
               />
             </div>
           </div>
@@ -295,6 +314,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 value={form.phone || ""}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="01xxxxxxxxx"
+                aria-label={t("education.students.phone", isEn ? "Student Primary Phone" : "هاتف الطالب")}
                 dir="ltr"
               />
             </div>
@@ -308,6 +328,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 value={form.phone2 || ""}
                 onChange={(e) => setForm({ ...form, phone2: e.target.value })}
                 placeholder={isEn ? "Alternate phone / WhatsApp" : "رقم بديل / واتساب إضافي"}
+                aria-label={t("education.students.phone2", isEn ? "Secondary Phone Number" : "رقم هاتف إضافي")}
                 dir="ltr"
               />
             </div>
@@ -322,6 +343,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               <select
                 className={INPUT_CLS}
                 value={form.gender || "MALE"}
+                aria-label={t("education.students.gender", isEn ? "Gender" : "الجنس")}
                 onChange={(e) => setForm({ ...form, gender: e.target.value })}
               >
                 <option value="MALE">{t("education.students.male", isEn ? "Male" : "ذكر")}</option>
@@ -337,6 +359,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 value={form.grade || ""}
                 onChange={(e) => setForm({ ...form, grade: e.target.value })}
                 placeholder={t("education.students.gradePlaceholder", isEn ? "e.g. Grade 7 / Middle School" : "مثال: الصف الأول الإعدادي")}
+                aria-label={t("education.students.grade", isEn ? "Grade / Level" : "المرحلة / الصف")}
               />
             </div>
           </div>
@@ -355,18 +378,19 @@ export const StudentModal: React.FC<StudentModalProps> = ({
               value={form.address || ""}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder={t("education.students.addressPlaceholder", isEn ? "e.g. Cairo - Maadi or current residence address..." : "مثال: القاهرة - المعادي - شارع 9 أو عنوان السكن الحالي...")}
+              aria-label={t("education.students.address", isEn ? "Address / Residence" : "العنوان / السكن")}
             />
           </div>
 
           {/* Subjects Section: المواد المتاحة لدينا */}
           {enableSubjects && (
-          <div className="space-y-2 p-3 rounded-xl border border-border/80 bg-muted/15">
+          <div className="space-y-2 p-3 rounded-xl bg-muted/15">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-primary" />
                 <span>{t("education.students.subjectsTitle", isEn ? "Academic Subjects (Available Subjects)" : "المواد الدراسية (المواد المتاحة لدينا)")}</span>
               </label>
-              <span className="text-[11px] text-muted-foreground font-mono">
+              <span className="text-[11px] text-muted-foreground ">
                 {selectedSubjectIds.length > 0
                   ? t("education.students.subjectsCount", { count: selectedSubjectIds.length, defaultValue: isEn ? `${selectedSubjectIds.length} subjects selected` : `${selectedSubjectIds.length} مادة مختارة` })
                   : t("education.students.noSubjectsSelected", isEn ? "No subjects selected" : "لم يتم تحديد مواد")}
@@ -387,7 +411,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         isSelected
                           ? "bg-primary text-primary-foreground shadow-xs ring-1 ring-primary"
-                          : "bg-background border border-border/80 text-foreground hover:bg-muted/60 hover:border-primary/40"
+                          : "bg-muted text-foreground hover:bg-muted/60"
                       }`}
                     >
                       {isSelected ? (
@@ -438,7 +462,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 <span>{t("education.students.selfGuardianNotice", isEn ? "Student will be automatically registered as their own guardian with their phone numbers." : "سيتم تسجيل الطالب كولي أمر نفسه تلقائياً بأرقام هواتفه (الأساسي والإضافي).")}</span>
               </div>
             ) : selectedCustomer ? (
-              <div className="p-2.5 rounded-lg border border-primary/40 bg-primary/5 text-xs space-y-2.5">
+              <div className="p-2.5 rounded-lg bg-primary/10 text-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -448,7 +472,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                       <div className="font-semibold text-foreground">
                         {selectedCustomer.firstName} {selectedCustomer.lastName || ""}
                       </div>
-                      <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                         {selectedCustomer.phone && <span>{t("education.students.guardianPhone", isEn ? "Phone:" : "الهاتف:")} {selectedCustomer.phone}</span>}
                         {((selectedCustomer as any).phone2 || guardianPhone2) && (
                           <span className="text-primary font-medium">| {isEn ? "Secondary:" : "إضافي:"} {(selectedCustomer as any).phone2 || guardianPhone2}</span>
@@ -460,7 +484,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                     type="button"
                     onClick={handleClearCustomer}
                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                    title={t("education.students.changeGuardian", isEn ? "Change Guardian" : "تغيير ولي الأمر")}
+                    aria-label={t("education.students.changeGuardian", isEn ? "Change Guardian" : "تغيير ولي الأمر")} title={t("education.students.changeGuardian", isEn ? "Change Guardian" : "تغيير ولي الأمر")}
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>{t("education.students.changeGuardian", isEn ? "Change" : "تغيير")}</span>
@@ -625,7 +649,7 @@ export const StudentModal: React.FC<StudentModalProps> = ({
           </div>
 
           {/* Parent Portal Access Section */}
-          <div className="p-3 rounded-xl border border-border/80 bg-muted/20 space-y-2.5">
+          <div className="p-3 rounded-xl bg-muted/20 space-y-2.5">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Lock className="w-3.5 h-3.5 text-primary" />
               <span>{t("education.students.parentPortalTitle", isEn ? "Parent Portal Login Credentials (/parent)" : "بيانات دخول بوابة ولي الأمر (/parent)")}</span>
@@ -662,9 +686,6 @@ export const StudentModal: React.FC<StudentModalProps> = ({
                 />
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground">
-              {t("education.students.parentPortalHelp", isEn ? "These credentials allow the guardian to log in directly via /parent/login to monitor sessions and hours." : "تُستخدم هذه البيانات ليسجل ولي الأمر الدخول مباشرة عبر الرابط /parent/login لمتابعة حصص وساعات أبنائه.")}
-            </p>
           </div>
         </div>
         <div className="flex justify-end gap-2.5 pt-3 border-t border-border/80">
