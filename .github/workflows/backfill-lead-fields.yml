@@ -53,8 +53,9 @@ jobs:
             echo "Current backend dir: $(pwd)"
             echo "── Verify wave-0 columns exist on prod DB ──"
             node -e "const {PrismaClient}=require('./prisma/generated/postgresql_v2');const p=new PrismaClient();p.\$queryRawUnsafe(\"SELECT column_name FROM information_schema.columns WHERE table_name='customers' AND column_name IN ('leadStage','leadPriority','leadSource','assignedToId','nextFollowUpDate','followUpReminderSentAt','firstContactAt')\").then(r=>{const names=r.map(c=>c.column_name);console.log('COLUMNS FOUND:',names.join(','));if(names.length<7){console.error('MISSING COLUMNS — deploy db push incomplete');process.exit(2);}return p.\$disconnect();}).catch(e=>{console.error('DB CHECK FAILED:',e.message);process.exit(1);})"
-            echo "── Verify lead crons started on server (full pm2 log files) ──"
-            grep -ah "LEAD-REMINDER-CRON" ~/.pm2/logs/*out.log 2>/dev/null | tail -3 || echo "(LEAD-REMINDER-CRON not found in out logs)"
-            grep -ah "CART-RECOVERY-CRON" ~/.pm2/logs/*out.log 2>/dev/null | tail -3 || echo "(CART-RECOVERY-CRON not found in out logs)"
+            echo "── Verify lead crons started on server ──"
+            pm2 list 2>/dev/null | head -6 || echo "(pm2 list unavailable)"
+            pm2 logs maxp-backend --lines 600 --nostream 2>/dev/null | grep -aE "LEAD-REMINDER-CRON|CART-RECOVERY-CRON" | head -6 || echo "(no cron lines via pm2 logs)"
+            ls ~/.pm2/logs/ 2>/dev/null | head -8 || echo "(no ~/.pm2/logs dir)"
             echo "── Running lead fields backfill with DRY_RUN=$DRY_RUN ──"
             node scripts/one-off/backfill-lead-fields.cjs --batch=500
