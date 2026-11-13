@@ -3,8 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ChartBarIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
+import { Sparkles, LayoutGrid } from 'lucide-react';
 import AppCard from './AppCard';
 import AppCardSkeleton from './AppCardSkeleton';
+import { AppLaunchpadGrid } from './launchpad/AppLaunchpadGrid';
 import { sectionHasVisibleItems } from './helpers';
 import { APP_CATEGORIES, APP_REGISTRY, AppCategory } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
@@ -66,6 +68,24 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
   });
 
   const isRtl = i18n.language?.startsWith('ar') ?? false;
+
+  const [viewMode, setViewMode] = useState<'launchpad' | 'classic'>(() => {
+    if (typeof window === 'undefined') return 'launchpad';
+    try {
+      return (window.localStorage.getItem('app-dashboard-view-mode') as 'launchpad' | 'classic') || 'launchpad';
+    } catch {
+      return 'launchpad';
+    }
+  });
+
+  const handleViewModeChange = useCallback((mode: 'launchpad' | 'classic') => {
+    setViewMode(mode);
+    try {
+      window.localStorage.setItem('app-dashboard-view-mode', mode);
+    } catch {
+      // Ignore storage write failures
+    }
+  }, []);
 
   const visibleApps = useMemo(() => {
     const seen = new Set<string>();
@@ -352,10 +372,46 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           ))}
         </nav>
 
-        <div className="hidden sm:flex mb-4 items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400" aria-hidden="true">
+        <div className="flex mb-4 items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400" aria-hidden="true">
             {filteredApps.length} {t('appDashboard.title')}
           </p>
+
+          {/* View Mode Toggle: Launchpad (New Zero-Box) vs Classic */}
+          <div
+            className="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs shrink-0"
+            role="group"
+            aria-label="طريقة عرض التطبيقات"
+          >
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('launchpad')}
+              aria-pressed={viewMode === 'launchpad'}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'launchpad'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+              title="عرض اللانش باد الحديث (بدون بوكسات)"
+            >
+              <Sparkles className="size-3.5 text-indigo-500" />
+              <span>لانش باد</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewModeChange('classic')}
+              aria-pressed={viewMode === 'classic'}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'classic'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-bold'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+              title="العرض الكلاسيكي السابق"
+            >
+              <LayoutGrid className="size-3.5" />
+              <span>كلاسيكي</span>
+            </button>
+          </div>
         </div>
 
         <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -402,6 +458,13 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               {t('appDashboard.clearFilters')}
             </button>
           </div>
+        ) : viewMode === 'launchpad' ? (
+          <AppLaunchpadGrid
+            apps={filteredApps}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+            showPinnedFavorites={selectedCategory === 'all' && !searchQuery.trim()}
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 @container">
             {filteredApps.map((app, index) => (
