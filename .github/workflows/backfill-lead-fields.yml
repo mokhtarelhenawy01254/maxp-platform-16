@@ -62,7 +62,7 @@ jobs:
             echo "Current backend dir: $(pwd)"
             echo "── Verify wave-0 columns exist on prod DB ──"
             node -e "const {PrismaClient}=require('./prisma/generated/postgresql_v2');const p=new PrismaClient();p.\$queryRawUnsafe(\"SELECT column_name FROM information_schema.columns WHERE table_name='customers' AND column_name IN ('leadStage','leadPriority','leadSource','assignedToId','nextFollowUpDate','followUpReminderSentAt','firstContactAt')\").then(r=>{const names=r.map(c=>c.column_name);console.log('COLUMNS FOUND:',names.join(','));if(names.length<7){console.error('MISSING COLUMNS — deploy db push incomplete');process.exit(2);}return p.\$disconnect();}).catch(e=>{console.error('DB CHECK FAILED:',e.message);process.exit(1);})"
-            echo "── Running lead fields backfill (mode=$BACKFILL_MODE, DRY_RUN=$DRY_RUN) ──"
+            echo "── Running lead fields backfill (mode=${BACKFILL_MODE:-metadata}, DRY_RUN=$DRY_RUN) ──"
             ARGS="--batch=500"
-            if [ "$BACKFILL_MODE" = "sources" ]; then ARGS="$ARGS --sources"; fi
+            if [ "${BACKFILL_MODE:-metadata}" = "sources" ]; then ARGS="$ARGS --sources"; fi
             node scripts/one-off/backfill-lead-fields.cjs $ARGS
