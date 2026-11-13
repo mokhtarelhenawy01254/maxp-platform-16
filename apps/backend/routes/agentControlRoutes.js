@@ -377,6 +377,7 @@ router.put('/agents/:id/files', async (req, res) => {
       persona: req.body?.persona,
       style: req.body?.style, policies: req.body?.policies,
       guardrails: req.body?.guardrails, budget: req.body?.budget,
+      model_policy: req.body?.modelPolicy || req.body?.model_policy,
       custom_instructions: req.body?.customInstructions,
     };
     const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, payload);

@@ -582,7 +582,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         elif not isinstance(raw_fallbacks, list):
             raw_fallbacks = []
         if not raw_fallbacks:
-            raw_fallbacks = ["groq/openai/gpt-oss-120b", "gemini-2.5-flash"]
+            # 2026-11-13: gemini first — gpt-oss-120b Arabic is machine-translation-flavored
+            # and produced broken replies to real customers (CodeTreps incident).
+            raw_fallbacks = ["gemini-2.5-flash", "groq/openai/gpt-oss-120b"]
 
         recovered = False
         for fb in raw_fallbacks:
@@ -848,6 +850,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     for hook in hooks_to_run:
         await hook.before_reply(ctx, executed)
 
+    if getattr(provider_response, "reasoning_content", None) and not getattr(ctx, "reasoning_content", None):
+        ctx.reasoning_content = provider_response.reasoning_content
+
     ctx.llm_result = provider_response
     return ctx
 
@@ -864,6 +869,45 @@ def _unwrap_llm_client(client):
     if hasattr(client, "_llm_client") and getattr(client, "_llm_client", None) is not None:
         return client._llm_client
     return client
+
+
+def _resolve_reasoning_effort(ctx: PipelineContext) -> str | None:
+    """Resolve reasoning_effort from context, agent configuration, or policy."""
+    if not ctx:
+        return None
+    # 1. Direct override on context or options if passed
+    if getattr(ctx, "reasoning_effort", None):
+        return getattr(ctx, "reasoning_effort")
+    if hasattr(ctx, "options") and isinstance(getattr(ctx, "options", None), dict) and ctx.options.get("reasoning_effort"):
+        return str(ctx.options.get("reasoning_effort")).lower()
+
+    # 2. Agent configuration (Super Admin settings from AgentSettingsTab)
+    if ctx.agent:
+        config = getattr(ctx.agent, "config", None)
+        if isinstance(config, dict):
+            val = config.get("reasoning_effort") or config.get("reasoningEffort")
+            if val:
+                return str(val).lower()
+        elif config is not None:
+            val = getattr(config, "reasoning_effort", None) or getattr(config, "reasoningEffort", None)
+            if val:
+                return str(val).lower()
+
+        # 3. Model policy in agent policies or default_options
+        policies = getattr(ctx.agent, "policies", None) or {}
+        mp = policies.get("model_policy") or getattr(ctx.agent, "model_policy", None) or {}
+        if isinstance(mp, dict):
+            val = mp.get("reasoning_effort")
+            if val:
+                return str(val).lower()
+
+        default_opts = getattr(ctx.agent, "default_options", None) or {}
+        if isinstance(default_opts, dict):
+            val = default_opts.get("reasoning_effort")
+            if val:
+                return str(val).lower()
+
+    return None
 
 
 async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> ProviderResponse:
@@ -943,12 +987,23 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     # Persist assembled messages for downstream stages (self-review judge context)
     ctx.messages = list(messages)
 
-    return await client.generate(
-        messages=messages,
-        tools=tool_dicts,
-        temperature=temperature,
-        tool_choice=tool_choice,
-    )
+    reasoning_effort = _resolve_reasoning_effort(ctx)
+    if reasoning_effort:
+        ctx.reasoning_effort = reasoning_effort
+
+    gen_kwargs: dict[str, Any] = {
+        "messages": messages,
+        "tools": tool_dicts,
+        "temperature": temperature,
+        "tool_choice": tool_choice,
+    }
+    if reasoning_effort:
+        gen_kwargs["reasoning_effort"] = reasoning_effort
+
+    response = await client.generate(**gen_kwargs)
+    if getattr(response, "reasoning_content", None):
+        ctx.reasoning_content = response.reasoning_content
+    return response
 
 
 async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list | None = None, tool_choice: str | None = None) -> ProviderResponse:
@@ -1011,12 +1066,24 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 
     provider = (getattr(client, "provider", None) or "").upper()
     temperature = 1.0 if provider == "OLLAMA" else 0.3
-    return await client.generate(
-        messages=messages,
-        tools=tool_dicts,
-        temperature=temperature,
-        tool_choice=effective_tool_choice,
-    )
+
+    reasoning_effort = _resolve_reasoning_effort(ctx)
+    if reasoning_effort:
+        ctx.reasoning_effort = reasoning_effort
+
+    gen_kwargs: dict[str, Any] = {
+        "messages": messages,
+        "tools": tool_dicts,
+        "temperature": temperature,
+        "tool_choice": effective_tool_choice,
+    }
+    if reasoning_effort:
+        gen_kwargs["reasoning_effort"] = reasoning_effort
+
+    response = await client.generate(**gen_kwargs)
+    if getattr(response, "reasoning_content", None):
+        ctx.reasoning_content = response.reasoning_content
+    return response
 
 
 def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:

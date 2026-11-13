@@ -1528,6 +1528,8 @@ async def update_agent(
         agent.allowed_tools = body.allowed_tools
     if body.allowed_skills is not None:
         agent.allowed_skills = body.allowed_skills
+    if body.model_policy is not None:
+        agent.model_policy = body.model_policy
     if body.allowed_channels is not None:
         agent.channels = body.allowed_channels
         await _remove_claimed_channels_from_other_agents(

@@ -96,6 +96,7 @@ class AgentUpdate(BaseModel):
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
     config: dict[str, Any] | None = None
+    model_policy: dict[str, Any] | None = None
 
 
 class AgentStatusUpdate(BaseModel):
