@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { School, AlertTriangle, Settings, History } from "lucide-react";
+import { School, AlertTriangle } from "lucide-react";
 import {
   useEducationManagementController,
   EducationDashboardTab,

@@ -62,6 +62,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [tabs, setTabs] = useState<EducationTabConfig[]>([]);
   const [initialData, setInitialData] = useState<EducationSettingsData | null>(null);
+  const [savedSnap, setSavedSnap] = useState<string | null>(null);
 
   const [savingMode, setSavingMode] = useState<EducationMode | null>(null);
   const [savingPushFirst, setSavingPushFirst] = useState<boolean>(false);
@@ -69,6 +70,9 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [pendingMode, setPendingMode] = useState<EducationMode | null>(null);
 
   const anySaving = saving || savingMode !== null || savingPushFirst || savingDemoDay;
+
+  const snapshotOf = (title: string, titleEn: string, tabsList: EducationTabConfig[]) =>
+    JSON.stringify([title, titleEn, tabsList.map((tb) => [tb.id, tb.labelAr, tb.labelEn, tb.visible, tb.order])]);
 
   const applyData = (data: EducationSettingsData) => {
     const mode = data.educationMode || (data.enableSubjects ? "ACADEMIC" : "COURSES");
@@ -89,6 +93,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     setCustomDomain(data.customDomain ?? null);
     setTabs(data.tabs || []);
     setInitialData(data);
+    setSavedSnap(snapshotOf(data.systemTitle || "", data.systemTitleEn || "", data.tabs || []));
   };
 
   const fetchSettings = async () => {
@@ -121,9 +126,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   ) => {
     const mode = o.educationMode ?? educationMode;
     const subjects = o.enableSubjects ?? enableSubjects;
-    const demo = o.enableDemoDay ?? enableDemoDay;
     const source = o.tabsOverride ?? tabs;
-    return {
+    const payload = {
       systemTitle: systemTitle.trim(),
       systemTitleEn: systemTitleEn.trim(),
       educationMode: mode,
@@ -148,6 +152,8 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         };
       }),
     };
+    // enableDemoDay is only sent by its own toggle handler (matches previous payloads exactly)
+    return o.enableDemoDay !== undefined ? { ...payload, enableDemoDay: o.enableDemoDay } : payload;
   };
 
   const emitUpdated = async (payload: object, saved: EducationSettingsData) => {
@@ -176,6 +182,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         tabsOverride: updatedTabs,
       });
       await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
+      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, updatedTabs));
       toast.success(
         mode === "COURSES"
           ? isEn
@@ -220,6 +227,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     try {
       const payload = buildPayload({ pushFirstSaveWhatsApp: next });
       await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
+      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, tabs));
       toast.success(
         next
           ? isEn
@@ -264,6 +272,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         tabsOverride: updatedTabs,
       });
       await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
+      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, updatedTabs));
       toast.success(
         next
           ? isEn
@@ -315,6 +324,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     if (targetIndex < 0 || targetIndex >= tabs.length) return;
     const newTabs = [...tabs];
     const [moved] = newTabs.splice(index, 1);
+    if (!moved) return;
     newTabs.splice(targetIndex, 0, moved);
     setTabs(newTabs.map((tb, idx) => ({ ...tb, order: idx })));
   };
@@ -357,6 +367,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
     try {
       const payload = buildPayload();
       await fetchJson(api("settings"), { method: "PUT", body: JSON.stringify(payload) });
+      setSavedSnap(snapshotOf(payload.systemTitle, payload.systemTitleEn, tabs));
       toast.success(
         isEn
           ? "Education settings saved and sidebar updated successfully"
@@ -383,22 +394,9 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const visibleCount = useMemo(() => tabs.filter((tb) => tb.visible).length, [tabs]);
 
   const isDirty = useMemo(() => {
-    if (!initialData) return false;
-    const snap = (d: EducationSettingsData) =>
-      JSON.stringify([
-        d.systemTitle,
-        d.systemTitleEn,
-        (d.tabs || []).map((tb) => [tb.id, tb.labelAr, tb.labelEn, tb.visible, tb.order]),
-      ]);
-    return (
-      snap({ ...initialData }) !==
-      snap({
-        systemTitle,
-        systemTitleEn,
-        tabs,
-      } as EducationSettingsData)
-    );
-  }, [initialData, systemTitle, systemTitleEn, tabs]);
+    if (savedSnap === null) return false;
+    return snapshotOf(systemTitle, systemTitleEn, tabs) !== savedSnap;
+  }, [savedSnap, systemTitle, systemTitleEn, tabs]);
 
   if (loading) {
     return (
