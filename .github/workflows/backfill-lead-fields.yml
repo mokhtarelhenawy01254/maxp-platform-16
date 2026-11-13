@@ -14,6 +14,14 @@ on:
         options:
           - 'true'
           - 'false'
+      mode:
+        description: 'Backfill mode: metadata lead fields or channel-derived sources'
+        required: false
+        default: 'metadata'
+        type: choice
+        options:
+          - 'metadata'
+          - 'sources'
 
 jobs:
   run-script:
@@ -40,6 +48,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+          BACKFILL_MODE: ${{ github.event.inputs.mode }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -53,16 +62,7 @@ jobs:
             echo "Current backend dir: $(pwd)"
             echo "── Verify wave-0 columns exist on prod DB ──"
             node -e "const {PrismaClient}=require('./prisma/generated/postgresql_v2');const p=new PrismaClient();p.\$queryRawUnsafe(\"SELECT column_name FROM information_schema.columns WHERE table_name='customers' AND column_name IN ('leadStage','leadPriority','leadSource','assignedToId','nextFollowUpDate','followUpReminderSentAt','firstContactAt')\").then(r=>{const names=r.map(c=>c.column_name);console.log('COLUMNS FOUND:',names.join(','));if(names.length<7){console.error('MISSING COLUMNS — deploy db push incomplete');process.exit(2);}return p.\$disconnect();}).catch(e=>{console.error('DB CHECK FAILED:',e.message);process.exit(1);})"
-            echo "── Verify lead crons started on server ──"
-            pm2 list 2>/dev/null | head -6 || echo "(pm2 list unavailable)"
-            echo "--- pm2 log dir ---"
-            ls ~/.pm2/logs/ 2>/dev/null | head -6 || echo "(no ~/.pm2/logs)"
-            echo "--- app logs dir ---"
-            ls /var/www/backend2/logs/ 2>/dev/null | head -10 || echo "(no app logs dir)"
-            echo "--- grep cron banners across likely log locations ---"
-            grep -rah "LEAD-REMINDER-CRON" ~/.pm2/logs/ /var/www/backend2/logs/ 2>/dev/null | tail -4 || true
-            grep -rah "CART-RECOVERY-CRON" ~/.pm2/logs/ /var/www/backend2/logs/ 2>/dev/null | tail -4 || true
-            echo "--- cron tick since restart ---"
-            grep -rah "Checking for due lead follow-ups\|Sweeping abandoned guest carts" ~/.pm2/logs/ /var/www/backend2/logs/ 2>/dev/null | tail -4 || true
-            echo "── Running lead fields backfill with DRY_RUN=$DRY_RUN ──"
-            node scripts/one-off/backfill-lead-fields.cjs --batch=500
+            echo "── Running lead fields backfill (mode=$BACKFILL_MODE, DRY_RUN=$DRY_RUN) ──"
+            ARGS="--batch=500"
+            if [ "$BACKFILL_MODE" = "sources" ]; then ARGS="$ARGS --sources"; fi
+            node scripts/one-off/backfill-lead-fields.cjs $ARGS
