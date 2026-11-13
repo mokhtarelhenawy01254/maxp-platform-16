@@ -459,10 +459,29 @@ class EnhancedOrderService {
             where: { id: customer.id },
             data: {
               updatedAt: new Date(),
-              status: 'ACTIVE' // ترقية العميل لحالة نشط بمجرد عمل أوردر
+              status: 'ACTIVE', // ترقية العميل لحالة نشط بمجرد عمل أوردر
+              leadStage: 'CONVERTED' // 🆕 Wave 2: تسجيل التحويل في قمع الليدز تلقائيًا
             }
           })
         ).catch(err => console.log('⚠️ [ENHANCED-ORDER] Failed to update customer:', err.message));
+
+        // 🆕 Wave 2: إشعار المسؤول عن الليد بأنه اتحول لأوردر
+        if (customer.assignedToId && order.companyId) {
+          try {
+            await this.getPrisma().notification.createMany({
+              data: [{
+                companyId: order.companyId,
+                userId: customer.assignedToId,
+                title: 'ليد اتحول لأوردر',
+                message: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() + ` — أوردر ${order.orderNumber || ''}`.trim(),
+                type: 'SYSTEM',
+                data: { customerId: customer.id, orderId: order.id, kind: 'lead_converted' }
+              }]
+            });
+          } catch (notifyErr) {
+            console.warn('⚠️ [ENHANCED-ORDER] Lead conversion notify failed:', notifyErr.message);
+          }
+        }
       }
 
       const isDuplicate = order.status === 'DUPLICATE_ORDER';
