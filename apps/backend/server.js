@@ -1809,6 +1809,15 @@ try {
   console.error("❌ [CART-RECOVERY-CRON] Failed to start abandoned cart recovery scheduler:", error);
 }
 
+// 🆕 Lead SLA first-contact escalation — every 5 minutes (default window 15 min)
+try {
+  const { startLeadSlaEscalationScheduler } = require("./cron/leadSlaEscalationCron");
+  startLeadSlaEscalationScheduler();
+  console.log("✅ [LEAD-SLA-CRON] Lead SLA escalation scheduler started (runs every 5 min)");
+} catch (error) {
+  console.error("❌ [LEAD-SLA-CRON] Failed to start lead SLA escalation scheduler:", error);
+}
+
 // Start WhatsApp Journey scheduler — follow-up messages
 try {
   const { startWhatsAppJourneyScheduler } = require("./cron/whatsappJourneyCron");

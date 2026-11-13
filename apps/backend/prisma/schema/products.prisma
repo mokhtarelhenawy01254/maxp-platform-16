@@ -26,6 +26,7 @@ model Customer {
   nextFollowUpDate               DateTime?
   followUpReminderSentAt         DateTime?
   firstContactAt                 DateTime?
+  slaFirstContactEscalatedAt     DateTime?
   tags                           String?
   notes                          String?
   metadata                       String?
