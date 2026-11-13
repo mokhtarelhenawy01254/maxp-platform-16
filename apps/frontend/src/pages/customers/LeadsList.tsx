@@ -16,6 +16,7 @@ import {
   Customer,
   CustomerFilters,
 } from "../../services/customerService";
+import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import CustomerImportModal from "./CustomerImportModal";
@@ -53,6 +54,34 @@ const LeadsList: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [assigneeNameById, setAssigneeNameById] = useState<
+    Record<string, string>
+  >({});
+
+  // Load company users map (admins only) to show lead assignee names
+  useEffect(() => {
+    if (!isAdmin || !user?.companyId) return;
+    let cancelled = false;
+    apiClient
+      .get(`/companies/${user.companyId}/users?limit=100`)
+      .then((res) => {
+        if (cancelled) return;
+        const users = res.data?.data?.users || [];
+        const map: Record<string, string> = {};
+        (users as { id: string; firstName?: string; lastName?: string }[]).forEach(
+          (u) => {
+            if (u?.id) {
+              map[u.id] = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+            }
+          },
+        );
+        setAssigneeNameById(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, user?.companyId]);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === customers.length) {
@@ -266,6 +295,7 @@ const LeadsList: React.FC = () => {
           onDeleteCustomer={handleDeleteCustomer}
           pagination={pagination}
           onPageChange={handlePageChange}
+          assigneeNameById={assigneeNameById}
         />
       )}
 

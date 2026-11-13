@@ -23,6 +23,12 @@ export interface CustomerDetailsData {
     leadStage?: string;
     leadPriority?: string;
     leadSource?: string;
+    assignedToId?: string | null;
+    assignedTo?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
     customerJob?: string;
     customerInterests?: string;
     inquiryDetails?: string;

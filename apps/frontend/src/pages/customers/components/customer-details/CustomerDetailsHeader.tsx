@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,10 +9,13 @@ import {
   ArrowDownTrayIcon,
   NoSymbolIcon,
   CheckCircleIcon,
+  ShoppingBagIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { CustomerRatingBadge } from "@/components/orders/CustomerRatingBadge";
 import { CustomerDetailsData } from "./types";
 import { CustomerBlockRule } from "@/services/customerBlocklistService";
+import QuickOrderModal from "@/components/facebook-inbox/Modals/QuickOrderModal";
 
 interface CustomerDetailsHeaderProps {
   customer: CustomerDetailsData["customer"];
@@ -27,6 +30,15 @@ interface CustomerDetailsHeaderProps {
   onExport: () => void;
   onOpenDeleteModal: () => void;
   getStatusBadge: (status: string) => string;
+  // Lead assignment + quick order (optional, additive)
+  companyUsers?: { id: string; firstName: string; lastName: string }[];
+  onAssigneeFocus?: () => void;
+  onAssignLead?: (assignedToId: string | null) => void;
+  isAssigning?: boolean;
+  showQuickOrder?: boolean;
+  onOpenQuickOrder?: () => void;
+  onCloseQuickOrder?: () => void;
+  onOrderCreated?: () => void;
 }
 
 export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
@@ -42,9 +54,32 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
   onExport,
   onOpenDeleteModal,
   getStatusBadge,
+  companyUsers,
+  onAssigneeFocus,
+  onAssignLead,
+  isAssigning,
+  showQuickOrder,
+  onOpenQuickOrder,
+  onCloseQuickOrder,
+  onOrderCreated,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const orderSuccessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (orderSuccessTimer.current) clearTimeout(orderSuccessTimer.current);
+    };
+  }, []);
+
+  const handleOrderCreated = () => {
+    setOrderSuccess(true);
+    if (orderSuccessTimer.current) clearTimeout(orderSuccessTimer.current);
+    orderSuccessTimer.current = setTimeout(() => setOrderSuccess(false), 4000);
+    onOrderCreated?.();
+  };
 
   return (
     <div className="space-y-4">
@@ -92,6 +127,46 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
               <ChatBubbleLeftRightIcon className="h-4 w-4 ml-1.5" />
               WhatsApp
             </button>
+          )}
+
+          {/* Quick Order Button */}
+          {onOpenQuickOrder && (
+            <button
+              onClick={onOpenQuickOrder}
+              disabled={!customer.phone && !customer.id}
+              className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 border border-transparent hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 transition-all duration-150 active:scale-[0.97]"
+            >
+              <ShoppingBagIcon className="h-4 w-4 ml-1.5" />
+              أوردر سريع
+            </button>
+          )}
+
+          {/* Lead Assignee (admin only) */}
+          {isAdmin && onAssignLead && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+              <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
+              <label
+                htmlFor="lead-assignee-select"
+                className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap"
+              >
+                المسؤول عن الليد
+              </label>
+              <select
+                id="lead-assignee-select"
+                value={customer.assignedToId || ""}
+                onFocus={onAssigneeFocus}
+                onChange={(e) => onAssignLead(e.target.value || null)}
+                disabled={isAssigning}
+                className="text-xs font-medium text-gray-700 dark:text-gray-200 bg-transparent focus:outline-none disabled:opacity-50 max-w-[9rem] truncate cursor-pointer"
+              >
+                <option value="">غير مُسند</option>
+                {(companyUsers || []).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {`${u.firstName || ""} ${u.lastName || ""}`.trim()}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           {isAdmin &&
@@ -143,6 +218,14 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
         </div>
       </div>
 
+      {/* Quick order success chip */}
+      {orderSuccess && (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+          <CheckCircleIcon className="h-4 w-4" />
+          تم إنشاء الأوردر بنجاح
+        </div>
+      )}
+
       {isCustomerBlocked && activeBlockRule && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
           <div className="flex items-start gap-3">
@@ -163,6 +246,19 @@ export const CustomerDetailsHeader: React.FC<CustomerDetailsHeaderProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Order Modal */}
+      {showQuickOrder && onCloseQuickOrder && (
+        <QuickOrderModal
+          isOpen={showQuickOrder}
+          onClose={onCloseQuickOrder || (() => {})}
+          customerName={`${customer.firstName || ""} ${customer.lastName || ""}`.trim()}
+          customerPhone={customer.phone}
+          customerId={customer.id}
+          platform="whatsapp"
+          onOrderCreated={handleOrderCreated}
+        />
       )}
     </div>
   );

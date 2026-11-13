@@ -25,6 +25,16 @@ interface Customer {
   successScore?: number;
   customerRating?: string;
   autoDiscountStatus?: string | null;
+  leadStage?: string;
+  leadPriority?: string;
+  leadSource?: string;
+  assignedToId?: string | null;
+  nextFollowUpDate?: string | null;
+  assignedTo?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
   loyaltyTier?: {
     id: string;
     name: string;
@@ -72,6 +82,35 @@ interface CreateCustomerData {
 
 interface UpdateCustomerData extends Partial<CreateCustomerData> {
   status?: string;
+  leadStage?: string;
+  leadPriority?: string;
+  nextFollowUpDate?: string | null;
+}
+
+interface DueFollowUpLead {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  leadStage?: string | null;
+  leadPriority?: string | null;
+  leadSource?: string | null;
+  assignedToId?: string | null;
+  assignedTo?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  nextFollowUpDate?: string | null;
+}
+
+interface DueFollowUpsBucket {
+  leads: DueFollowUpLead[];
+  counts: {
+    overdue: number;
+    today: number;
+    upcoming: number;
+  };
 }
 
 interface CustomerFilters {
@@ -271,6 +310,57 @@ class CustomerService {
     const response = await apiClient.put(`/customers/${customerId}/tags`, { tags });
     return response.data;
   }
+
+  /**
+   * Get due lead follow-ups grouped by bucket (overdue | today | upcoming)
+   */
+  async getDueFollowUps(
+    bucket: "overdue" | "today" | "upcoming",
+    mine = false,
+  ): Promise<DueFollowUpsBucket> {
+    const response = await apiClient.get(
+      `/customers/follow-ups/due?bucket=${bucket}&mine=${mine}`,
+    );
+    return (
+      response.data?.data || {
+        leads: [],
+        counts: { overdue: 0, today: 0, upcoming: 0 },
+      }
+    );
+  }
+
+  /**
+   * Assign a lead to an employee (or unassign with null) — manager only
+   */
+  async assignLead(
+    customerId: string,
+    assignedToId: string | null,
+  ): Promise<{ data: any; message?: string }> {
+    const response = await apiClient.post(`/customers/${customerId}/assign`, {
+      assignedToId,
+    });
+    return {
+      data: response.data?.data,
+      message: response.data?.message,
+    };
+  }
+
+  /**
+   * Bulk assign leads to an employee (or unassign with null) — manager only
+   */
+  async bulkAssignLeads(
+    customerIds: string[],
+    assignedToId: string | null,
+  ): Promise<{ data: any; message?: string }> {
+    const response = await apiClient.post(`/customers/bulk-assign`, {
+      customerIds,
+      assignedToId,
+    });
+    return {
+      data: response.data?.data,
+      message: response.data?.message,
+    };
+  }
 }
 
 export const customerService = new CustomerService();
@@ -281,4 +371,6 @@ export type {
   CreateCustomerData,
   UpdateCustomerData,
   CustomerFilters,
+  DueFollowUpLead,
+  DueFollowUpsBucket,
 };

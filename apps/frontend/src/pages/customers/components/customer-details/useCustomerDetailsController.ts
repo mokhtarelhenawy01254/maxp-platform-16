@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "@/services/apiClient";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuthSimple";
+import { customerService } from "@/services/customerService";
 import {
   customerBlocklistService,
   CustomerBlockAction,
@@ -52,6 +53,34 @@ export const useCustomerDetailsController = () => {
     action: "BLOCK_ORDERS" as CustomerBlockAction,
     expiresAt: "",
   });
+
+  // Lead assignment + quick order state
+  const [companyUsers, setCompanyUsers] = useState<
+    { id: string; firstName: string; lastName: string }[]
+  >([]);
+  const [companyUsersLoaded, setCompanyUsersLoaded] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [showQuickOrder, setShowQuickOrder] = useState(false);
+  const companyId = user?.companyId || user?.company?.id || null;
+
+  const ensureCompanyUsers = useCallback(async () => {
+    if (!isAdmin || companyUsersLoaded || !companyId) return;
+    try {
+      const res = await apiClient.get(
+        `/companies/${companyId}/users?limit=100`,
+      );
+      setCompanyUsers(res.data?.data?.users || []);
+      setCompanyUsersLoaded(true);
+    } catch (err) {
+      console.error("Failed to load company users:", err);
+    }
+  }, [isAdmin, companyUsersLoaded, companyId]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      ensureCompanyUsers();
+    }
+  }, [isAdmin, ensureCompanyUsers]);
 
   const loadCustomerDetails = useCallback(async () => {
     if (!id) return;
@@ -418,5 +447,11 @@ export const useCustomerDetailsController = () => {
     handleExportCustomer,
     handleStartWhatsApp,
     getStatusBadge,
+    companyUsers,
+    ensureCompanyUsers,
+    handleAssignLead,
+    isAssigning,
+    showQuickOrder,
+    setShowQuickOrder,
   };
 };

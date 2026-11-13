@@ -33,6 +33,7 @@ interface LeadsTableProps {
     hasPrev: boolean;
   };
   onPageChange: (page: number) => void;
+  assigneeNameById?: Record<string, string>;
 }
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -45,6 +46,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   onDeleteCustomer,
   pagination,
   onPageChange,
+  assigneeNameById,
 }) => {
   const getRatingBadge = (rating?: string) => {
     if (!rating) return null;
@@ -119,6 +121,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               <th className="px-4 py-3 text-right font-semibold">المدينة / المصدر</th>
               <th className="px-4 py-3 text-right font-semibold">التقييم</th>
               <th className="px-4 py-3 text-right font-semibold">الحالة</th>
+              <th className="px-4 py-3 text-right font-semibold">مسؤول</th>
               <th className="px-4 py-3 text-right font-semibold">تاريخ التسجيل</th>
               <th className="px-4 py-3 text-center font-semibold">إجراءات</th>
             </tr>
@@ -180,6 +183,13 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   </td>
                   <td className="px-4 py-3">{getRatingBadge(customer.rating)}</td>
                   <td className="px-4 py-3">{getStatusBadge(customer.status || 'LEAD')}</td>
+                  <td className="px-4 py-3">
+                    <span className="block max-w-[9rem] truncate min-w-0 text-[11px] text-muted-foreground">
+                      {customer.assignedToId
+                        ? assigneeNameById?.[customer.assignedToId] || 'مُسند'
+                        : '—'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 font-mono tabular-nums text-muted-foreground text-[11px]">
                     {formatDate(customer.createdAt)}
                   </td>

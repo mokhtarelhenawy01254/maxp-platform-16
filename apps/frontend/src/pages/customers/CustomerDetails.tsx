@@ -59,6 +59,14 @@ const CustomerDetails: React.FC = () => {
         onExport={ctrl.handleExportCustomer}
         onOpenDeleteModal={() => ctrl.setShowDeleteModal(true)}
         getStatusBadge={ctrl.getStatusBadge}
+        companyUsers={ctrl.companyUsers}
+        onAssigneeFocus={ctrl.ensureCompanyUsers}
+        onAssignLead={ctrl.handleAssignLead}
+        isAssigning={ctrl.isAssigning}
+        showQuickOrder={ctrl.showQuickOrder}
+        onOpenQuickOrder={() => ctrl.setShowQuickOrder(true)}
+        onCloseQuickOrder={() => ctrl.setShowQuickOrder(false)}
+        onOrderCreated={ctrl.loadCustomerDetails}
       />
 
       {/* Stats Cards */}

@@ -5,6 +5,7 @@ const { getMetaGraphApiVersion } = require('../config/metaApi');
 const WalletService = require('../services/walletService');
 const customerBlocklistService = require('../services/customerBlocklistService');
 const autoDiscountService = require('../services/autoDiscountService');
+const socketService = require('../services/socketService');
 
 // ── Lead CRM fields (wave 0): real columns with legacy metadata fallback ──
 const LEAD_STAGE_VALUES = ['NEW_LEAD', 'CONTACTED', 'INTERESTED', 'FOLLOW_UP_SCHEDULED', 'PROPOSAL_SENT', 'NEGOTIATION', 'CONVERTED', 'NOT_INTERESTED', 'LOST'];
@@ -2684,6 +2685,10 @@ const updateCustomer = async (req, res) => {
         leadColumns.followUpReminderSentAt = null;
       }
     }
+    // Wave 2: stamp first contact time when the employee logs the first follow-up entry
+    if (newFollowUpEntry && (newFollowUpEntry.details || newFollowUpEntry.notes || newFollowUpEntry.content) && !customer.firstContactAt) {
+      leadColumns.firstContactAt = new Date();
+    }
 
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
@@ -3211,9 +3216,206 @@ const recalculateAllCustomerRatingsHandler = async (req, res) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🆕 Wave 2 — Lead CRM: follow-up queue + assignment
+// ═══════════════════════════════════════════════════════════════════════════════
+const LEAD_ASSIGNER_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'ADMIN'];
+
+const _getActorId = (req) => req.user?.userId || req.user?.id || null;
+
+const _canAssignLeads = async (companyId, actorId) => {
+  if (!actorId) return false;
+  const membership = await getSharedPrismaClient().userCompany.findFirst({
+    where: { companyId, userId: actorId, isActive: true, role: { in: LEAD_ASSIGNER_ROLES } },
+    select: { id: true }
+  });
+  if (membership) return true;
+  const directUser = await getSharedPrismaClient().user.findFirst({
+    where: { id: actorId, companyId, role: { in: LEAD_ASSIGNER_ROLES }, isActive: true },
+    select: { id: true }
+  });
+  return Boolean(directUser);
+};
+
+const getDueLeadFollowUps = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول - معرف الشركة مطلوب' });
+    }
+    const bucket = ['overdue', 'today', 'upcoming'].includes(req.query.bucket) ? req.query.bucket : 'overdue';
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+    const weekAhead = new Date(endOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const rangeMap = {
+      overdue: { lt: startOfToday },
+      today: { gte: startOfToday, lte: endOfToday },
+      upcoming: { gt: endOfToday, lte: weekAhead }
+    };
+    const mine = req.query.mine === 'true';
+    const where = { companyId, status: 'LEAD', nextFollowUpDate: rangeMap[bucket] };
+    if (mine && _getActorId(req)) where.assignedToId = _getActorId(req);
+
+    const countWhere = { companyId, status: 'LEAD' };
+    if (mine && _getActorId(req)) countWhere.assignedToId = _getActorId(req);
+
+    const prisma = getSharedPrismaClient();
+    const [leads, overdueCount, todayCount, upcomingCount] = await Promise.all([
+      prisma.customer.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          leadStage: true,
+          leadPriority: true,
+          leadSource: true,
+          assignedToId: true,
+          assignedTo: { select: { id: true, firstName: true, lastName: true } },
+          nextFollowUpDate: true
+        },
+        orderBy: { nextFollowUpDate: 'asc' },
+        take: 300
+      }),
+      prisma.customer.count({ where: { ...countWhere, nextFollowUpDate: rangeMap.overdue } }),
+      prisma.customer.count({ where: { ...countWhere, nextFollowUpDate: rangeMap.today } }),
+      prisma.customer.count({ where: { ...countWhere, nextFollowUpDate: rangeMap.upcoming } })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        leads,
+        counts: { overdue: overdueCount, today: todayCount, upcoming: upcomingCount }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error listing due lead follow-ups:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب متابعات الليدز', error: error.message });
+  }
+};
+
+const _validateAssignTarget = async (companyId, assignedToId) => {
+  if (!assignedToId) return null;
+  const prisma = getSharedPrismaClient();
+  const target = await prisma.user.findFirst({
+    where: {
+      id: assignedToId,
+      isActive: true,
+      OR: [{ companyId }, { userCompanies: { some: { companyId } } }]
+    },
+    select: { id: true, firstName: true, lastName: true }
+  });
+  return target;
+};
+
+const _notifyLeadAssignment = async (companyId, customer, targetUser) => {
+  try {
+    await getSharedPrismaClient().notification.createMany({
+      data: [{
+        companyId,
+        userId: targetUser.id,
+        title: 'ليد جديد مسند إليك',
+        message: `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل محتمل',
+        type: 'SYSTEM',
+        data: { customerId: customer.id, kind: 'lead_assigned' }
+      }]
+    });
+    socketService.emitToCompany(companyId, 'lead:assigned', {
+      customerId: customer.id,
+      assignedToId: targetUser.id
+    });
+  } catch (notifyError) {
+    console.error('❌ Failed to notify lead assignment:', notifyError.message);
+  }
+};
+
+const assignLead = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+    const canAssign = await _canAssignLeads(companyId, _getActorId(req));
+    if (!canAssign) {
+      return res.status(403).json({ success: false, message: 'الإسناد متاح للمديرين فقط' });
+    }
+    const customerId = req.params.customerId;
+    const { assignedToId } = req.body || {};
+    const targetUser = await _validateAssignTarget(companyId, assignedToId);
+    if (assignedToId && !targetUser) {
+      return res.status(400).json({ success: false, message: 'الموظف غير موجود أو غير نشط في هذه الشركة' });
+    }
+    const prisma = getSharedPrismaClient();
+    const updated = await prisma.customer.update({
+      where: { id: customerId },
+      data: { assignedToId: targetUser ? targetUser.id : null },
+      select: { id: true, firstName: true, lastName: true, assignedToId: true }
+    });
+    if (targetUser) {
+      await _notifyLeadAssignment(companyId, updated, targetUser);
+    }
+    res.json({
+      success: true,
+      data: updated,
+      message: targetUser ? 'تم إسناد الليد بنجاح' : 'تم إلغاء إسناد الليد'
+    });
+  } catch (error) {
+    console.error('❌ Error assigning lead:', error);
+    res.status(500).json({ success: false, message: 'خطأ في إسناد الليد', error: error.message });
+  }
+};
+
+const bulkAssignLeads = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
+    }
+    const canAssign = await _canAssignLeads(companyId, _getActorId(req));
+    if (!canAssign) {
+      return res.status(403).json({ success: false, message: 'الإسناد متاح للمديرين فقط' });
+    }
+    const { customerIds, assignedToId } = req.body || {};
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'قائمة الليدز مطلوبة' });
+    }
+    const targetUser = await _validateAssignTarget(companyId, assignedToId);
+    if (assignedToId && !targetUser) {
+      return res.status(400).json({ success: false, message: 'الموظف غير موجود أو غير نشط في هذه الشركة' });
+    }
+    const result = await getSharedPrismaClient().customer.updateMany({
+      where: { id: { in: customerIds }, companyId },
+      data: { assignedToId: targetUser ? targetUser.id : null }
+    });
+    if (targetUser) {
+      await _notifyLeadAssignment(companyId, {
+        id: null,
+        firstName: `${result.count} ليد`,
+        lastName: ''
+      }, targetUser);
+    }
+    res.json({
+      success: true,
+      data: { count: result.count, assignedToId: targetUser ? targetUser.id : null },
+      message: `تم إسناد ${result.count} ليد`
+    });
+  } catch (error) {
+    console.error('❌ Error bulk assigning leads:', error);
+    res.status(500).json({ success: false, message: 'خطأ في الإسناد الجماعي', error: error.message });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
+  getDueLeadFollowUps,
+  assignLead,
+  bulkAssignLeads,
   exportCustomers,
   deleteAllConversations,
   deleteAllCustomers,

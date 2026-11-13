@@ -100,11 +100,18 @@ router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermissi
 // ⭐ إعادة حساب وتصنيف جميع عملاء الشركة
 router.post('/recalculate-all-ratings', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.recalculateAllCustomerRatingsHandler);
 
+// 🆕 Wave 2 — Lead CRM: قائمة متابعات الليدز المستحقة + الإسناد
+router.get('/follow-ups/due', verifyToken.authenticateToken, requireDbPermission('customers.view'), checkAppAccess('crm-basic'), customerController.getDueLeadFollowUps);
+router.post('/bulk-assign', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.bulkAssignLeads);
+
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), checkAppAccess('crm-basic'), customerController.getCustomerDetails);
 
 // ⭐ إعادة حساب وتصنيف عميل محدد
 router.post('/:customerId/recalculate-rating', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.recalculateCustomerRatingHandler);
+
+// 👤 إسناد الليد لموظف (أو إلغاء الإسناد بـ assignedToId: null)
+router.post('/:customerId/assign', verifyToken.authenticateToken, requireDbPermission('customers.edit'), checkAppAccess('crm-basic'), customerController.assignLead);
 
 // جلب طلبات العميل
 router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);

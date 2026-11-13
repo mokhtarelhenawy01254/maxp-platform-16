@@ -82,6 +82,9 @@ jest.mock('../../controller/customerController', () => ({
   deleteCustomer: (req, res) => res.json({ success: true, route: 'deleteCustomer' }),
   updateCustomerTags: (req, res) => res.json({ success: true, route: 'updateCustomerTags' }),
   updateCustomer: (req, res) => res.json({ success: true, route: 'updateCustomer' }),
+  getDueLeadFollowUps: (req, res) => res.json({ success: true, route: 'getDueLeadFollowUps' }),
+  bulkAssignLeads: (req, res) => res.json({ success: true, route: 'bulkAssignLeads' }),
+  assignLead: (req, res) => res.json({ success: true, route: 'assignLead' }),
 }));
 
 jest.mock('../../controller/customerWhatsAppController', () => ({
