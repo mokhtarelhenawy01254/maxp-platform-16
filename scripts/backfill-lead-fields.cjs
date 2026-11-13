@@ -50,40 +50,34 @@ function pickEnum(value, allowed) {
 }
 
 // 🆕 Wave 2b-1: infer leadSource from channel IDs for legacy leads still marked OTHER
+// Bulk updateMany per channel (ordered precedence) — no per-row round-trips.
 async function backfillChannelSources() {
-  console.log(`[sources] start dryRun=${dryRun} batch=${BATCH}`);
+  console.log(`[sources] start dryRun=${dryRun}`);
   const channelMap = [
     { field: 'facebookId', source: 'FACEBOOK' },
     { field: 'instagramId', source: 'INSTAGRAM' },
     { field: 'whatsappId', source: 'WHATSAPP' },
     { field: 'tiktokId', source: 'TIKTOK' }
   ];
-  let cursor = null;
-  let scanned = 0;
+
+  const whereAnyChannel = { leadSource: 'OTHER', OR: channelMap.map((c) => ({ [c.field]: { not: null } })) };
+  const scanned = await prisma.customer.count({ where: whereAnyChannel });
   let updated = 0;
 
-  for (;;) {
-    const customers = await prisma.customer.findMany({
-      where: {
-        leadSource: 'OTHER',
-        OR: channelMap.map((c) => ({ [c.field]: { not: null } }))
-      },
-      select: { id: true, facebookId: true, instagramId: true, whatsappId: true, tiktokId: true },
-      take: BATCH,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {})
+  for (const { field, source } of channelMap) {
+    const count = await prisma.customer.count({
+      where: { leadSource: 'OTHER', [field]: { not: null } }
     });
-    if (customers.length === 0) break;
-    cursor = customers[customers.length - 1].id;
-
-    for (const customer of customers) {
-      scanned += 1;
-      const match = channelMap.find((m) => customer[m.field]);
-      if (!match) continue;
-      updated += 1;
-      console.log(`[sources] ${customer.id} -> ${match.source}`);
-      if (!dryRun) {
-        await prisma.customer.update({ where: { id: customer.id }, data: { leadSource: match.source } });
-      }
+    if (count === 0) continue;
+    console.log(`[sources] ${source} candidates=${count}`);
+    if (!dryRun) {
+      const result = await prisma.customer.updateMany({
+        where: { leadSource: 'OTHER', [field]: { not: null } },
+        data: { leadSource: source }
+      });
+      updated += result.count;
+    } else {
+      updated += count;
     }
   }
 
