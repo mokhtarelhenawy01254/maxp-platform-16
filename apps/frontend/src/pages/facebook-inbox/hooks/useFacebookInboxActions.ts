@@ -23,6 +23,7 @@ interface UseFacebookInboxActionsParams {
   activeTab: InboxTab;
   messages: InboxMessage[];
   addMessage: (msg: InboxMessage) => void;
+  updateMessage?: (id: string, updater: (prev: InboxMessage) => InboxMessage) => void;
   loadMessages: (conversationId: string) => void;
   loadMoreMessages: () => void;
   hasMore: boolean;
@@ -70,6 +71,7 @@ export function useFacebookInboxActions({
   activeTab,
   messages,
   addMessage,
+  updateMessage,
   loadMessages,
   loadMoreMessages,
   hasMore,
@@ -138,7 +140,9 @@ export function useFacebookInboxActions({
     replyToMessage,
     setReplyToMessage,
     updateSelectedConversation,
+    updateConversationInList,
     addMessage,
+    updateMessage,
     loadMessages,
     debouncedLoadConversations,
     setShowTextGallery,

@@ -9,6 +9,8 @@ export interface FilterState {
   startDate: Date | null;
   endDate: Date | null;
   priorityOnly?: boolean;
+  windowStatus?: "all" | "open" | "expired";
+  failedDeliveryOnly?: boolean;
 }
 
 interface FilterPanelProps {

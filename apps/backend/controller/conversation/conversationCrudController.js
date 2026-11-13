@@ -327,15 +327,18 @@ const getConversations = async (req, res) => {
                                 avatar: true
                             }
                         },
-                        // 🆕 Include last message to check if from customer
+                        // 🆕 Include last message to check if from customer and delivery status
                         messages: {
                             orderBy: { createdAt: 'desc' },
                             take: 1,
                             select: {
+                                id: true,
                                 isFromCustomer: true,
                                 isRead: true,
                                 content: true,
-                                type: true
+                                type: true,
+                                deliveryStatus: true,
+                                failureReason: true
                             }
                         }
                     },
@@ -422,15 +425,29 @@ const getConversations = async (req, res) => {
             // 🔧 FIX: Use included messages instead of fetching separately (much faster!)
             let lastMessageIsFromCustomer = false;
             let lastCustomerMessageIsUnread = false;
+            let lastMessageDeliveryStatus = null;
+            let lastMessageFailureReason = null;
+            let hasFailedDelivery = false;
 
             // Use the included messages array (already fetched with the conversation)
             if (conv.messages && conv.messages.length > 0) {
                 const lastMsg = conv.messages[0]; // Already ordered by createdAt desc
                 lastMessageIsFromCustomer = Boolean(lastMsg.isFromCustomer);
                 lastCustomerMessageIsUnread = lastMsg.isFromCustomer === true && lastMsg.isRead === false;
+                if (!lastMsg.isFromCustomer) {
+                    lastMessageDeliveryStatus = lastMsg.deliveryStatus || null;
+                    lastMessageFailureReason = lastMsg.failureReason || null;
+                    if (lastMessageDeliveryStatus === 'FAILED') {
+                        hasFailedDelivery = true;
+                    }
+                }
             } else {
                 // 🔧 FIX: Fallback to database column if messages not included
                 lastMessageIsFromCustomer = Boolean(conv.lastMessageIsFromCustomer);
+            }
+
+            if (!hasFailedDelivery && conv.metadata && (conv.metadata.includes('facebookSendError') || conv.metadata.includes('"deliveryStatus":"FAILED"'))) {
+                hasFailedDelivery = true;
             }
 
             // ⏰ حساب نافذة الـ 24 ساعة لفيسبوك
@@ -495,7 +512,10 @@ const getConversations = async (req, res) => {
                 pageId: pageId,
                 lastInboundAt: lastInboundAt ? new Date(lastInboundAt).toISOString() : null,
                 windowExpiresAt: windowExpiresAt ? windowExpiresAt.toISOString() : null,
-                isWindowExpired: isWindowExpired
+                isWindowExpired: isWindowExpired,
+                hasFailedDelivery: hasFailedDelivery,
+                lastMessageDeliveryStatus: lastMessageDeliveryStatus,
+                lastMessageFailureReason: lastMessageFailureReason
             };
         }));
 
@@ -600,7 +620,10 @@ const getConversation = async (req, res) => {
                 postId: metadata.postId,
                 lastInboundAt: lastInboundAt ? new Date(lastInboundAt).toISOString() : null,
                 windowExpiresAt: windowExpiresAt ? windowExpiresAt.toISOString() : null,
-                isWindowExpired: isWindowExpired
+                isWindowExpired: isWindowExpired,
+                hasFailedDelivery: hasFailedDelivery,
+                lastMessageDeliveryStatus: lastMessageDeliveryStatus,
+                lastMessageFailureReason: lastMessageFailureReason
             }
         });
 

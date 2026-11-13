@@ -116,6 +116,11 @@ export interface InboxConversation {
   lastInboundAt?: string | Date | null;
   windowExpiresAt?: string | Date | null;
   isWindowExpired?: boolean;
+
+  // ⚠️ Delivery status & failure tracking
+  hasFailedDelivery?: boolean;
+  lastMessageDeliveryStatus?: "PENDING" | "SENT" | "FAILED" | null;
+  lastMessageFailureReason?: string | null;
 }
 
 export interface InboxFilters {

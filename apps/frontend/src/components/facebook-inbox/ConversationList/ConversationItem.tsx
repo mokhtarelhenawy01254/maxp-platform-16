@@ -34,6 +34,35 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       conversation.customerAvatar,
     );
 
+    const isFacebook = !conversation.platform || conversation.platform === 'facebook';
+    let isWindowExpired = Boolean(conversation.isWindowExpired);
+    let remainingHours: number | null = null;
+
+    if (isFacebook) {
+      if (conversation.windowExpiresAt) {
+        const diff = new Date(conversation.windowExpiresAt).getTime() - Date.now();
+        if (diff <= 0) {
+          isWindowExpired = true;
+        } else {
+          isWindowExpired = false;
+          remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+        }
+      } else if (conversation.lastInboundAt) {
+        const diff = new Date(conversation.lastInboundAt).getTime() + 24 * 60 * 60 * 1000 - Date.now();
+        if (diff <= 0) {
+          isWindowExpired = true;
+        } else {
+          isWindowExpired = false;
+          remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+        }
+      }
+    }
+
+    const hasFailedDelivery = Boolean(
+      conversation.hasFailedDelivery ||
+      conversation.lastMessageDeliveryStatus === 'FAILED'
+    );
+
     const getConversationPreviewContent = (raw?: string | null) => {
       if (!raw || !raw.trim() || raw.trim().toLowerCase() === "no messages") {
         return <span>لا توجد رسائل</span>;
@@ -207,6 +236,38 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 </span>
               )}
 
+              {/* Delivery Failure Alert Badge */}
+              {hasFailedDelivery && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30"
+                  title={conversation.lastMessageFailureReason || "فشل إرسال رسالة إلى فيسبوك (Meta)"}
+                >
+                  <span className="text-[11px]">⚠️</span>
+                  <span>فشل الإرسال</span>
+                </span>
+              )}
+
+              {/* 24-hour Meta Window Badge */}
+              {isFacebook && (
+                isWindowExpired ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20"
+                    title="انتهت نافذة الـ 24 ساعة للرد حسب سياسة ميتا (لا يمكن الرد حالياً)"
+                  >
+                    <Clock className="w-2.5 h-2.5 text-zinc-500" />
+                    <span>النافذة مغلقة</span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25"
+                    title="نافذة الرد مفتوحة — يمكنك الرد على هذه المحادثة الآن"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>ينفع ترد {remainingHours ? `(${remainingHours}س)` : ''}</span>
+                  </span>
+                )
+              )}
+
               {conversation.priority && (
                 <span className="inline-flex items-center p-0.5 rounded text-amber-500">
                   <Star className="w-3 h-3 fill-current" />
@@ -270,7 +331,11 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       prevProps.conversation.aiEnabled === nextProps.conversation.aiEnabled &&
       prevProps.conversation.aiPausedUntil === nextProps.conversation.aiPausedUntil &&
       prevProps.conversation.snoozedUntil === nextProps.conversation.snoozedUntil &&
-      prevProps.conversation.tags.length === nextProps.conversation.tags.length
+      prevProps.conversation.tags.length === nextProps.conversation.tags.length &&
+      prevProps.conversation.hasFailedDelivery === nextProps.conversation.hasFailedDelivery &&
+      prevProps.conversation.lastMessageDeliveryStatus === nextProps.conversation.lastMessageDeliveryStatus &&
+      prevProps.conversation.isWindowExpired === nextProps.conversation.isWindowExpired &&
+      prevProps.conversation.windowExpiresAt === nextProps.conversation.windowExpiresAt
     );
   },
 );

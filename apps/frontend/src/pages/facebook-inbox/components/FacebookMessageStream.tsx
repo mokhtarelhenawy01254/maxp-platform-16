@@ -219,6 +219,23 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
           </div>
         )}
 
+        {/* Failed delivery banner if conversation has failed messages */}
+        {(selectedConversation.hasFailedDelivery || selectedConversation.lastMessageDeliveryStatus === 'FAILED') && (
+          <div className="flex items-center justify-between px-4 py-2 text-xs border-b border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300 backdrop-blur-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm flex-shrink-0">⚠️</span>
+              <span className="font-semibold">
+                {selectedConversation.lastMessageFailureReason
+                  ? `فشل إرسال رسالة إلى فيسبوك: ${selectedConversation.lastMessageFailureReason}`
+                  : 'توجد رسائل لم تصل إلى العميل على فيسبوك (Meta) — راجع الرسائل بالأسفل لإعادة المحاولة'}
+              </span>
+            </div>
+            <div className="text-[11px] text-red-600/80 dark:text-red-300/80 hidden sm:block">
+              اضغط على زر إعادة المحاولة بجوار الرسالة الفاشلة
+            </div>
+          </div>
+        )}
+
         <MessageInput
           onSendMessage={onSendMessage}
           onSendFile={onSendFile}

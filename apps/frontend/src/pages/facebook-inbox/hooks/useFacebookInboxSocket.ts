@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { socketService } from '@/services/socketService';
 import {
   requestBrowserNotificationPermission,
@@ -176,11 +177,60 @@ export function useFacebookInboxSocket({
 
     socket.on('conversation:ai_status_changed', handleAiStatusChanged);
 
+    const handleMessageUpdated = (data: {
+      id: string;
+      conversationId: string;
+      deliveryStatus: 'PENDING' | 'SENT' | 'FAILED';
+      failureReason?: string | null;
+      status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+      facebookMessageId?: string | null;
+    }) => {
+      if (
+        selectedConversation &&
+        data.conversationId === selectedConversation.id
+      ) {
+        updateMessage(data.id, (prevMsg) => ({
+          ...prevMsg,
+          deliveryStatus: data.deliveryStatus,
+          failureReason: data.failureReason || prevMsg.failureReason,
+          status:
+            data.status ||
+            (data.deliveryStatus === 'FAILED'
+              ? 'error'
+              : data.deliveryStatus === 'SENT'
+                ? 'sent'
+                : prevMsg.status),
+          facebookMessageId: data.facebookMessageId || prevMsg.facebookMessageId,
+        }));
+      }
+
+      if (data.deliveryStatus === 'FAILED') {
+        updateConversationInList(data.conversationId, {
+          hasFailedDelivery: true,
+          lastMessageDeliveryStatus: 'FAILED',
+          lastMessageFailureReason: data.failureReason || null,
+        });
+        toast.error(
+          data.failureReason ||
+            t('conversations.facebookDeliveryFailed', 'تعذر إرسال الرسالة إلى فيسبوك (Meta)'),
+        );
+      } else if (data.deliveryStatus === 'SENT') {
+        updateConversationInList(data.conversationId, {
+          hasFailedDelivery: false,
+          lastMessageDeliveryStatus: 'SENT',
+          lastMessageFailureReason: null,
+        });
+      }
+    };
+
+    socket.on('message_updated', handleMessageUpdated);
+
     return () => {
       socket.off('new_message', handleNewMessage);
       socket.off('messages_read', handleMessagesRead);
       socket.off('message_reaction_updated', handleReactionUpdated);
       socket.off('conversation:ai_status_changed', handleAiStatusChanged);
+      socket.off('message_updated', handleMessageUpdated);
     };
   }, [
     socket,

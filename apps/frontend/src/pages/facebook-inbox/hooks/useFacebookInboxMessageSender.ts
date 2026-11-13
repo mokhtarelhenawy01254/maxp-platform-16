@@ -17,7 +17,9 @@ interface UseFacebookInboxMessageSenderParams {
   replyToMessage: InboxMessage | null;
   setReplyToMessage: (msg: InboxMessage | null) => void;
   updateSelectedConversation: (updates: Partial<InboxConversation>) => void;
+  updateConversationInList?: (id: string, updates: Partial<InboxConversation>) => void;
   addMessage: (msg: InboxMessage) => void;
+  updateMessage?: (id: string, updater: (prev: InboxMessage) => InboxMessage) => void;
   loadMessages: (conversationId: string) => void;
   debouncedLoadConversations: (tab: InboxTab) => void;
   setShowTextGallery: (show: boolean) => void;
@@ -33,7 +35,9 @@ export function useFacebookInboxMessageSender({
   replyToMessage,
   setReplyToMessage,
   updateSelectedConversation,
+  updateConversationInList,
   addMessage,
+  updateMessage,
   loadMessages,
   debouncedLoadConversations,
   setShowTextGallery,
@@ -66,8 +70,32 @@ export function useFacebookInboxMessageSender({
           companyId,
           currentReplyTo,
           (optimisticMsg) => addMessage(optimisticMsg),
-          () => {},
-          () => {},
+          (tempId, realMsg) => {
+            if (updateMessage) {
+              updateMessage(tempId, () => ({
+                ...realMsg,
+                deliveryStatus: 'SENT',
+                status: 'sent',
+              }));
+            }
+          },
+          (tempId, errMsg) => {
+            if (updateMessage) {
+              updateMessage(tempId, (prev) => ({
+                ...prev,
+                deliveryStatus: 'FAILED',
+                status: 'error',
+                failureReason: errMsg,
+              }));
+            }
+            if (updateConversationInList) {
+              updateConversationInList(selectedConversation.id, {
+                hasFailedDelivery: true,
+                lastMessageDeliveryStatus: 'FAILED',
+                lastMessageFailureReason: errMsg,
+              });
+            }
+          },
         );
 
         if (!isConnected) {
@@ -83,6 +111,14 @@ export function useFacebookInboxMessageSender({
           error.message ||
           t('conversations.messageSendFailed', 'فشل إرسال الرسالة إلى فيسبوك');
         toast.error(errMsg);
+        if (updateConversationInList) {
+          updateConversationInList(selectedConversation.id, {
+            hasFailedDelivery: true,
+            lastMessageDeliveryStatus: 'FAILED',
+            lastMessageFailureReason: errMsg,
+          });
+        }
+        loadMessages(selectedConversation.id);
       }
     },
     [
@@ -92,6 +128,8 @@ export function useFacebookInboxMessageSender({
       loadMessages,
       replyToMessage,
       updateSelectedConversation,
+      updateConversationInList,
+      updateMessage,
       activeTab,
       isConnected,
       debouncedLoadConversations,
@@ -468,10 +506,14 @@ export function useFacebookInboxMessageSender({
     async (message: InboxMessage) => {
       if (!message || !message.id || !selectedConversation?.id) return;
 
-      // تحديث نفس العنصر في الـ cache فورياً لحالة قيد الإرسال (بدون رسالة جديدة متفائلة)
-      message.deliveryStatus = 'PENDING';
-      message.status = 'sending';
-      message.failureReason = null;
+      if (updateMessage) {
+        updateMessage(message.id, (prev) => ({
+          ...prev,
+          deliveryStatus: 'PENDING',
+          status: 'sending',
+          failureReason: null,
+        }));
+      }
 
       try {
         const response = await retryConversationMessage(
@@ -479,19 +521,29 @@ export function useFacebookInboxMessageSender({
           message.id,
         );
         const resData = response?.data as any;
+        const fbMsgId = resData?.data?.facebookMessageId || resData?.facebookMessageId;
 
-        // تحديث نفس العنصر في الـ cache بنجاح
-        message.deliveryStatus = 'SENT';
-        message.status = 'sent';
-        message.failureReason = null;
-        if (resData?.data?.facebookMessageId || resData?.facebookMessageId) {
-          message.facebookMessageId =
-            resData?.data?.facebookMessageId || resData?.facebookMessageId;
+        if (updateMessage) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            deliveryStatus: 'SENT',
+            status: 'sent',
+            failureReason: null,
+            facebookMessageId: fbMsgId || prev.facebookMessageId,
+          }));
+        }
+
+        if (updateConversationInList) {
+          updateConversationInList(selectedConversation.id, {
+            hasFailedDelivery: false,
+            lastMessageDeliveryStatus: 'SENT',
+            lastMessageFailureReason: null,
+          });
         }
 
         loadMessages(selectedConversation.id);
         toast.success(
-          t('conversations.messageSentSuccess', 'تم إرسال الرسالة بنجاح'),
+          t('conversations.messageSentSuccess', 'تم إرسال الرسالة بنجاح إلى فيسبوك'),
         );
       } catch (error: any) {
         console.error('Failed to retry message:', error);
@@ -504,16 +556,28 @@ export function useFacebookInboxMessageSender({
             'فشل إعادة إرسال الرسالة إلى فيسبوك',
           );
 
-        // تحديث نفس العنصر في الـ cache بحالة الفشل
-        message.deliveryStatus = 'FAILED';
-        message.status = 'error';
-        message.failureReason = errMsg;
+        if (updateMessage) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            deliveryStatus: 'FAILED',
+            status: 'error',
+            failureReason: errMsg,
+          }));
+        }
+
+        if (updateConversationInList) {
+          updateConversationInList(selectedConversation.id, {
+            hasFailedDelivery: true,
+            lastMessageDeliveryStatus: 'FAILED',
+            lastMessageFailureReason: errMsg,
+          });
+        }
 
         loadMessages(selectedConversation.id);
         toast.error(errMsg);
       }
     },
-    [selectedConversation?.id, loadMessages, t],
+    [selectedConversation?.id, updateMessage, updateConversationInList, loadMessages, t],
   );
 
   return {

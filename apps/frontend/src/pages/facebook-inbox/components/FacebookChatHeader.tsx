@@ -84,6 +84,40 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  const isFacebook = !selectedConversation.platform || selectedConversation.platform === 'facebook';
+  let isWindowExpired = Boolean(selectedConversation.isWindowExpired);
+  let remainingHours: number | null = null;
+  let hoursSinceExpiration = 0;
+
+  if (isFacebook) {
+    if (selectedConversation.windowExpiresAt) {
+      const expiresAt = new Date(selectedConversation.windowExpiresAt).getTime();
+      const diff = expiresAt - Date.now();
+      if (diff <= 0) {
+        isWindowExpired = true;
+        hoursSinceExpiration = Math.max(0, Math.floor((Date.now() - expiresAt) / (1000 * 60 * 60)));
+      } else {
+        isWindowExpired = false;
+        remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+      }
+    } else if (selectedConversation.lastInboundAt) {
+      const expiresAt = new Date(selectedConversation.lastInboundAt).getTime() + 24 * 60 * 60 * 1000;
+      const diff = expiresAt - Date.now();
+      if (diff <= 0) {
+        isWindowExpired = true;
+        hoursSinceExpiration = Math.max(0, Math.floor((Date.now() - expiresAt) / (1000 * 60 * 60)));
+      } else {
+        isWindowExpired = false;
+        remainingHours = Math.max(1, Math.ceil(diff / (1000 * 60 * 60)));
+      }
+    }
+  }
+
+  const hasFailedDelivery = Boolean(
+    selectedConversation.hasFailedDelivery ||
+    selectedConversation.lastMessageDeliveryStatus === 'FAILED'
+  );
+
   const resolvedPrimaryAction: InboxVerticalAction = primaryAction || {
     id: 'order',
     label: t('facebookInbox.createQuickOrder'),
@@ -173,9 +207,44 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm sm:text-base font-semibold leading-tight text-foreground">
-              {selectedConversation.customerName}
-            </h2>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="truncate text-sm sm:text-base font-semibold leading-tight text-foreground">
+                {selectedConversation.customerName}
+              </h2>
+
+              {/* 24-hour Meta Window Status Pill */}
+              {isFacebook && (
+                isWindowExpired ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20"
+                    title="انتهت نافذة الـ 24 ساعة للرد حسب سياسة ميتا — لا يمكن إرسال رسائل جديدة"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                    <span>النافذة مغلقة {hoursSinceExpiration > 0 ? `(من ${hoursSinceExpiration}س)` : ''}</span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25"
+                    title="نافذة الرد متاحة — يمكنك الرد على هذه المحادثة الآن"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>ينفع ترد {remainingHours ? `(متبقي ${remainingHours}س)` : ''}</span>
+                  </span>
+                )
+              )}
+
+              {/* Failed message notice in header */}
+              {hasFailedDelivery && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-destructive/15 text-destructive border border-destructive/30"
+                  title={selectedConversation.lastMessageFailureReason || "فشل إرسال رسالة إلى فيسبوك (Meta)"}
+                >
+                  <span>⚠️</span>
+                  <span>فشل إرسال رسالة لميتا</span>
+                </span>
+              )}
+            </div>
+
             {selectedConversation.pageName && (
               <p className="truncate text-[11px] text-muted-foreground mt-0.5">
                 {selectedConversation.pageName}

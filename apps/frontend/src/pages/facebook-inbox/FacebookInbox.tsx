@@ -64,7 +64,7 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
 
   const actions = useFacebookInboxActions({
     channel, companyId, inboxPath, selectedConversation, selectConversation,
-    activeTab: inboxData.activeTab, messages, addMessage, loadMessages, loadMoreMessages,
+    activeTab: inboxData.activeTab, messages, addMessage, updateMessage, loadMessages, loadMoreMessages,
     hasMore, loadingMessages, loadConversations, debouncedSearchQuery: inboxData.debouncedSearchQuery,
     updateSelectedConversation, updateConversationInList, debouncedLoadConversations: inboxData.debouncedLoadConversations,
     clearConversationUrlParam: inboxData.clearConversationUrlParam, clearSelection, selectedIds,

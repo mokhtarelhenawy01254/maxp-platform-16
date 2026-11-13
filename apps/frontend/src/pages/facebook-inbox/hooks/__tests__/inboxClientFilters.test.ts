@@ -144,4 +144,64 @@ describe('applyClientSideFilters', () => {
       expect(resultPriorityTab[0].id).toBe('starred');
     });
   });
+
+  describe('failedDeliveryOnly filter', () => {
+    it('filters conversations that have failed delivery to Meta', () => {
+      const normalConv = createConversation({ id: 'normal-1' });
+      const failedConv = createConversation({ id: 'failed-1', hasFailedDelivery: true });
+      const statusFailedConv = createConversation({ id: 'failed-2', lastMessageDeliveryStatus: 'FAILED' });
+
+      const result = applyClientSideFilters([normalConv, failedConv, statusFailedConv], {
+        filters: { ...defaultFilters, failedDeliveryOnly: true },
+        activeTab: 'all',
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result.map((c) => c.id)).toEqual(['failed-1', 'failed-2']);
+    });
+  });
+
+  describe('windowStatus filter', () => {
+    it('filters conversations with open 24h window (replyable)', () => {
+      const openConv = createConversation({
+        id: 'open-1',
+        isWindowExpired: false,
+        windowExpiresAt: new Date(Date.now() + 10 * 60 * 60 * 1000),
+      });
+      const expiredConv = createConversation({
+        id: 'expired-1',
+        isWindowExpired: true,
+        windowExpiresAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      });
+
+      const result = applyClientSideFilters([openConv, expiredConv], {
+        filters: { ...defaultFilters, windowStatus: 'open' },
+        activeTab: 'all',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('open-1');
+    });
+
+    it('filters conversations with expired 24h window', () => {
+      const openConv = createConversation({
+        id: 'open-1',
+        isWindowExpired: false,
+        windowExpiresAt: new Date(Date.now() + 10 * 60 * 60 * 1000),
+      });
+      const expiredConv = createConversation({
+        id: 'expired-1',
+        isWindowExpired: true,
+        windowExpiresAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      });
+
+      const result = applyClientSideFilters([openConv, expiredConv], {
+        filters: { ...defaultFilters, windowStatus: 'expired' },
+        activeTab: 'all',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('expired-1');
+    });
+  });
 });

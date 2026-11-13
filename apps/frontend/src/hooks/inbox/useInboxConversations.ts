@@ -10,6 +10,7 @@ export interface Message {
   content: string;
   senderId: string;
   senderName: string;
+  senderType?: 'AI' | 'META_EXTERNAL' | 'STAFF' | 'CUSTOMER';
   timestamp: Date;
   type:
     | "text"
@@ -31,6 +32,10 @@ export interface Message {
   fileSize?: number;
   metadata?: any;
   attachments?: any[];
+  isAIResponse?: boolean;
+  deliveryStatus?: "PENDING" | "SENT" | "FAILED";
+  failureReason?: string | null;
+  facebookMessageId?: string | null;
 }
 
 // Helper to safely parse dates
@@ -70,15 +75,48 @@ const parseMessage = (msg: any): Message => {
     }
   }
 
-  // Determine sender name
+  // Determine sender type, AI flag, and sender name
+  let senderType: 'AI' | 'META_EXTERNAL' | 'STAFF' | 'CUSTOMER' = 'CUSTOMER';
+  let isAIResponse = false;
   let senderName = "العميل";
+
   if (!msg.isFromCustomer) {
-    if (md?.employeeName) {
-      senderName = md.employeeName;
-    } else if (msg.sender?.name && msg.sender.name !== "موظف") {
-      senderName = msg.sender.name;
+    const rawSource = md?.source || msg.source;
+    const isExplicitAi =
+      msg.senderType === 'AI' ||
+      md?.senderType === 'AI' ||
+      rawSource === 'ai_reply' ||
+      msg.senderId === 'ai' ||
+      msg.isAIResponse === true ||
+      md?.isAIResponse === true;
+
+    const isExplicitMeta =
+      !isExplicitAi &&
+      (msg.senderType === 'META_EXTERNAL' ||
+        md?.senderType === 'META_EXTERNAL' ||
+        rawSource === 'page_reply' ||
+        (!msg.senderId && !md?.employeeId && (md?.isFacebookReply || md?.platform === 'facebook')));
+
+    if (isExplicitAi) {
+      senderType = 'AI';
+      isAIResponse = true;
+      senderName = md?.employeeName || (msg.senderName && msg.senderName !== 'موظف' ? msg.senderName : 'الذكاء الاصطناعي');
+    } else if (isExplicitMeta) {
+      senderType = 'META_EXTERNAL';
+      isAIResponse = false;
+      senderName = md?.employeeName || (msg.senderName && msg.senderName !== 'موظف' ? msg.senderName : 'فيسبوك (Meta)');
     } else {
-      senderName = "موظف";
+      senderType = 'STAFF';
+      isAIResponse = false;
+      if (md?.employeeName) {
+        senderName = md.employeeName;
+      } else if (msg.senderName && msg.senderName !== "موظف") {
+        senderName = msg.senderName;
+      } else if (msg.sender?.name && msg.sender.name !== "موظف") {
+        senderName = msg.sender.name;
+      } else {
+        senderName = "موظف";
+      }
     }
   }
 
@@ -104,22 +142,66 @@ const parseMessage = (msg: any): Message => {
     "AUDIO",
   ].includes(msgType);
 
+  // Delivery status resolution
+  let deliveryStatus: "PENDING" | "SENT" | "FAILED" | undefined =
+    msg.deliveryStatus || md?.deliveryStatus || undefined;
+  if (!deliveryStatus) {
+    if (msg.isFromCustomer) {
+      deliveryStatus = "SENT";
+    } else if (md?.sentToFacebook || md?.facebookMessageId) {
+      deliveryStatus = "SENT";
+    } else if (md?.messengerStatus === "sent" || md?.messengerStatus === "sent_via_tag") {
+      deliveryStatus = "SENT";
+    } else if (md?.messengerStatus === "failed" || md?.messengerStatus === "window_closed" || md?.facebookSendError) {
+      deliveryStatus = "FAILED";
+    } else if (md?.instantSave || md?.messengerStatus === "pending") {
+      deliveryStatus = "PENDING";
+    }
+  }
+
+  const failureReason =
+    msg.failureReason ||
+    md?.failureReason ||
+    md?.messengerError ||
+    md?.facebookErrorMessage ||
+    null;
+  const facebookMessageId =
+    msg.facebookMessageId ||
+    md?.facebookMessageId ||
+    md?.messengerMessageId ||
+    null;
+
+  let status: "sending" | "sent" | "delivered" | "read" | "error" = "delivered";
+  if (deliveryStatus === "FAILED" || msg.status === "error") {
+    status = "error";
+  } else if (deliveryStatus === "PENDING" || msg.status === "sending") {
+    status = "sending";
+  } else if (deliveryStatus === "SENT" || msg.status === "sent") {
+    status = "sent";
+  } else if (msg.status === "read" || msg.isRead) {
+    status = "read";
+  }
+
   return {
     id: msg.id,
     content: msg.content,
-    senderId: msg.senderId === 'ai' || msg.isAIResponse || (!msg.isFromCustomer && !msg.senderId) ? 'ai' : (msg.sender?.id || msg.senderId || "unknown"),
+    senderId: isAIResponse ? 'ai' : (msg.sender?.id || msg.senderId || (senderType === 'META_EXTERNAL' ? 'meta' : "unknown")),
     senderName,
+    senderType,
     timestamp: safeDate(msg.timestamp || msg.createdAt),
     type: msgType,
     isFromCustomer: msg.isFromCustomer,
-    status: "delivered", // Default to delivered for history
+    status,
+    deliveryStatus,
+    failureReason,
+    facebookMessageId,
     conversationId: msg.conversationId,
     fileUrl: msg.fileUrl || (isMedia ? msg.content : undefined),
     fileName: msg.fileName,
     fileSize: msg.fileSize,
     metadata: md,
     attachments: attachments,
-    isAIResponse: msg.isAIResponse || (!msg.isFromCustomer && !msg.senderId) || false,
+    isAIResponse,
   };
 };
 
@@ -291,6 +373,12 @@ export const useInboxConversations = () => {
               })(),
               postDetails: null,
               postDetailsUnavailable: false,
+              lastInboundAt: conv.lastInboundAt || null,
+              windowExpiresAt: conv.windowExpiresAt || null,
+              isWindowExpired: conv.isWindowExpired ?? (conv.windowExpiresAt ? Date.now() > new Date(conv.windowExpiresAt).getTime() : false),
+              hasFailedDelivery: Boolean(conv.hasFailedDelivery || conv.lastMessageDeliveryStatus === 'FAILED'),
+              lastMessageDeliveryStatus: conv.lastMessageDeliveryStatus || null,
+              lastMessageFailureReason: conv.lastMessageFailureReason || null,
             };
           },
         );

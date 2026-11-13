@@ -60,7 +60,9 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
       filters.unreadOnly ||
       filters.assignedTo !== 'all' ||
       filters.startDate ||
-      filters.endDate,
+      filters.endDate ||
+      (filters.windowStatus && filters.windowStatus !== 'all') ||
+      filters.failedDeliveryOnly,
   );
 
   return (
@@ -95,8 +97,8 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
       />
 
       {/* Quick Filters Bar */}
-      <div className="px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2 bg-muted/30">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+      <div className="px-2.5 py-1.5 border-b border-border/50 flex items-center justify-between gap-1.5 bg-muted/30">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
           <button
             type="button"
             onClick={() =>
@@ -105,7 +107,7 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
                 unreadOnly: !prev.unreadOnly,
               }))
             }
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
               filters.unreadOnly
                 ? 'bg-primary text-primary-foreground shadow-xs'
                 : 'bg-background text-foreground border border-border/60 hover:bg-muted/60 hover:border-primary/40'
@@ -116,8 +118,64 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
                 : t('facebookInbox.unreadOnlyFilter', 'إظهار الرسائل غير المقروءة فقط')
             }
           >
-            <span className="w-2 h-2 rounded-full bg-current" />
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
             <span>{t('facebookInbox.unread', 'غير مقروءة')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                windowStatus: prev.windowStatus === 'open' ? 'all' : 'open',
+              }))
+            }
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+              filters.windowStatus === 'open'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-background text-foreground border border-border/60 hover:bg-emerald-500/10 hover:border-emerald-500/40'
+            }`}
+            title="إظهار الرسائل التي لا تزال داخل نافذة الـ 24 ساعة (ينفع يترد عليها)"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>ينفع ترد</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                windowStatus: prev.windowStatus === 'expired' ? 'all' : 'expired',
+              }))
+            }
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+              filters.windowStatus === 'expired'
+                ? 'bg-zinc-700 text-white shadow-xs'
+                : 'bg-background text-foreground border border-border/60 hover:bg-zinc-500/10 hover:border-zinc-500/40'
+            }`}
+            title="إظهار الرسائل التي انتهت نافذة الـ 24 ساعة للرد عليها"
+          >
+            <span>النافذة مغلقة</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                failedDeliveryOnly: !prev.failedDeliveryOnly,
+              }))
+            }
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+              filters.failedDeliveryOnly
+                ? 'bg-red-600 text-white shadow-xs'
+                : 'bg-background text-foreground border border-border/60 hover:bg-red-500/10 hover:border-red-500/40'
+            }`}
+            title="إظهار المحادثات التي فشل إرسال رسائل بها إلى فيسبوك (Meta)"
+          >
+            <span className="text-[11px]">⚠️</span>
+            <span>فشل الإرسال</span>
           </button>
         </div>
 

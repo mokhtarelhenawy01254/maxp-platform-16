@@ -27,6 +27,17 @@ export function applyClientSideFilters(
       return false;
     }
 
+    if (filters.failedDeliveryOnly) {
+      const hasFailed = Boolean(conv.hasFailedDelivery || conv.lastMessageDeliveryStatus === 'FAILED');
+      if (!hasFailed) return false;
+    }
+
+    if (filters.windowStatus && filters.windowStatus !== 'all') {
+      const isExpired = conv.isWindowExpired ?? (conv.windowExpiresAt ? Date.now() > new Date(conv.windowExpiresAt).getTime() : false);
+      if (filters.windowStatus === 'open' && isExpired) return false;
+      if (filters.windowStatus === 'expired' && !isExpired) return false;
+    }
+
     if (filters.assignedTo === 'me' && conv.assignedTo !== userId) {
       return false;
     }
