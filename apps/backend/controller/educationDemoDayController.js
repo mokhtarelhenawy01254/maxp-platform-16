@@ -568,7 +568,7 @@ const getPublicDemoDay = async (req, res) => {
         c.name AS "companyName",
         s.name AS "subjectName"
       FROM "education_demo_days" d
-      LEFT JOIN "Company" c ON c.id = d."companyId"
+      LEFT JOIN "companies" c ON c.id = d."companyId"
       LEFT JOIN "education_subjects" s ON s.id = d."subjectId" AND s."companyId" = d."companyId"
       WHERE d.id = $1 AND d.status != 'CANCELLED'
     `, id);
