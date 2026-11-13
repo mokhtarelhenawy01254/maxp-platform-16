@@ -2178,6 +2178,18 @@ const getPublicSettings = async (req, res) => {
       global: isRecord(rawTokens.global) ? rawTokens.global : {},
       i18n: isRecord(rawTokens.i18n) ? rawTokens.i18n : {},
       theme: isRecord(rawTokens.theme) ? rawTokens.theme : {},
+      ...(rawTokens.header !== undefined ? { header: rawTokens.header } : {}),
+      ...(rawTokens.footer !== undefined ? { footer: rawTokens.footer } : {}),
+      ...(rawTokens.typography !== undefined ? { typography: rawTokens.typography } : {}),
+      ...(rawTokens.navigation !== undefined ? { navigation: rawTokens.navigation } : {}),
+      ...(rawTokens.savedSections !== undefined ? { savedSections: rawTokens.savedSections } : {}),
+      ...(rawTokens.globalComponents !== undefined ? { globalComponents: rawTokens.globalComponents } : {}),
+      ...(rawTokens.supportedLocales !== undefined ? { supportedLocales: rawTokens.supportedLocales } : {}),
+      ...(rawTokens.defaultLocale !== undefined ? { defaultLocale: rawTokens.defaultLocale } : {}),
+      ...(rawTokens.direction !== undefined ? { direction: rawTokens.direction } : {}),
+      ...(rawTokens.themeId !== undefined ? { themeId: rawTokens.themeId } : {}),
+      ...(rawTokens.tokens !== undefined ? { tokens: rawTokens.tokens } : {}),
+      ...(rawTokens.seo !== undefined ? { seo: rawTokens.seo } : {}),
     };
 
     const themeId =
@@ -2329,6 +2341,7 @@ module.exports = {
   getSettings,
   getPublicSettings,
   resolvePublicCompany,
+  invalidateStorefrontSettingsCaches,
   updateSettings,
   resetSettings,
   getRevisions,

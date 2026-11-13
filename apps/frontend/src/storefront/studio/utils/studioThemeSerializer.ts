@@ -40,12 +40,18 @@ export interface ExportFullStorefrontThemeOptions {
   themeName?: string;
   direction?: "ltr" | "rtl";
   tokens?: Record<string, any>;
+  designTokens?: Record<string, any>;
   header?: Record<string, any>;
   footer?: Record<string, any>;
   pages?: Record<string, any>;
   pageOverrides?: Record<string, any>;
   global?: Record<string, any>;
   seo?: Record<string, any>;
+  i18n?: Record<string, any>;
+  supportedLocales?: Array<"ar" | "en">;
+  defaultLocale?: "ar" | "en";
+  pageStyles?: Record<string, any>;
+  globalComponents?: any[];
   previewTheme?: StorefrontTheme;
   activeTheme?: StorefrontTheme;
   description?: string;
@@ -79,7 +85,29 @@ const cleanSection = (sec: unknown): string | StorefrontSectionConfig => {
   delete mergedSettings.$$runtimeId;
 
   const result: StorefrontSectionConfig = { type };
+  if (raw.id !== undefined && raw.id !== null && String(raw.id).trim()) {
+    result.id = String(raw.id).trim();
+  }
+  if (raw.key !== undefined && raw.key !== null && String(raw.key).trim()) {
+    result.key = String(raw.key).trim();
+  }
   if (variant && variant !== "default") result.variant = String(variant).trim();
+  if (raw.hidden !== undefined) result.hidden = Boolean(raw.hidden);
+  if (raw.displayConditions !== undefined) result.displayConditions = raw.displayConditions;
+  if (raw.responsive !== undefined) result.responsive = raw.responsive;
+  if (raw.style !== undefined) result.style = raw.style;
+  if (raw.animation !== undefined) result.animation = raw.animation;
+  if (raw.source !== undefined) result.source = raw.source;
+  if (raw.limit !== undefined) result.limit = raw.limit;
+  if (raw.collectionId !== undefined) result.collectionId = raw.collectionId;
+  if (Array.isArray(raw.children)) {
+    result.children = raw.children.map(cleanSection);
+  }
+  if (raw.template && typeof raw.template === "object") {
+    result.template = Array.isArray(raw.template)
+      ? raw.template.map(cleanSection)
+      : cleanSection(raw.template);
+  }
   if (Object.keys(mergedSettings).length > 0) result.settings = mergedSettings;
   return result;
 };
@@ -300,8 +328,45 @@ export function exportFullStorefrontTheme(options: ExportFullStorefrontThemeOpti
       sections: cleaned,
       ...(sourcePage.layoutHint ? { layoutHint: sourcePage.layoutHint } : {}),
       ...(sourcePage.pageGoal ? { pageGoal: sourcePage.pageGoal } : {}),
+      ...(sourcePage.seo ? { seo: sourcePage.seo } : {}),
+      ...(sourcePage.status ? { status: sourcePage.status } : {}),
+      ...(sourcePage.title ? { title: sourcePage.title } : {}),
+      ...(sourcePage.label ? { label: sourcePage.label } : {}),
+      ...(sourcePage.pageStyle ? { pageStyle: sourcePage.pageStyle } : {}),
+      ...(sourcePage.i18n ? { i18n: sourcePage.i18n } : {}),
     };
   });
+
+  const resolvedI18n =
+    options.i18n ??
+    options.designTokens?.i18n ??
+    (options.tokens as any)?.i18n ??
+    (basePreset as any).i18n;
+  const resolvedSupportedLocales =
+    options.supportedLocales ??
+    options.designTokens?.supportedLocales ??
+    (options.tokens as any)?.supportedLocales ??
+    basePreset.supportedLocales;
+  const resolvedDefaultLocale =
+    options.defaultLocale ??
+    options.designTokens?.defaultLocale ??
+    (options.tokens as any)?.defaultLocale ??
+    basePreset.defaultLocale;
+  const resolvedPageStyles =
+    options.pageStyles ??
+    options.designTokens?.pageStyles ??
+    (options.tokens as any)?.pageStyles ??
+    (basePreset as any).pageStyles;
+  const resolvedGlobalComponents =
+    options.globalComponents ??
+    options.designTokens?.globalComponents ??
+    options.tokens?.globalComponents ??
+    basePreset.globalComponents ??
+    basePreset.tokens?.globalComponents;
+
+  if (resolvedGlobalComponents !== undefined) {
+    finalTokens.globalComponents = resolvedGlobalComponents;
+  }
 
   return {
     id: targetId,
@@ -311,6 +376,11 @@ export function exportFullStorefrontTheme(options: ExportFullStorefrontThemeOpti
       basePreset.description ||
       `قالب ${name} لتجربة تسوق متكاملة وسريعة.`,
     direction,
+    ...(resolvedDefaultLocale !== undefined ? { defaultLocale: resolvedDefaultLocale } : {}),
+    ...(resolvedSupportedLocales !== undefined ? { supportedLocales: resolvedSupportedLocales } : {}),
+    ...(resolvedI18n !== undefined ? { i18n: resolvedI18n } : {}),
+    ...(resolvedPageStyles !== undefined ? { pageStyles: resolvedPageStyles } : {}),
+    ...(resolvedGlobalComponents !== undefined ? { globalComponents: resolvedGlobalComponents } : {}),
     tokens: finalTokens,
     header: finalHeader as any,
     footer: finalFooter as any,
@@ -328,7 +398,7 @@ export function exportFullStorefrontTheme(options: ExportFullStorefrontThemeOpti
       titleTemplate: `%s | ${name}`,
       description: `متجر ${name} لتجربة تسوق متكاملة وسريعة.`,
     },
-  };
+  } as StorefrontTheme;
 }
 
 export function validateFullStorefrontThemeJSON(json: unknown): {

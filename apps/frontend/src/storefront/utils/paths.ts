@@ -11,6 +11,7 @@ const STOREFRONT_PRODUCT_PATH_PATTERN =
   /^\/(?:store\/)?(?:product|products|shop\/products)\/([^/?#]+)(?:\/([^/?#]+))?\/?$/;
 const STOREFRONT_PREVIEW_QUERY_KEYS = [
   "companyId",
+  "storefrontSubdomain",
   "previewTheme",
   "previewSource",
   "previewAdminOrigin",

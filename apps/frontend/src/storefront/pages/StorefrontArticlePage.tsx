@@ -193,7 +193,7 @@ const StorefrontArticlePage: React.FC<StorefrontArticlePageProps> = ({
                   </details>
                 ))}
               </div>
-              <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({ "@context":"https://schema.org","@type":"FAQPage", mainEntity: faqs.map((f:any)=>({ "@type":"Question", name:f.q, acceptedAnswer:{ "@type":"Answer", text:f.a}}))})}} />
+              <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({ "@context":"https://schema.org","@type":"FAQPage", mainEntity: faqs.map((f:any)=>({ "@type":"Question", name:f.q, acceptedAnswer:{ "@type":"Answer", text:f.a}}))}).replace(/</g, '\\u003c')}} />
             </div>
           )}
 
@@ -225,7 +225,7 @@ const StorefrontArticlePage: React.FC<StorefrontArticlePageProps> = ({
               }
             },
             datePublished: article.publishedAt || article.createdAt
-          })}} />
+          }).replace(/</g, '\\u003c')}} />
           <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
@@ -248,7 +248,7 @@ const StorefrontArticlePage: React.FC<StorefrontArticlePageProps> = ({
                 name: article.title
               }
             ]
-          })}} />
+          }).replace(/</g, '\\u003c')}} />
         </div>
       </div>
 

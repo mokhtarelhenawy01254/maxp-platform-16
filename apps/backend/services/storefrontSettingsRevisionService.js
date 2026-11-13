@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const redisCacheService = require('./redisCacheService');
+const {
+  invalidateCompanyStorefrontHtmlCache,
+} = require('../controller/storefrontHtmlController');
 
 const MAX_RETAINED_REVISIONS = 30;
 
@@ -31,7 +34,14 @@ const hashSnapshot = (snapshot) => {
  * Records a new revision for a company if the snapshot differs from the latest one.
  * Keeps only the latest 30 revisions.
  */
-const recordRevision = async ({ companyId, snapshot, userId = null, note = null, client = null }) => {
+const recordRevision = async (arg1, arg2 = null, arg3 = {}) => {
+  const isOptionsObject = arg1 && typeof arg1 === 'object' && !Array.isArray(arg1);
+  const companyId = isOptionsObject ? arg1.companyId : arg1;
+  const snapshot = isOptionsObject ? arg1.snapshot : arg2;
+  const userId = isOptionsObject ? (arg1.userId ?? null) : (arg3?.userId ?? null);
+  const note = isOptionsObject ? (arg1.note ?? null) : (arg3?.note ?? null);
+  const client = isOptionsObject ? (arg1.client ?? null) : (arg3?.client ?? null);
+
   if (!companyId || !snapshot) {
     return null;
   }
@@ -225,7 +235,11 @@ const restoreRevision = async ({ companyId, id, userId = null, client = null }) 
   }
 
   try {
-    await redisCacheService.del(`storefront_settings:${companyId}`);
+    await Promise.allSettled([
+      redisCacheService.del(`storefront_settings:${companyId}`),
+      redisCacheService.del(`public_storefront_settings_v1:${companyId}`),
+    ]);
+    invalidateCompanyStorefrontHtmlCache(companyId);
   } catch (cacheErr) {
     console.error('⚠️ [REVISION-SERVICE] Error invalidating redis cache:', cacheErr);
   }

@@ -613,11 +613,6 @@ class StorefrontThemeCatalogService {
       canActivate,
       canPurchase,
       requiresPurchase: hasCompanyContext ? !isCurrentTheme && !isOwned && pricingModel === 'ONE_TIME' : pricingModel === 'ONE_TIME',
-      isOwned,
-      canSelect,
-      canActivate,
-      canPurchase,
-      requiresPurchase: hasCompanyContext ? !isCurrentTheme && !isOwned && pricingModel === 'ONE_TIME' : pricingModel === 'ONE_TIME',
       requiresActivation:
         hasCompanyContext ? !isCurrentTheme && !isOwned && pricingModel === 'FREE' : pricingModel === 'FREE',
       trialDays: Math.max(0, Math.floor(toSafeNumber(row?.trialDays, 0))),

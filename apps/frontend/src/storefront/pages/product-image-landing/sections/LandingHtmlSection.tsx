@@ -1,4 +1,5 @@
 import React from "react";
+import { sanitizeStorefrontHtml } from "../../../utils/html";
 
 export interface LandingHtmlSectionProps {
   section: any;
@@ -11,14 +12,15 @@ export const LandingHtmlSection: React.FC<LandingHtmlSectionProps> = ({
 }) => {
   const content = section.content || {};
   const code = content.htmlCode || content.htmlContent;
-  if (!code) return null;
+  const safeHtml = sanitizeStorefrontHtml(code);
+  if (!safeHtml) return null;
 
   return (
     <section
       key={section.id || idx}
       className="pil-html-block"
       style={{ maxWidth: 760, margin: "24px auto", padding: "0 16px" }}
-      dangerouslySetInnerHTML={{ __html: code }}
+      dangerouslySetInnerHTML={{ __html: safeHtml }}
     />
   );
 };

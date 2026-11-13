@@ -134,6 +134,7 @@ const isStorefrontRequest = (): boolean => {
   return shouldBootstrapStorefront(
     window.location.hostname,
     window.location.pathname || "",
+    window.location.search,
   );
 };
 

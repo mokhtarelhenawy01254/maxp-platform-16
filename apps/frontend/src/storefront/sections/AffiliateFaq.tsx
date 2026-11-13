@@ -54,7 +54,7 @@ const AffiliateFaq: React.FC<Props> = ({ settings }) => {
 
   return (
     <section className="w-full bg-background py-12 md:py-16">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <div className="container px-4 md:px-6">
         <div className="mx-auto max-w-[1000px]">
           <div className="text-start mb-8">

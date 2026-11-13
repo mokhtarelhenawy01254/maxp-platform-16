@@ -7,6 +7,8 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/jwtSecret');
 
 // In-memory rate limiting: <= 60 events/minute/IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -112,6 +114,35 @@ async function recordEvent(req, res) {
       });
     }
 
+    const STUDIO_EVENT_TYPES = [
+      'studio_open',
+      'studio_publish',
+      'studio_template_apply',
+      'studio_ai_open',
+      'studio_error',
+    ];
+
+    if (STUDIO_EVENT_TYPES.includes(eventType) || String(eventType).startsWith('studio_')) {
+      let isAuthenticated = Boolean(req.user?.id || req.user?.userId);
+      if (!isAuthenticated) {
+        const authHeader = req.headers?.authorization;
+        if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7).trim();
+          if (token) {
+            try {
+              const decoded = jwt.verify(token, process.env.JWT_SECRET || getJwtSecret());
+              isAuthenticated = Boolean(decoded && (decoded.userId || decoded.id));
+            } catch (_) {
+              isAuthenticated = false;
+            }
+          }
+        }
+      }
+      if (!isAuthenticated) {
+        return res.status(202).json({ success: true, ignored: true });
+      }
+    }
+
     // 4. Validate pageKey
     if (!pageKey || typeof pageKey !== 'string' || pageKey.trim().length === 0 || pageKey.trim().length > 64) {
       return res.status(400).json({
@@ -199,6 +230,7 @@ async function getSummary(req, res) {
         sectionType: true,
         eventType: true,
       },
+      take: 50000,
     });
 
     let totalViews = 0;

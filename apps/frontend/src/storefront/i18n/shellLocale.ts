@@ -69,12 +69,18 @@ export const localizeThemeShell = (
   theme: StorefrontTheme,
   locale: StorefrontLocale,
 ): StorefrontTheme => {
-  if (locale === "ar") {
+  const defaultLocale = theme.defaultLocale || "ar";
+  const rootLocaleEntry = (theme as AnyRecord).i18n?.[locale];
+  const headerOverrides =
+    pickOverrides(theme.header as StorefrontHeaderConfig & { i18n?: AnyRecord }, locale) ??
+    rootLocaleEntry?.header;
+  const footerOverrides =
+    pickOverrides(theme.footer as StorefrontFooterConfig & { i18n?: AnyRecord }, locale) ??
+    rootLocaleEntry?.footer;
+
+  if (locale === defaultLocale && !rootLocaleEntry && !headerOverrides && !footerOverrides) {
     return theme;
   }
-
-  const headerOverrides = pickOverrides(theme.header as StorefrontHeaderConfig & { i18n?: AnyRecord }, locale);
-  const footerOverrides = pickOverrides(theme.footer as StorefrontFooterConfig & { i18n?: AnyRecord }, locale);
 
   if (!headerOverrides && !footerOverrides) {
     return theme;

@@ -6,23 +6,65 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../../services/sharedDatabase');
 const { getPhoneVariants } = require('../../utils/phoneNormalization');
 
-const resolveVertical = (specialtySlug, activeApps = []) => {
-  const slug = String(specialtySlug || '').toLowerCase();
-  const apps = new Set((activeApps || []).map((a) => String(a || '').toLowerCase()));
+const resolveVertical = (specialtySlugOrObj, legacyActiveApps = []) => {
+  let specialtySlug = '';
+  let activeApps = [];
+  let companyName = '';
+  let companySlug = '';
+  let specialtyName = '';
 
-  if (/dental/.test(slug)) return 'dental';
-  if (/medical|clinic|health|doctor|radiology|pharmacy|hospital|therapy/.test(slug)) return 'medical';
-  if (/educat|academy|school|course|learning|training|quran/.test(slug)) return 'education';
-  if (/service|maintenance|contracting|factory/.test(slug)) return 'services';
-  if (/agency|marketing|call_center|support/.test(slug)) return 'agency';
-  if (/cafe|restaurant|coffee|food|bakery/.test(slug)) return 'cafe';
+  if (specialtySlugOrObj && typeof specialtySlugOrObj === 'object' && !Array.isArray(specialtySlugOrObj)) {
+    specialtySlug = specialtySlugOrObj.specialtySlug || '';
+    activeApps = specialtySlugOrObj.activeApps || [];
+    companyName = specialtySlugOrObj.companyName || '';
+    companySlug = specialtySlugOrObj.companySlug || '';
+    specialtyName = specialtySlugOrObj.specialtyName || '';
+  } else {
+    specialtySlug = specialtySlugOrObj || '';
+    activeApps = legacyActiveApps || [];
+  }
 
-  if (apps.has('dental-lab-app') || apps.has('dental-materials-pro') || apps.has('dental-lab')) return 'dental';
-  if (apps.has('booking-app') || apps.has('medical-system') || apps.has('lab-app') || apps.has('radiology-app')) return 'medical';
-  if (apps.has('academy-app') || apps.has('education-app')) return 'education';
-  if (apps.has('service-orders') || apps.has('services-app') || apps.has('services-pro') || apps.has('service-request-app')) return 'services';
-  if (apps.has('marketing-agency-pro')) return 'agency';
-  if (apps.has('cafe-restaurant-pro')) return 'cafe';
+  const textCues = [specialtySlug, companyName, companySlug, specialtyName]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  const apps = new Set((activeApps || []).map((a) => String(a || '').toLowerCase().trim()));
+
+  // 1. Education (Academies, CodeTreps, schools, courses, training, etc.)
+  const isEducationSlug = /codetreps|academy|educat|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن|برمجة/.test(textCues);
+  const hasEducationApp = apps.has('academy-app') || apps.has('education-app') || apps.has('quran-app');
+  if (isEducationSlug || hasEducationApp) return 'education';
+
+  // 2. Dental
+  if (/dental|أسنان/.test(textCues) || apps.has('dental-lab-app') || apps.has('dental-materials-pro') || apps.has('dental-lab')) {
+    return 'dental';
+  }
+
+  // 3. Medical (CRITICAL: booking-app alone is NOT medical!)
+  const isMedicalSlug = /medical|clinic|health|doctor|radiology|pharmacy|hospital|therapy|عيادة|طبي|مستشفى|دكتور|علاج|مختبر|أشعة|صيدلية/.test(textCues);
+  const hasMedicalApp = apps.has('medical-system') || apps.has('lab-app') || apps.has('radiology-app') || apps.has('clinic-app');
+  if (isMedicalSlug || hasMedicalApp) return 'medical';
+
+  // 4. Services & Maintenance
+  const isServiceSlug = /service|maintenance|contracting|factory|صيانة|خدمات|مقاولات|مصنع/.test(textCues);
+  const hasServiceApp = apps.has('service-orders') || apps.has('services-app') || apps.has('services-pro') || apps.has('service-request-app');
+  if (isServiceSlug || hasServiceApp) return 'services';
+
+  // 5. Agency
+  if (/agency|marketing|call_center|support|تسويق|دعاية|وكالة/.test(textCues) || apps.has('marketing-agency-pro')) {
+    return 'agency';
+  }
+
+  // 6. Cafe & Restaurant
+  if (/cafe|restaurant|coffee|food|bakery|مطعم|كافيه|قهوة|مقهى/.test(textCues) || apps.has('cafe-restaurant-pro')) {
+    return 'cafe';
+  }
+
+  // 7. Generic booking-app fallback (when no other vertical matched)
+  if (apps.has('booking-app')) {
+    return 'services';
+  }
 
   return 'commerce';
 };
@@ -182,7 +224,12 @@ async function fetchAgencySummary(prisma, companyId, customer) {
 }
 
 async function fetchEducationSummary(prisma, companyId, customer, phoneVariants) {
-  const empty = { countLabel: 'الاشتراكات التعليمية', valueLabel: 'إجمالي المدفوع', primaryCount: 0, secondaryValue: 0, items: [] };
+  const empty = { countLabel: 'المواعيد والاشتراكات', valueLabel: 'إجمالي المدفوع', primaryCount: 0, secondaryValue: 0, items: [] };
+  const items = [];
+  let primaryCount = 0;
+  let secondaryValue = 0;
+
+  // 1. Fetch educational enrollments if available
   const studentOr = [];
   if (customer?.id) studentOr.push({ customerId: customer.id });
   if (phoneVariants.length) studentOr.push({ phone: { in: phoneVariants } });
@@ -201,22 +248,65 @@ async function fetchEducationSummary(prisma, companyId, customer, phoneVariants)
       });
       const activeCount = enrollments.filter((e) => e.isActive !== false).length;
       const totalPaid = enrollments.reduce((sum, e) => sum + (Number(e.amountPaid) || 0), 0);
-      const items = enrollments.slice(0, 5).map((e) => ({
-        id: e.id,
-        type: 'enrollment',
-        title: e.package?.name || 'اشتراك تعليمي',
-        status: e.paymentStatus || (e.isActive !== false ? 'ACTIVE' : 'INACTIVE'),
-        amount: Number(e.amountPaid) || 0,
-        amountPaid: Number(e.amountPaid) || 0,
-        date: e.createdAt,
-        createdAt: e.createdAt,
-        subtitle: e.package?.subject?.name || (e.totalHours ? `${e.remainingHours ?? 0}/${e.totalHours} ساعة` : undefined),
-      }));
-      return { ...empty, primaryCount: activeCount, secondaryValue: totalPaid, items };
+      primaryCount += activeCount;
+      secondaryValue += totalPaid;
+      for (const e of enrollments.slice(0, 5)) {
+        items.push({
+          id: e.id,
+          type: 'enrollment',
+          title: e.package?.name || 'اشتراك تعليمي',
+          status: e.paymentStatus || (e.isActive !== false ? 'ACTIVE' : 'INACTIVE'),
+          amount: Number(e.amountPaid) || 0,
+          amountPaid: Number(e.amountPaid) || 0,
+          date: e.createdAt,
+          createdAt: e.createdAt,
+          subtitle: e.package?.subject?.name || (e.totalHours ? `${e.remainingHours ?? 0}/${e.totalHours} ساعة` : undefined),
+        });
+      }
     } catch (err) {
-      console.warn('[VERTICAL-CONTEXT] educationEnrollment fallback to tasks:', err.message);
+      console.warn('[VERTICAL-CONTEXT] educationEnrollment error:', err.message);
     }
   }
+
+  // 2. Also fetch academy appointments (Demo Days, placement tests, coaching sessions)
+  const aptOr = [];
+  if (customer?.id) aptOr.push({ customerId: customer.id });
+  if (phoneVariants.length) aptOr.push({ customerPhone: { in: phoneVariants } });
+
+  if (aptOr.length && prisma.appointment?.findMany) {
+    try {
+      const appointments = await prisma.appointment.findMany({
+        where: { companyId, OR: aptOr },
+        select: { id: true, title: true, appointmentDate: true, startTime: true, status: true, createdAt: true },
+        orderBy: { appointmentDate: 'desc' },
+        take: 20,
+      });
+      const inactive = new Set(['cancelled', 'canceled', 'completed', 'missed', 'no_show']);
+      const upcomingApts = appointments.filter((a) => !inactive.has(String(a.status || '').toLowerCase())).length;
+      primaryCount += upcomingApts;
+      for (const a of appointments.slice(0, 5)) {
+        items.push({
+          id: a.id,
+          type: 'appointment',
+          title: a.title || 'موعد / ديمو داي',
+          status: a.status,
+          appointmentDate: a.appointmentDate,
+          startTime: a.startTime,
+          date: a.appointmentDate || a.createdAt,
+          subtitle: a.startTime ? `الساعة: ${a.startTime}` : undefined,
+          createdAt: a.createdAt,
+          href: '/appointments',
+        });
+      }
+    } catch (err) {
+      console.warn('[VERTICAL-CONTEXT] education appointment query failed:', err.message);
+    }
+  }
+
+  if (items.length > 0) {
+    return { ...empty, primaryCount, secondaryValue, items: items.slice(0, 5) };
+  }
+
   return fetchAgencySummary(prisma, companyId, customer);
 }
 
@@ -283,6 +373,9 @@ const getConversationVerticalContext = async (req, res) => {
     const company = await executeWithRetry(() => prisma.company.findUnique({
       where: { id: companyId },
       select: {
+        id: true,
+        name: true,
+        slug: true,
         businessSpecialty: { select: { slug: true, nameAr: true, nameEn: true } },
         installedApps: { where: { status: { in: ['ACTIVE', 'TRIAL'] } }, select: { app: { select: { slug: true } } } },
       },
@@ -295,7 +388,13 @@ const getConversationVerticalContext = async (req, res) => {
       ? company.installedApps.map((ia) => ia?.app?.slug).filter(Boolean)
       : [];
 
-    const vertical = resolveVertical(specialty?.slug, activeApps);
+    const vertical = resolveVertical({
+      specialtySlug: specialty?.slug,
+      specialtyName: specialty?.nameAr || specialty?.nameEn,
+      companyName: company?.name,
+      companySlug: company?.slug,
+      activeApps,
+    });
     const phoneVariants = collectPhoneVariants(conversation.customer);
     const customerId = conversation.customerId || conversation.customer?.id || null;
 

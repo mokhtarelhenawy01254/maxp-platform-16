@@ -20,7 +20,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-const STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700';
+const STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700;900';
 const STOREFRONT_THEME_FONT_DISPLAY = 'swap';
 const MAX_STOREFRONT_THEME_FONTS = 4;
 const GENERIC_OR_LOCAL_FONTS = new Set([
@@ -57,6 +57,8 @@ const KNOWN_ARABIC_FONTS = new Set([
   'reem kufi',
   'el messiri',
   'changa',
+  'lalezar',
+  'readex pro',
 ]);
 
 export const extractThemeFontFamilies = (fontStack: string): string[] => {
@@ -312,8 +314,30 @@ export const StorefrontThemeProvider: React.FC<{
   }, [initialTheme, blockUntilResolved]);
 
   useEffect(() => {
+    const isTrustedPreviewOrigin = (origin: string): boolean => {
+      if (!origin) return true;
+      if (typeof window !== 'undefined' && origin === window.location.origin) {
+        return true;
+      }
+      try {
+        const parsed = new URL(origin);
+        const host = parsed.hostname.toLowerCase();
+        return (
+          host === 'maxp.online' ||
+          host.endsWith('.maxp.online') ||
+          host === 'localhost' ||
+          host === '127.0.0.1' ||
+          host.endsWith('.localhost')
+        );
+      } catch {
+        return false;
+      }
+    };
+
     const handleMessage = (event: MessageEvent) => {
-      // In a real production app we'd verify origin, but for this preview modal we allow it
+      if (!isTrustedPreviewOrigin(event.origin)) {
+        return;
+      }
       if (event.data?.type === 'UPDATE_PREVIEW_TOKENS' && event.data?.payload) {
         setTheme((currentTheme) => currentTheme ? ({
           ...currentTheme,
@@ -356,7 +380,7 @@ export const StorefrontThemeProvider: React.FC<{
     if (!targetElement) return;
 
     if (!scoped) {
-      const activeLocale = typeof window !== 'undefined' ? getStorefrontLocale(window.location?.search) : 'ar';
+      const activeLocale = typeof window !== 'undefined' ? getStorefrontLocale(window.location?.search, theme.defaultLocale) : 'ar';
       const resolvedDirection = activeLocale === 'en' ? 'ltr' : (theme.direction || theme.tokens?.typography?.direction || 'rtl');
       document.documentElement.dir = resolvedDirection;
       document.documentElement.lang = activeLocale === 'en' ? 'en' : (resolvedDirection === 'ltr' ? 'en' : 'ar');

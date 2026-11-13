@@ -128,7 +128,7 @@ describe('verticalContextController.getConversationVerticalContext', () => {
     );
   });
 
-  test('resolves medical vertical from active booking-app and returns appointments', async () => {
+  test('resolves medical vertical from specialty and returns appointments', async () => {
     mockPrisma.conversation.findFirst.mockResolvedValue({
       id: 'conv-med',
       companyId: 'comp-med',
@@ -144,7 +144,9 @@ describe('verticalContextController.getConversationVerticalContext', () => {
       },
     });
     mockPrisma.company.findUnique.mockResolvedValue({
-      businessSpecialty: null,
+      name: 'عيادة النور التخصصية',
+      slug: 'al-noor-clinic',
+      businessSpecialty: { slug: 'clinic-care', nameAr: 'عيادة تخصصية', nameEn: 'Clinic' },
       installedApps: [{ app: { slug: 'booking-app' } }],
     });
     mockPrisma.appointment.findMany.mockResolvedValue([
@@ -168,6 +170,87 @@ describe('verticalContextController.getConversationVerticalContext', () => {
         where: expect.objectContaining({ companyId: 'comp-med' }),
       })
     );
+  });
+
+  test('resolves education vertical for academies with booking-app (codetreps fix) and returns appointments', async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-codetreps',
+      companyId: 'comp-codetreps',
+      channel: 'FACEBOOK',
+      customerId: 'cust-student',
+      customer: {
+        id: 'cust-student',
+        firstName: 'محمد',
+        lastName: 'أبو المجد',
+        phone: '0114336760',
+        phoneNormalized: '0114336760',
+        email: null,
+      },
+    });
+    mockPrisma.company.findUnique.mockResolvedValue({
+      name: 'CodeTreps',
+      slug: 'codetreps',
+      businessSpecialty: null,
+      installedApps: [{ app: { slug: 'booking-app' } }],
+    });
+    mockPrisma.educationEnrollment.findMany.mockResolvedValue([]);
+    mockPrisma.appointment.findMany.mockResolvedValue([
+      {
+        id: 'apt-demo-1',
+        title: 'تفاصيل أكتر عن الديمو داي - كودينج للأطفال',
+        appointmentDate: '2026-11-20T16:00:00Z',
+        startTime: '16:00',
+        status: 'confirmed',
+        createdAt: '2026-11-12T10:00:00Z',
+      },
+    ]);
+
+    const req = { params: { id: 'conv-codetreps' }, user: { id: 'u1', companyId: 'comp-codetreps' } };
+    const res = createRes();
+
+    await getConversationVerticalContext(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.vertical).toBe('education');
+    expect(res.body.data.summary.countLabel).toBe('المواعيد والاشتراكات');
+    expect(res.body.data.summary.primaryCount).toBe(1);
+    expect(res.body.data.summary.items).toHaveLength(1);
+    expect(res.body.data.summary.items[0].type).toBe('appointment');
+    expect(res.body.data.summary.items[0].title).toContain('الديمو داي');
+  });
+
+  test('resolves services vertical for generic booking-app without medical keywords', async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-booking-generic',
+      companyId: 'comp-generic',
+      channel: 'FACEBOOK',
+      customerId: 'cust-gen',
+      customer: {
+        id: 'cust-gen',
+        firstName: 'سامي',
+        lastName: 'أحمد',
+        phone: '01099887766',
+        phoneNormalized: '01099887766',
+        email: null,
+      },
+    });
+    mockPrisma.company.findUnique.mockResolvedValue({
+      name: 'مكتب الرواد للاستشارات',
+      slug: 'al-rowad-consulting',
+      businessSpecialty: null,
+      installedApps: [{ app: { slug: 'booking-app' } }],
+    });
+    mockPrisma.serviceOrder.findMany.mockResolvedValue([]);
+
+    const req = { params: { id: 'conv-booking-generic' }, user: { id: 'u1', companyId: 'comp-generic' } };
+    const res = createRes();
+
+    await getConversationVerticalContext(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.vertical).toBe('services');
   });
 
   test('resolves services vertical and returns service orders', async () => {

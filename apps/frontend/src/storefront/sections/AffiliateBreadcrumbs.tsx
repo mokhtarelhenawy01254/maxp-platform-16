@@ -42,7 +42,7 @@ const AffiliateBreadcrumbs: React.FC<Props> = ({ settings }) => {
 
   return (
     <section className="w-full bg-background py-2">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <div className="container px-4 md:px-6">
         <div className="mx-auto max-w-[1100px]">
           <nav className="flex items-center gap-1.5 text-[13px] text-[#888]">

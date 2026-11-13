@@ -91,8 +91,31 @@ const AddToCartElement: React.FC<AddToCartElementProps> = ({
     };
   }, [product?.id, propVariantId]);
 
-  // If the context is NOT a product -> do NOT render anything (do not display 0)
+  // If the context is NOT a product -> do NOT render anything unless in studio preview
   if (!product) {
+    const isStudioPreview =
+      typeof window !== 'undefined' &&
+      (window.location.pathname.includes('/studio') ||
+        window.location.search.includes('studio='));
+    if (isStudioPreview) {
+      const previewLabel = mergedSettings?.label || 'أضف للسلة';
+      return (
+        <div
+          data-storefront-element="add-to-cart"
+          data-element="add-to-cart"
+          data-studio-placeholder="true"
+          className="storefront-add-to-cart-wrapper flex flex-col w-full"
+        >
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center justify-center text-center select-none w-full px-6 py-3 text-sm font-semibold min-h-[44px] rounded-lg text-white bg-[var(--store-accent,#2563eb)] opacity-80 cursor-default"
+          >
+            <span>{previewLabel}</span>
+          </button>
+        </div>
+      );
+    }
     return null;
   }
 

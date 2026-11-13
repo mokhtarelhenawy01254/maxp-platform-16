@@ -145,96 +145,108 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
     const prisma = await getSharedPrismaClientAsync();
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    const [products, categories, articles, storePages, academyCourses] = await Promise.all([
-      safeQuery(() =>
-        prisma.product.findMany({
-          where: {
-            companyId,
-            isActive: true,
-            deletedAt: null,
-            isHidden: false,
-          },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            mainImage: true,
-            images: true,
-            updatedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 5000,
-        }),
-      ),
-      safeQuery(() =>
-        prisma.category.findMany({
-          where: {
-            companyId,
-            isActive: true,
-          },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            image: true,
-            updatedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 500,
-        }),
-      ),
-      safeQuery(() =>
-        prisma.article.findMany({
-          where: {
-            companyId,
-            isPublished: true,
-          },
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            heroImage: true,
-            updatedAt: true,
-            publishedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 500,
-        }),
-      ),
-      safeQuery(() =>
-        prisma.storePage.findMany({
-          where: {
-            companyId,
-            isActive: true,
-          },
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            updatedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 100,
-        }),
-      ),
-      safeQuery(() =>
-        prisma.academyCourse.findMany({
-          where: {
-            companyId,
-            isPublished: true,
-          },
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            thumbnailUrl: true,
-            updatedAt: true,
-          },
-          orderBy: { updatedAt: "desc" },
-          take: 500,
-        }),
-      ),
-    ]);
+    const [products, categories, articles, storePages, academyCourses, storefrontSettings] =
+      await Promise.all([
+        safeQuery(() =>
+          prisma.product.findMany({
+            where: {
+              companyId,
+              isActive: true,
+              deletedAt: null,
+              isHidden: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              mainImage: true,
+              images: true,
+              updatedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 5000,
+          }),
+        ),
+        safeQuery(() =>
+          prisma.category.findMany({
+            where: {
+              companyId,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              image: true,
+              updatedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 500,
+          }),
+        ),
+        safeQuery(() =>
+          prisma.article.findMany({
+            where: {
+              companyId,
+              isPublished: true,
+            },
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              heroImage: true,
+              updatedAt: true,
+              publishedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 500,
+          }),
+        ),
+        safeQuery(() =>
+          prisma.storePage.findMany({
+            where: {
+              companyId,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              updatedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 100,
+          }),
+        ),
+        safeQuery(() =>
+          prisma.academyCourse.findMany({
+            where: {
+              companyId,
+              isPublished: true,
+            },
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              thumbnailUrl: true,
+              updatedAt: true,
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 500,
+          }),
+        ),
+        prisma.storefrontSettings?.findUnique
+          ? safeQuery(() =>
+              prisma.storefrontSettings.findUnique({
+                where: { companyId },
+                select: {
+                  designTokens: true,
+                  updatedAt: true,
+                },
+              }),
+            )
+          : Promise.resolve(null),
+      ]);
 
     const safeProducts = Array.isArray(products) ? products : [];
     const safeCategories = Array.isArray(categories) ? categories : [];
@@ -335,9 +347,23 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
       xml += `  </url>\n`;
     }
 
-    // 6. Custom Store Pages (About, Policy, etc.)
+    // 6. Custom Store Pages (About, Policy, etc.) + Published Theme Pages
+    const SYSTEM_THEME_PAGE_KEYS = new Set([
+      "home",
+      "shop",
+      "pdp",
+      "product",
+      "cart",
+      "checkout",
+    ]);
+    const emittedPageSlugs = new Set();
+
     for (const page of safePages) {
       if (!page.slug) continue;
+      const normalizedSlug = String(page.slug).trim().toLowerCase();
+      if (!normalizedSlug || emittedPageSlugs.has(normalizedSlug)) continue;
+      emittedPageSlugs.add(normalizedSlug);
+
       const pageUrl = `${baseUrl}/${encodeURIComponent(page.slug)}`;
       xml += `  <url>\n`;
       xml += `    <loc>${escapeXml(pageUrl)}</loc>\n`;
@@ -345,6 +371,49 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
       xml += `    <changefreq>monthly</changefreq>\n`;
       xml += `    <priority>0.5</priority>\n`;
       xml += `  </url>\n`;
+    }
+
+    const effectiveStorefrontSettings =
+      storefrontSettings || req.storefrontSettings || req.company?.storefrontSettings || null;
+    const rawThemePages =
+      effectiveStorefrontSettings?.designTokens &&
+      typeof effectiveStorefrontSettings.designTokens === "object" &&
+      effectiveStorefrontSettings.designTokens.pages &&
+      typeof effectiveStorefrontSettings.designTokens.pages === "object" &&
+      !Array.isArray(effectiveStorefrontSettings.designTokens.pages)
+        ? effectiveStorefrontSettings.designTokens.pages
+        : null;
+
+    if (rawThemePages) {
+      for (const [rawSlug, pageConfig] of Object.entries(rawThemePages)) {
+        if (!rawSlug || !pageConfig) continue;
+        const cleanSlug = String(rawSlug).trim().replace(/^\/+|\/+$/g, "");
+        const normalizedSlug = cleanSlug.toLowerCase();
+        if (
+          !cleanSlug ||
+          SYSTEM_THEME_PAGE_KEYS.has(normalizedSlug) ||
+          emittedPageSlugs.has(normalizedSlug)
+        ) {
+          continue;
+        }
+        if (typeof pageConfig === "object" && pageConfig.status === "draft") {
+          continue;
+        }
+        emittedPageSlugs.add(normalizedSlug);
+
+        const pageUrl = `${baseUrl}/${encodeURIComponent(cleanSlug)}`;
+        const pageLastMod = formatDate(
+          (typeof pageConfig === "object" && pageConfig.updatedAt) ||
+            effectiveStorefrontSettings?.updatedAt ||
+            latestDate,
+        );
+        xml += `  <url>\n`;
+        xml += `    <loc>${escapeXml(pageUrl)}</loc>\n`;
+        xml += `    <lastmod>${pageLastMod}</lastmod>\n`;
+        xml += `    <changefreq>monthly</changefreq>\n`;
+        xml += `    <priority>0.5</priority>\n`;
+        xml += `  </url>\n`;
+      }
     }
 
     // 7. Academy Courses (always canonical 200 URLs, never 302 redirects)
@@ -376,7 +445,7 @@ exports.handleStorefrontSitemap = async (req, res, next) => {
     xml += `</urlset>`;
 
     res.set("Content-Type", "application/xml; charset=utf-8");
-    res.set("X-Robots-Tag", "noindex, follow");
+    res.set("X-Robots-Tag", "index, follow");
     res.set(
       "Cache-Control",
       "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",

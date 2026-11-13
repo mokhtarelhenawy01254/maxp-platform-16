@@ -81,7 +81,7 @@ export const FeaturedCollectionsLayout: React.FC<{
                             ? 'bg-[linear-gradient(180deg,#fffaf2_0%,#f4ece1_36%,#fffaf6_100%)]'
                             : variant === 'legacy-circle-categories'
                               ? 'bg-white'
-                              : isKidsPlay || variant === 'floating-bubbles'
+                              : isKidsPlay || variant === 'floating-bubbles' || variant === 'playful-bubbles'
                                 ? 'bg-[radial-gradient(circle_at_top_right,hsl(var(--secondary)/0.15),transparent_40%),radial-gradient(circle_at_bottom_left,hsl(var(--accent)/0.15),transparent_40%),radial-gradient(circle_at_center,hsl(var(--primary)/0.1),transparent_60%)]'
                                 : isNovaMobile
                                   ? 'bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_40%),radial-gradient(circle_at_bottom_left,hsl(var(--accent)/0.08),transparent_50%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--secondary)/0.38)_48%,hsl(var(--background))_100%)]'

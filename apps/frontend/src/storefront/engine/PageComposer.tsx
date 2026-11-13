@@ -71,8 +71,7 @@ export const getSectionSkeletonClassName = (
       : null;
 
   if (key.includes('promo-strip')) {
-    // median real mobile height ≈ 222px
-    return 'min-h-[14rem]';
+    return 'min-h-[4rem]';
   }
 
   if (key.includes('featured-collections')) {
@@ -129,11 +128,13 @@ export const getSectionSkeletonClassName = (
   if (
     key.includes('product-grid') ||
     key.includes('featured-products') ||
-    key.includes('related-products') ||
     key.includes('bought-together') ||
     key.includes('shop-product-grid')
   ) {
-    return 'min-h-0';
+    return 'min-h-0 md:min-h-[38rem]';
+  }
+  if (key.includes('related-products')) {
+    return 'min-h-0 md:min-h-[32rem]';
   }
 
   if (key.includes('hero-banner') || key.includes('hero-sidebar')) {

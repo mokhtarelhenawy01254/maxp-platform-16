@@ -60,11 +60,11 @@
         "to": "/"
       },
       {
-        "label": "الأحذية",
+        "label": "المنيو",
         "to": "/shop"
       },
       {
-        "label": "التشكيلات",
+        "label": "التصنيفات",
         "to": "/collections"
       },
       {
@@ -72,30 +72,38 @@
         "to": "/sale"
       },
       {
-        "label": "تواصل معنا",
+        "label": "اتصل بنا",
         "to": "/contact"
       }
     ]
   },
   "footer": {
-    "description": "سنيكرز يومي، كعب للمساء، ولوفر مريح للعمل مع شحن واضح واستبدال مقاس أسهل.",
-    "copyrightText": "© 2026 جميع الحقوق محفوظة.",
-    "socialLinks": {},
+    "description": "منيو عربي واضح للمطاعم مع إبراز الوجبات الأساسية والعروض اليومية وتجربة طلب أنظف وأسرع.",
+    "copyrightText": "© 2026 Nile Bistro",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
     "navigation": [
       {
-        "title": "التسوق",
+        "title": "المنيو",
         "links": [
           {
-            "label": "كل الأحذية",
+            "label": "كل الأصناف",
             "to": "/shop"
           },
           {
-            "label": "التشكيلات",
-            "to": "/collections"
+            "label": "الوجبات",
+            "to": "/shop?category=meals"
           },
           {
-            "label": "العروض الحالية",
-            "to": "/sale"
+            "label": "السندوتشات",
+            "to": "/shop?category=sandwiches"
+          },
+          {
+            "label": "المقبلات",
+            "to": "/shop?category=starters"
           }
         ]
       },
@@ -103,16 +111,16 @@
         "title": "الدعم",
         "links": [
           {
-            "label": "الشحن والتوصيل",
+            "label": "التوصيل",
             "to": "/shipping"
           },
           {
-            "label": "الاستبدال والاسترجاع",
-            "to": "/returns"
+            "label": "الفروع",
+            "to": "/contact"
           },
           {
-            "label": "تواصل معنا",
-            "to": "/contact"
+            "label": "العروض",
+            "to": "/sale"
           }
         ]
       }
@@ -649,5 +657,18 @@
         "enforceTrustSignals": true
       }
     }
+  },
+  "activePageKey": "home",
+  "pageStyleVars": {
+    "--store-accent": "16 88% 52%",
+    "--store-bg": "hsl(34 45% 97%)",
+    "--store-font-family": "\"Tajawal\", \"IBM Plex Sans Arabic\", sans-serif",
+    "--store-density-gap": "1.5rem",
+    "--store-radius": "1.15rem",
+    "--store-font-size-base": "16px",
+    "--store-line-height": "1.6",
+    "--store-heading-weight": "700",
+    "--store-body-weight": "400",
+    "--store-letter-spacing": "0"
   }
 }

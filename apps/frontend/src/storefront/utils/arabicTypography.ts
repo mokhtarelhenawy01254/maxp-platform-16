@@ -21,14 +21,20 @@ export const ARABIC_FONTS: readonly string[] = [
   'Cairo',
   'Tajawal',
   'Almarai',
+  'Alexandria',
   'IBM Plex Sans Arabic',
   'Noto Kufi Arabic',
   'Noto Naskh Arabic',
+  'Noto Sans Arabic',
   'Reem Kufi',
   'El Messiri',
   'Changa',
   'Rubik',
   'Amiri',
+  'Aref Ruqaa Ink',
+  'Readex Pro',
+  'Lalezar',
+  'Baloo Bhaijaan 2',
 ] as const;
 
 export const ARABIC_FONT_DEFINITIONS: ArabicFontDefinition[] = [
@@ -153,11 +159,16 @@ export function isArabicFont(fontFamily?: string | null): boolean {
     clean.includes('almarai') ||
     clean.includes('alexandria') ||
     clean.includes('amiri') ||
+    clean.includes('aref') ||
+    clean.includes('ruqaa') ||
     clean.includes('kufi') ||
     clean.includes('naskh') ||
     clean.includes('messiri') ||
     clean.includes('changa') ||
-    clean.includes('rubik')
+    clean.includes('rubik') ||
+    clean.includes('readex') ||
+    clean.includes('lalezar') ||
+    clean.includes('baloo')
   );
 }
 

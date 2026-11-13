@@ -847,6 +847,8 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (
                 normalizedId.includes('/src/storefront/sections/elements/elementTypography.ts') ||
                 normalizedId.includes('/src/storefront/studio/StudioTypes') ||
+                normalizedId.endsWith('/src/storefront/studio/StudioVariablesStyle.tsx') ||
+                normalizedId.endsWith('/src/storefront/studio/StudioIcon.tsx') ||
                 (normalizedId.includes('/src/storefront/studio/utils/') &&
                   !/\/(?:studioPageTemplates|studioPageExportImport|a11yAudit|seoAudit|linkAudit|performanceScore|studioKeymap|studioPermissions|studioSearchReplace)\.tsx?$/.test(
                     normalizedId,

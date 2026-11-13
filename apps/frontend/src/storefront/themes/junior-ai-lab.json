@@ -98,7 +98,25 @@
             "panelImage": "/assets/themes/junior-ai-lab/learning-path.svg",
             "panelEyebrow": "من الفكرة للتطبيق",
             "panelTitle": "خطوات واضحة للأسرة",
-            "panelSubtitle": "يتدرج الطفل من التفكير المنطقي إلى مشروع يفهمه ويعرضه."
+            "panelSubtitle": "يتدرج الطفل من التفكير المنطقي إلى مشروع يفهمه ويعرضه.",
+            "panelNote": "مشروع تطبيقي في نهاية كل مستوى",
+            "panelMetricValue": "٤ مستويات متدرجة",
+            "panelMetricLabel": "متابعة أسبوعية لولي الأمر",
+            "i18n": {
+              "en": {
+                "eyebrow": "Coding & AI · Ages 7 to 14",
+                "title": "From First Idea to Smart Project",
+                "subtitle": "Your child learns step by step, and parents know exactly what they will build at every level.",
+                "ctaText": "Explore Tracks",
+                "secondaryCtaText": "Ask Where to Start",
+                "panelEyebrow": "From Idea to Build",
+                "panelTitle": "Clear Milestones for Families",
+                "panelSubtitle": "Children progress from logical thinking to a project they understand and present.",
+                "panelNote": "Hands-on project at the end of every level",
+                "panelMetricValue": "4 Progressive Levels",
+                "panelMetricLabel": "Weekly parent progress updates"
+              }
+            }
           }
         },
         {
@@ -113,6 +131,7 @@
           "type": "services-grid",
           "variant": "standard",
           "settings": {
+            "badge": "مسارات التعلم",
             "title": "مهارات تتحول إلى مشاريع",
             "subtitle": "كل مستوى يضيف أداة ومشروعًا جديدًا، من التفكير المنطقي إلى تطبيقات الذكاء الاصطناعي.",
             "columns": 4,
@@ -121,16 +140,83 @@
               { "title": "٠٢ · Scratch", "description": "بناء قصص وألعاب تفاعلية وفهم أساسيات البرمجة." },
               { "title": "٠٣ · Python", "description": "كتابة برامج صغيرة وتجربة مفاهيم برمجية أعمق." },
               { "title": "٠٤ · الذكاء الاصطناعي", "description": "تنفيذ مشروع مبسط يفهم الطفل فكرته ويعرض نتيجته." }
-            ]
+            ],
+            "i18n": {
+              "en": {
+                "badge": "Learning Tracks",
+                "title": "Skills That Turn Into Projects",
+                "subtitle": "Every level adds a new tool and project, from logical thinking to AI applications.",
+                "items": [
+                  { "title": "01 · Logic", "description": "Structuring ideas and turning them into actionable steps." },
+                  { "title": "02 · Scratch", "description": "Building interactive stories and games while mastering coding basics." },
+                  { "title": "03 · Python", "description": "Writing small programs and exploring deeper programming concepts." },
+                  { "title": "04 · Artificial Intelligence", "description": "Creating a simplified AI project that children understand and showcase." }
+                ]
+              }
+            }
           }
         },
         {
           "type": "journal-strip",
           "variant": "editorial-cards",
           "settings": {
+            "badge": "مشاريع الطلاب",
             "title": "مشاريع تبدأ من فضولهم",
             "subtitle": "من لعبة صغيرة إلى تجربة تفاعلية؛ التطبيق العملي جزء من كل مستوى.",
-            "limit": 3
+            "limit": 3,
+            "items": [
+              {
+                "title": "لعبة متاهة ذكية بلغة Scratch",
+                "meta": "المستوى الأول · ٧–٩ سنوات",
+                "excerpt": "يصمم الطفل شخصياته الخاصة ويبني قواعد الحركة والنقاط خطوة بخطوة بطريقة تفاعلية ممتعة.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/shop"
+              },
+              {
+                "title": "تطبيق المسابقات التفاعلي بلغة Python",
+                "meta": "المستوى الثاني · ١٠–١٢ سنة",
+                "excerpt": "يكتب الطالب أول برنامج نصي كامل يحسب النتائج ويعرض تلميحات ذكية للاعبين.",
+                "image": "/assets/themes/junior-ai-lab/preview.png",
+                "link": "/shop"
+              },
+              {
+                "title": "مشروع تصنيف الصور بالذكاء الاصطناعي",
+                "meta": "المستوى الثالث · ١٢–١٤ سنة",
+                "excerpt": "يدرب الطفل نموذجاً مبسطاً للتعرف على الأشكال والألوان ويعرض مشروعه أمام الأسرة.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/collections"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "badge": "Student Projects",
+                "title": "Projects Sparked by Curiosity",
+                "subtitle": "From a mini game to an interactive experiment; hands-on practice is part of every level.",
+                "items": [
+                  {
+                    "title": "Smart Maze Game with Scratch",
+                    "meta": "Level 1 · Ages 7–9",
+                    "excerpt": "Children design their own characters and build movement and scoring logic step by step.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "Interactive Quiz App in Python",
+                    "meta": "Level 2 · Ages 10–12",
+                    "excerpt": "Students write their first complete script that tracks scores and gives smart hints.",
+                    "image": "/assets/themes/junior-ai-lab/preview.png",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "AI Image Classifier Project",
+                    "meta": "Level 3 · Ages 12–14",
+                    "excerpt": "Kids train a simplified model to recognize shapes and present their project to family.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/collections"
+                  }
+                ]
+              }
+            }
           }
         },
         {
@@ -310,9 +396,63 @@
           "type": "journal-strip",
           "variant": "editorial-cards",
           "settings": {
+            "badge": "مشاريع المسارات",
             "title": "منهج يتعلم بالتجربة",
             "subtitle": "كل مستوى يربط الفكرة بعمل يقدر الطفل يشرحه ويطوره.",
-            "limit": 3
+            "limit": 3,
+            "items": [
+              {
+                "title": "قصص وألعاب تفاعلية بـ Scratch",
+                "meta": "مسار البداية · ٧–٩ سنوات",
+                "excerpt": "يتعلم الطفل تحويل الفكرة إلى مشاهد وشخصيات تتحرك وتتفاعل مع أوامر اللاعب.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/shop"
+              },
+              {
+                "title": "تحديات برمجية عملية بـ Python",
+                "meta": "مسار التطوير · ١٠–١٢ سنة",
+                "excerpt": "تطبيقات مبسطة تدرب الطفل على المتغيرات والحلقات وبناء ألعاب نصية ذكية.",
+                "image": "/assets/themes/junior-ai-lab/preview.png",
+                "link": "/shop"
+              },
+              {
+                "title": "تجارب الذكاء الاصطناعي للناشئين",
+                "meta": "مسار المشاريع · ١٢–١٤ سنة",
+                "excerpt": "يبني الطالب نموذجاً يتعرف على الصور والأصوات ويعرض نتائجه في نهاية المستوى.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/registration"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "badge": "Track Projects",
+                "title": "Hands-On Learning Curriculum",
+                "subtitle": "Every level connects concepts with real work your child can explain and improve.",
+                "items": [
+                  {
+                    "title": "Interactive Stories & Games with Scratch",
+                    "meta": "Starter Track · Ages 7–9",
+                    "excerpt": "Kids learn to turn an idea into scenes and characters that respond to player commands.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "Practical Coding Challenges in Python",
+                    "meta": "Builder Track · Ages 10–12",
+                    "excerpt": "Guided apps that train students on variables, loops, and smart logic games.",
+                    "image": "/assets/themes/junior-ai-lab/preview.png",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "Junior AI Experiments",
+                    "meta": "Project Track · Ages 12–14",
+                    "excerpt": "Students build a model that recognizes images and sounds and present it at graduation.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/registration"
+                  }
+                ]
+              }
+            }
           }
         },
         {
@@ -321,6 +461,73 @@
           "settings": {
             "title": "منهجية تناسب عمر الطفل",
             "content": "نبدأ بمفاهيم بسيطة، ثم ننتقل إلى أدوات ومشاريع أكثر تقدمًا. يطلع ولي الأمر على التقدم أسبوعيًا، ويختار المستوى المناسب بعد الاستفسار عن خبرة الطفل واهتمامه."
+          }
+        }
+      ]
+    },
+    "lookbook": {
+      "sections": [
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "badge": "معرض المشاريع",
+            "title": "مشاريع الطلاب في مختبر الذكاء الصغير",
+            "subtitle": "نماذج عملية نفذها الأطفال بأنفسهم في نهاية كل مستوى تعليمي.",
+            "limit": 3,
+            "items": [
+              {
+                "title": "لعبة متاهة ذكية بلغة Scratch",
+                "meta": "المستوى الأول · ٧–٩ سنوات",
+                "excerpt": "يصمم الطفل شخصياته الخاصة ويبني قواعد الحركة والنقاط خطوة بخطوة بطريقة تفاعلية ممتعة.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/shop"
+              },
+              {
+                "title": "تطبيق المسابقات التفاعلي بلغة Python",
+                "meta": "المستوى الثاني · ١٠–١٢ سنة",
+                "excerpt": "يكتب الطالب أول برنامج نصي كامل يحسب النتائج ويعرض تلميحات ذكية للاعبين.",
+                "image": "/assets/themes/junior-ai-lab/preview.png",
+                "link": "/shop"
+              },
+              {
+                "title": "مشروع تصنيف الصور بالذكاء الاصطناعي",
+                "meta": "المستوى الثالث · ١٢–١٤ سنة",
+                "excerpt": "يدرب الطفل نموذجاً مبسطاً للتعرف على الأشكال والألوان ويعرض مشروعه أمام الأسرة.",
+                "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                "link": "/collections"
+              }
+            ],
+            "i18n": {
+              "en": {
+                "badge": "Project Gallery",
+                "title": "Student Projects at Junior AI Lab",
+                "subtitle": "Hands-on builds completed by children at the end of each learning level.",
+                "items": [
+                  {
+                    "title": "Smart Maze Game with Scratch",
+                    "meta": "Level 1 · Ages 7–9",
+                    "excerpt": "Children design their own characters and build movement and scoring logic step by step.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "Interactive Quiz App in Python",
+                    "meta": "Level 2 · Ages 10–12",
+                    "excerpt": "Students write their first complete script that tracks scores and gives smart hints.",
+                    "image": "/assets/themes/junior-ai-lab/preview.png",
+                    "link": "/shop"
+                  },
+                  {
+                    "title": "AI Image Classifier Project",
+                    "meta": "Level 3 · Ages 12–14",
+                    "excerpt": "Kids train a simplified model to recognize shapes and present their project to family.",
+                    "image": "/assets/themes/junior-ai-lab/learning-path.svg",
+                    "link": "/collections"
+                  }
+                ]
+              }
+            }
           }
         }
       ]
@@ -351,7 +558,15 @@
           "type": "member-registration",
           "settings": {
             "title": "سجّل اهتمام طفلك",
-            "subtitle": "أرسل بيانات ولي الأمر وعمر الطفل لنتواصل معك بشأن المسار والمجموعة المناسبة."
+            "subtitle": "أرسل بيانات ولي الأمر وعمر الطفل لنتواصل معك بشأن المسار والمجموعة المناسبة.",
+            "description": "أرسل بيانات ولي الأمر وعمر الطفل لنتواصل معك بشأن المسار والمجموعة المناسبة.",
+            "i18n": {
+              "en": {
+                "title": "Register Your Child's Interest",
+                "subtitle": "Share parent details and child age so we can guide you to the right track and cohort.",
+                "description": "Share parent details and child age so we can guide you to the right track and cohort."
+              }
+            }
           }
         }
       ]

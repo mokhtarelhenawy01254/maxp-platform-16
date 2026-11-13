@@ -60,41 +60,40 @@
         "to": "/"
       },
       {
-        "label": "الأحذية",
+        "label": "المتجر",
         "to": "/shop"
       },
       {
-        "label": "التشكيلات",
+        "label": "التصنيفات",
         "to": "/collections"
       },
       {
         "label": "العروض",
         "to": "/sale"
-      },
-      {
-        "label": "تواصل معنا",
-        "to": "/contact"
       }
     ]
   },
   "footer": {
-    "description": "سنيكرز يومي، كعب للمساء، ولوفر مريح للعمل مع شحن واضح واستبدال مقاس أسهل.",
-    "copyrightText": "© 2026 جميع الحقوق محفوظة.",
-    "socialLinks": {},
+    "description": "قالب متجر عربي واضح ومباشر يوازن بين الاستكشاف السريع والقرار الشرائي السهل.",
+    "copyrightText": "© 2026 Shop Orbit",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
     "navigation": [
       {
         "title": "التسوق",
         "links": [
           {
-            "label": "كل الأحذية",
+            "label": "كل المنتجات",
             "to": "/shop"
           },
           {
-            "label": "التشكيلات",
+            "label": "التصنيفات",
             "to": "/collections"
           },
           {
-            "label": "العروض الحالية",
+            "label": "العروض",
             "to": "/sale"
           }
         ]
@@ -103,15 +102,11 @@
         "title": "الدعم",
         "links": [
           {
-            "label": "الشحن والتوصيل",
+            "label": "الشحن والاستبدال",
             "to": "/shipping"
           },
           {
-            "label": "الاستبدال والاسترجاع",
-            "to": "/returns"
-          },
-          {
-            "label": "تواصل معنا",
+            "label": "اتصل بنا",
             "to": "/contact"
           }
         ]
@@ -365,21 +360,21 @@
             "description": "بدأ تجهيز طلبك الآن، وإذا احتجنا تأكيد المقاس أو العنوان سنتواصل معك قبل خروج الطلب للتوصيل.",
             "continueShoppingText": "العودة إلى المتجر",
             "orderNumberPrefix": "رقم الطلب:",
-            "supportText": "تحتاج تعديل المقاس أو متابعة أسرع؟ تواصل معنا",
+            "supportText": "تحتاج مساعدة أو متابعة أسرع؟ تواصل معنا",
             "whatsappSupportLabel": "واتساب الدعم",
             "trackOrderTitle": "تابع حالة الطلب",
             "trackOrderDescription": "اكتب نفس رقم الهاتف المستخدم في الطلب لو احتجت متابعة إضافية.",
             "trackOrderButtonText": "تحقق من حالة الطلب",
             "trackOrderPhoneLabel": "رقم الهاتف المستخدم في الطلب",
-            "reorderTitle": "أعد نفس الموديلات بسهولة",
-            "reorderDescription": "لو أعجبك الطلب أو أردت زوجًا إضافيًا، أضف نفس الموديلات للسلة مرة واحدة.",
-            "reorderButtonText": "أضف نفس الموديلات",
+            "reorderTitle": "أعد نفس المنتجات بسهولة",
+            "reorderDescription": "لو أعجبك الطلب أو أردت قطعة إضافية، أضف نفس المنتجات للسلة مرة واحدة.",
+            "reorderButtonText": "أضف نفس المنتجات",
             "reorderSuccessText": "أضفنا موديلات الطلب إلى السلة مرة أخرى.",
             "recommendedTitle": "قد يعجبك أيضًا",
-            "recommendedSubtitle": "اختيارات إضافية قريبة من ذوقك لو تحب إضافة زوج ثانٍ قبل المغادرة.",
+            "recommendedSubtitle": "اختيارات إضافية تناسب ذوقك لو تحب إضافة قطعة ثانية قبل المغادرة.",
             "recommendedBadge": "اقتراح بعد الطلب",
             "recommendedCtaLabel": "أضف للسلة",
-            "recommendedChooseOptionsLabel": "اختر المقاس",
+            "recommendedChooseOptionsLabel": "عرض التفاصيل",
             "showTimeline": true,
             "showTrackOrder": true,
             "showRecommended": true,
@@ -536,5 +531,18 @@
         "member-registration"
       ]
     }
+  },
+  "activePageKey": "home",
+  "pageStyleVars": {
+    "--store-accent": "171 78% 40%",
+    "--store-bg": "hsl(210 33% 96%)",
+    "--store-font-family": "\"IBM Plex Sans Arabic\", sans-serif",
+    "--store-density-gap": "1.5rem",
+    "--store-radius": "1.5rem",
+    "--store-font-size-base": "16px",
+    "--store-line-height": "1.6",
+    "--store-heading-weight": "700",
+    "--store-body-weight": "400",
+    "--store-letter-spacing": "0"
   }
 }

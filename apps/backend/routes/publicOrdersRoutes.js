@@ -97,6 +97,41 @@ async function saveCheckoutError(cartId, companyId, code, message, details = {})
 }
 
 // Multer setup for wallet payment proof screenshots (uploaded by customer at checkout)
+const ALLOWED_WALLET_PROOF_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const ALLOWED_WALLET_PROOF_MIMETYPES = new Map([
+  ['image/jpeg', '.jpg'],
+  ['image/jpg', '.jpg'],
+  ['image/png', '.png'],
+  ['image/webp', '.webp'],
+]);
+const WALLET_PROOF_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const WALLET_PROOF_RATE_LIMIT_MAX = 15;
+const walletProofIpRateMap = new Map();
+
+function checkWalletProofRateLimit(req, res, next) {
+  const forwarded = req.headers['x-forwarded-for'];
+  const clientIp = forwarded
+    ? String(forwarded).split(',')[0].trim()
+    : (req.ip || req.connection?.remoteAddress || '127.0.0.1');
+  const now = Date.now();
+  const entry = walletProofIpRateMap.get(clientIp);
+  if (!entry || now > entry.resetAt) {
+    walletProofIpRateMap.set(clientIp, {
+      count: 1,
+      resetAt: now + WALLET_PROOF_RATE_LIMIT_WINDOW_MS,
+    });
+    return next();
+  }
+  if (entry.count >= WALLET_PROOF_RATE_LIMIT_MAX) {
+    return res.status(429).json({
+      success: false,
+      error: 'تم تجاوز الحد المسموح لرفع إثبات الدفع، يرجى المحاولة لاحقاً',
+    });
+  }
+  entry.count += 1;
+  return next();
+}
+
 const walletProofStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = 'uploads/wallet-proofs';
@@ -104,8 +139,10 @@ const walletProofStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `wallet-proof-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`);
+    const rawExt = path.extname(file.originalname || '').toLowerCase();
+    const mimeExt = ALLOWED_WALLET_PROOF_MIMETYPES.get(String(file.mimetype || '').toLowerCase()) || '.jpg';
+    const safeExt = ALLOWED_WALLET_PROOF_EXTENSIONS.has(rawExt) ? rawExt : mimeExt;
+    cb(null, `wallet-proof-${Date.now()}-${Math.round(Math.random() * 1E9)}${safeExt}`);
   },
 });
 
@@ -113,13 +150,20 @@ const walletProofUpload = multer({
   storage: walletProofStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Only image files are allowed'), false);
+    const mime = String(file.mimetype || '').toLowerCase();
+    const rawExt = path.extname(file.originalname || '').toLowerCase();
+    if (!ALLOWED_WALLET_PROOF_MIMETYPES.has(mime)) {
+      return cb(new Error('Only JPEG, PNG, and WebP image files are allowed'), false);
+    }
+    if (rawExt && (rawExt === '.svg' || rawExt === '.html' || rawExt === '.htm' || rawExt === '.js')) {
+      return cb(new Error('Invalid image file extension'), false);
+    }
+    cb(null, true);
   },
 });
 
 // Upload a wallet payment proof screenshot before placing the order
-router.post('/wallet-proof/upload', walletProofUpload.single('image'), async (req, res) => {
+router.post('/wallet-proof/upload', checkWalletProofRateLimit, walletProofUpload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'Image file is required' });
@@ -871,6 +915,22 @@ router.post('/', async (req, res) => {
     }
 
     const prisma = await getPrisma();
+    const isVerifiedAdminConvert = (() => {
+      if (!req.headers['x-admin-convert']) return false;
+      if (req.user?.id) return true;
+      const authHeader = req.headers.authorization;
+      if (!authHeader) return false;
+      try {
+        const token = String(authHeader).startsWith('Bearer ')
+          ? String(authHeader).slice(7).trim()
+          : String(authHeader).trim();
+        if (!token) return false;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || getJwtSecret());
+        return Boolean(decoded && (decoded.userId || decoded.id) && decoded.role !== 'CUSTOMER');
+      } catch (_) {
+        return false;
+      }
+    })();
     const customerAuthForBlock = tryDecodeCustomerToken(req.headers.authorization);
     const blockEvaluation = await customerBlocklistService.evaluateCustomerBlock(prisma, {
       companyId: company.id,
@@ -1107,7 +1167,7 @@ router.post('/', async (req, res) => {
           }
         } else if (activeVariants.length === 1 && (!activeVariants[0].name || activeVariants[0].name.toLowerCase() === 'default' || activeVariants[0].name === 'افتراضي')) {
           item.variantId = activeVariants[0].id;
-        } else if (!req.headers['x-admin-convert']) {
+        } else if (!isVerifiedAdminConvert) {
           console.log('❌ [CREATE-ORDER] Missing required variant selection for product:', product.name);
           saveCheckoutError(cartId, company.id, 'variant_required', `يرجى اختيار المقاس أو اللون للمنتج: ${item.name || product.name}`, { productId: product.id });
           return res.status(400).json({
@@ -1137,7 +1197,7 @@ router.post('/', async (req, res) => {
         const variantTracksStock = variant.trackInventory !== false;
         const isVariantBackorderPermitted = isBackorderPermitted(product, variant, companyStoreSettings);
 
-        if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (variantTracksStock && variant.stock < item.quantity && !isVerifiedAdminConvert) {
           if (isVariantBackorderPermitted) {
             console.log(`ℹ️ [CREATE-ORDER] Backorder permitted for variant: ${variant.name} (stock: ${variant.stock}, requested: ${item.quantity})`);
             item.isBackorder = true;
@@ -1275,7 +1335,7 @@ router.post('/', async (req, res) => {
       } else {
         // Check main product stock if no variant and tracking is enabled
         const isProductBackorderPermitted = isBackorderPermitted(product, null, companyStoreSettings);
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
+        if (product.trackInventory !== false && product.stock < item.quantity && !isVerifiedAdminConvert) {
           if (isProductBackorderPermitted) {
             console.log(`ℹ️ [CREATE-ORDER] Backorder permitted for product: ${item.name || product.name} (stock: ${product.stock}, requested: ${item.quantity})`);
             item.isBackorder = true;
@@ -1578,7 +1638,7 @@ router.post('/', async (req, res) => {
       shippingCost,
       shippingAddress,
       company,
-      appliedAdminDiscount: req.headers['x-admin-convert'] && req.body?.discountAmount !== undefined
+      appliedAdminDiscount: isVerifiedAdminConvert && req.body?.discountAmount !== undefined
         ? Number(req.body.discountAmount) || 0
         : undefined,
       markVoucherUsed: true,
@@ -2224,11 +2284,11 @@ router.post('/', async (req, res) => {
           totalDiscount: discountAmount
         });
 
-        const discountSource = resolveDiscountSource({ appliedAdminDiscount: req.headers['x-admin-convert'] ? discountAmount : 0 });
+        const discountSource = resolveDiscountSource({ appliedAdminDiscount: isVerifiedAdminConvert ? discountAmount : 0 });
         orderMetadata.discountSource = discountSource;
         const approval = resolveDiscountApproval({
           discountAmount,
-          requireDiscountApproval,
+          requireDiscountApproval: requireDiscountApproval && !isVerifiedAdminConvert,
           discountSource,
           paymentStatus: 'PENDING',
         });
@@ -2460,7 +2520,7 @@ router.post('/', async (req, res) => {
 
           // سجل التحويل الطبيعي (العميل كمل الشيك آوت لوحده).
           // بيتجاهل طلبات admin-convert لأن نقطة التحويل دي بتسجل بالفعل في routes/orders.js
-          if (!req.headers['x-admin-convert']) {
+          if (!isVerifiedAdminConvert) {
             try {
               await prisma.cartConversionLog.create({
                 data: {
@@ -3877,6 +3937,7 @@ router.post('/:id/accept-offer', async (req, res) => {
       });
     }
 
+    const parsedQty = Math.min(10, Math.max(1, parseInt(quantity, 10) || 1));
     let resolvedName = name || 'عرض خاص بعد الطلب';
     let resolvedPrice = Math.max(0, Number(price) || 0);
     let resolvedImage = imageUrl || null;
@@ -3905,14 +3966,18 @@ router.post('/:id/accept-offer', async (req, res) => {
           resolvedImage = typeof firstImg === 'string' ? firstImg : firstImg?.url || null;
         }
         const variantsList = Array.isArray(dbProduct.productVariants) ? dbProduct.productVariants : [];
+        let matchedVariant = null;
         if (variantId && variantsList.length > 0) {
-          const matchedVariant = variantsList.find(v => v.id === variantId);
+          matchedVariant = variantsList.find(v => v.id === variantId) || null;
           if (matchedVariant) {
+            if (matchedVariant.trackInventory !== false && matchedVariant.stock < parsedQty) {
+              return res.status(400).json({
+                success: false,
+                message: 'المخزون غير كافٍ'
+              });
+            }
             resolvedName = `${dbProduct.name} - ${matchedVariant.name || ''}`;
             resolvedSku = matchedVariant.sku || '';
-            if (matchedVariant.price && resolvedPrice === 0) {
-              resolvedPrice = Number(matchedVariant.price);
-            }
             const vAttrs = resolveVariantAttributes(matchedVariant);
             if (!resolvedColor) resolvedColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
             if (!resolvedSize) resolvedSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
@@ -3929,8 +3994,63 @@ router.post('/:id/accept-offer', async (req, res) => {
             }
             resolvedAttributes = { ...vAttrs, ...resolvedAttributes };
           }
-        } else if (resolvedPrice === 0 && dbProduct.price) {
-          resolvedPrice = Number(dbProduct.price);
+        }
+
+        if (!matchedVariant && dbProduct && dbProduct.trackInventory && dbProduct.stock < parsedQty) {
+          return res.status(400).json({
+            success: false,
+            message: 'المخزون غير كافٍ'
+          });
+        }
+
+        const dbBasePrice = Number(matchedVariant?.price || dbProduct?.price || 0);
+        if (dbBasePrice > 0) {
+          let configuredOfferPrice = null;
+          try {
+            if (typeof prisma.storefrontSettings?.findUnique === 'function') {
+              const sfSettings = await prisma.storefrontSettings.findUnique({
+                where: { companyId: company.id },
+                select: { designTokens: true }
+              });
+              const tokens = typeof sfSettings?.designTokens === 'string'
+                ? safeJsonParse(sfSettings.designTokens, {})
+                : (sfSettings?.designTokens || {});
+              const savedOffer = tokens?.postPurchaseOffer;
+              if (
+                savedOffer &&
+                savedOffer.enabled &&
+                (!savedOffer.productId || String(savedOffer.productId) === String(dbProduct.id))
+              ) {
+                const baseForOffer = Number(
+                  matchedVariant?.comparePrice ||
+                  matchedVariant?.price ||
+                  savedOffer.originalPrice ||
+                  dbProduct.comparePrice ||
+                  dbProduct.price ||
+                  0
+                );
+                if (savedOffer.discountType === 'percentage' && baseForOffer > 0) {
+                  const pct = Math.min(90, Math.max(0, Number(savedOffer.discountValue) || 30));
+                  const calcFromBase = Number((baseForOffer * (1 - pct / 100)).toFixed(2));
+                  const calcFromDbBase = Number((dbBasePrice * (1 - pct / 100)).toFixed(2));
+                  configuredOfferPrice = Math.min(calcFromBase, calcFromDbBase);
+                } else {
+                  const fixedCandidate = Number(savedOffer.offerPrice || savedOffer.discountValue || 0);
+                  if (fixedCandidate > 0) {
+                    configuredOfferPrice = Number(fixedCandidate.toFixed(2));
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+
+          if (configuredOfferPrice !== null && configuredOfferPrice > 0) {
+            if (resolvedPrice <= 0 || resolvedPrice < configuredOfferPrice) {
+              resolvedPrice = configuredOfferPrice;
+            }
+          } else if (resolvedPrice <= 0 || resolvedPrice < dbBasePrice * 0.5) {
+            resolvedPrice = dbBasePrice;
+          }
         }
       }
     }
@@ -3951,7 +4071,7 @@ router.post('/:id/accept-offer', async (req, res) => {
       existingItems = [];
     }
 
-    const offerItemQty = Math.max(1, Number(quantity) || 1);
+    const offerItemQty = parsedQty;
     const offerItem = {
       productId: productId || null,
       variantId: variantId || null,

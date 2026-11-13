@@ -7,6 +7,10 @@ const {
   storefrontThemeCatalogService,
 } = require('../services/storefrontThemeCatalogService');
 const redisCacheService = require('../services/redisCacheService');
+const {
+  invalidateCompanyStorefrontHtmlCache,
+} = require('./storefrontHtmlController');
+const storefrontSettingsRevisionService = require('../services/storefrontSettingsRevisionService');
 
 const runWithoutTenantContext = (operation) =>
   tenantContext.run(null, operation);
@@ -224,7 +228,29 @@ const activateTheme = async (req, res) => {
     );
 
     try {
-      await redisCacheService.del(`storefront_settings:${companyId}`);
+      const activatedDesignTokens = activation?.settings?.designTokens || null;
+      const activatedThemeId = activation?.settings?.themeId || themeId;
+      if (activatedDesignTokens) {
+        await storefrontSettingsRevisionService.recordRevision({
+          companyId,
+          snapshot: {
+            themeId: activatedThemeId,
+            designTokens: activatedDesignTokens,
+          },
+          userId: req.user?.id || req.user?.sub || null,
+          note: `activate theme: ${activatedThemeId}`,
+        });
+      }
+    } catch (revErr) {
+      console.error('⚠️ [THEME-CATALOG] failed to record theme activation revision:', revErr);
+    }
+
+    try {
+      await Promise.allSettled([
+        redisCacheService.del(`storefront_settings:${companyId}`),
+        redisCacheService.del(`public_storefront_settings_v1:${companyId}`),
+      ]);
+      invalidateCompanyStorefrontHtmlCache(companyId);
     } catch (err) {
       console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
     }

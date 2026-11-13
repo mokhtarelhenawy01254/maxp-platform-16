@@ -86,6 +86,7 @@ export const STOREFRONT_SECTION_COMPONENT_MAP: Readonly<Record<string, string>> 
   'recently-viewed': 'recently-viewed',
   'marketplace-magazine': 'marketplace-magazine',
   'info-content': 'info-content',
+  'contact-form': 'contact-form',
   'member-registration': 'member-registration',
   'shop-hero': 'hero-banner',
   'shop-featured-collection': 'product-grid',

@@ -60,11 +60,11 @@
         "to": "/"
       },
       {
-        "label": "الأحذية",
+        "label": "المتجر",
         "to": "/shop"
       },
       {
-        "label": "التشكيلات",
+        "label": "التصنيفات",
         "to": "/collections"
       },
       {
@@ -72,30 +72,38 @@
         "to": "/sale"
       },
       {
-        "label": "تواصل معنا",
-        "to": "/contact"
+        "label": "دليل المقاسات",
+        "to": "/size-guide"
       }
     ]
   },
   "footer": {
-    "description": "سنيكرز يومي، كعب للمساء، ولوفر مريح للعمل مع شحن واضح واستبدال مقاس أسهل.",
-    "copyrightText": "© 2026 جميع الحقوق محفوظة.",
-    "socialLinks": {},
+    "description": "أحذية رجالي يومية وكلاسيك وسنيكرز بتجربة شراء أوضح تناسب ذوق العميل المصري وتقلل التردد قبل الطلب.",
+    "copyrightText": "© 2026 Cairo Stride",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
     "navigation": [
       {
         "title": "التسوق",
         "links": [
           {
-            "label": "كل الأحذية",
+            "label": "كل المنتجات",
             "to": "/shop"
           },
           {
-            "label": "التشكيلات",
-            "to": "/collections"
+            "label": "السنيكرز",
+            "to": "/shop?category=sneakers"
           },
           {
-            "label": "العروض الحالية",
-            "to": "/sale"
+            "label": "الكاجوال",
+            "to": "/shop?category=casual"
+          },
+          {
+            "label": "الكلاسيك",
+            "to": "/shop?category=formal"
           }
         ]
       },
@@ -103,7 +111,7 @@
         "title": "الدعم",
         "links": [
           {
-            "label": "الشحن والتوصيل",
+            "label": "الشحن",
             "to": "/shipping"
           },
           {
@@ -111,8 +119,8 @@
             "to": "/returns"
           },
           {
-            "label": "تواصل معنا",
-            "to": "/contact"
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
           }
         ]
       }
@@ -697,5 +705,18 @@
         "enforceTrustSignals": true
       }
     }
+  },
+  "activePageKey": "home",
+  "pageStyleVars": {
+    "--store-accent": "31 86% 50%",
+    "--store-bg": "hsl(34 30% 97%)",
+    "--store-font-family": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+    "--store-density-gap": "1.5rem",
+    "--store-radius": "1rem",
+    "--store-font-size-base": "16px",
+    "--store-line-height": "1.6",
+    "--store-heading-weight": "700",
+    "--store-body-weight": "400",
+    "--store-letter-spacing": "0"
   }
 }

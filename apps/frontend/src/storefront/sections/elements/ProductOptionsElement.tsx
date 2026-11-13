@@ -54,8 +54,38 @@ const ProductOptionsElement: React.FC<ProductOptionsElementProps> = ({
   const [selectedAttributes, setSelectedAttributes] =
     useState<Record<string, string>>(initialAttributes);
 
-  // If the context is NOT a product -> do NOT render anything (do not display 0)
+  // If the context is NOT a product -> do NOT render anything unless in studio preview
   if (!product) {
+    const isStudioPreview =
+      typeof window !== 'undefined' &&
+      (window.location.pathname.includes('/studio') ||
+        window.location.search.includes('studio='));
+    if (isStudioPreview) {
+      return (
+        <div
+          data-storefront-element="product-options"
+          data-element="product-options"
+          data-studio-placeholder="true"
+          className="storefront-product-options flex flex-col gap-2 w-full rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground"
+        >
+          <span className="font-semibold text-foreground">خيارات المنتج (معاينة)</span>
+          <div className="flex flex-wrap gap-1.5">
+            {['S', 'M', 'L'].map((val, idx) => (
+              <span
+                key={val}
+                className={`px-3 py-1 rounded-md border text-xs font-medium ${
+                  idx === 0
+                    ? 'border-[var(--store-accent,#2563eb)] bg-[var(--store-accent,#2563eb)] text-white'
+                    : 'border-border bg-background text-foreground'
+                }`}
+              >
+                {val}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
@@ -115,13 +145,25 @@ const ProductOptionsElement: React.FC<ProductOptionsElementProps> = ({
 
     // Sync with pdp selection store if active
     if (matchedVariantId) {
+      const variants = Array.isArray(product.variants)
+        ? product.variants
+        : Array.isArray(product.productVariants)
+        ? product.productVariants
+        : [];
+      const selectedVariant = variants.find(
+        (v: any) => v && typeof v === 'object' && String(v.id) === String(matchedVariantId),
+      ) as Record<string, unknown> | undefined;
+      const resolvedUnitPrice = Number(selectedVariant?.price ?? product.price) || 0;
+
       usePdpSelectionStore.getState().syncSelection({
         productId: String(product.id),
         productName: product.title || product.name || '',
         variantId: matchedVariantId,
-        unitPrice: Number(product.price) || 0,
+        unitPrice: resolvedUnitPrice,
         attributes: updated,
-        volumeDiscounts: [],
+        volumeDiscounts: Array.isArray((product as any)?.volumeDiscounts)
+          ? (product as any).volumeDiscounts
+          : [],
         requiresVariantSelection: true,
         isSelectionReady: true,
       });

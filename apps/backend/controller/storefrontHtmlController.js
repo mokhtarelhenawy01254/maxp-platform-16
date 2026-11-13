@@ -98,6 +98,20 @@ let cachedIndexHtmlSize = null;
 
 const HTML_CACHE_TTL_MS = 60 * 1000; // 60s in-memory TTL
 const htmlPageCache = new Map();
+const STANDARD_THEME_STORE_PAGE_SLUGS = new Set([
+  "about",
+  "about-us",
+  "faq",
+  "contact",
+  "contact-us",
+  "lookbook",
+  "size-guide",
+  "shipping",
+  "returns",
+  "privacy",
+  "terms",
+  "track-order",
+]);
 
 // Called by deploy-remote.sh touch or /api/v1/internal/purge-storefront-cache
 function clearStorefrontHtmlCache() {
@@ -239,7 +253,16 @@ exports.handleStorefrontShell = async (req, res, next) => {
     process.env.PLATFORM_ADMIN_ORIGIN || "https://maxp.online";
   res.removeHeader("X-Frame-Options");
 
-  const cacheKey = `${req.companyId}:${req.path}`;
+  const hostKey = String(req.get("host") || "").toLowerCase();
+  const langKey = String(req.query?.lang || "").toLowerCase();
+  const previewKey = String(req.query?.previewTheme || "").toLowerCase();
+  const cacheKey = previewKey
+    ? `${req.companyId}:${hostKey}:${req.path}:${langKey}:${previewKey}`
+    : langKey
+      ? `${req.companyId}:${hostKey}:${req.path}:${langKey}`
+      : hostKey
+        ? `${req.companyId}:${hostKey}:${req.path}`
+        : `${req.companyId}:${req.path}`;
   const cached = htmlPageCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     if (cached.cspHeader) {
@@ -639,13 +662,36 @@ exports.handleStorefrontShell = async (req, res, next) => {
       }
     }
 
+    const normalizedStorePageSlug = String(routeContext.storePageSlug || "")
+      .trim()
+      .toLowerCase();
+    const rawThemePages =
+      storefrontSettings?.designTokens &&
+      typeof storefrontSettings.designTokens === "object" &&
+      storefrontSettings.designTokens.pages &&
+      typeof storefrontSettings.designTokens.pages === "object"
+        ? storefrontSettings.designTokens.pages
+        : null;
+    const matchedThemePage =
+      rawThemePages?.[routeContext.storePageSlug] ??
+      rawThemePages?.[normalizedStorePageSlug] ??
+      null;
+    const isPublishedThemePage =
+      Boolean(matchedThemePage) &&
+      !(typeof matchedThemePage === "object" && matchedThemePage.status === "draft");
+    const isStandardThemeStorePage =
+      STANDARD_THEME_STORE_PAGE_SLUGS.has(normalizedStorePageSlug);
+    const hasResolvedStorePage = Boolean(
+      storePage || isPublishedThemePage || isStandardThemeStorePage,
+    );
+
     const isNotFound =
       !portalSsrContext.isPortalRoute &&
       !isInviteConnectRoute &&
       ((routeContext.productKey && !product) ||
         (routeContext.categorySlug && !category) ||
         (routeContext.articleSlug && !article) ||
-        (routeContext.storePageSlug && !storePage));
+        (routeContext.storePageSlug && !hasResolvedStorePage));
 
     let reviews = null;
     if (Array.isArray(product?.productReviews) && product.productReviews.length > 0) {

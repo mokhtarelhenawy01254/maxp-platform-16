@@ -994,6 +994,15 @@ export interface GenerateResponsiveCssOptions {
 }
 
 /**
+ * Sanitizes free-form CSS property values to prevent `<style>` tag breakout or rule injection.
+ */
+const sanitizeCssValue = (val: unknown): string =>
+  String(val ?? "")
+    .replace(/<\/?style[^>]*>/gi, "")
+    .replace(/[{}]/g, "")
+    .trim();
+
+/**
  * Generates pure CSS media query declarations for responsive style overrides
  * (Ticket 5R / 5B pattern) + device visibility and custom breakpoints (Ticket RESP-1).
  * Cascades: base -> tablet -> mobile.
@@ -1195,39 +1204,54 @@ export function generateResponsiveCss(
 
     // Position & Insets
     if (effective.position) {
-      decls.push(`position: ${effective.position} !important;`);
+      const safePos = sanitizeCssValue(effective.position);
+      if (safePos) decls.push(`position: ${safePos} !important;`);
     }
     if (effective.top !== undefined && effective.top !== null && effective.top !== "") {
-      decls.push(`top: ${typeof effective.top === "number" ? `${effective.top}px` : effective.top} !important;`);
+      const safeTop = typeof effective.top === "number" ? `${effective.top}px` : sanitizeCssValue(effective.top);
+      if (safeTop) decls.push(`top: ${safeTop} !important;`);
     }
     if (effective.right !== undefined && effective.right !== null && effective.right !== "") {
-      decls.push(`right: ${typeof effective.right === "number" ? `${effective.right}px` : effective.right} !important;`);
+      const safeRight = typeof effective.right === "number" ? `${effective.right}px` : sanitizeCssValue(effective.right);
+      if (safeRight) decls.push(`right: ${safeRight} !important;`);
     }
     if (effective.bottom !== undefined && effective.bottom !== null && effective.bottom !== "") {
-      decls.push(`bottom: ${typeof effective.bottom === "number" ? `${effective.bottom}px` : effective.bottom} !important;`);
+      const safeBottom = typeof effective.bottom === "number" ? `${effective.bottom}px` : sanitizeCssValue(effective.bottom);
+      if (safeBottom) decls.push(`bottom: ${safeBottom} !important;`);
     }
     if (effective.left !== undefined && effective.left !== null && effective.left !== "") {
-      decls.push(`left: ${typeof effective.left === "number" ? `${effective.left}px` : effective.left} !important;`);
+      const safeLeft = typeof effective.left === "number" ? `${effective.left}px` : sanitizeCssValue(effective.left);
+      if (safeLeft) decls.push(`left: ${safeLeft} !important;`);
     }
     if (effective.zIndex !== undefined && effective.zIndex !== null && effective.zIndex !== "") {
-      decls.push(`z-index: ${effective.zIndex} !important;`);
+      const safeZ = sanitizeCssValue(effective.zIndex);
+      if (safeZ) decls.push(`z-index: ${safeZ} !important;`);
     }
 
     // Transform
     const transformStr = buildTransformString(effective);
     if (transformStr) {
-      decls.push(`transform: ${transformStr} !important;`);
+      decls.push(`transform: ${sanitizeCssValue(transformStr)} !important;`);
     }
 
     // Aspect Ratio & Overflow
     if (effective.aspectRatio) {
       const ar = normalizeAspectRatio(effective.aspectRatio);
       if (ar && ar !== "auto") {
-        decls.push(`aspect-ratio: ${ar} !important;`);
+        decls.push(`aspect-ratio: ${sanitizeCssValue(ar)} !important;`);
       }
     }
     if (effective.overflow) {
-      decls.push(`overflow: ${effective.overflow} !important;`);
+      const safeOverflow = sanitizeCssValue(effective.overflow);
+      if (safeOverflow) decls.push(`overflow: ${safeOverflow} !important;`);
+    }
+    if (effective.overflowX) {
+      const safeOverflowX = sanitizeCssValue(effective.overflowX);
+      if (safeOverflowX) decls.push(`overflow-x: ${safeOverflowX} !important;`);
+    }
+    if (effective.overflowY) {
+      const safeOverflowY = sanitizeCssValue(effective.overflowY);
+      if (safeOverflowY) decls.push(`overflow-y: ${safeOverflowY} !important;`);
     }
 
     // Opacity
@@ -1306,21 +1330,26 @@ export function styleObjectToCssDeclarations(styleObj?: Record<string, any> | nu
       const bDecls = buildBorderDeclarations(rawVal);
       decls.push(...bDecls);
     } else if (key === "position") {
-      decls.push(`position: ${rawVal};`);
+      const safeVal = sanitizeCssValue(rawVal);
+      if (safeVal) decls.push(`position: ${safeVal};`);
     } else if (key === "top" || key === "right" || key === "bottom" || key === "left") {
-      const formattedVal = typeof rawVal === "number" ? `${rawVal}px` : rawVal;
-      decls.push(`${key}: ${formattedVal};`);
+      const formattedVal = typeof rawVal === "number" ? `${rawVal}px` : sanitizeCssValue(rawVal);
+      if (formattedVal) decls.push(`${key}: ${formattedVal};`);
     } else if (key === "zIndex" || key === "z-index") {
-      decls.push(`z-index: ${rawVal};`);
+      const safeVal = sanitizeCssValue(rawVal);
+      if (safeVal) decls.push(`z-index: ${safeVal};`);
     } else if (key === "aspectRatio" || key === "aspect-ratio") {
       const norm = normalizeAspectRatio(rawVal);
-      if (norm) decls.push(`aspect-ratio: ${norm};`);
+      if (norm) decls.push(`aspect-ratio: ${sanitizeCssValue(norm)};`);
     } else if (key === "overflow") {
-      decls.push(`overflow: ${rawVal};`);
+      const safeVal = sanitizeCssValue(rawVal);
+      if (safeVal) decls.push(`overflow: ${safeVal};`);
     } else if (key === "overflowX" || key === "overflow-x") {
-      decls.push(`overflow-x: ${rawVal};`);
+      const safeVal = sanitizeCssValue(rawVal);
+      if (safeVal) decls.push(`overflow-x: ${safeVal};`);
     } else if (key === "overflowY" || key === "overflow-y") {
-      decls.push(`overflow-y: ${rawVal};`);
+      const safeVal = sanitizeCssValue(rawVal);
+      if (safeVal) decls.push(`overflow-y: ${safeVal};`);
     } else if (key === "objectFit" || key === "object-fit") {
       // Ticket FIT-1: only emit when a valid value is configured.
       const fit = normalizeObjectFit(rawVal);

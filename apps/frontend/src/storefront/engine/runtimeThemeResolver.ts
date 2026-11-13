@@ -137,6 +137,7 @@ export const resolveRuntimeStorefrontTheme = async (
         home: { sections: [] },
         shop: { sections: [] },
         product: { sections: [] },
+        pdp: { sections: [] },
         cart: { sections: [] },
         checkout: { sections: [] },
       },

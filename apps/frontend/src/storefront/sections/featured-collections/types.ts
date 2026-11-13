@@ -101,6 +101,7 @@ export type FeaturedCollectionsVariant =
   | 'elessi-bike-panels'
   | 'menu-categories'
   | 'floating-bubbles'
+  | 'playful-bubbles'
   | 'occasion-ribbon'
   | 'travel-postcards'
   | 'easyorders-circles'
@@ -141,6 +142,7 @@ export const normalizeFeaturedCollectionsVariant = (
       value === 'elessi-bike-panels' ||
       value === 'menu-categories' ||
       value === 'floating-bubbles' ||
+      value === 'playful-bubbles' ||
       value === 'occasion-ribbon' ||
       value === 'travel-postcards' ||
       value === 'easyorders-circles' ||

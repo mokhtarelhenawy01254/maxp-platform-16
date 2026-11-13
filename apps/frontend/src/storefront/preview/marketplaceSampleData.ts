@@ -12,6 +12,11 @@ import {
   ATELIER_NOVA_REVIEWS,
 } from "./atelierNovaMarketplaceData";
 import {
+  COUTURE_ATELIER_EG_PRODUCTS,
+  COUTURE_ATELIER_EG_RECOMMENDATIONS,
+  COUTURE_ATELIER_EG_REVIEWS,
+} from "./coutureAtelierEgMarketplaceData";
+import {
   ELEGANT_LUXE_PRODUCTS,
   ELEGANT_LUXE_RECOMMENDATIONS,
   ELEGANT_LUXE_REVIEWS,
@@ -4382,6 +4387,13 @@ previewRecommendationIdsByTheme["atelier-nova"] = {
   boughtTogether: { ...ATELIER_NOVA_RECOMMENDATIONS.boughtTogether },
 };
 previewProductReviewsByTheme["atelier-nova"] = { ...ATELIER_NOVA_REVIEWS };
+
+previewProductsByTheme["couture-atelier-eg"] = COUTURE_ATELIER_EG_PRODUCTS;
+previewRecommendationIdsByTheme["couture-atelier-eg"] = {
+  related: { ...COUTURE_ATELIER_EG_RECOMMENDATIONS.related },
+  boughtTogether: { ...COUTURE_ATELIER_EG_RECOMMENDATIONS.boughtTogether },
+};
+previewProductReviewsByTheme["couture-atelier-eg"] = { ...COUTURE_ATELIER_EG_REVIEWS };
 previewProductsByTheme["elegant-luxe"] = ELEGANT_LUXE_PRODUCTS;
 previewRecommendationIdsByTheme["elegant-luxe"] = {
   related: { ...ELEGANT_LUXE_RECOMMENDATIONS.related },

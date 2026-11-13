@@ -287,18 +287,18 @@
             "description": "بدأ تجهيز طلبك الآن، وإذا احتجنا تأكيد المقاس أو العنوان سنتواصل معك قبل خروج الطلب للتوصيل.",
             "continueShoppingText": "العودة إلى المتجر",
             "orderNumberPrefix": "رقم الطلب:",
-            "supportText": "تحتاج تعديل الطلب أو متابعة أسرع؟ تواصل معنا",
+            "supportText": "تحتاج مساعدة أو متابعة أسرع؟ تواصل معنا",
             "whatsappSupportLabel": "واتساب الدعم",
             "trackOrderTitle": "تابع حالة الطلب",
             "trackOrderDescription": "اكتب نفس رقم الهاتف المستخدم في الطلب لو احتجت متابعة إضافية.",
             "trackOrderButtonText": "تحقق من حالة الطلب",
             "trackOrderPhoneLabel": "رقم الهاتف المستخدم في الطلب",
-            "reorderTitle": "أعد نفس الأجهزة بسهولة",
-            "reorderDescription": "لو أعجبك الطلب أو أردت جهازًا إضافيًا، أضف نفس الأجهزة للسلة مرة واحدة.",
-            "reorderButtonText": "أضف نفس الأجهزة",
+            "reorderTitle": "أعد نفس المنتجات بسهولة",
+            "reorderDescription": "لو أعجبك الطلب أو أردت قطعة إضافية، أضف نفس المنتجات للسلة مرة واحدة.",
+            "reorderButtonText": "أضف نفس المنتجات",
             "reorderSuccessText": "أضفنا موديلات الطلب إلى السلة مرة أخرى.",
             "recommendedTitle": "قد يعجبك أيضًا",
-            "recommendedSubtitle": "ملحقات إضافية تناسب جهازك لو تحب إضافة قطعة ثانية قبل المغادرة.",
+            "recommendedSubtitle": "اختيارات إضافية تناسب ذوقك لو تحب إضافة قطعة ثانية قبل المغادرة.",
             "recommendedBadge": "اقتراح بعد الطلب",
             "recommendedCtaLabel": "أضف للسلة",
             "recommendedChooseOptionsLabel": "عرض التفاصيل",
@@ -468,5 +468,18 @@
         "member-registration"
       ]
     }
+  },
+  "activePageKey": "home",
+  "pageStyleVars": {
+    "--store-accent": "190 90% 50%",
+    "--store-bg": "hsl(210 20% 98%)",
+    "--store-font-family": "'Inter', 'Tajawal', sans-serif",
+    "--store-density-gap": "1.5rem",
+    "--store-radius": "1rem",
+    "--store-font-size-base": "16px",
+    "--store-line-height": "1.6",
+    "--store-heading-weight": "700",
+    "--store-body-weight": "400",
+    "--store-letter-spacing": "0"
   }
 }

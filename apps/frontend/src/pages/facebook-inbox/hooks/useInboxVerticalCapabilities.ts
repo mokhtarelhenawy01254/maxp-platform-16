@@ -77,9 +77,9 @@ const SPECIALTY_META: Record<
   education: {
     label: "أكاديمية وتعليم",
     badgeClassName: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/50",
-    primaryAction: { id: "appointment", label: "حجز جلسة / اشتراك" },
-    recordsTabLabel: "الاشتراكات",
-    kpiLabels: { countLabel: "الاشتراكات", valueLabel: "المدفوعات" },
+    primaryAction: { id: "appointment", label: "حجز موعد / ديمو داي" },
+    recordsTabLabel: "المواعيد والاشتراكات",
+    kpiLabels: { countLabel: "المواعيد والاشتراكات", valueLabel: "المدفوعات" },
   },
   agency: {
     label: "وكالة تسويق",
@@ -104,49 +104,82 @@ const SPECIALTY_META: Record<
   },
 };
 
-function resolveVertical(specialtySlug: string | undefined, apps: Set<string>): InboxVertical {
-  const s = (specialtySlug || "").toLowerCase().trim();
-  const hasAny = (keys: string[]) => keys.some((k) => s.includes(k));
+export function resolveVertical(
+  specialtySlug: string | undefined | null,
+  apps: Set<string>,
+  companyName?: string | null,
+  companySlug?: string | null,
+  specialtyName?: string | null,
+): InboxVertical {
+  const textCues = [specialtySlug, companyName, companySlug, specialtyName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 
+  // 1. Education (Academies, CodeTreps, schools, training, coding courses, etc.)
+  const isEducation =
+    /codetreps|academy|educat|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن|برمجة/.test(
+      textCues,
+    ) ||
+    apps.has("education-app") ||
+    apps.has("academy-app") ||
+    apps.has("quran-app");
+
+  if (isEducation) return "education";
+
+  // 2. Dental
   if (
-    s.includes("dental") ||
+    /dental|أسنان/.test(textCues) ||
     apps.has("dental-lab-app") ||
     apps.has("dental-materials-pro") ||
     apps.has("dental-lab")
   ) {
     return "dental";
   }
-  if (
-    hasAny(["medical", "clinic", "health", "doctor", "radiology", "pharmacy", "hospital", "therapy"]) ||
-    apps.has("booking-app") ||
+
+  // 3. Medical (CRITICAL: booking-app alone is NOT medical!)
+  const isMedical =
+    /medical|clinic|health|doctor|radiology|pharmacy|hospital|therapy|عيادة|طبي|مستشفى|دكتور|علاج|مختبر|أشعة|صيدلية/.test(
+      textCues,
+    ) ||
     apps.has("medical-system") ||
     apps.has("lab-app") ||
-    apps.has("radiology-app")
-  ) {
-    return "medical";
-  }
-  if (
-    hasAny(["educat", "academy", "school", "training", "course", "learning", "quran"]) ||
-    apps.has("education-app") ||
-    apps.has("academy-app")
-  ) {
-    return "education";
-  }
-  if (
-    hasAny(["service", "maintenance", "contracting", "factory"]) ||
+    apps.has("radiology-app") ||
+    apps.has("clinic-app");
+
+  if (isMedical) return "medical";
+
+  // 4. Services & Maintenance
+  const isServices =
+    /service|maintenance|contracting|factory|صيانة|خدمات|مقاولات|مصنع/.test(textCues) ||
     apps.has("service-orders") ||
     apps.has("services-app") ||
     apps.has("services-pro") ||
-    apps.has("service-request-app")
+    apps.has("service-request-app");
+
+  if (isServices) return "services";
+
+  // 5. Agency
+  if (
+    /agency|marketing|call_center|support|تسويق|دعاية|وكالة/.test(textCues) ||
+    apps.has("marketing-agency-pro")
   ) {
-    return "services";
-  }
-  if (hasAny(["agency", "marketing", "call_center", "support"]) || apps.has("marketing-agency-pro")) {
     return "agency";
   }
-  if (hasAny(["cafe", "restaurant", "coffee", "food", "bakery"]) || apps.has("cafe-restaurant-pro")) {
+
+  // 6. Cafe & Restaurant
+  if (
+    /cafe|restaurant|coffee|food|bakery|مطعم|كافيه|قهوة|مقهى/.test(textCues) ||
+    apps.has("cafe-restaurant-pro")
+  ) {
     return "cafe";
   }
+
+  // 7. Generic booking-app fallback (when no other vertical matched)
+  if (apps.has("booking-app")) {
+    return "services";
+  }
+
   return "commerce";
 }
 
@@ -157,11 +190,14 @@ export function useInboxVerticalCapabilities(): InboxVerticalCapabilities {
     [user?.company, user?.companies, user?.companyId],
   );
   const specialtySlug = company?.businessSpecialty?.slug;
+  const specialtyName = company?.businessSpecialty?.nameAr || company?.businessSpecialty?.nameEn;
+  const companyName = company?.name;
+  const companySlug = company?.slug;
   const activeAppsList = company?.activeApps || [];
 
   return useMemo(() => {
     const activeApps = new Set(activeAppsList.map((a) => a.toLowerCase().trim()));
-    const vertical = resolveVertical(specialtySlug, activeApps);
+    const vertical = resolveVertical(specialtySlug, activeApps, companyName, companySlug, specialtyName);
     const meta = SPECIALTY_META[vertical];
 
     const hasStoreApp = Array.from(STORE_APPS).some((slug) => activeApps.has(slug));

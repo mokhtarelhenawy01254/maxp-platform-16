@@ -42,6 +42,62 @@ export const isReducedMotionActive = (): boolean => {
   }
 };
 
+interface SectionErrorBoundaryProps {
+  sectionKey: string;
+  sectionType?: string;
+  isDiagnosticMode?: boolean;
+  children: React.ReactNode;
+}
+
+interface SectionErrorBoundaryState {
+  hasError: boolean;
+  errorMessage?: string;
+}
+
+export class SectionErrorBoundary extends React.Component<
+  SectionErrorBoundaryProps,
+  SectionErrorBoundaryState
+> {
+  constructor(props: SectionErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: unknown): SectionErrorBoundaryState {
+    return {
+      hasError: true,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo): void {
+    if (import.meta.env.DEV) {
+      console.error(
+        `[StorefrontSectionFrame] Error rendering section "${this.props.sectionType || this.props.sectionKey}":`,
+        error,
+        errorInfo,
+      );
+    }
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
+      if (this.props.isDiagnosticMode) {
+        return (
+          <div
+            data-testid="section-error-fallback"
+            className="my-2 rounded-lg border border-amber-300 bg-amber-50/80 px-4 py-2 text-xs text-amber-900"
+          >
+            تعذر عرض القسم ({this.props.sectionType || this.props.sectionKey})
+          </div>
+        );
+      }
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
 export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   element,
   index,
@@ -384,7 +440,13 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
           dangerouslySetInnerHTML={{ __html: responsiveCss }}
         />
       )}
-      {element}
+      <SectionErrorBoundary
+        sectionKey={sectionKey}
+        sectionType={sectionType}
+        isDiagnosticMode={Boolean(import.meta.env.DEV || isEditorCanvas())}
+      >
+        {element}
+      </SectionErrorBoundary>
     </div>
   );
 };

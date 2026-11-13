@@ -158,6 +158,22 @@ function cloneAndBindSection(
     );
   }
 
+  if (cloned.template && typeof cloned.template === "object") {
+    if (Array.isArray(cloned.template)) {
+      cloned.template = cloned.template.map((tmpl, tIdx) =>
+        cloneAndBindSection(tmpl, ctx, itemIndex, tIdx, itemKey)
+      );
+    } else {
+      cloned.template = cloneAndBindSection(
+        cloned.template as StudioSectionShape,
+        ctx,
+        itemIndex,
+        0,
+        itemKey
+      );
+    }
+  }
+
   return cloned;
 }
 

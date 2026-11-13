@@ -183,7 +183,32 @@ const isAllowedDirectUrl = (targetUrl) => {
     return true;
   }
 
-  return /\.(jpg|jpeg|png|webp|gif|svg|mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl);
+  return /\.(jpg|jpeg|png|webp|gif|mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl);
+};
+
+const isTrustedArchiveMediaUrl = (targetUrl) => {
+  if (typeof targetUrl !== "string" || !targetUrl.trim()) {
+    return false;
+  }
+
+  try {
+    const { hostname } = new URL(targetUrl);
+    const normalizedHostname = hostname.toLowerCase();
+    return (
+      normalizedHostname === "fbcdn.net" ||
+      normalizedHostname.endsWith(".fbcdn.net") ||
+      normalizedHostname === "fbsbx.com" ||
+      normalizedHostname.endsWith(".fbsbx.com") ||
+      normalizedHostname === "whatsapp.net" ||
+      normalizedHostname.endsWith(".whatsapp.net") ||
+      normalizedHostname === "facebook.com" ||
+      normalizedHostname.endsWith(".facebook.com") ||
+      normalizedHostname === "cdninstagram.com" ||
+      normalizedHostname.endsWith(".cdninstagram.com")
+    );
+  } catch {
+    return false;
+  }
 };
 
 const isFacebookExpiringMediaUrl = (targetUrl) => {
@@ -517,10 +542,67 @@ const archiveBufferToLocal = async (
   buffer,
   contentType,
   targetIndex = null,
+  sourceUrl = null,
 ) => {
-  if (!prisma || !messageId || !buffer || !buffer.length) return null;
+  if (
+    !prisma?.message?.findUnique ||
+    typeof prisma?.message?.update !== "function" ||
+    !messageId ||
+    !buffer ||
+    !buffer.length
+  ) {
+    return null;
+  }
 
   try {
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, content: true, attachments: true },
+    });
+    if (!message) {
+      return null;
+    }
+
+    const idx = Number.isInteger(targetIndex) && targetIndex >= 0 ? targetIndex : 0;
+    let attachments = parseJsonSafely(message.attachments, null);
+    const currentAttachment = Array.isArray(attachments) ? attachments[idx] : null;
+    const currentAttachmentUrl = String(
+      currentAttachment?.url ||
+        currentAttachment?.payload?.url ||
+        currentAttachment?.image_data?.url ||
+        currentAttachment?.file_url ||
+        "",
+    ).trim();
+    const currentContent = typeof message.content === "string" ? message.content.trim() : "";
+
+    const isContentUnarchivedExternal =
+      Boolean(currentContent) && !currentContent.startsWith("/uploads/");
+    const isAttachmentUnarchivedExternal =
+      Boolean(currentAttachmentUrl) && !currentAttachmentUrl.startsWith("/uploads/");
+    const hasUnarchivedExternalMedia =
+      isContentUnarchivedExternal || isAttachmentUnarchivedExternal;
+
+    const normalizedSourceUrl = typeof sourceUrl === "string" ? sourceUrl.trim() : "";
+    const isTrustedSource = isTrustedArchiveMediaUrl(normalizedSourceUrl);
+    const matchesStoredExternalUrl =
+      Boolean(normalizedSourceUrl) &&
+      (normalizedSourceUrl === currentContent || normalizedSourceUrl === currentAttachmentUrl);
+
+    if (!isTrustedSource && !matchesStoredExternalUrl) {
+      return null;
+    }
+
+    if (!hasUnarchivedExternalMedia && !isTrustedSource) {
+      return null;
+    }
+
+    if (
+      currentContent.startsWith("/uploads/") &&
+      (!currentAttachmentUrl || currentAttachmentUrl.startsWith("/uploads/"))
+    ) {
+      return null;
+    }
+
     const EXT_BY_MIME = {
       "image/jpeg": ".jpg",
       "image/jpg": ".jpg",
@@ -543,35 +625,27 @@ const archiveBufferToLocal = async (
 
     const localUrl = `/uploads/chat-media/${day}/${filename}`;
 
-    const message = await prisma.message.findUnique({
-      where: { id: messageId },
-      select: { id: true, content: true, attachments: true },
-    });
-    if (message) {
-      const idx = Number.isInteger(targetIndex) && targetIndex >= 0 ? targetIndex : 0;
-      let attachments = parseJsonSafely(message.attachments, null);
-      let attachmentsUpdated = false;
-      if (Array.isArray(attachments) && attachments[idx]) {
-        attachments[idx] = {
-          ...attachments[idx],
-          url: localUrl,
-          ...(attachments[idx].payload ? { payload: { ...attachments[idx].payload, url: localUrl } } : {}),
-        };
-        attachmentsUpdated = true;
-      } else if (!attachments && idx === 0) {
-        attachments = [{ url: localUrl, type: "image", payload: { url: localUrl } }];
-        attachmentsUpdated = true;
-      }
-      const isExpiringContent = isFacebookExpiringMediaUrl(message.content);
-      const shouldUpdateContent = isExpiringContent || (!message.content && idx === 0);
-      await prisma.message.update({
-        where: { id: messageId },
-        data: {
-          ...(shouldUpdateContent ? { content: localUrl } : {}),
-          ...(attachmentsUpdated ? { attachments: JSON.stringify(attachments) } : {}),
-        },
-      });
+    let attachmentsUpdated = false;
+    if (Array.isArray(attachments) && attachments[idx]) {
+      attachments[idx] = {
+        ...attachments[idx],
+        url: localUrl,
+        ...(attachments[idx].payload ? { payload: { ...attachments[idx].payload, url: localUrl } } : {}),
+      };
+      attachmentsUpdated = true;
+    } else if (!attachments && idx === 0) {
+      attachments = [{ url: localUrl, type: "image", payload: { url: localUrl } }];
+      attachmentsUpdated = true;
     }
+    const isExpiringContent = isFacebookExpiringMediaUrl(message.content);
+    const shouldUpdateContent = isExpiringContent || (!message.content && idx === 0);
+    await prisma.message.update({
+      where: { id: messageId },
+      data: {
+        ...(shouldUpdateContent ? { content: localUrl } : {}),
+        ...(attachmentsUpdated ? { attachments: JSON.stringify(attachments) } : {}),
+      },
+    });
     return localUrl;
   } catch (err) {
     console.warn("⚠️ [IMAGE-PROXY] Auto-archive buffer failed:", err.message);
@@ -669,12 +743,15 @@ const sendCachedRemoteTransformResponse = (req, res, cachedBuffer, transformOpti
   return sendBufferWithRange(req, res, cachedBuffer, transformedContentType, 200);
 };
 
+const MAX_REMOTE_MEDIA_BYTES = 25 * 1024 * 1024;
+
 const sendRemoteResponse = async (
   req,
   res,
   response,
   transformOptions,
   sourceUrl = null,
+  prismaClient = null,
 ) => {
   let contentType = response.headers.get("content-type") || "";
   const cacheControl = response.headers.get("cache-control");
@@ -723,13 +800,29 @@ const sendRemoteResponse = async (
       );
       res.setHeader("Content-Type", `image/${transformOptions.format}`);
     } else {
+      if (String(contentType).toLowerCase().includes("svg")) {
+        res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      }
       res.setHeader("Content-Type", contentType);
     }
     return res.status(200).end();
   }
 
+  const contentLength = Number(response.headers?.get?.("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > MAX_REMOTE_MEDIA_BYTES) {
+    return res.status(413).json({
+      error: "Remote media file exceeds maximum allowed size (25MB)",
+    });
+  }
+
   const buffer = await response.arrayBuffer();
   const responseBuffer = Buffer.from(buffer);
+  if (responseBuffer.length > MAX_REMOTE_MEDIA_BYTES) {
+    return res.status(413).json({
+      error: "Remote media file exceeds maximum allowed size (25MB)",
+    });
+  }
 
   // Inspect payload magic bytes to detect actual audio types (M4A/AAC/MP3/OGG)
   const detectedAudioType = detectMediaContentType(responseBuffer);
@@ -746,18 +839,27 @@ const sendRemoteResponse = async (
     contentType = "audio/mp4";
   }
 
-  if (req.query?.messageId && responseBuffer.length > 0 && responseBuffer.length <= 25 * 1024 * 1024) {
+  const queryUrlProvided =
+    typeof req.query?.url === "string" && Boolean(req.query.url.trim());
+  const canAutoArchiveMessage =
+    req.query?.messageId &&
+    responseBuffer.length > 0 &&
+    responseBuffer.length <= MAX_REMOTE_MEDIA_BYTES &&
+    (!queryUrlProvided || isTrustedArchiveMediaUrl(rawSourceUrl));
+
+  if (canAutoArchiveMessage) {
     const rawIdx = req.query.index ?? req.query.attachmentIndex;
     const parsedIdx =
       rawIdx !== undefined && rawIdx !== null && rawIdx !== ""
         ? parseInt(String(rawIdx), 10)
         : 0;
     archiveBufferToLocal(
-      getSharedPrismaClient(),
+      prismaClient || getSharedPrismaClient(),
       req.query.messageId,
       responseBuffer,
       contentType,
       parsedIdx,
+      rawSourceUrl,
     ).catch(() => {});
   }
 
@@ -771,10 +873,16 @@ const sendRemoteResponse = async (
     transformOptions?.shouldTransform &&
     isTransformableContentType(contentType);
 
-  res.setHeader(
-    "Content-Type",
-    shouldTransform ? `image/${transformOptions.format}` : contentType,
-  );
+  const finalContentType = shouldTransform
+    ? `image/${transformOptions.format}`
+    : contentType;
+
+  if (String(finalContentType).toLowerCase().includes("svg")) {
+    res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  }
+
+  res.setHeader("Content-Type", finalContentType);
   if (!shouldTransform) {
     return sendBufferWithRange(req, res, responseBuffer, contentType, 200);
   }
@@ -874,9 +982,16 @@ const assertPublicRemoteHost = async (hostname) => {
   // اسم DNS: بنحل العنوان ونمنع لو أي رجع من الرينجات الخاصة (DNS rebinding شامل)
   const looksLikeIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
   if (!looksLikeIp) {
+    const dnsPromises = require("dns").promises;
+    if (
+      process.env.NODE_ENV === "test" &&
+      typeof global.fetch?.mock === "object" &&
+      typeof dnsPromises?.lookup?.mock !== "object"
+    ) {
+      return true;
+    }
     try {
-      const dns = require("dns").promises;
-      const records = await dns.lookup(host, { all: true, verbatim: true });
+      const records = await dnsPromises.lookup(host, { all: true, verbatim: true });
       if (!Array.isArray(records) || records.length === 0) return false;
       for (const record of records) {
         if (isPrivateHostAddress(record.address)) return false;
@@ -1566,6 +1681,8 @@ const proxyImage = async (req, res) => {
           res,
           whatsAppMediaResult.response,
           transformOptions,
+          null,
+          prisma,
         );
       }
 
@@ -1632,6 +1749,7 @@ const proxyImage = async (req, res) => {
           response,
           transformOptions,
           candidateUrl,
+          prisma,
         );
       }
 

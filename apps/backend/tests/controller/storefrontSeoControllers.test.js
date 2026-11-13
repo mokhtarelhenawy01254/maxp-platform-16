@@ -140,7 +140,7 @@ describe("Storefront SEO Controllers", () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.headers["Content-Type"]).toBe("application/xml; charset=utf-8");
-      expect(res.headers["X-Robots-Tag"]).toBe("noindex, follow");
+      expect(res.headers["X-Robots-Tag"]).toBe("index, follow");
       expect(res.send).toHaveBeenCalled();
       const xml = res.send.mock.calls[0][0];
 

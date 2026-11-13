@@ -1,5 +1,5 @@
 import type { StorefrontSettings } from "../hooks/useStorefrontSettings";
-import { resolvePreviewThemeId } from "../preview/previewContext";
+import { resolvePreviewSource, resolvePreviewThemeId } from "../preview/previewContext";
 
 export interface StorefrontMarketplaceAppConfig {
   enabled: boolean;
@@ -40,6 +40,7 @@ const isRuntimeMaxCareGoThemeId = (themeId?: string | null): boolean =>
 interface MarketplacePreviewFlags {
   previewThemeId: string | null;
   isAtelierNovaPreview: boolean;
+  isCouturePreview: boolean;
   isElegantLuxePreview: boolean;
   isElessiPreviewTheme: boolean;
   isCafePreview: boolean;
@@ -72,6 +73,7 @@ const resolveMarketplacePreviewFlags = (): MarketplacePreviewFlags => {
   return {
     previewThemeId,
     isAtelierNovaPreview: previewThemeId === "atelier-nova",
+    isCouturePreview: previewThemeId === "couture-atelier-eg",
     isElegantLuxePreview: previewThemeId === "elegant-luxe",
     isElessiPreviewTheme: previewThemeId?.startsWith("elessi-") === true,
     isCafePreview: previewThemeId === "cafe-demo",
@@ -119,7 +121,8 @@ export const isStorefrontMarketplaceAppEnabled = (
   const appConfig = getStorefrontMarketplaceApp(settings, slug);
   const isPreview = Boolean(
     settings?.["storefront"]?.["isPreview"] ||
-    settings?.["storefront"]?.["settings"]?.["isPreview"],
+    settings?.["storefront"]?.["settings"]?.["isPreview"] ||
+    resolvePreviewSource() === "marketplace",
   );
   const { isElessiPreviewTheme } = resolveMarketplacePreviewFlags();
 
@@ -155,7 +158,8 @@ export const getStorefrontMarketplaceAppSettings = (
 ): Record<string, unknown> => {
   const isPreview = Boolean(
     settings?.["storefront"]?.["isPreview"] ||
-    settings?.["storefront"]?.["settings"]?.["isPreview"],
+    settings?.["storefront"]?.["settings"]?.["isPreview"] ||
+    resolvePreviewSource() === "marketplace",
   );
   const appConfig = getStorefrontMarketplaceApp(settings, slug);
   const apps = Array.isArray(settings?.["storefront"]?.["marketplaceApps"])
@@ -170,7 +174,9 @@ export const getStorefrontMarketplaceAppSettings = (
   if (isPreview) {
     if (slug === "conversion-suite") {
       const {
+        previewThemeId,
         isAtelierNovaPreview,
+        isCouturePreview,
         isElegantLuxePreview,
         isCafePreview,
         isBiteRushPreview,
@@ -189,7 +195,7 @@ export const getStorefrontMarketplaceAppSettings = (
       } = resolveMarketplacePreviewFlags();
       const baseCopy = (baseSettings["copy"] as Record<string, unknown>) || {};
       const isCalmEditorialPreview =
-        isRoseBoutiquePreview || isAtelierNovaPreview;
+        isRoseBoutiquePreview || isAtelierNovaPreview || isCouturePreview;
 
       return {
         ...baseSettings,
@@ -259,6 +265,7 @@ export const getStorefrontMarketplaceAppSettings = (
             isPerfumePreview ||
             isRoseBoutiquePreview ||
             isAtelierNovaPreview ||
+            isCouturePreview ||
             isPcHubPreview,
           boughtTogether:
             isBiteRushPreview ||
@@ -270,6 +277,7 @@ export const getStorefrontMarketplaceAppSettings = (
             isPerfumePreview ||
             isRoseBoutiquePreview ||
             isAtelierNovaPreview ||
+            isCouturePreview ||
             isPcHubPreview,
         },
         general: {
@@ -548,7 +556,7 @@ export const getStorefrontMarketplaceAppSettings = (
               ? "وقت التحضير المتوقع"
               : isPharmacyPreview
                 ? "وقت التوصيل المتوقع"
-                : isElegantLuxePreview
+                : isElegantLuxePreview || isAtelierNovaPreview || isCouturePreview || (typeof window !== "undefined" && document.documentElement.dir === "rtl")
                   ? "موعد الوصول المتوقع"
                 : "Estimated Arrival",
         },

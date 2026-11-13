@@ -253,9 +253,32 @@ const getPublicStorefrontSettingsSelect = (prisma) => {
   return select;
 };
 
+const SENSITIVE_COMPANY_SETTING_KEY_PATTERN =
+  /secret|token|password|apikey|api_key|private|webhook|systemuser/i;
+
+const sanitizePublicCompanySettings = (value) => {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return Object.entries(value).reduce((acc, [key, entryValue]) => {
+    if (SENSITIVE_COMPANY_SETTING_KEY_PATTERN.test(key)) {
+      return acc;
+    }
+
+    if (isRecord(entryValue)) {
+      acc[key] = sanitizePublicCompanySettings(entryValue);
+      return acc;
+    }
+
+    acc[key] = entryValue;
+    return acc;
+  }, {});
+};
+
 const parseCompanySettings = (value) => {
   if (isRecord(value)) {
-    return value;
+    return sanitizePublicCompanySettings(value);
   }
 
   if (typeof value !== 'string' || !value.trim()) {
@@ -264,7 +287,7 @@ const parseCompanySettings = (value) => {
 
   try {
     const parsed = JSON.parse(value);
-    return isRecord(parsed) ? parsed : {};
+    return isRecord(parsed) ? sanitizePublicCompanySettings(parsed) : {};
   } catch {
     return {};
   }
@@ -616,7 +639,7 @@ exports.getStorefrontSettings = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'فشل في جلب إعدادات المتجر',
-      error: error.message
+      ...(process.env.NODE_ENV === 'production' ? {} : { error: error.message }),
     });
   }
 };

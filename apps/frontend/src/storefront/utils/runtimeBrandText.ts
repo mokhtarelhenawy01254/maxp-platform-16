@@ -88,11 +88,49 @@ export const createStorefrontThemeTextReplacer = ({
   };
 };
 
+const NON_BRAND_REPLACEABLE_KEYS = new Set([
+  'type',
+  'variant',
+  'id',
+  'key',
+  'image',
+  'imageUrl',
+  'src',
+  'url',
+  'href',
+  'to',
+  'link',
+  'ctaLink',
+  'secondaryCtaLink',
+  'panelImage',
+  'beforeImage',
+  'afterImage',
+  'logoUrl',
+  'className',
+  'customClass',
+  'icon',
+]);
+
+const isUrlOrTechnicalString = (value: string): boolean => {
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('mailto:') ||
+    trimmed.startsWith('tel:')
+  );
+};
+
 export const sanitizeStorefrontThemeTextValue = (
   value: unknown,
   replaceThemeBrandText: (value?: string | null) => string,
 ): unknown => {
   if (typeof value === 'string') {
+    if (isUrlOrTechnicalString(value)) {
+      return value;
+    }
     return replaceThemeBrandText(value);
   }
 
@@ -104,7 +142,9 @@ export const sanitizeStorefrontThemeTextValue = (
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [
         key,
-        sanitizeStorefrontThemeTextValue(item, replaceThemeBrandText),
+        NON_BRAND_REPLACEABLE_KEYS.has(key)
+          ? item
+          : sanitizeStorefrontThemeTextValue(item, replaceThemeBrandText),
       ]),
     );
   }

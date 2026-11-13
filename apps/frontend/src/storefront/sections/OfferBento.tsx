@@ -85,13 +85,13 @@ export const OfferBento: React.FC<OfferBentoProps> = (props) => {
             location={ctrl.location}
             themeId={ctrl.theme.id}
           />
-        ) : ctrl.variant === 'editorial-columns' ? (
+        ) : ctrl.variant === 'editorial-columns' || ctrl.variant === 'category-promo' ? (
           <EditorialColumnsView
             cards={ctrl.cards}
             location={ctrl.location}
             themeId={ctrl.theme.id}
           />
-        ) : ctrl.variant === 'bundle-matrix' ? (
+        ) : ctrl.variant === 'bundle-matrix' || ctrl.variant === 'combo-deals' ? (
           <BundleMatrixView cards={ctrl.cards} location={ctrl.location} />
         ) : ctrl.variant === 'boutique-duo' ? (
           <BoutiqueDuoView
@@ -99,7 +99,7 @@ export const OfferBento: React.FC<OfferBentoProps> = (props) => {
             location={ctrl.location}
             themeId={ctrl.theme.id}
           />
-        ) : ctrl.variant === 'campaign-stack' ? (
+        ) : ctrl.variant === 'campaign-stack' || ctrl.variant === 'daily-picks' ? (
           <CampaignStackView
             cards={ctrl.cards}
             location={ctrl.location}

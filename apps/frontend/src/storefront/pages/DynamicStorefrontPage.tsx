@@ -19,7 +19,7 @@ const DynamicStorefrontPage: React.FC = () => {
     "*": string;
   }>();
   const location = useLocation();
-  const locale = getStorefrontLocale(location.search);
+  const locale = getStorefrontLocale(location.search, theme?.defaultLocale);
   const direction = getLocaleDirection(locale);
 
   useEffect(() => {

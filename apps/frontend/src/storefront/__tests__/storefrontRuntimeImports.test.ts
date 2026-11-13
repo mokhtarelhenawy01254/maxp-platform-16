@@ -153,6 +153,8 @@ describe("storefront runtime imports", () => {
 
   it("keeps cart and legacy collection modules deferred from the storefront shell", () => {
     const storefrontShellSource = readSource("src/storefront/StorefrontShell.tsx");
+    const storefrontLayoutSource = readSource("src/storefront/shell/StorefrontLayout.tsx");
+    const componentRegistrySource = readSource("src/storefront/engine/ComponentRegistry.ts");
     const cartDrawerHostSource = readSource(
       "src/storefront/components/DeferredCartDrawerHost.tsx",
     );
@@ -163,15 +165,15 @@ describe("storefront runtime imports", () => {
     expect(cartDrawerHostSource).toContain(
       'React.lazy(() => import("./CartDrawer"))',
     );
-    expect(storefrontShellSource).toContain("DeferredCartDrawerHost");
+    expect(storefrontLayoutSource).toContain("DeferredCartDrawerHost");
     expect(cartDrawerHostSource).toContain(
       "STOREFRONT_CART_DRAWER_IDLE_DELAY_MS = 2500",
     );
     expect(storefrontShellSource).not.toMatch(
       /import\s+ProductGrid\s+from\s+["']\.\/sections\/ProductGrid["']/,
     );
-    expect(storefrontShellSource).toMatch(
-      /React\.lazy\(\s*\(\)\s*=>\s*import\(["']\.\/sections\/ProductGrid["']\),\s*\)/,
+    expect(componentRegistrySource).toMatch(
+      /React\.lazy\(\s*\(\)\s*=>\s*import\(["']\.\.\/sections\/ProductGrid["']\)\s*\)/,
     );
   });
 
@@ -180,25 +182,25 @@ describe("storefront runtime imports", () => {
       "framer-motion",
     );
 
-    const gallerySource = readSource("src/storefront/sections/ProductGallery.tsx");
+    const gallerySource = readSource("src/storefront/sections/product-gallery/galleryHelpers.tsx");
     const bootstrapSource = readSource("src/storefront/StorefrontBootstrap.tsx");
 
-    expect(gallerySource).toContain("[520, 720, 960, 1280]");
+    expect(gallerySource).toContain("[420, 520, 720, 960, 1280]");
     expect(gallerySource).toContain("(max-width: 767px) 82vw");
-    expect(bootstrapSource).toContain("[520, 720, 960, 1280]");
-    expect(bootstrapSource).toContain("fallbackWidth: 960");
+    expect(bootstrapSource).toContain("[420, 520, 720, 960, 1280]");
+    expect(bootstrapSource).toContain("fallbackWidth: 720");
     expect(bootstrapSource).toContain("quality: 78");
     expect(bootstrapSource).not.toContain("fallbackWidth: 1280");
   });
 
   it("defers conversion hosts until after storefront first paint or user intent", () => {
-    const shellSource = readSource("src/storefront/StorefrontShell.tsx");
+    const shellControllerSource = readSource("src/storefront/shell/useStorefrontLayoutController.ts");
     const conversionHostsSource = readSource(
       "src/storefront/hooks/useDeferredStorefrontConversionHosts.ts",
     );
 
-    expect(shellSource).toContain("useDeferredStorefrontConversionHosts");
-    expect(shellSource).toContain("canRenderConversionHosts");
+    expect(shellControllerSource).toContain("useDeferredStorefrontConversionHosts");
+    expect(shellControllerSource).toContain("canRenderConversionHosts");
     expect(conversionHostsSource).toContain(
       "STOREFRONT_CONVERSION_HOST_INTENT_EVENTS",
     );
@@ -226,14 +228,15 @@ describe("storefront runtime imports", () => {
 
   it("keeps the prioritized mobile checkout sidebar as a single ordered render", () => {
     const composerSource = readSource("src/storefront/engine/PageComposer.tsx");
-    const summarySource = readSource("src/storefront/sections/OrderSummary.tsx");
+    const summaryTypesSource = readSource("src/storefront/sections/order-summary/types.ts");
+    const summaryControllerSource = readSource("src/storefront/sections/order-summary/useOrderSummaryController.ts");
 
     expect(composerSource).toContain("order-2 lg:order-1");
     expect(composerSource).toContain("order-1 lg:order-2");
     expect(composerSource).not.toContain("mb-5 lg:hidden");
-    expect(summarySource).toContain("getPersistedCartItemCount");
-    expect(summarySource).toContain("min-h-[46rem] lg:min-h-0");
-    expect(summarySource).toContain("DEFAULT_STOREFRONT_CART_STORAGE_NAME");
+    expect(summaryTypesSource).toContain("getPersistedCartItemCount");
+    expect(summaryControllerSource).toContain("min-h-[46rem] lg:min-h-0");
+    expect(summaryTypesSource).toContain("DEFAULT_STOREFRONT_CART_STORAGE_NAME");
     expect(composerSource).toContain("min-h-[46rem] lg:min-h-[24rem]");
   });
 

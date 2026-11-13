@@ -104,4 +104,17 @@ describe("validateStorefrontTheme", () => {
     expect(anjellaTheme).toBeDefined();
     expect(validateStorefrontTheme(anjellaTheme)).toEqual([]);
   });
+
+  it("validates all registered presets in STOREFRONT_THEME_PRESETS without errors", () => {
+    const presetEntries = Object.entries(STOREFRONT_THEME_PRESETS);
+    expect(presetEntries.length).toBeGreaterThan(0);
+
+    for (const [presetId, preset] of presetEntries) {
+      expect(preset, `Preset "${presetId}" should be defined`).toBeDefined();
+      expect(
+        validateStorefrontTheme(preset),
+        `Preset "${presetId}" failed validation`,
+      ).toEqual([]);
+    }
+  });
 });
