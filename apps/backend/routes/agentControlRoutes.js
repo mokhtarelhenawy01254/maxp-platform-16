@@ -11,6 +11,19 @@ const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 const router = express.Router();
 router.use(verifyToken.authenticateToken);
+
+const FORBIDDEN_CONSUMER_ROLES = new Set(['CUSTOMER', 'COURIER', 'STUDENT', 'PATIENT', 'PARENT']);
+router.use((req, res, next) => {
+  const role = String(req.user?.role || '').toUpperCase();
+  if (role && FORBIDDEN_CONSUMER_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'غير مصرح للعملاء أو الحسابات الخارجية بالوصول إلى لوحة تحكم وكلاء الذكاء الاصطناعي',
+      code: 'FORBIDDEN_ROLE',
+    });
+  }
+  next();
+});
 const getCompanyId = (req) =>
   req.user?.companyId ||
   req.companyId ||
@@ -398,7 +411,7 @@ router.post('/agents/orchestrate', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const result = await aiServiceAdminClient.chatWithAgent({
-      companyId, agentId: '',
+      companyId, agentId: 'manager-ceo',
       customerId: req.user?.id || req.user?.userId || undefined,
       message: req.body?.goal || 'أنجز المهمة الموكلة',
       threadId: `orchestrate-${Date.now()}`,

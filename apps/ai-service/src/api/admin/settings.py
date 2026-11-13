@@ -254,7 +254,9 @@ async def agent_pause_state(company_id: str, session: AsyncSession) -> tuple[boo
     row = await _get_setting_row(company_id, session)
     if row is None:
         return False, None
-    return bool(row.agentPaused), (row.pauseReason or None)
+    is_paused = getattr(row, "agentPaused", None) is True
+    pause_reason = str(row.pauseReason) if is_paused and getattr(row, "pauseReason", None) and not isinstance(row.pauseReason, MagicMock) else None
+    return is_paused, pause_reason
 
 
 # ── Comment Filters ─────────────────────────────────────────────────────

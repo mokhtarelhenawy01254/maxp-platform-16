@@ -62,11 +62,19 @@ class ContextAssembler:
             return None
 
         try:
-            query = text(
-                'SELECT "firstName", "lastName", phone, email, metadata '
-                'FROM public.customers WHERE id = :id'
-            )
-            result = await ctx.session.execute(query, {"id": ctx.customer_id})
+            params = {"id": ctx.customer_id}
+            if ctx.company_id:
+                query = text(
+                    'SELECT "firstName", "lastName", phone, email, metadata '
+                    'FROM public.customers WHERE id = :id AND "companyId" = :cid LIMIT 1'
+                )
+                params["cid"] = ctx.company_id
+            else:
+                query = text(
+                    'SELECT "firstName", "lastName", phone, email, metadata '
+                    'FROM public.customers WHERE id = :id LIMIT 1'
+                )
+            result = await ctx.session.execute(query, params)
             row = result.fetchone()
             if row:
                 return {
@@ -293,16 +301,28 @@ class ContextAssembler:
             try:
                 import json as _json
                 # Check agent_studio_sessions first
-                sess_res = await ctx.session.execute(
-                    text('SELECT context FROM public.agent_studio_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
-                    {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
-                )
-                sess_row = sess_res.fetchone()
-                if not sess_row or not sess_row[0]:
+                if ctx.company_id:
                     sess_res = await ctx.session.execute(
-                        text('SELECT context FROM public.facebook_ads_ai_chat_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
+                        text('SELECT context FROM public.agent_studio_sessions WHERE (id = :clean_id OR id = :raw_id) AND "companyId" = :cid LIMIT 1'),
+                        {"clean_id": clean_session_id, "raw_id": str(lookup_id), "cid": ctx.company_id}
+                    )
+                else:
+                    sess_res = await ctx.session.execute(
+                        text('SELECT context FROM public.agent_studio_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
                         {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
                     )
+                sess_row = sess_res.fetchone()
+                if not sess_row or not sess_row[0]:
+                    if ctx.company_id:
+                        sess_res = await ctx.session.execute(
+                            text('SELECT context FROM public.facebook_ads_ai_chat_sessions WHERE (id = :clean_id OR id = :raw_id) AND "companyId" = :cid LIMIT 1'),
+                            {"clean_id": clean_session_id, "raw_id": str(lookup_id), "cid": ctx.company_id}
+                        )
+                    else:
+                        sess_res = await ctx.session.execute(
+                            text('SELECT context FROM public.facebook_ads_ai_chat_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
+                            {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
+                        )
                     sess_row = sess_res.fetchone()
 
                 if sess_row and sess_row[0]:

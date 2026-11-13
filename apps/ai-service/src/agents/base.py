@@ -225,7 +225,13 @@ class BaseAgent:
         template = None
 
         if session is not None:
-            template = await get_template(template_slug, session)
+            try:
+                template = await get_template(template_slug, session)
+            except Exception as exc:
+                logger.warning("agent_template_db_fetch_failed", template=template_slug, error=str(exc))
+                template = None
+            except TypeError:
+                template = None
 
         profile = _TemplateAdapter.from_db_or_proxy(template, template_slug, company_id)
 
@@ -1057,12 +1063,13 @@ class BaseAgent:
         from src.skills.background_review import hermes_background_review_worker
 
         company_id = self.company_id
-        if not company_id or not ctx.reply:
+        reply = getattr(ctx, "final_reply", None) or getattr(ctx, "llm_response", None) or getattr(ctx, "reply", None)
+        if not company_id or not reply:
             return
 
         channel = str(task.get("channel") or task.get("source_channel") or "").lower()
         user_msg = str(task.get("message") or task.get("user_message") or "")
-        agent_reply = str(ctx.reply or "")
+        agent_reply = str(reply or "")
 
         if not user_msg:
             return

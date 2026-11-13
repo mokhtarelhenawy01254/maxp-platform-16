@@ -54,6 +54,8 @@ class PipelineWorkflowSnapshot:
     rounds: int = 0
     repaired: bool = False
     early_return: dict[str, Any] | None = None
+    escalation_requested: bool = False
+    escalation_reason: str = ""
     last_checkpoint_id: str | None = None
     resumed_from_checkpoint: bool = False
     response_attachments: list[dict[str, Any]] = field(default_factory=list)
@@ -91,6 +93,8 @@ class PipelineWorkflowSnapshot:
             rounds=ctx.rounds,
             repaired=ctx.repaired,
             early_return=ctx.early_return,
+            escalation_requested=ctx.escalation_requested,
+            escalation_reason=ctx.escalation_reason or "",
             last_checkpoint_id=ctx.last_checkpoint_id,
             resumed_from_checkpoint=ctx.resumed_from_checkpoint,
             response_attachments=list(ctx.response_attachments or []),
@@ -138,6 +142,8 @@ class PipelineWorkflowSnapshot:
         ctx.rounds = self.rounds
         ctx.repaired = self.repaired
         ctx.early_return = self.early_return
+        ctx.escalation_requested = self.escalation_requested
+        ctx.escalation_reason = self.escalation_reason
         ctx.last_checkpoint_id = self.last_checkpoint_id
         ctx.resumed_from_checkpoint = self.resumed_from_checkpoint
         ctx.response_attachments = list(self.response_attachments or [])

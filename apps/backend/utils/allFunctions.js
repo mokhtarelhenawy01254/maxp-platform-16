@@ -462,12 +462,17 @@ async function sendFacebookMessage(recipientId, messageContent, messageType = 'T
       //console.log(`🔄 [PAGE-SELECT] Using last webhook page: ${lastWebhookPageId}`);
     }
 
-    // Third: Find default page
+    // Third: Find default page (tenant-scoped)
     if (!pageData) {
+      const activeTenantId = require('../services/tenantContext').getCompanyId();
       const defaultPage = await safeQuery(async () => {
         const prisma = getSharedPrismaClient();
+        const whereClause = { status: 'connected' };
+        if (activeTenantId) {
+          whereClause.companyId = activeTenantId;
+        }
         return await prisma.facebookPage.findFirst({
-          where: { status: 'connected' },
+          where: whereClause,
           orderBy: { connectedAt: 'desc' }
         });
       });
@@ -610,10 +615,15 @@ async function handleFacebookComment(commentData, pageId = null) {
     }
 
     if (!pageData) {
+      const activeTenantId = require('../services/tenantContext').getCompanyId();
       const defaultPage = await safeQuery(async () => {
         const prisma = getSharedPrismaClient();
+        const whereClause = { status: 'connected' };
+        if (activeTenantId) {
+          whereClause.companyId = activeTenantId;
+        }
         return await prisma.facebookPage.findFirst({
-          where: { status: 'connected' },
+          where: whereClause,
           orderBy: { connectedAt: 'desc' }
         });
       }); // ✅ Using prisma from function scope
@@ -3017,11 +3027,15 @@ async function diagnoseFacebookSending(recipientId, messageContent, pageId = nul
       //console.log(`🔍 [DIAGNOSTIC] Last webhook page data:`, pageData ? 'YES' : 'NO');
     }
 
-    // Step 4: Check default page
+    // Step 4: Check default page (tenant-scoped)
     if (!pageData) {
-      //console.log(`🔍 [DIAGNOSTIC] Step 4 - Searching for default page...`);
+      const activeTenantId = require('../services/tenantContext').getCompanyId();
+      const whereClause = { status: 'connected' };
+      if (activeTenantId) {
+        whereClause.companyId = activeTenantId;
+      }
       const defaultPage = await prisma.facebookPage.findFirst({
-        where: { status: 'connected' },
+        where: whereClause,
         orderBy: { connectedAt: 'desc' }
       });
       //console.log(`🔍 [DIAGNOSTIC] Default page found:`, defaultPage ? 'YES' : 'NO');

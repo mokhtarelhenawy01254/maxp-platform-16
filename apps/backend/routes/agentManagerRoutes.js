@@ -47,7 +47,7 @@ const agentManagerService = {
   chat: async (companyId, { message, userId }) => {
     try {
       const result = await aiServiceAdminClient.chatWithAgent({
-        companyId, agentId: '', customerId: userId || undefined, message, threadId: `manager_${companyId}`,
+        companyId, agentId: 'manager-ceo', customerId: userId || undefined, message, threadId: `manager_${companyId}`,
       });
       return result || { success: false, reply: '', context: null };
     } catch (_) {
@@ -232,6 +232,19 @@ const toolOrchestratorService = {
 const router = express.Router();
 
 router.use(verifyToken.authenticateToken);
+
+const FORBIDDEN_CONSUMER_ROLES = new Set(['CUSTOMER', 'COURIER', 'STUDENT', 'PATIENT', 'PARENT']);
+router.use((req, res, next) => {
+  const role = String(req.user?.role || '').toUpperCase();
+  if (role && FORBIDDEN_CONSUMER_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'غير مصرح للعملاء أو الحسابات الخارجية بالوصول إلى إدارة وكلاء الذكاء الاصطناعي',
+      code: 'FORBIDDEN_ROLE',
+    });
+  }
+  next();
+});
 
 const getCompanyId = (req) => req.user?.companyId || req.companyId;
 

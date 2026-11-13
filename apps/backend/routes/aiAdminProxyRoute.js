@@ -27,19 +27,13 @@ const allowMerchantOrSystemAdmin = async (req, res, next) => {
       const settings = await devSettingsService.getSettings();
       const rolePerms = settings.permissions?.[req.user.role];
       if (rolePerms?.canAccessSettings) return next();
-    } catch { /* ignore, check company role next */ }
+    } catch { /* ignore */ }
 
-    // 3. Check if user is OWNER or COMPANY_ADMIN of any company (merchant access)
-    const companyRoles = req.user.userCompanies || [];
-    const isMerchantAdmin = companyRoles.some(
-      uc => ['OWNER', 'COMPANY_ADMIN'].includes(uc.role)
-    );
-
-    if (isMerchantAdmin) return next();
-
+    // Central AI Admin routes manage platform-wide AI keys and global configs.
+    // Merchant owners/admins are strictly forbidden from central keys.
     return res.status(403).json({
       success: false,
-      message: 'ليس لديك الصلاحية الكافية للقيام بهذا الإجراء'
+      message: 'ليس لديك الصلاحية الكافية للوصول لإعدادات ومفاتيح الذكاء الاصطناعي المركزية'
     });
   } catch (error) {
     console.error('[ai-admin-proxy] Access check error:', error.message);

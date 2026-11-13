@@ -351,6 +351,21 @@ if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
       "$PM2_BIN" logs maxp-ai-service --lines 20 --nostream || true
     fi
 
+    echo "🔄 Starting/restarting maxp-ai-worker in PM2..."
+    if "$PM2_BIN" list | grep -q "maxp-ai-worker"; then
+      "$PM2_BIN" restart maxp-ai-worker --update-env
+    else
+      "$PM2_BIN" start "$UV_BIN run python -m src.workers.agent_worker" \
+        --name maxp-ai-worker --interpreter none \
+        --cwd /var/www/ai-service
+    fi
+    sleep 1
+    if "$PM2_BIN" list | grep "maxp-ai-worker" | grep -q "online"; then
+      echo "✅ maxp-ai-worker process is online in PM2"
+    else
+      echo "⚠️ maxp-ai-worker may not be running — check logs"
+    fi
+
     echo "⏳ Waiting for maxp-ai-service health endpoint on http://127.0.0.1:8000/health..."
     AI_HEALTHY=false
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do

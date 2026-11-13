@@ -165,7 +165,7 @@ class ModelManager:
 
     async def check_config_version(self) -> None:
         now = time.time()
-        if (now - self._config_version_last_checked) < self.CONFIG_VERSION_CHECK_INTERVAL_MS:
+        if (now - self._config_version_last_checked) * 1000 < self.CONFIG_VERSION_CHECK_INTERVAL_MS:
             return
 
         if session.async_session is None:
@@ -192,7 +192,7 @@ class ModelManager:
         now = time.time()
         if (
             self._global_config_cache is not None
-            and (now - self._global_config_last_loaded) < self.GLOBAL_CONFIG_TTL_MS
+            and (now - self._global_config_last_loaded) * 1000 < self.GLOBAL_CONFIG_TTL_MS
         ):
             return self._global_config_cache
 

@@ -84,7 +84,19 @@ def _build_runtime_agent_from_db(
     db_agent: AgentModel, *, model: str | None = None, template_instructions: dict[str, str] | None = None
 ) -> tuple[BaseAgent, list[str]]:
     tool_names: list[str] = []
-    if db_agent.skills:
+    # 2026 Primary: allowed_tools JSONB/list
+    allowed_tools = getattr(db_agent, "allowed_tools", None)
+    if allowed_tools:
+        if isinstance(allowed_tools, list):
+            tool_names = [str(tool) for tool in allowed_tools]
+        elif isinstance(allowed_tools, str):
+            with suppress(json.JSONDecodeError, TypeError):
+                parsed = json.loads(allowed_tools)
+                if isinstance(parsed, list):
+                    tool_names = [str(tool) for tool in parsed]
+
+    # Legacy fallback: skills column
+    if not tool_names and db_agent.skills:
         if isinstance(db_agent.skills, list):
             tool_names = [str(tool) for tool in db_agent.skills]
         elif isinstance(db_agent.skills, str):
@@ -101,33 +113,33 @@ def _build_runtime_agent_from_db(
 
     db_config = db_agent.config or {}
     config = BaseAgentConfig(
-        id=db_agent.id,
-        name=db_agent.name,
-        role=db_agent.role,
-        company_id=db_agent.company_id,
+        id=getattr(db_agent, "id", None),
+        name=getattr(db_agent, "name", ""),
+        role=getattr(db_agent, "role", "AGENT"),
+        company_id=getattr(db_agent, "company_id", None),
         allowed_tools=tool_names,
-        allowed_channels=list(db_agent.channels or []),
-        model=model or db_agent.model,
-        allowed_skills=list(db_agent.allowed_skills or []),
+        allowed_channels=list(getattr(db_agent, "channels", []) or []),
+        model=model or getattr(db_agent, "model", "deepseek-flash"),
+        allowed_skills=list(getattr(db_agent, "allowed_skills", []) or []),
         tool_choice=db_config.get("toolChoice"),
-        persona=db_agent.persona or {},
+        persona=getattr(db_agent, "persona", {}) or {},
         instructions={
-            "soul": (db_agent.persona or {}).get("soulInstructions") or db_agent.soul or (template_instructions or {}).get("soul", ""),
-            "persona": (db_agent.persona or {}).get("personaInstructions") or (template_instructions or {}).get("persona", ""),
-            "agents": (db_agent.persona or {}).get("agentInstructions") or (template_instructions or {}).get("agents", ""),
-            "tools": (db_agent.persona or {}).get("toolsInstructions") or (template_instructions or {}).get("tools", ""),
+            "soul": (getattr(db_agent, "persona", {}) or {}).get("soulInstructions") or getattr(db_agent, "soul", "") or (template_instructions or {}).get("soul", ""),
+            "persona": (getattr(db_agent, "persona", {}) or {}).get("personaInstructions") or (template_instructions or {}).get("persona", ""),
+            "agents": (getattr(db_agent, "persona", {}) or {}).get("agentInstructions") or (template_instructions or {}).get("agents", ""),
+            "tools": (getattr(db_agent, "persona", {}) or {}).get("toolsInstructions") or (template_instructions or {}).get("tools", ""),
         },
         provider=db_config.get("provider") or None,
         key_id=db_config.get("keyId") or db_config.get("key_id") or None,
-        template_slug=db_agent.template_slug or None,
+        template_slug=getattr(db_agent, "template_slug", None) or None,
         hooks=agent_hooks,
         policies={
-            "model_policy": db_agent.model_policy or {},
-            "guardrails": db_agent.guardrails or {},
+            "model_policy": getattr(db_agent, "model_policy", {}) or {},
+            "guardrails": getattr(db_agent, "guardrails", {}) or {},
         },
     )
     agent = BaseAgent(config)
-    agent._db_rules = db_agent.rules or ""
+    agent._db_rules = getattr(db_agent, "rules", "") or ""
     return agent, tool_names
 
 
@@ -372,8 +384,10 @@ async def run_orchestration(
     if state_manager:
         previous_state = await state_manager.get_latest_state(thread_id)
 
+    is_customer = _channel_normalized in ("whatsapp", "facebook", "messenger", "telegram", "instagram", "web_chat", "site")
     if not _channel_agent:
-        _channel_agent = await BaseAgent.from_template("manager-ceo", company_id)
+        default_template = "sales-agent" if is_customer else "manager-ceo"
+        _channel_agent = await BaseAgent.from_template(default_template, company_id, session=session)
 
     if previous_state:
         state_id, _state_data = previous_state
@@ -421,6 +435,7 @@ async def run_orchestration(
             agent=_channel_agent,
             session=session,
             channel=effective_channel,
+            is_customer_channel=is_customer,
             conversation_id=conversation_id,
             external_memory_context=external_context,
             llm_client=client,
@@ -453,7 +468,8 @@ async def run_orchestration(
         )
 
         # Save messages to working memory for conversation continuity
-        reply_text = final_ctx.final_reply or final_ctx.llm_response or ""
+        # If escalation was requested, never record a hallucinated/rejected LLM text as the assistant reply
+        reply_text = final_ctx.final_reply or ("" if final_ctx.escalation_requested else (final_ctx.llm_response or ""))
         if session:
             try:
                 wm_key = conversation_id or thread_id
@@ -482,7 +498,7 @@ async def run_orchestration(
             )
 
         return {
-            "reply": final_ctx.final_reply or final_ctx.llm_response,
+            "reply": final_ctx.final_reply or (None if final_ctx.escalation_requested else final_ctx.llm_response),
             "thread_id": thread_id,
             "tool_results": final_ctx.executed_tools,
             "response_attachments": list(final_ctx.response_attachments or []),

@@ -339,10 +339,14 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     _company_display_name: str = (_company_name_rec["name"] if _company_name_rec else None) or body.company_id
     _business_specialty: str = (_company_name_rec["specialty_en"] if _company_name_rec else None) or ""
 
+    target_id = str(body.agent_id or "").strip()
+    if not target_id:
+        target_id = "manager-ceo"
+
     # Try Python-managed agents table first (by exact ID)
     result = await session.execute(
         select(AgentModel).where(
-            AgentModel.id == body.agent_id,
+            AgentModel.id == target_id,
             AgentModel.company_id == body.company_id,
             AgentModel.status != "ARCHIVED",
         )
@@ -350,12 +354,12 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     db_agent = result.scalar_one_or_none()
 
     # 2026 Resilient Fallback: If agent_id was passed as a template_slug or role name
-    if not db_agent and body.agent_id:
+    if not db_agent and target_id:
         result = await session.execute(
             select(AgentModel).where(
                 or_(
-                    AgentModel.template_slug == body.agent_id,
-                    AgentModel.role == body.agent_id.upper(),
+                    AgentModel.template_slug == target_id,
+                    AgentModel.role == target_id.upper(),
                 ),
                 AgentModel.company_id == body.company_id,
                 AgentModel.status != "ARCHIVED",
@@ -367,10 +371,10 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
 
     # Fallback 2: if still not found, check if template exists by slug or role
     if not raw_config:
-        template = await get_template(body.agent_id, session)
+        template = await get_template(target_id, session)
         if not template:
             templates = await list_templates(session)
-            template = next((t for t in templates if (t.role or "").upper() == body.agent_id.upper()), None)
+            template = next((t for t in templates if (t.role or "").upper() == target_id.upper()), None)
         if template:
             raw_config = {
                 "id": f"runtime-{template.slug}-{secrets.token_hex(4)}",
@@ -413,11 +417,11 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         if req_tools:
             raw_config["allowed_tools"] = list(req_tools)
     if not raw_config:
-        raise HTTPException(status_code=404, detail=f"Agent not found: {body.agent_id}")
+        raise HTTPException(status_code=404, detail=f"Agent not found: {target_id}")
 
     cfg = _normalize_agent_config(
         company_id=body.company_id,
-        agent_id=body.agent_id,
+        agent_id=target_id,
         config=raw_config,
     )
     template_slug = cfg.get("template_slug")
@@ -1737,11 +1741,15 @@ async def _load_agent_for_files(
     company_id: str | None,
     session: AsyncSession,
 ) -> tuple[AgentModel | None, dict[str, Any] | None]:
+    conditions = [
+        AgentModel.id == agent_id,
+        AgentModel.status != "ARCHIVED",
+    ]
+    if company_id:
+        conditions.append(AgentModel.company_id == company_id)
+
     result = await session.execute(
-        select(AgentModel).where(
-            AgentModel.id == agent_id,
-            AgentModel.status != "ARCHIVED",
-        )
+        select(AgentModel).where(*conditions)
     )
     agent = result.scalar_one_or_none()
     if agent:

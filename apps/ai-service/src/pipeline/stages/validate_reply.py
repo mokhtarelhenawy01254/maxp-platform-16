@@ -236,7 +236,7 @@ def _try_parse_json_object(text: str) -> dict[str, Any] | None:
 
 
 def _unwrap_llm_client(client):
-    if hasattr(client, "_llm_client"):
+    if hasattr(client, "_llm_client") and getattr(client, "_llm_client", None) is not None:
         return client._llm_client
     return client
 
@@ -265,11 +265,11 @@ async def _raw_llm_call_with_tools(ctx: PipelineContext, messages: list[dict]) -
     Returns the final text after tool calls are resolved (via the main pipeline's
     tool execution path). Falls back to text-only if the model still doesn't act.
     """
-    from src.tools.registry import get_tool_names_for_role
-    from src.tools.definitions._helpers import _execute_registry_tool
+    from src.skills.registry import get_skill_registry
     from src.pipeline.stages.skills_pipeline import (
         _execute_one_tool,
         _build_skill_tool_dicts,
+        _filter_skills_for_agent,
     )
 
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
@@ -285,12 +285,9 @@ async def _raw_llm_call_with_tools(ctx: PipelineContext, messages: list[dict]) -
         )
 
     # Resolve tool dicts from the agent's allowed tools
-    from src.pipeline.stages.skills_pipeline import _get_skills_for_agent
-    skills = await _get_skills_for_agent(ctx)
+    registry = get_skill_registry()
+    skills = _filter_skills_for_agent(ctx, registry)
     tool_dicts = _build_skill_tool_dicts(skills, ctx) if skills else None
-
-    from src.tools.registry import ToolRegistry
-    registry = ToolRegistry()
 
     # Single LLM call with tools; if the model emits a tool call, execute it
     # via the same path the main pipeline uses, then make a follow-up call.
@@ -1014,6 +1011,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
             ctx.escalation_requested = True
             ctx.escalation_reason = "hallucination_reprompt_failed"
             ctx.final_reply = None
+            ctx.llm_response = ""
             logger.warning(
                 "hallucination_reprompt_failed_escalating",
                 agent_slug=agent_slug,
@@ -1048,6 +1046,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 ctx.escalation_requested = True
                 ctx.escalation_reason = f"guardrail_blocked: {guardrail_result.reason}"
                 ctx.final_reply = None
+                ctx.llm_response = ""
                 ctx.early_return = {
                     "status": "GUARDRAIL_BLOCKED",
                     "result": {
@@ -1073,6 +1072,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 ctx.escalation_requested = True
                 ctx.escalation_reason = f"guardrail_correction_failed: {guardrail_result.reason}"
                 ctx.final_reply = None
+                ctx.llm_response = ""
                 ctx.early_return = {
                     "status": "GUARDRAIL_BLOCKED",
                     "result": {
@@ -1156,6 +1156,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 ctx.escalation_requested = True
                 ctx.escalation_reason = "hallucination_repeated"
                 ctx.final_reply = None
+                ctx.llm_response = ""
                 logger.warning(
                     "hallucination_repeated_escalating",
                     agent_slug=agent_slug,
@@ -1198,6 +1199,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 ctx.escalation_requested = True
                 ctx.escalation_reason = f"validation_exhausted: {str(exc)}"
                 ctx.final_reply = None
+                ctx.llm_response = ""
                 logger.warning(
                     "silent_escalation_validation_exhausted",
                     error=str(exc),
@@ -1211,6 +1213,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
                 ctx.escalation_requested = True
                 ctx.escalation_reason = f"validation_correction_failed: {str(exc)}"
                 ctx.final_reply = None
+                ctx.llm_response = ""
                 logger.warning(
                     "silent_escalation_validation_correction_failed",
                     error=str(exc),
@@ -1283,5 +1286,9 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
 
 
         ctx.final_reply = txt.strip()
+
+    if ctx.escalation_requested:
+        ctx.final_reply = None
+        ctx.llm_response = ""
 
     return ctx

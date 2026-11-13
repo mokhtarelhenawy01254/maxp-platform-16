@@ -1298,6 +1298,26 @@ async def start_worker(
     logger.info("worker started", queue=queue_name)
 
     async def dispatcher(job: dict[str, Any]) -> None:
+        # Stale Job Guard: Skip queued jobs older than 2 hours to prevent duplicate/stale customer actions after worker restarts
+        created_at_raw = job.get("created_at") or job.get("createdAt")
+        if created_at_raw:
+            try:
+                from datetime import timezone
+                if isinstance(created_at_raw, str):
+                    created_dt = datetime.fromisoformat(created_at_raw.replace("Z", "+00:00"))
+                elif isinstance(created_at_raw, (int, float)):
+                    created_dt = datetime.fromtimestamp(created_at_raw, tz=timezone.utc)
+                else:
+                    created_dt = created_at_raw
+                if hasattr(created_dt, "tzinfo") and created_dt.tzinfo is None:
+                    created_dt = created_dt.replace(tzinfo=timezone.utc)
+                now_dt = datetime.now(timezone.utc)
+                if (now_dt - created_dt).total_seconds() > 7200:
+                    logger.warning("stale_job_skipped_on_worker_startup", job_id=job.get("id"), age_seconds=int((now_dt - created_dt).total_seconds()))
+                    return
+            except Exception:
+                pass
+
         task_type = job.get("type", "")
         handler = TASK_HANDLERS.get(task_type)
         if handler:

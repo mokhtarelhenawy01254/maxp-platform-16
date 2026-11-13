@@ -38,7 +38,7 @@ def test_all_20_roles_exist_and_match():
         "COMPETITOR", "SMART_SELLER", "SALES_REP", "MEDICAL_CENTER",
         "PHYSIOTHERAPY", "EDUCATION_CENTER", "HOTEL", "MEDICAL_CENTER_MANAGER",
         "CEO", "BROWSER_COPILOT", "HR_ASSISTANT", "AOV_SPECIALIST",
-        "AOV_ANALYST", "AOV_EXECUTOR", "AOV_AUDITOR",
+        "AOV_ANALYST", "AOV_EXECUTOR", "AOV_AUDITOR", "SHIPPING",
     }
     assert len(roles) == len(expected_roles), f"Expected {len(expected_roles)} roles, got {len(roles)}"
     assert set(roles.keys()) == expected_roles
@@ -157,7 +157,7 @@ def test_acceptance_existing_agents_equality_before_after():
     karim = roles["STORE_MANAGER"]
     assert karim.domain == "STORE_OPS"
     assert karim.playbook_title == "كتيب إدارة وعمليات المتجر"
-    assert len(karim.tools) == 57
+    assert len(karim.tools) == 81
     assert karim.capabilities == {
         "episodic_memory": True,
         "knowledge_retrieval": True,

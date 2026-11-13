@@ -52,13 +52,16 @@ class _TemplateAdapter:
         company_id: str,
     ) -> _TemplateAdapter:
         if template is None:
+            from src.tools.registry import get_tool_names_for_role
+            role_name = slug.upper().replace("-", "_")
+            fallback_tools = get_tool_names_for_role(role_name) or get_tool_names_for_role(slug.upper())
             return cls(
                 slug=slug,
                 role=slug.upper(),
                 name=slug,
                 version="0.0.0",
                 model_policy={},
-                allowed_tools=[],
+                allowed_tools=fallback_tools,
                 allowed_skills=[],
                 guardrails={},
                 persona_meta={"language": "arabic"},

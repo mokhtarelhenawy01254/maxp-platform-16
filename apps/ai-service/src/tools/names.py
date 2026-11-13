@@ -5,7 +5,10 @@ from collections.abc import Iterable
 
 def canonical_tool_name(name: str | None) -> str:
     """Return the Python registry name for a tool identifier."""
-    return str(name or "").strip().replace(".", "_")
+    canonical = str(name or "").strip().replace(".", "_")
+    if canonical in ("agent_handoff", "agent_handoff_to"):
+        return "agent_handoff_to"
+    return canonical
 
 
 def canonical_tool_set(names: Iterable[str] | None) -> set[str]:

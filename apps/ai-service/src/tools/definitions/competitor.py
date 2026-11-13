@@ -61,7 +61,7 @@ async def competitor_get_products(input_data: CompetitorGetProductsInput) -> dic
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = CompetitorRepository(sess)
-        products = await repo.get_competitor_products(input_data.competitor_id, input_data.limit)
+        products = await repo.get_competitor_products(input_data.competitor_id, input_data.limit, company_id=company_id)
     return {"products": products}
 
 

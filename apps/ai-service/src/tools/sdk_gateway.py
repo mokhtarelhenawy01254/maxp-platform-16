@@ -57,7 +57,10 @@ def wrap_tool_for_gateway(
 
     async def _gateway_func(input_data: Any, ctx: FunctionInvocationContext | None = None) -> dict[str, Any]:
         payload = _dump_input(input_data)
-        tenant_id = str(payload.get("company_id") or company_id or "")
+        # Tenant isolation: authoritative company_id takes precedence over any model input
+        tenant_id = str(company_id or payload.get("company_id") or "")
+        if "company_id" in payload and company_id:
+            payload["company_id"] = company_id
         # Tools that need approval have NOT been approved yet in the SDK flow.
         # The approval happens via the /resume endpoint, not through this wrapper.
         approval_granted = not needs_approval

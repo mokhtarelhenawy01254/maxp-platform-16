@@ -46,7 +46,8 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
         logger.warning("approval_flag_stripped_from_llm_args", name=func_name)
         arguments = {k: v for k, v in arguments.items() if k != "approved"}
 
-    if ctx.company_id and "company_id" not in arguments:
+    if ctx.company_id:
+        # Tenant isolation: company_id is authoritative from verified context, never LLM-overridable
         arguments = {**arguments, "company_id": ctx.company_id}
 
     effective_user_id = ctx.customer_id if (ctx.customer_id and ctx.customer_id != "anonymous") else None
@@ -493,6 +494,13 @@ def _filter_skills_for_agent(ctx: PipelineContext, registry: Any) -> list:
         logger.warning("catalog_grants_filter_failed", error=str(e))
 
     if not allowed_names:
+        if getattr(ctx, "is_customer_channel", False):
+            from src.tools.registry import CORE_TOOL_NAMES
+            logger.warning(
+                "customer_channel_empty_allowlist_restricted_to_core",
+                agent=str(getattr(ctx.agent, "name", None) or getattr(ctx.agent, "id", None)),
+            )
+            return [s for s in all_available if s.name.lower() in CORE_TOOL_NAMES]
         return all_available
 
     skills = [s for s in all_available if s.name.lower() in allowed_names]
@@ -545,6 +553,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     ctx.system_prompt = base_prompt
 
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
+    if not getattr(ctx, "prompt_hash", None):
+        import hashlib
+        ctx.prompt_hash = hashlib.sha256(system_prompt.encode()).hexdigest()[:16]
 
     # Agent hooks: before_llm (domain-specific instructions, guardrails)
     if ctx.agent and hasattr(ctx.agent, "hooks"):
@@ -850,7 +861,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 
 def _unwrap_llm_client(client):
-    if hasattr(client, "_llm_client"):
+    if hasattr(client, "_llm_client") and getattr(client, "_llm_client", None) is not None:
         return client._llm_client
     return client
 

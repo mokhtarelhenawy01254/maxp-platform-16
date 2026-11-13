@@ -516,6 +516,7 @@ class LLMClient:
 
         system_parts: list[str] = []
         contents: list[dict[str, Any]] = []
+        tool_call_names: dict[str, str] = {}
         for msg in messages:
             role = str(_message_value(msg, "role", "") or "")
             content = _message_content(msg)
@@ -526,25 +527,35 @@ class LLMClient:
             if role == "user":
                 parts = self._gemini_user_parts(content, data_url_to_inline_data)
                 contents.append({"role": "user", "parts": parts})
-            elif role in ("assistant", "model"):
+            elif role == "assistant" or role == "model":
                 parts: list[dict[str, Any]] = []
                 if content:
                     parts.append({"text": str(content)})
                 tool_calls = _message_value(msg, "tool_calls", []) or []
                 for tc in tool_calls:
                     func = _message_value(tc, "function", {}) or {}
+                    tc_name = _message_value(func, "name", "") or ""
+                    tc_id = _message_value(tc, "id", "") or ""
+                    if tc_id:
+                        tool_call_names[str(tc_id)] = str(tc_name)
                     parts.append({
                         "functionCall": {
-                            "name": _message_value(func, "name", "") or "",
+                            "name": tc_name,
                             "args": _message_value(func, "arguments", {}) or {},
                         },
                     })
                 contents.append({"role": "model", "parts": parts})
             elif role == "tool":
                 tc_content = str(content) if content else ""
+                tc_call_id = str(_message_value(msg, "tool_call_id", "") or "")
+                tc_fn_name = (
+                    str(_message_value(msg, "name", "") or "")
+                    or tool_call_names.get(tc_call_id, "")
+                    or "tool"
+                )
                 contents.append({
                     "role": "function",
-                    "parts": [{"functionResponse": {"name": tc_content, "response": {"result": tc_content}}}],
+                    "parts": [{"functionResponse": {"name": tc_fn_name, "response": {"result": tc_content}}}],
                 })
         system_text = "\n".join(system_parts) if system_parts else None
         return system_text, contents

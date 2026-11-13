@@ -41,16 +41,27 @@ class CompetitorRepository(BaseRepository):
         ]
 
     async def get_competitor_products(
-        self, competitor_id: str, limit: int = 20
+        self, competitor_id: str, limit: int = 20, company_id: str | None = None
     ) -> list[dict[str, Any]]:
-        sql = text("""
-            SELECT id, name, price, currency, image, url, sku, "isAvailable", category, description
-            FROM competitor_products
-            WHERE "competitorId" = :comp_id
-            ORDER BY "lastSeen" DESC
-            LIMIT :lim
-        """)
-        rows = await self._session.execute(sql, {"comp_id": competitor_id, "lim": limit})
+        if company_id:
+            sql = text("""
+                SELECT cp.id, cp.name, cp.price, cp.currency, cp.image, cp.url, cp.sku, cp."isAvailable", cp.category, cp.description
+                FROM competitor_products cp
+                JOIN competitors c ON c.id = cp."competitorId"
+                WHERE cp."competitorId" = :comp_id AND c."companyId" = :cid
+                ORDER BY cp."lastSeen" DESC
+                LIMIT :lim
+            """)
+            rows = await self._session.execute(sql, {"comp_id": competitor_id, "cid": company_id, "lim": limit})
+        else:
+            sql = text("""
+                SELECT id, name, price, currency, image, url, sku, "isAvailable", category, description
+                FROM competitor_products
+                WHERE "competitorId" = :comp_id
+                ORDER BY "lastSeen" DESC
+                LIMIT :lim
+            """)
+            rows = await self._session.execute(sql, {"comp_id": competitor_id, "lim": limit})
         return [dict(r._mapping) for r in rows]
 
     async def get_price_comparison(self, company_id: str, competitor_id: str) -> dict[str, Any]:

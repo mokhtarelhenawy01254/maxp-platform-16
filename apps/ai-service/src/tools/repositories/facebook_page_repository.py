@@ -14,8 +14,8 @@ class FacebookPageRepository(BaseRepository):
     async def get_page_token(self, company_id: str, page_id: str) -> str | None:
         """Get the access token for a Facebook page."""
         row = await self._session.execute(text("""
-            SELECT page_access_token FROM facebook_pages
-            WHERE page_id = :pid AND company_id = :cid
+            SELECT "pageAccessToken" FROM public.facebook_pages
+            WHERE "pageId" = :pid AND "companyId" = :cid
             LIMIT 1
         """), {"pid": page_id, "cid": company_id})
         result = row.first()

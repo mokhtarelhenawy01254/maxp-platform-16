@@ -681,7 +681,7 @@ class AiCronSchedulerService {
         const runTimestamp = Date.now();
         const response = await aiServiceAdminClient.chatWithAgent({
           companyId,
-          agentId: '',
+          agentId: 'manager-ceo',
           message: job.description,
           threadId: `cron_${companyId}_${job.id}_${runTimestamp}`,
         });

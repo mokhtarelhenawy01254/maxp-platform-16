@@ -1551,6 +1551,8 @@ async def facebook_ad_update_budget(input_data: FacebookAdUpdateBudgetInput) -> 
             except Exception as resolve_err:
                 logger.warning("failed_to_resolve_campaign_id_for_budget", error=str(resolve_err))
 
+    from src.tools.backend_client import get_backend_client
+    backend = get_backend_client()
     res = await backend.update_facebook_campaign_budget(
         company_id=company_id,
         campaign_id=target_campaign_id,
