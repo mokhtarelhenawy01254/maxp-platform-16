@@ -1,5 +1,6 @@
 import React from "react";
 import { CompanyInfoSection } from "./CompanyInfoSection";
+import { CompanyInboxProfileSection } from "./CompanyInboxProfileSection";
 import { CompanyLogoSection } from "./CompanyLogoSection";
 import { CompanyCurrencySection } from "./CompanyCurrencySection";
 import { CompanyTimezoneSection } from "./CompanyTimezoneSection";
@@ -41,6 +42,12 @@ type CompanyGeneralTabProps = Pick<
   | "dateFormatError"
   | "formatDate"
   | "handleTimezoneChange"
+  | "inboxVerticalProfile"
+  | "savingInboxProfile"
+  | "handleInboxProfileChange"
+  | "businessSpecialtyId"
+  | "savingSpecialty"
+  | "handleSpecialtyChange"
 >;
 
 export const CompanyGeneralTab: React.FC<CompanyGeneralTabProps> = ({
@@ -78,6 +85,12 @@ export const CompanyGeneralTab: React.FC<CompanyGeneralTabProps> = ({
   dateFormatError,
   formatDate,
   handleTimezoneChange,
+  inboxVerticalProfile,
+  savingInboxProfile,
+  handleInboxProfileChange,
+  businessSpecialtyId,
+  savingSpecialty,
+  handleSpecialtyChange,
 }) => {
   return (
     <div className="space-y-6">
@@ -103,6 +116,16 @@ export const CompanyGeneralTab: React.FC<CompanyGeneralTabProps> = ({
         savingDescription={savingDescription}
         handleCompanyDescriptionSave={handleCompanyDescriptionSave}
         customerRegisterUrl={customerRegisterUrl}
+      />
+
+      <CompanyInboxProfileSection
+        inboxVerticalProfile={inboxVerticalProfile}
+        savingInboxProfile={savingInboxProfile}
+        handleInboxProfileChange={handleInboxProfileChange}
+        businessSpecialtyId={businessSpecialtyId}
+        savingSpecialty={savingSpecialty}
+        handleSpecialtyChange={handleSpecialtyChange}
+        currentSpecialtyName={company?.businessSpecialty?.nameAr}
       />
 
       <CompanyLogoSection

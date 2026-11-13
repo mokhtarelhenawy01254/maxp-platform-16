@@ -83,6 +83,12 @@ export function useCompanySettingsController() {
   // Tabs state
   const [activeTab, setActiveTab] = useState<CompanyTab>("general");
 
+  // Business specialty & Inbox profile states
+  const [inboxVerticalProfile, setInboxVerticalProfile] = useState<string>("auto");
+  const [savingInboxProfile, setSavingInboxProfile] = useState(false);
+  const [businessSpecialtyId, setBusinessSpecialtyId] = useState<string>("");
+  const [savingSpecialty, setSavingSpecialty] = useState(false);
+
   // Ownership Transfer State
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [selectedNewOwner, setSelectedNewOwner] = useState("");
@@ -138,6 +144,11 @@ export function useCompanySettingsController() {
         setSlug(data.data.slug || "");
         setSidebarLayout(normalizeSidebarLayout(data.data.sidebarLayout));
         setCustomDomain(data.data.customDomain || "");
+        const profile = typeof parsedCompanySettings.inboxVerticalProfile === "string"
+          ? parsedCompanySettings.inboxVerticalProfile
+          : "auto";
+        setInboxVerticalProfile(profile);
+        setBusinessSpecialtyId(data.data.businessSpecialtyId || data.data.businessSpecialty?.id || "");
         if (data.data.logo) {
           const logoUrl = data.data.logo.startsWith("http")
             ? data.data.logo
@@ -493,6 +504,80 @@ export function useCompanySettingsController() {
     }
   };
 
+  const handleInboxProfileChange = async (profile: string) => {
+    try {
+      setSavingInboxProfile(true);
+      const token = getAccessToken();
+      const response = await fetch(`${getApiUrl()}/companies/${user?.companyId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          settings: {
+            inboxVerticalProfile: profile === "auto" ? null : profile,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setInboxVerticalProfile(profile);
+        updateCompany((currentCompany) => {
+          const prevSettings = parseCompanySettings(currentCompany?.settings);
+          return {
+            ...currentCompany,
+            settings: {
+              ...prevSettings,
+              inboxVerticalProfile: profile === "auto" ? null : profile,
+            },
+          };
+        });
+      } else {
+        alert(data.error || data.message || "فشل في تحديث إعداد واجهة المحادثات");
+      }
+    } catch (error) {
+      console.error("Error updating inbox vertical profile:", error);
+      alert("حدث خطأ أثناء تحديث إعداد واجهة المحادثات");
+    } finally {
+      setSavingInboxProfile(false);
+    }
+  };
+
+  const handleSpecialtyChange = async (specialtyId: string) => {
+    try {
+      setSavingSpecialty(true);
+      const token = getAccessToken();
+      const response = await fetch(`${getApiUrl()}/companies/${user?.companyId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessSpecialtyId: specialtyId || "none",
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setBusinessSpecialtyId(specialtyId);
+        updateCompany((currentCompany) => ({
+          ...currentCompany,
+          businessSpecialtyId: specialtyId || null,
+        }));
+      } else {
+        alert(data.error || data.message || "فشل في تحديث تخصص الشركة");
+      }
+    } catch (error) {
+      console.error("Error updating business specialty:", error);
+      alert("حدث خطأ أثناء تحديث تخصص الشركة");
+    } finally {
+      setSavingSpecialty(false);
+    }
+  };
+
   const handleVerifyDNS = async () => {
     if (!company?.id) return;
 
@@ -670,6 +755,12 @@ export function useCompanySettingsController() {
     handleVerifyDNS,
     handleLogoUpload,
     handleTransferOwnership,
+    inboxVerticalProfile,
+    savingInboxProfile,
+    handleInboxProfileChange,
+    businessSpecialtyId,
+    savingSpecialty,
+    handleSpecialtyChange,
   };
 }
 

@@ -77,6 +77,14 @@ export interface CompanyRecord {
   customDomain?: string | null;
   timezone?: string;
   logo?: string;
+  businessSpecialtyId?: string | null;
+  businessSpecialty?: {
+    id: string;
+    slug: string;
+    nameAr: string;
+    nameEn?: string;
+    icon?: string;
+  } | null;
 }
 
 export interface CompanyUser {

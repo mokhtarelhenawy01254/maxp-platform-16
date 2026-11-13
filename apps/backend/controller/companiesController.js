@@ -48,6 +48,16 @@ const CURRENT_COMPANY_SELECT = {
 
   currency: true,
   isActive: true,
+  businessSpecialtyId: true,
+  businessSpecialty: {
+    select: {
+      id: true,
+      slug: true,
+      nameAr: true,
+      nameEn: true,
+      icon: true,
+    },
+  },
 };
 
 const getCurrentCompany = async (req, res) => {
@@ -610,6 +620,15 @@ const getCompanyDetails = async (req, res) => {
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id },
       include: {
+        businessSpecialty: {
+          select: {
+            id: true,
+            slug: true,
+            nameAr: true,
+            nameEn: true,
+            icon: true,
+          },
+        },
         users: {
           select: {
             id: true,
@@ -820,6 +839,7 @@ const updateCompany = async (req, res) => {
       customDomain,
       slug,
       timezone,
+      businessSpecialtyId,
       settings: incomingSettings,
     } = req.body;
 
@@ -981,11 +1001,26 @@ const updateCompany = async (req, res) => {
         }),
         ...(slug !== undefined && { slug: slug || null }),
         ...(timezone && { timezone }),
+        ...(businessSpecialtyId !== undefined && {
+          businessSpecialtyId:
+            businessSpecialtyId === "none" || !businessSpecialtyId
+              ? null
+              : businessSpecialtyId,
+        }),
         ...(mergedSettingsJson !== undefined && {
           settings: mergedSettingsJson,
         }),
       },
       include: {
+        businessSpecialty: {
+          select: {
+            id: true,
+            slug: true,
+            nameAr: true,
+            nameEn: true,
+            icon: true,
+          },
+        },
         _count: {
           select: {
             users: true,

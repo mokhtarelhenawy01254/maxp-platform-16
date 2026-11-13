@@ -172,7 +172,7 @@ describe('verticalContextController.getConversationVerticalContext', () => {
     );
   });
 
-  test('resolves education vertical for academies with booking-app (codetreps fix) and returns appointments', async () => {
+  test('resolves education vertical for academies with education-academy specialty and booking-app', async () => {
     mockPrisma.conversation.findFirst.mockResolvedValue({
       id: 'conv-codetreps',
       companyId: 'comp-codetreps',
@@ -190,7 +190,7 @@ describe('verticalContextController.getConversationVerticalContext', () => {
     mockPrisma.company.findUnique.mockResolvedValue({
       name: 'CodeTreps',
       slug: 'codetreps',
-      businessSpecialty: null,
+      businessSpecialty: { slug: 'education-academy', nameAr: 'أكاديميات ومراكز التعليم', nameEn: 'Education & Academy' },
       installedApps: [{ app: { slug: 'booking-app' } }],
     });
     mockPrisma.educationEnrollment.findMany.mockResolvedValue([]);
@@ -218,6 +218,41 @@ describe('verticalContextController.getConversationVerticalContext', () => {
     expect(res.body.data.summary.items).toHaveLength(1);
     expect(res.body.data.summary.items[0].type).toBe('appointment');
     expect(res.body.data.summary.items[0].title).toContain('الديمو داي');
+  });
+
+  test('Tier 1: Explicit inboxVerticalProfile settings override takes priority over specialty and apps', async () => {
+    mockPrisma.conversation.findFirst.mockResolvedValue({
+      id: 'conv-override',
+      companyId: 'comp-override',
+      channel: 'WHATSAPP',
+      customerId: 'cust-ov',
+      customer: {
+        id: 'cust-ov',
+        firstName: 'علي',
+        lastName: 'حسين',
+        phone: '01000000000',
+        phoneNormalized: '01000000000',
+        email: null,
+      },
+    });
+    mockPrisma.company.findUnique.mockResolvedValue({
+      name: 'Multi-Activity Center',
+      slug: 'multi-activity',
+      settings: JSON.stringify({ inboxVerticalProfile: 'education' }),
+      businessSpecialty: { slug: 'ecommerce-retail', nameAr: 'التجارة والمتاجر', nameEn: 'E-commerce' },
+      installedApps: [{ app: { slug: 'store' } }],
+    });
+    mockPrisma.educationEnrollment.findMany.mockResolvedValue([]);
+    mockPrisma.appointment.findMany.mockResolvedValue([]);
+
+    const req = { params: { id: 'conv-override' }, user: { id: 'u1', companyId: 'comp-override' } };
+    const res = createRes();
+
+    await getConversationVerticalContext(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.vertical).toBe('education');
   });
 
   test('resolves services vertical for generic booking-app without medical keywords', async () => {

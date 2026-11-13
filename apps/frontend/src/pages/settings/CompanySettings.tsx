@@ -63,6 +63,12 @@ const CompanySettings: React.FC = () => {
           dateFormatError={ctrl.dateFormatError}
           formatDate={ctrl.formatDate}
           handleTimezoneChange={ctrl.handleTimezoneChange}
+          inboxVerticalProfile={ctrl.inboxVerticalProfile}
+          savingInboxProfile={ctrl.savingInboxProfile}
+          handleInboxProfileChange={ctrl.handleInboxProfileChange}
+          businessSpecialtyId={ctrl.businessSpecialtyId}
+          savingSpecialty={ctrl.savingSpecialty}
+          handleSpecialtyChange={ctrl.handleSpecialtyChange}
         />
       )}
 

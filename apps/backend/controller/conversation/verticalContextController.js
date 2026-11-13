@@ -6,12 +6,15 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../../services/sharedDatabase');
 const { getPhoneVariants } = require('../../utils/phoneNormalization');
 
+const VALID_VERTICALS = new Set(['education', 'dental', 'medical', 'services', 'agency', 'cafe', 'commerce']);
+
 const resolveVertical = (specialtySlugOrObj, legacyActiveApps = []) => {
   let specialtySlug = '';
   let activeApps = [];
   let companyName = '';
   let companySlug = '';
   let specialtyName = '';
+  let inboxVerticalProfile = null;
 
   if (specialtySlugOrObj && typeof specialtySlugOrObj === 'object' && !Array.isArray(specialtySlugOrObj)) {
     specialtySlug = specialtySlugOrObj.specialtySlug || '';
@@ -19,9 +22,15 @@ const resolveVertical = (specialtySlugOrObj, legacyActiveApps = []) => {
     companyName = specialtySlugOrObj.companyName || '';
     companySlug = specialtySlugOrObj.companySlug || '';
     specialtyName = specialtySlugOrObj.specialtyName || '';
+    inboxVerticalProfile = specialtySlugOrObj.inboxVerticalProfile || null;
   } else {
     specialtySlug = specialtySlugOrObj || '';
     activeApps = legacyActiveApps || [];
+  }
+
+  // Tier 1: Merchant explicit override from settings (Highest Priority)
+  if (inboxVerticalProfile && VALID_VERTICALS.has(inboxVerticalProfile)) {
+    return inboxVerticalProfile;
   }
 
   const textCues = [specialtySlug, companyName, companySlug, specialtyName]
@@ -31,37 +40,37 @@ const resolveVertical = (specialtySlugOrObj, legacyActiveApps = []) => {
 
   const apps = new Set((activeApps || []).map((a) => String(a || '').toLowerCase().trim()));
 
-  // 1. Education (Academies, CodeTreps, schools, courses, training, etc.)
-  const isEducationSlug = /codetreps|academy|educat|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن|برمجة/.test(textCues);
+  // Tier 2: Database Official Business Specialty & Domain Keywords
+  const isEducationSlug = /education|academy|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن/.test(textCues);
   const hasEducationApp = apps.has('academy-app') || apps.has('education-app') || apps.has('quran-app');
   if (isEducationSlug || hasEducationApp) return 'education';
 
-  // 2. Dental
+  // Tier 2b: Dental
   if (/dental|أسنان/.test(textCues) || apps.has('dental-lab-app') || apps.has('dental-materials-pro') || apps.has('dental-lab')) {
     return 'dental';
   }
 
-  // 3. Medical (CRITICAL: booking-app alone is NOT medical!)
+  // Tier 2c: Medical (CRITICAL: booking-app alone is NOT medical!)
   const isMedicalSlug = /medical|clinic|health|doctor|radiology|pharmacy|hospital|therapy|عيادة|طبي|مستشفى|دكتور|علاج|مختبر|أشعة|صيدلية/.test(textCues);
   const hasMedicalApp = apps.has('medical-system') || apps.has('lab-app') || apps.has('radiology-app') || apps.has('clinic-app');
   if (isMedicalSlug || hasMedicalApp) return 'medical';
 
-  // 4. Services & Maintenance
+  // Tier 2d: Services & Maintenance
   const isServiceSlug = /service|maintenance|contracting|factory|صيانة|خدمات|مقاولات|مصنع/.test(textCues);
   const hasServiceApp = apps.has('service-orders') || apps.has('services-app') || apps.has('services-pro') || apps.has('service-request-app');
   if (isServiceSlug || hasServiceApp) return 'services';
 
-  // 5. Agency
+  // Tier 2e: Agency
   if (/agency|marketing|call_center|support|تسويق|دعاية|وكالة/.test(textCues) || apps.has('marketing-agency-pro')) {
     return 'agency';
   }
 
-  // 6. Cafe & Restaurant
+  // Tier 2f: Cafe & Restaurant
   if (/cafe|restaurant|coffee|food|bakery|مطعم|كافيه|قهوة|مقهى/.test(textCues) || apps.has('cafe-restaurant-pro')) {
     return 'cafe';
   }
 
-  // 7. Generic booking-app fallback (when no other vertical matched)
+  // Tier 3: Utility Apps Fallback (booking-app without domain driver maps to neutral services)
   if (apps.has('booking-app')) {
     return 'services';
   }
@@ -376,10 +385,21 @@ const getConversationVerticalContext = async (req, res) => {
         id: true,
         name: true,
         slug: true,
+        settings: true,
         businessSpecialty: { select: { slug: true, nameAr: true, nameEn: true } },
         installedApps: { where: { status: { in: ['ACTIVE', 'TRIAL'] } }, select: { app: { select: { slug: true } } } },
       },
     }));
+
+    let inboxVerticalProfile = null;
+    if (company?.settings) {
+      try {
+        const parsed = typeof company.settings === 'string' ? JSON.parse(company.settings) : company.settings;
+        if (parsed?.inboxVerticalProfile && parsed.inboxVerticalProfile !== 'auto') {
+          inboxVerticalProfile = String(parsed.inboxVerticalProfile).toLowerCase().trim();
+        }
+      } catch (_) {}
+    }
 
     const specialty = company?.businessSpecialty
       ? { slug: company.businessSpecialty.slug, nameAr: company.businessSpecialty.nameAr, nameEn: company.businessSpecialty.nameEn }
@@ -393,6 +413,7 @@ const getConversationVerticalContext = async (req, res) => {
       specialtyName: specialty?.nameAr || specialty?.nameEn,
       companyName: company?.name,
       companySlug: company?.slug,
+      inboxVerticalProfile,
       activeApps,
     });
     const phoneVariants = collectPhoneVariants(conversation.customer);

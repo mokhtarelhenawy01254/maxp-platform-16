@@ -104,21 +104,37 @@ const SPECIALTY_META: Record<
   },
 };
 
+const VALID_VERTICALS = new Set<InboxVertical>([
+  "education",
+  "dental",
+  "medical",
+  "services",
+  "agency",
+  "cafe",
+  "commerce",
+]);
+
 export function resolveVertical(
   specialtySlug: string | undefined | null,
   apps: Set<string>,
   companyName?: string | null,
   companySlug?: string | null,
   specialtyName?: string | null,
+  inboxOverride?: InboxVertical | null,
 ): InboxVertical {
+  // Tier 1: Merchant explicit override from settings (Highest Priority)
+  if (inboxOverride && VALID_VERTICALS.has(inboxOverride)) {
+    return inboxOverride;
+  }
+
   const textCues = [specialtySlug, companyName, companySlug, specialtyName]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 
-  // 1. Education (Academies, CodeTreps, schools, training, coding courses, etc.)
+  // Tier 2: Database Official Business Specialty & Domain Keywords
   const isEducation =
-    /codetreps|academy|educat|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن|برمجة/.test(
+    /education|academy|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن/.test(
       textCues,
     ) ||
     apps.has("education-app") ||
@@ -127,7 +143,7 @@ export function resolveVertical(
 
   if (isEducation) return "education";
 
-  // 2. Dental
+  // Tier 2b: Dental
   if (
     /dental|أسنان/.test(textCues) ||
     apps.has("dental-lab-app") ||
@@ -137,7 +153,7 @@ export function resolveVertical(
     return "dental";
   }
 
-  // 3. Medical (CRITICAL: booking-app alone is NOT medical!)
+  // Tier 2c: Medical (CRITICAL: booking-app alone is NOT medical!)
   const isMedical =
     /medical|clinic|health|doctor|radiology|pharmacy|hospital|therapy|عيادة|طبي|مستشفى|دكتور|علاج|مختبر|أشعة|صيدلية/.test(
       textCues,
@@ -149,7 +165,7 @@ export function resolveVertical(
 
   if (isMedical) return "medical";
 
-  // 4. Services & Maintenance
+  // Tier 2d: Services & Maintenance
   const isServices =
     /service|maintenance|contracting|factory|صيانة|خدمات|مقاولات|مصنع/.test(textCues) ||
     apps.has("service-orders") ||
@@ -159,7 +175,7 @@ export function resolveVertical(
 
   if (isServices) return "services";
 
-  // 5. Agency
+  // Tier 2e: Agency
   if (
     /agency|marketing|call_center|support|تسويق|دعاية|وكالة/.test(textCues) ||
     apps.has("marketing-agency-pro")
@@ -167,7 +183,7 @@ export function resolveVertical(
     return "agency";
   }
 
-  // 6. Cafe & Restaurant
+  // Tier 2f: Cafe & Restaurant
   if (
     /cafe|restaurant|coffee|food|bakery|مطعم|كافيه|قهوة|مقهى/.test(textCues) ||
     apps.has("cafe-restaurant-pro")
@@ -175,7 +191,7 @@ export function resolveVertical(
     return "cafe";
   }
 
-  // 7. Generic booking-app fallback (when no other vertical matched)
+  // Tier 3: Utility Apps Fallback (booking-app without domain driver maps to neutral services)
   if (apps.has("booking-app")) {
     return "services";
   }
@@ -195,9 +211,28 @@ export function useInboxVerticalCapabilities(): InboxVerticalCapabilities {
   const companySlug = company?.slug;
   const activeAppsList = company?.activeApps || [];
 
+  const inboxOverride = useMemo(() => {
+    const raw = company?.settings;
+    if (!raw) return null;
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const val = String(parsed?.inboxVerticalProfile || "").toLowerCase().trim();
+      return val && VALID_VERTICALS.has(val as InboxVertical) ? (val as InboxVertical) : null;
+    } catch {
+      return null;
+    }
+  }, [company?.settings]);
+
   return useMemo(() => {
     const activeApps = new Set(activeAppsList.map((a) => a.toLowerCase().trim()));
-    const vertical = resolveVertical(specialtySlug, activeApps, companyName, companySlug, specialtyName);
+    const vertical = resolveVertical(
+      specialtySlug,
+      activeApps,
+      companyName,
+      companySlug,
+      specialtyName,
+      inboxOverride,
+    );
     const meta = SPECIALTY_META[vertical];
 
     const hasStoreApp = Array.from(STORE_APPS).some((slug) => activeApps.has(slug));
