@@ -837,6 +837,11 @@ class BackendClient:
         result = await self._request("GET", "/api/v1/education/teachers", params={"companyId": company_id})
         return result.get("data", [])
 
+    async def get_education_demo_days(self, company_id: str) -> list[dict[str, Any]]:
+        """Upcoming demo days for the education center (2026-11-13: feeds education_info)."""
+        result = await self._request("GET", "/api/v1/education/demo-day", params={"companyId": company_id})
+        return result.get("data", [])
+
     async def get_education_students(self, company_id: str, customer_id: str | None = None) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"companyId": company_id}
         if customer_id:

@@ -10,13 +10,44 @@ logger = structlog.get_logger(__name__)
 
 
 async def get_center_info(company_id: str) -> dict[str, Any]:
-    """Returns subjects + packages for an education center."""
+    """Returns subjects + packages + upcoming demo days for an education center."""
     if not company_id:
         return {"error": "no company_id"}
     client = get_backend_client()
 
     subjects = await client.get_education_subjects(company_id)
     packages = await client.get_education_packages(company_id)
+
+    # 2026-11-13: real demo days (replaces hardcoded schedule in agent souls).
+    # Fail-soft: demo endpoint may be unavailable — the agent falls back to soul facts.
+    upcoming_demo_days: list[dict[str, Any]] = []
+    try:
+        from datetime import datetime, timezone
+
+        demo_days = await client.get_education_demo_days(company_id)
+        now_utc = datetime.now(timezone.utc)
+        for d in demo_days:
+            scheduled = d.get("scheduledAt")
+            if not scheduled or d.get("status") in ("CANCELLED", "COMPLETED"):
+                continue
+            try:
+                scheduled_dt = datetime.fromisoformat(str(scheduled).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if scheduled_dt >= now_utc:
+                upcoming_demo_days.append({
+                    "id": d.get("id"),
+                    "title": d.get("title", ""),
+                    "scheduledAt": scheduled,
+                    "durationMinutes": d.get("durationMinutes", 60),
+                    "locationType": d.get("locationType", "ONLINE"),
+                    "capacity": d.get("capacity", 20),
+                    "spotsLeft": max(0, int(d.get("capacity", 20)) - int(d.get("totalAttendees", 0) or 0)),
+                })
+        upcoming_demo_days.sort(key=lambda x: x["scheduledAt"])
+        upcoming_demo_days = upcoming_demo_days[:3]
+    except Exception as exc:
+        logger.warning("education_demo_days_fetch_failed", company_id=company_id, error=str(exc))
 
     # Group packages by subject
     subject_list = []
@@ -34,7 +65,7 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
             "packages": pkg_list,
         })
 
-    return {"subjects": subject_list, "total_subjects": len(subjects)}
+    return {"subjects": subject_list, "total_subjects": len(subjects), "upcoming_demo_days": upcoming_demo_days}
 
 
 async def enroll_student(
