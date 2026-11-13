@@ -364,6 +364,67 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(await getTeacherLabel('comp-err', 'en'), 'Teachers');
   });
 
+  await t.test('enableDemoDay toggle controls demo-day tab visibility and syncs with sidebar', async () => {
+    mockCompany = {
+      id: 'comp-123',
+      settings: JSON.stringify({
+        sidebarSettings: []
+      })
+    };
+    mockPrisma.company.findUnique = async () => ({ ...mockCompany });
+    mockPrisma.company.update = async ({ data }) => {
+      mockCompany.settings = data.settings;
+      return { ...mockCompany };
+    };
+
+    // 1. Check default: demo-day is hidden (visible: false)
+    const req1 = { user: { id: 'u1', role: 'OWNER', companyId: 'comp-123' } };
+    const res1 = createMockRes();
+    await controller.getSettings(req1, res1);
+    const data1 = res1.getData();
+    assert.strictEqual(data1.success, true);
+    assert.strictEqual(data1.data.enableDemoDay, false);
+    const demoTab1 = data1.data.tabs.find(t => t.id === 'demo-day');
+    assert.ok(demoTab1);
+    assert.strictEqual(demoTab1.visible, false);
+
+    // 2. Enable Demo Day
+    const req2 = {
+      user: { id: 'u1', role: 'OWNER', companyId: 'comp-123' },
+      body: {
+        enableDemoDay: true
+      }
+    };
+    const res2 = createMockRes();
+    await controller.updateSettings(req2, res2);
+    const data2 = res2.getData();
+    assert.strictEqual(data2.success, true);
+    assert.strictEqual(data2.data.enableDemoDay, true);
+    const demoTab2 = data2.data.tabs.find(t => t.id === 'demo-day');
+    assert.strictEqual(demoTab2.visible, true);
+
+    // Check sidebar sync
+    const saved = JSON.parse(mockCompany.settings);
+    const sidebarDemo = saved.sidebarSettings.find(s => s.key === '/admin/education/demo-day');
+    assert.ok(sidebarDemo);
+    assert.strictEqual(sidebarDemo.visible, true);
+
+    // 3. Disable Demo Day
+    const req3 = {
+      user: { id: 'u1', role: 'OWNER', companyId: 'comp-123' },
+      body: {
+        enableDemoDay: false
+      }
+    };
+    const res3 = createMockRes();
+    await controller.updateSettings(req3, res3);
+    const data3 = res3.getData();
+    assert.strictEqual(data3.success, true);
+    assert.strictEqual(data3.data.enableDemoDay, false);
+    const demoTab3 = data3.data.tabs.find(t => t.id === 'demo-day');
+    assert.strictEqual(demoTab3.visible, false);
+  });
+
   activePrismaGetter = originalGetSharedPrisma;
   sharedDb.getSharedPrismaClient = originalGetSharedPrisma;
 });

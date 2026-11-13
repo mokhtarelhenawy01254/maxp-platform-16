@@ -60,6 +60,14 @@ const ACTION_DEFINITIONS = {
   // Settings
   UPDATE_EDUCATION_SETTINGS: { label: 'تحديث إعدادات النظام التعليمي', severity: 'MEDIUM', entity: 'SETTINGS' },
 
+  // Demo Day (Events & Leads)
+  CREATE_DEMO_DAY: { label: 'إنشاء فعالية ديمو داي', severity: 'LOW', entity: 'DEMO_DAY' },
+  UPDATE_DEMO_DAY: { label: 'تعديل فعالية ديمو داي', severity: 'LOW', entity: 'DEMO_DAY' },
+  DELETE_DEMO_DAY: { label: 'حذف فعالية ديمو داي', severity: 'MEDIUM', entity: 'DEMO_DAY' },
+  REGISTER_DEMO_ATTENDEE: { label: 'تسجيل حاضر في الديمو داي', severity: 'LOW', entity: 'DEMO_DAY' },
+  UPDATE_DEMO_ATTENDEE: { label: 'تحديث حالة حاضر في الديمو داي', severity: 'LOW', entity: 'DEMO_DAY' },
+  CONVERT_DEMO_LEAD: { label: 'تحويل عميل محتمل من الديمو داي لطالب', severity: 'MEDIUM', entity: 'DEMO_DAY' },
+
   // AI & Automation
   AI_ACTION: { label: 'إجراء آلي من المساعد الذكي', severity: 'LOW', entity: 'AI_AGENT' },
 };

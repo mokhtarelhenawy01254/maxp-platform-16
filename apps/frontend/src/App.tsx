@@ -77,6 +77,12 @@ const CustomerCreate = React.lazy(
   () => import("./pages/customers/CustomerCreate"),
 );
 const LeadsList = React.lazy(() => import("./pages/customers/LeadsList"));
+const LeadsFollowUps = React.lazy(
+  () => import("./pages/customers/LeadsFollowUps"),
+);
+const LeadsPipeline = React.lazy(
+  () => import("./pages/customers/LeadsPipeline"),
+);
 const CustomerDetails = React.lazy(
   () => import("./pages/customers/CustomerDetails"),
 );
@@ -1340,6 +1346,12 @@ const EducationTeacherProfilePage = React.lazy(
 );
 const EducationStudentProfilePage = React.lazy(
   () => import("./pages/admin/EducationStudentProfilePage"),
+);
+const EducationDemoDayPage = React.lazy(
+  () => import("./pages/admin/EducationDemoDayPage"),
+);
+const EducationPublicDemoPage = React.lazy(
+  () => import("./pages/education/EducationPublicDemoPage"),
 );
 const TeacherLoginPage = React.lazy(
   () => import("./pages/auth/TeacherLoginPage"),
@@ -2648,6 +2660,7 @@ const AppContent = () => {
             <Route path="/academy/course/:courseId/lesson/:lessonId" element={<StudentPortalLayout><StudentLessonPlayerPage /></StudentPortalLayout>} />
             <Route path="/academy/my-courses" element={<StudentPortalLayout><StudentMyCoursesPage /></StudentPortalLayout>} />
             <Route path="/academy/student/login" element={<StudentPortalLayout><StudentLoginPage /></StudentPortalLayout>} />
+            <Route path="/education/demo/:id" element={<EducationPublicDemoPage />} />
 
             {/* Portal Routes (outside ProtectedRoute - use own auth) */}
             <Route path="/teacher/dashboard" element={<TeacherLayout><TeacherDashboardPage /></TeacherLayout>} />
@@ -3914,6 +3927,26 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.view']}>
                       <Layout>
                         <LeadsList />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/leads/follow-ups"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <LeadsFollowUps />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/leads/pipeline"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <LeadsPipeline />
                       </Layout>
                     </PermissionProtectedRoute>
                   }
@@ -9600,6 +9633,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <EducationStudentProfilePage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/demo-day"
+                  element={
+                    <Layout fullWidth>
+                      <EducationDemoDayPage />
                     </Layout>
                   }
                 />

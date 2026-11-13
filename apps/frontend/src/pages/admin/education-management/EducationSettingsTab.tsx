@@ -30,6 +30,7 @@ import {
   School,
   Lock,
   History,
+  Presentation,
 } from "lucide-react";
 import { api, fetchJson, getAuthHeaders } from "./api";
 import { useSidebarSettings } from "../../../contexts/SidebarSettingsContext";
@@ -53,6 +54,7 @@ export interface EducationSettingsData {
   systemTitleEn: string;
   educationMode?: "COURSES" | "ACADEMIC";
   enableSubjects?: boolean;
+  enableDemoDay?: boolean;
   pushFirstSaveWhatsApp?: boolean;
   companySlug?: string | null;
   publicCode?: string | null;
@@ -73,6 +75,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Megaphone,
   Settings,
   History,
+  Presentation,
 };
 
 const PRESETS = [
@@ -184,6 +187,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [systemTitleEn, setSystemTitleEn] = useState("Education System");
   const [educationMode, setEducationMode] = useState<"COURSES" | "ACADEMIC">("COURSES");
   const [enableSubjects, setEnableSubjects] = useState<boolean>(false);
+  const [enableDemoDay, setEnableDemoDay] = useState<boolean>(false);
   const [pushFirstSaveWhatsApp, setPushFirstSaveWhatsApp] = useState<boolean>(true);
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [publicCode, setPublicCode] = useState<string | null>(null);
@@ -193,6 +197,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
 
   const [savingMode, setSavingMode] = useState<"COURSES" | "ACADEMIC" | null>(null);
   const [savingPushFirst, setSavingPushFirst] = useState<boolean>(false);
+  const [savingDemoDay, setSavingDemoDay] = useState<boolean>(false);
 
   // Load existing settings
   const fetchSettings = async () => {
@@ -206,6 +211,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         setEducationMode(mode);
         const subjectsActive = data.enableSubjects !== undefined ? Boolean(data.enableSubjects) : (mode === "ACADEMIC");
         setEnableSubjects(subjectsActive);
+        const demoActive = data.enableDemoDay !== undefined
+          ? Boolean(data.enableDemoDay)
+          : Boolean(data.tabs?.find((t: any) => t.id === 'demo-day')?.visible);
+        setEnableDemoDay(demoActive);
         setPushFirstSaveWhatsApp(
           data.pushFirstSaveWhatsApp !== undefined ? Boolean(data.pushFirstSaveWhatsApp) : true,
         );
@@ -352,6 +361,79 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       toast.error(err.message || (isEn ? "Failed to update notification setting" : "فشل تحديث إعداد الإشعارات"));
     } finally {
       setSavingPushFirst(false);
+    }
+  };
+
+  const handleToggleDemoDay = async (next: boolean) => {
+    if (saving || savingMode || savingDemoDay) return;
+    const prev = enableDemoDay;
+    setEnableDemoDay(next);
+    setSavingDemoDay(true);
+
+    const updatedTabs = tabs.map((t) => {
+      if (t.id.toLowerCase() === "demo-day") {
+        return { ...t, visible: next };
+      }
+      return t;
+    });
+    setTabs(updatedTabs);
+
+    try {
+      const payload = {
+        systemTitle: systemTitle.trim(),
+        systemTitleEn: systemTitleEn.trim(),
+        educationMode,
+        enableSubjects,
+        enableDemoDay: next,
+        pushFirstSaveWhatsApp,
+        tabs: updatedTabs.map((t, idx) => ({
+          id: t.id,
+          key: t.key,
+          labelAr: t.labelAr.trim() || t.defaultLabelAr,
+          labelEn: t.labelEn.trim() || t.defaultLabelEn,
+          order: idx,
+          visible: t.id.toLowerCase() === "demo-day" ? next : (t.id.toLowerCase() === "subjects" ? enableSubjects : (t.locked ? true : t.visible)),
+        })),
+      };
+
+      await fetchJson(api("settings"), {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      toast.success(
+        next
+          ? (isEn ? "Demo Day section activated (visible in sidebar & education menu)" : "تم تفعيل قسم الديمو داي بنجاح (ظاهر بالقائمة الجانبية)")
+          : (isEn ? "Demo Day section hidden" : "تم تعطيل وإخفاء قسم الديمو داي")
+      );
+
+      if (refreshSettings) {
+        await refreshSettings();
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("education-settings-updated", { detail: payload }));
+      }
+
+      if (onSaved) {
+        onSaved({
+          systemTitle: payload.systemTitle,
+          systemTitleEn: payload.systemTitleEn,
+          educationMode,
+          enableSubjects,
+          enableDemoDay: next,
+          pushFirstSaveWhatsApp,
+          companySlug,
+          publicCode,
+          customDomain,
+          tabs: payload.tabs as EducationTabConfig[],
+        });
+      }
+    } catch (err: any) {
+      setEnableDemoDay(prev);
+      toast.error(err.message || (isEn ? "Failed to toggle Demo Day section" : "فشل تعديل حالة سيكشن الديمو داي"));
+    } finally {
+      setSavingDemoDay(false);
     }
   };
 
@@ -762,6 +844,57 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side (Controls): 8 cols */}
         <div className="lg:col-span-8 space-y-5">
+          {/* Demo Day & Trial Sessions Feature Toggle */}
+          <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <Presentation className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-foreground">
+                      {isEn ? "Demo Day & Trial Sessions Section" : "سيكشن الديمو داي والفعاليات التجريبية"}
+                    </h3>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                      enableDemoDay
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}>
+                      {enableDemoDay ? (isEn ? "Active" : "مفعل بالقائمة الجانبية") : (isEn ? "Hidden" : "معطل ومخفي")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+                    {isEn
+                      ? "Enables a specialized section for scheduling open days and trial sessions. Attendees are captured as CRM Leads for sales follow-up and one-click conversion to enrolled students."
+                      : "تفعيل قسم مخصص لإدارة الأيام التعريفية وحصص التجربة للطلاب الجدد. يتم تسجيل الحاضرين تلقائياً كعملاء محتملين (Leads) في الـ CRM لمتابعتهم وتحويلهم لاشتراكات بنقرة واحدة."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                {savingDemoDay && (
+                  <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleToggleDemoDay(!enableDemoDay)}
+                  disabled={saving || savingMode || savingDemoDay}
+                  aria-label={isEn ? "Toggle Demo Day section" : "تبديل تفعيل سيكشن الديمو داي"}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    enableDemoDay ? "bg-primary" : "bg-muted-foreground/30"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      enableDemoDay ? (isEn ? "translate-x-5" : "-translate-x-5") : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
           <PortalInviteAndPushCard
             companySlug={companySlug}
             publicCode={publicCode}

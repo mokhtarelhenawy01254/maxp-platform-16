@@ -311,3 +311,54 @@ model EducationGroupAttendance {
   @@index([studentId], map: "idx_edu_group_att_student")
   @@map("education_group_attendance")
 }
+
+model EducationDemoDay {
+  id              String   @id
+  companyId       String
+  title           String
+  description     String?
+  subjectId       String?
+  teacherId       String?
+  scheduledAt     DateTime
+  durationMinutes Int      @default(60)
+  locationType    String   @default("ONLINE")
+  meetingLink     String?
+  room            String?
+  capacity        Int      @default(20)
+  status          String   @default("SCHEDULED")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId], map: "idx_edu_demo_days_company")
+  @@index([scheduledAt], map: "idx_edu_demo_days_scheduled")
+  @@index([status], map: "idx_edu_demo_days_status")
+  @@map("education_demo_days")
+}
+
+model EducationDemoAttendee {
+  id                 String   @id
+  companyId          String
+  demoDayId          String
+  customerId         String?
+  studentName        String
+  guardianName       String?
+  phone              String
+  phone2             String?
+  email              String?
+  age                Int?
+  grade              String?
+  attendanceStatus   String   @default("REGISTERED")
+  conversionStatus   String   @default("PENDING")
+  convertedStudentId String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([companyId], map: "idx_edu_demo_att_company")
+  @@index([demoDayId], map: "idx_edu_demo_att_demoday")
+  @@index([customerId], map: "idx_edu_demo_att_customer")
+  @@index([phone], map: "idx_edu_demo_att_phone")
+  @@index([attendanceStatus], map: "idx_edu_demo_att_status")
+  @@map("education_demo_attendees")
+}

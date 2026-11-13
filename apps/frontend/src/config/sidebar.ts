@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Clapperboard, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Columns3, Clapperboard, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Presentation, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -342,7 +342,7 @@ const applySidebarOverrides = (
                             } else if (
                                 savedItem.visible === true &&
                                 itemAccess &&
-                                (!item.hidden || itemKey === 'education-subjects')
+                                (!item.hidden || itemKey === 'education-subjects' || itemKey === 'education-demo-day')
                             ) {
                                 itemHidden = false;
                             }
@@ -715,6 +715,8 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/customers', icon: Users, label: t('sidebar.customers') },
                     { to: '/leads', icon: UserPlus, label: t('sidebar.leads') },
+                    { to: '/leads/follow-ups', icon: ListChecks, label: 'متابعات الليدز' },
+                    { to: '/leads/pipeline', icon: Columns3, label: 'كانبان الليدز' },
                 ],
             },
             {
@@ -1126,6 +1128,8 @@ export const getSidebarConfig = (
             icon: Users,
             items: [
                 { to: '/customers', icon: Users, label: t('sidebar.customers') },
+                { to: '/leads/follow-ups', icon: ListChecks, label: 'متابعات الليدز' },
+                { to: '/leads/pipeline', icon: Columns3, label: 'كانبان الليدز' },
                 { to: '/customers/segments', icon: Filter, label: isEn ? 'Customer Segments' : (t('sidebar.customerSegments') || 'شرائح وتصنيف العملاء') },
                 { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },
                 { to: '/whatsapp/customer-journey', icon: RefreshCcw, label: isEn ? 'Customer Journeys & Re-order' : (t('sidebar.whatsappCustomerJourney') || 'رحلات زيادة الطلب والتكرار') },
@@ -1903,6 +1907,7 @@ export const getSidebarConfig = (
                 { to: '/admin/education/teacher-payments', itemId: 'education-teacher-payments', icon: DollarSign, label: t('sidebar.educationTeacherPayments') },
                 { to: '/admin/education/sessions', itemId: 'education-sessions', icon: Clock, label: t('sidebar.educationSessions') },
                 { to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, label: t('sidebar.educationCalendar') },
+                { to: '/admin/education/demo-day', itemId: 'education-demo-day', icon: Presentation, label: t('sidebar.educationDemoDay', 'الديمو داي'), hidden: true },
                 { to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, label: t('sidebar.educationFunnel') },
                 { to: '/admin/education/settings', itemId: 'education-settings', icon: Settings, label: t('sidebar.educationSettings', 'إعدادات وتخصيص السكاشن') },
                 { to: '/admin/education/logs', itemId: 'education-logs', icon: History, label: t('sidebar.educationLogs', 'سجلات النظام التعليمي') },

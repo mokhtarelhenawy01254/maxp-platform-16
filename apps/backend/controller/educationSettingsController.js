@@ -136,6 +136,18 @@ const DEFAULT_EDUCATION_TABS = [
     iconName: "CalendarDays"
   },
   {
+    id: "demo-day",
+    key: "/admin/education/demo-day",
+    defaultLabelAr: "الديمو داي",
+    defaultLabelEn: "Demo Day",
+    labelAr: "الديمو داي",
+    labelEn: "Demo Day",
+    order: 9.5,
+    visible: false,
+    locked: false,
+    iconName: "Presentation"
+  },
+  {
     id: "funnel",
     key: "/admin/education/funnel",
     defaultLabelAr: "الإشعارات والفانل",
@@ -257,23 +269,41 @@ const getSettings = async (req, res) => {
       }
     });
 
+    const enableDemoDay = savedEducation.enableDemoDay !== undefined
+      ? Boolean(savedEducation.enableDemoDay)
+      : (savedTabsMap.get('demo-day')?.visible === true);
+
     const mergedTabs = DEFAULT_EDUCATION_TABS.map((defTab, idx) => {
       const saved = savedTabsMap.get(defTab.id.toLowerCase());
       const isSubjectsTab = defTab.id.toLowerCase() === 'subjects';
+      const isDemoDayTab = defTab.id.toLowerCase() === 'demo-day';
       if (saved) {
         const rawSavedAr = typeof saved.labelAr === 'string' ? saved.labelAr.trim() : '';
         const rawSavedEn = typeof saved.labelEn === 'string' ? saved.labelEn.trim() : '';
+        const isVisible = defTab.locked
+          ? true
+          : (isSubjectsTab
+            ? (enableSubjects && saved.visible !== false)
+            : (isDemoDayTab
+              ? (enableDemoDay && saved.visible !== false)
+              : (saved.visible !== false)));
         return {
           ...defTab,
           labelAr: rawSavedAr && !isLegacyDefaultLabel(defTab.id, 'ar', rawSavedAr) ? rawSavedAr : defTab.labelAr,
           labelEn: rawSavedEn && !isLegacyDefaultLabel(defTab.id, 'en', rawSavedEn) ? rawSavedEn : defTab.labelEn,
-          visible: defTab.locked ? true : (isSubjectsTab ? (enableSubjects && saved.visible !== false) : (saved.visible !== false)),
+          visible: isVisible,
           order: typeof saved.order === 'number' ? saved.order : idx
         };
       }
       return {
         ...defTab,
-        visible: defTab.locked ? true : (isSubjectsTab ? enableSubjects : defTab.visible),
+        visible: defTab.locked
+          ? true
+          : (isSubjectsTab
+            ? enableSubjects
+            : (isDemoDayTab
+              ? enableDemoDay
+              : defTab.visible)),
         order: idx
       };
     });
@@ -291,6 +321,7 @@ const getSettings = async (req, res) => {
         systemTitleEn,
         educationMode,
         enableSubjects,
+        enableDemoDay,
         pushFirstSaveWhatsApp: savedEducation.pushFirstSaveWhatsApp !== false,
         companySlug: company.slug || null,
         publicCode: company.publicCode || null,
@@ -332,7 +363,7 @@ const updateSettings = async (req, res) => {
 
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
-    const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects, pushFirstSaveWhatsApp } = req.body || {};
+    const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects, enableDemoDay, pushFirstSaveWhatsApp } = req.body || {};
 
     let sanitizedTitle = "النظام التعليمي";
     if (systemTitle !== undefined && systemTitle !== null) {
@@ -390,6 +421,12 @@ const updateSettings = async (req, res) => {
         ? Boolean(enableSubjects)
         : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : true));
 
+    const resolvedEnableDemoDay = enableDemoDay !== undefined
+      ? Boolean(enableDemoDay)
+      : (existingEdu.enableDemoDay !== undefined
+        ? Boolean(existingEdu.enableDemoDay)
+        : (Array.isArray(tabs) ? (tabs.find(t => t && String(t.id).toLowerCase() === 'demo-day')?.visible === true) : false));
+
     const resolvedPushFirstSaveWhatsApp = typeof pushFirstSaveWhatsApp === 'boolean'
       ? pushFirstSaveWhatsApp
       : (existingEdu.pushFirstSaveWhatsApp !== false);
@@ -419,7 +456,14 @@ const updateSettings = async (req, res) => {
 
         const order = typeof item.order === 'number' && Number.isFinite(item.order) ? item.order : i;
         const isSubjectsTab = id.toLowerCase() === 'subjects';
-        const visible = locked ? true : (isSubjectsTab ? resolvedEnableSubjects : (item.visible !== false));
+        const isDemoDayTab = id.toLowerCase() === 'demo-day';
+        const visible = locked
+          ? true
+          : (isSubjectsTab
+            ? resolvedEnableSubjects
+            : (isDemoDayTab
+              ? (enableDemoDay !== undefined ? resolvedEnableDemoDay : (item.visible === true))
+              : (item.visible !== false)));
 
         validatedTabs.push({
           id,
@@ -437,9 +481,16 @@ const updateSettings = async (req, res) => {
     } else {
       validatedTabs = DEFAULT_EDUCATION_TABS.map((def) => {
         const isSubjectsTab = def.id.toLowerCase() === 'subjects';
+        const isDemoDayTab = def.id.toLowerCase() === 'demo-day';
         return {
           ...def,
-          visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : def.visible)
+          visible: def.locked
+            ? true
+            : (isSubjectsTab
+              ? resolvedEnableSubjects
+              : (isDemoDayTab
+                ? resolvedEnableDemoDay
+                : def.visible))
         };
       });
     }
@@ -449,9 +500,16 @@ const updateSettings = async (req, res) => {
     DEFAULT_EDUCATION_TABS.forEach((def, defIdx) => {
       if (!existingIds.has(def.id.toLowerCase())) {
         const isSubjectsTab = def.id.toLowerCase() === 'subjects';
+        const isDemoDayTab = def.id.toLowerCase() === 'demo-day';
         validatedTabs.push({
           ...def,
-          visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : def.visible),
+          visible: def.locked
+            ? true
+            : (isSubjectsTab
+              ? resolvedEnableSubjects
+              : (isDemoDayTab
+                ? resolvedEnableDemoDay
+                : def.visible)),
           order: validatedTabs.length + defIdx
         });
       }
@@ -468,6 +526,7 @@ const updateSettings = async (req, res) => {
       systemTitleEn: sanitizedTitleEn,
       educationMode: resolvedMode,
       enableSubjects: resolvedEnableSubjects,
+      enableDemoDay: resolvedEnableDemoDay,
       pushFirstSaveWhatsApp: resolvedPushFirstSaveWhatsApp,
       tabs: validatedTabs
     };
@@ -575,6 +634,7 @@ const updateSettings = async (req, res) => {
         systemTitleEn: sanitizedTitleEn,
         educationMode: resolvedMode,
         enableSubjects: resolvedEnableSubjects,
+        enableDemoDay: resolvedEnableDemoDay,
         pushFirstSaveWhatsApp: resolvedPushFirstSaveWhatsApp,
         tabs: validatedTabs
       },
