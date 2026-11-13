@@ -12,31 +12,30 @@ interface AppLaunchpadTileProps {
   onToggleFavorite?: (appId: string) => void;
 }
 
-type TileColor = { bg: string; iconClass: string; glow: string };
+type TileColor = { bg: string; shadow: string };
 
 const TILE_COLORS: Record<string, TileColor> = {
-  indigo: { bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20', iconClass: 'text-indigo-600 dark:text-indigo-400', glow: 'group-hover:ring-indigo-500/20' },
-  blue: { bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20', iconClass: 'text-blue-600 dark:text-blue-400', glow: 'group-hover:ring-blue-500/20' },
-  green: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', iconClass: 'text-emerald-600 dark:text-emerald-400', glow: 'group-hover:ring-emerald-500/20' },
-  emerald: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', iconClass: 'text-emerald-600 dark:text-emerald-400', glow: 'group-hover:ring-emerald-500/20' },
-  sky: { bg: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20', iconClass: 'text-sky-600 dark:text-sky-400', glow: 'group-hover:ring-sky-500/20' },
-  orange: { bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', iconClass: 'text-orange-600 dark:text-orange-400', glow: 'group-hover:ring-orange-500/20' },
-  amber: { bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', iconClass: 'text-amber-600 dark:text-amber-400', glow: 'group-hover:ring-amber-500/20' },
-  pink: { bg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20', iconClass: 'text-pink-600 dark:text-pink-400', glow: 'group-hover:ring-pink-500/20' },
-  purple: { bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20', iconClass: 'text-purple-600 dark:text-purple-400', glow: 'group-hover:ring-purple-500/20' },
-  violet: { bg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20', iconClass: 'text-violet-600 dark:text-violet-400', glow: 'group-hover:ring-violet-500/20' },
-  teal: { bg: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20', iconClass: 'text-teal-600 dark:text-teal-400', glow: 'group-hover:ring-teal-500/20' },
-  cyan: { bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20', iconClass: 'text-cyan-600 dark:text-cyan-400', glow: 'group-hover:ring-cyan-500/20' },
-  red: { bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20', iconClass: 'text-rose-600 dark:text-rose-400', glow: 'group-hover:ring-rose-500/20' },
-  rose: { bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20', iconClass: 'text-rose-600 dark:text-rose-400', glow: 'group-hover:ring-rose-500/20' },
-  slate: { bg: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20', iconClass: 'text-slate-600 dark:text-slate-400', glow: 'group-hover:ring-slate-500/20' },
-  gray: { bg: 'bg-muted text-muted-foreground border border-border/50', iconClass: 'text-muted-foreground', glow: 'group-hover:ring-border' },
+  indigo: { bg: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:bg-indigo-500/20 group-hover:bg-indigo-600 group-hover:text-white', shadow: 'group-hover:shadow-indigo-500/25' },
+  blue: { bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 dark:bg-blue-500/20 group-hover:bg-blue-600 group-hover:text-white', shadow: 'group-hover:shadow-blue-500/25' },
+  green: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20 group-hover:bg-emerald-600 group-hover:text-white', shadow: 'group-hover:shadow-emerald-500/25' },
+  emerald: { bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20 group-hover:bg-emerald-600 group-hover:text-white', shadow: 'group-hover:shadow-emerald-500/25' },
+  sky: { bg: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 dark:bg-sky-500/20 group-hover:bg-sky-600 group-hover:text-white', shadow: 'group-hover:shadow-sky-500/25' },
+  orange: { bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 dark:bg-orange-500/20 group-hover:bg-orange-600 group-hover:text-white', shadow: 'group-hover:shadow-orange-500/25' },
+  amber: { bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 dark:bg-amber-500/20 group-hover:bg-amber-600 group-hover:text-white', shadow: 'group-hover:shadow-amber-500/25' },
+  pink: { bg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 dark:bg-pink-500/20 group-hover:bg-pink-600 group-hover:text-white', shadow: 'group-hover:shadow-pink-500/25' },
+  purple: { bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 dark:bg-purple-500/20 group-hover:bg-purple-600 group-hover:text-white', shadow: 'group-hover:shadow-purple-500/25' },
+  violet: { bg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 dark:bg-violet-500/20 group-hover:bg-violet-600 group-hover:text-white', shadow: 'group-hover:shadow-violet-500/25' },
+  teal: { bg: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 dark:bg-teal-500/20 group-hover:bg-teal-600 group-hover:text-white', shadow: 'group-hover:shadow-teal-500/25' },
+  cyan: { bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 dark:bg-cyan-500/20 group-hover:bg-cyan-600 group-hover:text-white', shadow: 'group-hover:shadow-cyan-500/25' },
+  red: { bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 dark:bg-rose-500/20 group-hover:bg-rose-600 group-hover:text-white', shadow: 'group-hover:shadow-rose-500/25' },
+  rose: { bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 dark:bg-rose-500/20 group-hover:bg-rose-600 group-hover:text-white', shadow: 'group-hover:shadow-rose-500/25' },
+  slate: { bg: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 dark:bg-slate-500/20 group-hover:bg-slate-700 group-hover:text-white', shadow: 'group-hover:shadow-slate-500/25' },
+  gray: { bg: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-slate-800 group-hover:text-white', shadow: 'group-hover:shadow-slate-500/25' },
 };
 
 const DEFAULT_COLOR: TileColor = {
-  bg: 'bg-primary/10 text-primary border border-primary/20',
-  iconClass: 'text-primary',
-  glow: 'group-hover:ring-primary/20',
+  bg: 'bg-primary/10 text-primary dark:bg-primary/20 group-hover:bg-primary group-hover:text-primary-foreground',
+  shadow: 'group-hover:shadow-primary/25',
 };
 
 export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
@@ -55,11 +54,11 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
   const icon = React.isValidElement(app.icon)
     ? React.cloneElement(app.icon as React.ReactElement<{ className?: string; 'aria-hidden'?: boolean }>, {
         'aria-hidden': true,
-        className: 'size-5 sm:size-5.5',
+        className: 'size-6 sm:size-7 transition-transform duration-200 group-hover:scale-110',
       })
     : React.createElement(app.icon as React.ElementType<{ className?: string; 'aria-hidden'?: boolean }>, {
         'aria-hidden': true,
-        className: 'size-5 sm:size-5.5',
+        className: 'size-6 sm:size-7 transition-transform duration-200 group-hover:scale-110',
       });
 
   const handleMouseEnter = () => {
@@ -83,34 +82,29 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
         onMouseEnter={handleMouseEnter}
         onFocus={handleMouseEnter}
         className={cn(
-          "w-full flex items-center gap-3 p-2.5 sm:p-3 rounded-xl cursor-pointer text-start select-none",
-          "border border-border/40 bg-card/60 dark:bg-card/40 backdrop-blur-xs",
-          "transition-all duration-150 ease-out",
-          "hover:bg-card hover:border-border hover:shadow-2xs hover:-translate-y-0.5",
-          "active:scale-[0.985] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+          "w-full flex flex-col items-center justify-start text-center p-2 sm:p-2.5 rounded-2xl cursor-pointer select-none",
+          "border-0 shadow-none bg-transparent",
+          "transition-all duration-200 ease-out",
+          "hover:bg-slate-100/90 dark:hover:bg-slate-800/60 hover:-translate-y-1",
+          "active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         )}
       >
-        {/* Pure Icon Container — Zero Box-in-Box styling */}
+        {/* Apple/Odoo Squircle Icon — Zero Box, Pure Floating Icon */}
         <div
           className={cn(
-            "size-10 sm:size-11 rounded-xl flex items-center justify-center shrink-0 shadow-2xs transition-transform duration-150 group-hover:scale-105",
+            "size-12 sm:size-14 rounded-2xl flex items-center justify-center shrink-0 mb-2 transition-all duration-200",
+            "shadow-xs group-hover:shadow-md",
             colors.bg,
+            colors.shadow,
           )}
         >
           {icon}
         </div>
 
-        {/* Crisp App Name — Clean & Direct (Zero description chatter) */}
-        <div className="min-w-0 flex-1 pl-6 rtl:pl-0 rtl:pr-6">
-          <h3 className="text-xs sm:text-[13px] font-bold text-foreground group-hover:text-primary transition-colors truncate">
-            {appName}
-          </h3>
-          {app.category && app.category !== 'main' && (
-            <span className="text-[10px] font-medium text-muted-foreground/70 truncate block">
-              {t(`appDashboard.category.${app.category}`, { defaultValue: app.category })}
-            </span>
-          )}
-        </div>
+        {/* Clean Typography — Bold, readable, zero description chatter */}
+        <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors text-center line-clamp-2 leading-tight max-w-[105px]">
+          {appName}
+        </span>
       </Link>
 
       {/* Favorite Star Button (Visible on Hover or if Favorited) */}
@@ -121,15 +115,15 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
           aria-pressed={Boolean(isFavorite)}
           aria-label={String(isFavorite ? t('appDashboard.removeFromFavorites') : t('appDashboard.addToFavorites'))}
           className={cn(
-            "absolute top-2.5 z-10 size-7 rounded-lg flex items-center justify-center transition-all",
-            isRtl ? "left-2" : "right-2",
+            "absolute top-1 z-10 size-6 rounded-full flex items-center justify-center transition-all",
+            isRtl ? "left-1" : "right-1",
             isFavorite
               ? "text-amber-500 bg-amber-500/10 opacity-100"
-              : "text-muted-foreground/30 hover:text-amber-500 hover:bg-muted/60 opacity-0 group-hover:opacity-100",
+              : "text-slate-400 hover:text-amber-500 hover:bg-slate-200 dark:hover:bg-slate-700 opacity-0 group-hover:opacity-100",
           )}
           title={String(isFavorite ? t('appDashboard.removeFromFavorites') : t('appDashboard.addToFavorites'))}
         >
-          <Star className={cn("size-3.5", isFavorite && "fill-amber-500")} />
+          <Star className={cn("size-3", isFavorite && "fill-amber-500")} />
         </button>
       )}
     </div>
