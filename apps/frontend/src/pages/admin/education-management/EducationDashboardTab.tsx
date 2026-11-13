@@ -280,7 +280,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                 setActiveDrawer(null);
                 setEnrollmentModal?.({});
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-xs transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               {isEn ? "New Enrollment" : "اشتراك باقة"}
@@ -292,7 +292,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
                 setActiveDrawer(null);
                 setTeacherModal?.({});
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-xs transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               {isEn ? "Add Instructor" : "إضافة مهندس"}
@@ -320,7 +320,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
       </div>
 
       {/* 2. Top Metric Cards */}
-      <div className={`grid grid-cols-2 sm:grid-cols-4 ${enableSubjects ? "lg:grid-cols-4 xl:grid-cols-8" : "lg:grid-cols-3 xl:grid-cols-7"} gap-2.5 sm:gap-3`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-4 ${enableSubjects ? "lg:grid-cols-4 xl:grid-cols-4" : "lg:grid-cols-3 xl:grid-cols-4"} gap-2.5 sm:gap-3`}>
         {[
           ...(enableSubjects
             ? [
