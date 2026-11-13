@@ -150,15 +150,98 @@ const APP_CATALOG_DEFAULTS = {
     fileSizeFormatted: '5 MB',
     releaseNotesAr: 'الإصدار الخفيف لتطبيق عملاء الشحن لمتابعة الطلبات والشحنات.',
     releaseNotesEn: 'Lightweight MaxP Customer & Shipping portal app for order and shipment tracking.'
+  },
+  student: {
+    platform: 'android',
+    app: 'student',
+    appName: 'بوابة الطالب - MaxP',
+    appId: 'online.maxp.student',
+    latestVersion: '1.0.0',
+    latestVersionCode: 1,
+    minRequiredVersion: '1.0.0',
+    minRequiredVersionCode: 1,
+    forceUpdate: false,
+    downloadUrl: 'https://maxp.online/downloads/maxp-parent.apk',
+    directApkUrl: 'https://maxp.online/downloads/maxp-parent.apk',
+    storeUrl: 'https://maxp.online/downloads/maxp-parent.apk',
+    fileSizeBytes: 5242880,
+    fileSizeFormatted: '5 MB',
+    releaseNotesAr: 'الإصدار الخفيف لبوابة الطالب والأكاديمية مع إشعارات الدروس الفورية.',
+    releaseNotesEn: 'Lightweight Student & Academy portal app with instant course notifications.'
+  },
+  doctor: {
+    platform: 'android',
+    app: 'doctor',
+    appName: 'بوابة الطبيب - MaxP',
+    appId: 'online.maxp.doctor',
+    latestVersion: '1.0.0',
+    latestVersionCode: 1,
+    minRequiredVersion: '1.0.0',
+    minRequiredVersionCode: 1,
+    forceUpdate: false,
+    downloadUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    directApkUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    storeUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    fileSizeBytes: 5242880,
+    fileSizeFormatted: '5 MB',
+    releaseNotesAr: 'الإصدار الخفيف لبوابة الطبيب والعيادات لمتابعة الحجوزات والمواعيد.',
+    releaseNotesEn: 'Lightweight Doctor & Clinic portal app for appointments and schedule tracking.'
+  },
+  patient: {
+    platform: 'android',
+    app: 'patient',
+    appName: 'بوابة المريض - MaxP',
+    appId: 'online.maxp.patient',
+    latestVersion: '1.0.0',
+    latestVersionCode: 1,
+    minRequiredVersion: '1.0.0',
+    minRequiredVersionCode: 1,
+    forceUpdate: false,
+    downloadUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    directApkUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    storeUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    fileSizeBytes: 5242880,
+    fileSizeFormatted: '5 MB',
+    releaseNotesAr: 'الإصدار الخفيف لبوابة المرضى لمتابعة الحجوزات والملف الطبي.',
+    releaseNotesEn: 'Lightweight Patient portal app for medical appointments and lab results.'
+  },
+  dental: {
+    platform: 'android',
+    app: 'dental',
+    appName: 'بوابة معامل الأسنان - MaxP',
+    appId: 'online.maxp.dental',
+    latestVersion: '1.0.0',
+    latestVersionCode: 1,
+    minRequiredVersion: '1.0.0',
+    minRequiredVersionCode: 1,
+    forceUpdate: false,
+    downloadUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    directApkUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    storeUrl: 'https://maxp.online/downloads/maxp-portal.apk',
+    fileSizeBytes: 5242880,
+    fileSizeFormatted: '5 MB',
+    releaseNotesAr: 'الإصدار الخفيف لمعامل وأطباء الأسنان لمتابعة استلام وتسليم الحالات.',
+    releaseNotesEn: 'Lightweight Dental Lab portal app for case receipt and delivery tracking.'
   }
 };
 
 const APP_APK_FILENAMES = {
   maxp: 'maxp.apk',
   parent: 'maxp-parent.apk',
+  student: 'maxp-parent.apk',
   portal: 'maxp-portal.apk',
+  doctor: 'maxp-portal.apk',
+  patient: 'maxp-portal.apk',
+  dental: 'maxp-portal.apk',
   courier: 'maxp-courier.apk',
   customer: 'maxp-customer.apk'
+};
+
+const FLAVOR_SOURCE_FALLBACK = {
+  student: 'parent',
+  doctor: 'portal',
+  patient: 'portal',
+  dental: 'portal'
 };
 
 function resolveAppFlavorKey(rawApp) {
@@ -170,24 +253,32 @@ function resolveAppFlavorKey(rawApp) {
 }
 
 function readPublishedAndroidMetadata(appKey) {
-  const metadataFileName = appKey === 'maxp' ? 'latest-android.json' : `latest-android-${appKey}.json`;
-  const candidates = [];
-  if (process.env.MAXP_DOWNLOADS_DIR) {
-    candidates.push(path.join(process.env.MAXP_DOWNLOADS_DIR, metadataFileName));
+  const fallbackKey = FLAVOR_SOURCE_FALLBACK[appKey] || null;
+  const keysToTry = [appKey];
+  if (fallbackKey && !keysToTry.includes(fallbackKey)) {
+    keysToTry.push(fallbackKey);
   }
-  candidates.push(`/var/www/maxp-downloads/${metadataFileName}`);
 
-  for (const metadataPath of candidates) {
-    try {
-      if (fs.existsSync(metadataPath)) {
-        const raw = fs.readFileSync(metadataPath, 'utf8');
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return parsed;
+  for (const k of keysToTry) {
+    const metadataFileName = k === 'maxp' ? 'latest-android.json' : `latest-android-${k}.json`;
+    const candidates = [];
+    if (process.env.MAXP_DOWNLOADS_DIR) {
+      candidates.push(path.join(process.env.MAXP_DOWNLOADS_DIR, metadataFileName));
+    }
+    candidates.push(`/var/www/maxp-downloads/${metadataFileName}`);
+
+    for (const metadataPath of candidates) {
+      try {
+        if (fs.existsSync(metadataPath)) {
+          const raw = fs.readFileSync(metadataPath, 'utf8');
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed;
+          }
         }
+      } catch (err) {
+        console.warn(`⚠️ [APP-VERSION] Failed to read ${metadataPath}:`, err.message);
       }
-    } catch (err) {
-      console.warn(`⚠️ [APP-VERSION] Failed to read ${metadataPath}:`, err.message);
     }
   }
   return null;

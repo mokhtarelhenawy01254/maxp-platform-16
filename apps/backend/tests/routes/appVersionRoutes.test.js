@@ -66,7 +66,11 @@ describe('App Version Routes Integration Tests', () => {
     it('supports multi-app flavors via ?app= and ?flavor= (parent, portal, courier, customer)', async () => {
       const expected = [
         { query: 'app=parent', appId: 'online.maxp.parent', apk: 'maxp-parent.apk', appName: 'بوابة ولي الأمر - MaxP' },
+        { query: 'app=student', appId: 'online.maxp.student', apk: 'maxp-parent.apk', appName: 'بوابة الطالب - MaxP' },
         { query: 'flavor=portal', appId: 'online.maxp.portal', apk: 'maxp-portal.apk', appName: 'بوابات MaxP' },
+        { query: 'app=doctor', appId: 'online.maxp.doctor', apk: 'maxp-portal.apk', appName: 'بوابة الطبيب - MaxP' },
+        { query: 'app=patient', appId: 'online.maxp.patient', apk: 'maxp-portal.apk', appName: 'بوابة المريض - MaxP' },
+        { query: 'app=dental', appId: 'online.maxp.dental', apk: 'maxp-portal.apk', appName: 'بوابة معامل الأسنان - MaxP' },
         { query: 'app=courier', appId: 'online.maxp.courier', apk: 'maxp-courier.apk', appName: 'مندوب ماكس بي' },
         { query: 'flavor=customer', appId: 'online.maxp.customer', apk: 'maxp-customer.apk', appName: 'ماكس بي للشحن والعملاء' },
       ];

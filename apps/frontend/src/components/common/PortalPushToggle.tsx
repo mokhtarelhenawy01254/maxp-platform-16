@@ -18,6 +18,12 @@ export interface PortalPushToggleProps {
   className?: string;
 }
 
+function isIosDevice(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 export const PortalPushToggle: React.FC<PortalPushToggleProps> = ({
   portal,
   accentColor,
@@ -75,7 +81,33 @@ export const PortalPushToggle: React.FC<PortalPushToggleProps> = ({
     };
   }, [syncPushState]);
 
-  if (!supported || !hasToken) return null;
+  if (!supported) {
+    if (hasToken && isIosDevice()) {
+      return (
+        <button
+          type="button"
+          onClick={() =>
+            toast.info(
+              "على أجهزة آيفون (iOS): أضف الصفحة للشاشة الرئيسية (Add to Home Screen) من زر المشاركة في سفاري لتفعيل الإشعارات الفورية.",
+              { duration: 6000 },
+            )
+          }
+          title="لتفعيل الإشعارات على iOS، أضف الصفحة للشاشة الرئيسية"
+          aria-label="تعليمات تفعيل الإشعارات على آيفون"
+          className={cn(
+            "inline-flex min-h-[44px] min-w-[44px] sm:min-w-0 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-background px-3 text-xs font-medium text-muted-foreground hover:bg-muted/50 active:scale-[0.97]",
+            className,
+          )}
+        >
+          <Bell className="size-4 shrink-0 opacity-70" aria-hidden="true" />
+          <span className="hidden sm:inline">إشعارات iOS</span>
+        </button>
+      );
+    }
+    return null;
+  }
+
+  if (!hasToken) return null;
 
   const isDenied = permission === "denied";
   const isActive = subscribed && permission === "granted";

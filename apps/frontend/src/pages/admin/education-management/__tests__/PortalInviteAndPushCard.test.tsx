@@ -40,6 +40,23 @@ describe("PortalInviteAndPushCard", () => {
 
     const fallbackUrl = buildParentPortalInviteUrl(null, "school.example.com/");
     expect(fallbackUrl).toBe("https://school.example.com/portal-connect");
+
+    const dentalUrl = buildParentPortalInviteUrl("al-safwa-lab", undefined, "dental");
+    expect(dentalUrl).toMatch(/\/i\/al-safwa-lab\?portal=dental$/);
+  });
+
+  it("renders dental portal invite URL and title when portal='dental'", () => {
+    render(
+      <PortalInviteAndPushCard
+        portal="dental"
+        companySlug="al-safwa-lab"
+        publicCode="DENT01"
+        pushFirstSaveWhatsApp={true}
+        onTogglePushFirst={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("رابط دعوة طبيب الأسنان وإشعارات المعمل")).toBeInTheDocument();
+    expect(screen.getByText(/\/i\/al-safwa-lab\?portal=dental/)).toBeInTheDocument();
   });
 
   it("renders invite URL, publicCode pill, and QR preview cleanly", () => {

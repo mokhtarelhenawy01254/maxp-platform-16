@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { BellRing, Check, Copy, ExternalLink, Link2 } from "lucide-react";
 
 export interface PortalInviteAndPushCardProps {
+  portal?: string;
+  title?: string;
   companySlug?: string | null;
   publicCode?: string | null;
   customDomain?: string | null;
@@ -13,9 +15,19 @@ export interface PortalInviteAndPushCardProps {
   isEn?: boolean;
 }
 
+const PORTAL_TITLES: Record<string, { ar: string; en: string }> = {
+  parent: { ar: "رابط دعوة ولي الأمر وإشعارات البوابة", en: "Parent Portal Invite & Notifications" },
+  dental: { ar: "رابط دعوة طبيب الأسنان وإشعارات المعمل", en: "Dentist Portal Invite & Notifications" },
+  patient: { ar: "رابط بوابة وحجز المريض وإشعارات العيادة", en: "Patient Portal & Notifications" },
+  doctor: { ar: "رابط بوابة الطبيب وإشعارات المواعيد", en: "Doctor Portal & Notifications" },
+  courier: { ar: "رابط تطبيق ومحطة المندوب", en: "Courier Portal & App Link" },
+  customer: { ar: "رابط حساب العميل ومتابعة الطلبات", en: "Customer Portal & Tracking Link" },
+};
+
 export function buildParentPortalInviteUrl(
   companySlug?: string | null,
   customDomain?: string | null,
+  portal: string = "parent",
 ): string {
   const cleanDomain = customDomain?.trim() || "";
   const origin = cleanDomain
@@ -25,12 +37,15 @@ export function buildParentPortalInviteUrl(
       : "https://maxp.online";
 
   const cleanSlug = companySlug?.trim() || "";
+  const cleanPortal = portal?.trim().toLowerCase() || "parent";
   return cleanSlug
-    ? `${origin}/i/${cleanSlug}?portal=parent`
+    ? `${origin}/i/${cleanSlug}?portal=${encodeURIComponent(cleanPortal)}`
     : `${origin}/portal-connect`;
 }
 
 export const PortalInviteAndPushCard: React.FC<PortalInviteAndPushCardProps> = ({
+  portal = "parent",
+  title,
   companySlug,
   publicCode,
   customDomain,
@@ -43,8 +58,8 @@ export const PortalInviteAndPushCard: React.FC<PortalInviteAndPushCardProps> = (
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inviteUrl = useMemo(
-    () => buildParentPortalInviteUrl(companySlug, customDomain),
-    [companySlug, customDomain],
+    () => buildParentPortalInviteUrl(companySlug, customDomain, portal),
+    [companySlug, customDomain, portal],
   );
 
   useEffect(() => {
@@ -69,20 +84,25 @@ export const PortalInviteAndPushCard: React.FC<PortalInviteAndPushCardProps> = (
   };
 
   const cleanCode = publicCode?.trim() || "";
+  const cardTitle =
+    title?.trim() ||
+    (isEn
+      ? PORTAL_TITLES[portal]?.en || PORTAL_TITLES.parent.en
+      : PORTAL_TITLES[portal]?.ar || PORTAL_TITLES.parent.ar);
   const switchLabel = isEn
     ? "Portal Push-First (Save WhatsApp)"
     : "إشعارات البوابة أولاً (توفير رسائل واتساب)";
 
   return (
     <section
-      aria-label={isEn ? "Parent Portal Invite & Push Settings" : "رابط دعوة ولي الأمر وإشعارات البوابة"}
+      aria-label={cardTitle}
       className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xs"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Link2 className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
           <h3 className="text-xs font-bold text-foreground truncate">
-            {isEn ? "Parent Portal Invite & Notifications" : "رابط دعوة ولي الأمر وإشعارات البوابة"}
+            {cardTitle}
           </h3>
         </div>
         {cleanCode ? (

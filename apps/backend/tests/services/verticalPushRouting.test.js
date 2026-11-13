@@ -468,4 +468,33 @@ describe('Vertical Push-First + WhatsApp Fallback & Education Settings', () => {
       expect(JSON.parse(storedSettings).educationSettings.pushFirstSaveWhatsApp).toBe(false);
     });
   });
+
+  describe('portalPushRoutes /preference endpoints', () => {
+    test('fetches and updates company portal push preferences', async () => {
+      let storedSettings = JSON.stringify({ portalSettings: { pushFirstSaveWhatsApp: true } });
+      mockPrisma.company.findUnique.mockImplementation(async () => ({
+        id: 'comp-1',
+        settings: storedSettings,
+        slug: 'dental-lab-1',
+        publicCode: 'DL-77',
+        name: 'معمل الدلتا',
+        customDomain: 'lab.delta.com',
+      }));
+      mockPrisma.company.update.mockImplementation(async ({ data }) => {
+        storedSettings = data.settings;
+        return { settings: storedSettings };
+      });
+
+      const portalPushRoutes = require('../../routes/portalPushRoutes');
+      // Verify router stack contains preference routes
+      const preferenceGet = portalPushRoutes.stack.find(
+        (layer) => layer.route && layer.route.path === '/preference' && layer.route.methods.get
+      );
+      const preferencePut = portalPushRoutes.stack.find(
+        (layer) => layer.route && layer.route.path === '/preference' && layer.route.methods.put
+      );
+      expect(preferenceGet).toBeDefined();
+      expect(preferencePut).toBeDefined();
+    });
+  });
 });

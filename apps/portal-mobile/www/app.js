@@ -571,6 +571,15 @@
           handleIncomingDeepLink(event.url);
         }
       });
+      appPlugin.addListener('backButton', function (event) {
+        if (event && event.canGoBack) {
+          window.history.back();
+        } else if (window.history && window.history.length > 1 && window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+          window.history.back();
+        } else if (typeof appPlugin.exitApp === 'function') {
+          appPlugin.exitApp();
+        }
+      });
     }
 
     var pushPlugin = getCapPlugin('PushNotifications');

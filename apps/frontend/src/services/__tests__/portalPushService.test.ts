@@ -330,6 +330,29 @@ describe("portalPushService", () => {
     expect(toastInfoSpy).toHaveBeenCalled();
   });
 
+  it("renders iOS hint button on unsupported iOS Safari when portal token is present", async () => {
+    delete (window as unknown as Record<string, unknown>)["Notification"];
+    mockPushManagerGlobal(false);
+    Object.defineProperty(navigator, "serviceWorker", { configurable: true, writable: true, value: undefined });
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      writable: true,
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+    });
+
+    savePortalSession({ role: "parent", companyId: "cmp_swan", token: "parent_tok_123" });
+    const toastInfoSpy = vi.spyOn(toast, "info").mockImplementation(() => "" as never);
+
+    render(React.createElement(PortalPushToggle, { portal: "parent" }));
+    const hintBtn = await screen.findByRole("button", { name: "تعليمات تفعيل الإشعارات على آيفون" });
+    expect(hintBtn).toBeInTheDocument();
+    fireEvent.click(hintBtn);
+    expect(toastInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining("أضف الصفحة للشاشة الرئيسية"),
+      expect.any(Object),
+    );
+  });
+
   it("supports Capacitor native PushNotifications FCM_ANDROID subscribe, check, and unsubscribe without browser Notification/PushManager", async () => {
     delete (window as unknown as Record<string, unknown>)["Notification"];
     mockPushManagerGlobal(false);

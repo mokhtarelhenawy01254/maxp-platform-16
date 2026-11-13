@@ -606,6 +606,94 @@ router.post('/test', authenticateAnyPortalOrStaffToken, async (req, res) => {
   }
 });
 
+router.get('/preference', authenticateAnyPortalOrStaffToken, async (req, res) => {
+  try {
+    const { companyId } = req.portalActor;
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف المؤسسة غير متوفر' });
+
+    const prisma = await getPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, slug: true, publicCode: true, name: true, customDomain: true, settings: true },
+    });
+    if (!company) return res.status(404).json({ success: false, message: 'المؤسسة غير موجودة' });
+
+    let parsed = {};
+    try {
+      parsed = company.settings ? JSON.parse(company.settings) : {};
+    } catch (_) {
+      parsed = {};
+    }
+
+    const pushFirstSaveWhatsApp =
+      typeof parsed?.portalSettings?.pushFirstSaveWhatsApp === 'boolean'
+        ? parsed.portalSettings.pushFirstSaveWhatsApp
+        : parsed?.educationSettings?.pushFirstSaveWhatsApp !== false;
+
+    return res.json({
+      success: true,
+      data: {
+        pushFirstSaveWhatsApp,
+        companySlug: company.slug || null,
+        publicCode: company.publicCode || null,
+        customDomain: company.customDomain || null,
+        companyName: company.name || null,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [PORTAL-PUSH] Preference fetch error:', error);
+    return res.status(500).json({ success: false, message: 'تعذر جلب تفضيل الإشعارات' });
+  }
+});
+
+router.put('/preference', authenticateAnyPortalOrStaffToken, async (req, res) => {
+  try {
+    const { companyId, actorType } = req.portalActor;
+    if (actorType !== 'USER') {
+      return res.status(403).json({ success: false, message: 'تعديل الإعدادات متاح لإدارة المؤسسة فقط' });
+    }
+    if (!companyId) return res.status(400).json({ success: false, message: 'معرف المؤسسة غير متوفر' });
+
+    const { pushFirstSaveWhatsApp } = req.body || {};
+    if (typeof pushFirstSaveWhatsApp !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'قيمة pushFirstSaveWhatsApp يجب أن تكون boolean' });
+    }
+
+    const prisma = await getPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, settings: true },
+    });
+    if (!company) return res.status(404).json({ success: false, message: 'المؤسسة غير موجودة' });
+
+    let parsed = {};
+    try {
+      parsed = company.settings ? JSON.parse(company.settings) : {};
+    } catch (_) {
+      parsed = {};
+    }
+
+    parsed.portalSettings = {
+      ...(parsed.portalSettings || {}),
+      pushFirstSaveWhatsApp,
+    };
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(parsed) },
+    });
+
+    return res.json({
+      success: true,
+      data: { pushFirstSaveWhatsApp },
+      message: 'تم حفظ تفضيل إشعارات البوابة بنجاح',
+    });
+  } catch (error) {
+    console.error('❌ [PORTAL-PUSH] Preference update error:', error);
+    return res.status(500).json({ success: false, message: 'تعذر حفظ تفضيل الإشعارات' });
+  }
+});
+
 module.exports = router;
 module.exports.authenticateAnyPortalOrStaffToken = authenticateAnyPortalOrStaffToken;
 module.exports.resolvePortalTenantHost = resolvePortalTenantHost;
