@@ -46,6 +46,10 @@
     metaThemeColor: document.getElementById('metaThemeColor'),
     offlineBanner: document.getElementById('offlineBanner'),
     retryBtn: document.getElementById('retryBtn'),
+    updateBanner: document.getElementById('updateBanner'),
+    updateTitle: document.getElementById('updateTitle'),
+    updateDownloadLink: document.getElementById('updateDownloadLink'),
+    updateDismissBtn: document.getElementById('updateDismissBtn'),
     savedView: document.getElementById('savedView'),
     savedAvatar: document.getElementById('savedAvatar'),
     savedCodeBadge: document.getElementById('savedCodeBadge'),
@@ -592,6 +596,12 @@
       setOfflineState(true);
     });
 
+    if (els.updateDismissBtn && els.updateBanner) {
+      els.updateDismissBtn.addEventListener('click', function () {
+        els.updateBanner.classList.add('hidden');
+      });
+    }
+
     els.retryBtn.addEventListener('click', function () {
       if (navigator.onLine === false) {
         setOfflineState(true);
@@ -654,10 +664,55 @@
     });
   }
 
+  async function checkAppUpdateNonBlocking() {
+    if (typeof fetch !== 'function' || !els.updateBanner) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+    var currentVersionCode = Number(state.config.versionCode || 1);
+    var appKey = encodeURIComponent(state.config.appKey || 'portal');
+    var url = DEFAULT_API_BASE + '/api/v1/app/version/android?app=' + appKey;
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = controller
+      ? setTimeout(function () {
+          controller.abort();
+        }, 4000)
+      : null;
+
+    try {
+      var opts = {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      };
+      if (controller) opts.signal = controller.signal;
+      var res = await fetch(url, opts);
+      if (!res || !res.ok) return;
+      var json = await res.json();
+      var data = json && json.data && typeof json.data === 'object' ? json.data : json;
+      var latestCode = Number(data && data.latestVersionCode);
+      var downloadUrl = data && typeof data.apkDownloadUrl === 'string' ? data.apkDownloadUrl.trim() : '';
+      if (!Number.isFinite(latestCode) || latestCode <= currentVersionCode) return;
+      if (downloadUrl.indexOf('https://') !== 0) return;
+
+      var verName = data && data.latestVersionName ? String(data.latestVersionName).trim().replace(/^v/i, '') : '';
+      if (els.updateTitle) {
+        els.updateTitle.textContent = verName ? 'تحديث متاح v' + verName : 'تحديث متاح';
+      }
+      if (els.updateDownloadLink) {
+        els.updateDownloadLink.setAttribute('href', downloadUrl);
+      }
+      els.updateBanner.classList.remove('hidden');
+    } catch (_) {
+      // Non-blocking check: silently ignore errors
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async function bootstrap() {
     bindUiEvents();
     setupNativeListeners();
     await loadShellConfig();
+    checkAppUpdateNonBlocking();
 
     if (navigator.onLine === false) {
       setOfflineState(true);

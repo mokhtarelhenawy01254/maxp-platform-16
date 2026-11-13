@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { api, fetchJson, getAuthHeaders } from "./api";
 import { useSidebarSettings } from "../../../contexts/SidebarSettingsContext";
+import { PortalInviteAndPushCard } from "./PortalInviteAndPushCard";
 
 export interface EducationTabConfig {
   id: string;
@@ -52,6 +53,10 @@ export interface EducationSettingsData {
   systemTitleEn: string;
   educationMode?: "COURSES" | "ACADEMIC";
   enableSubjects?: boolean;
+  pushFirstSaveWhatsApp?: boolean;
+  companySlug?: string | null;
+  publicCode?: string | null;
+  customDomain?: string | null;
   tabs: EducationTabConfig[];
 }
 
@@ -179,10 +184,15 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
   const [systemTitleEn, setSystemTitleEn] = useState("Education System");
   const [educationMode, setEducationMode] = useState<"COURSES" | "ACADEMIC">("COURSES");
   const [enableSubjects, setEnableSubjects] = useState<boolean>(false);
+  const [pushFirstSaveWhatsApp, setPushFirstSaveWhatsApp] = useState<boolean>(true);
+  const [companySlug, setCompanySlug] = useState<string | null>(null);
+  const [publicCode, setPublicCode] = useState<string | null>(null);
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [tabs, setTabs] = useState<EducationTabConfig[]>([]);
   const [initialData, setInitialData] = useState<EducationSettingsData | null>(null);
 
   const [savingMode, setSavingMode] = useState<"COURSES" | "ACADEMIC" | null>(null);
+  const [savingPushFirst, setSavingPushFirst] = useState<boolean>(false);
 
   // Load existing settings
   const fetchSettings = async () => {
@@ -196,6 +206,12 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         setEducationMode(mode);
         const subjectsActive = data.enableSubjects !== undefined ? Boolean(data.enableSubjects) : (mode === "ACADEMIC");
         setEnableSubjects(subjectsActive);
+        setPushFirstSaveWhatsApp(
+          data.pushFirstSaveWhatsApp !== undefined ? Boolean(data.pushFirstSaveWhatsApp) : true,
+        );
+        setCompanySlug(data.companySlug ?? null);
+        setPublicCode(data.publicCode ?? null);
+        setCustomDomain(data.customDomain ?? null);
         setTabs(data.tabs || []);
         setInitialData(data);
       }
@@ -227,6 +243,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         systemTitleEn: systemTitleEn.trim(),
         educationMode: mode,
         enableSubjects: subjectsOn,
+        pushFirstSaveWhatsApp,
         tabs: updatedTabs.map((t, idx) => ({
           id: t.id,
           key: t.key,
@@ -262,6 +279,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           systemTitleEn: payload.systemTitleEn,
           educationMode: mode,
           enableSubjects: subjectsOn,
+          pushFirstSaveWhatsApp,
+          companySlug,
+          publicCode,
+          customDomain,
           tabs: payload.tabs as EducationTabConfig[],
         });
       }
@@ -269,6 +290,68 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       toast.error(err.message || (isEn ? "Failed to apply mode change" : "فشل تطبيق وحفظ نمط النظام"));
     } finally {
       setSavingMode(null);
+    }
+  };
+
+  const handleTogglePushFirst = async (next: boolean) => {
+    if (saving || savingMode || savingPushFirst) return;
+    const prev = pushFirstSaveWhatsApp;
+    setPushFirstSaveWhatsApp(next);
+    setSavingPushFirst(true);
+    try {
+      const payload = {
+        systemTitle: systemTitle.trim(),
+        systemTitleEn: systemTitleEn.trim(),
+        educationMode,
+        enableSubjects,
+        pushFirstSaveWhatsApp: next,
+        tabs: tabs.map((t, idx) => ({
+          id: t.id,
+          key: t.key,
+          labelAr: t.labelAr.trim() || t.defaultLabelAr,
+          labelEn: t.labelEn.trim() || t.defaultLabelEn,
+          order: idx,
+          visible: t.id.toLowerCase() === "subjects" ? enableSubjects : (t.locked ? true : t.visible),
+        })),
+      };
+
+      await fetchJson(api("settings"), {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      toast.success(
+        next
+          ? (isEn ? "Portal push-first notifications enabled" : "تم تفعيل إشعارات البوابة أولاً")
+          : (isEn ? "Portal push-first notifications disabled" : "تم إيقاف إشعارات البوابة أولاً")
+      );
+
+      if (refreshSettings) {
+        await refreshSettings();
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("education-settings-updated", { detail: payload }));
+      }
+
+      if (onSaved) {
+        onSaved({
+          systemTitle: payload.systemTitle,
+          systemTitleEn: payload.systemTitleEn,
+          educationMode,
+          enableSubjects,
+          pushFirstSaveWhatsApp: next,
+          companySlug,
+          publicCode,
+          customDomain,
+          tabs: payload.tabs as EducationTabConfig[],
+        });
+      }
+    } catch (err: any) {
+      setPushFirstSaveWhatsApp(prev);
+      toast.error(err.message || (isEn ? "Failed to update notification setting" : "فشل تحديث إعداد الإشعارات"));
+    } finally {
+      setSavingPushFirst(false);
     }
   };
 
@@ -385,6 +468,7 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
         systemTitleEn: systemTitleEn.trim(),
         educationMode,
         enableSubjects,
+        pushFirstSaveWhatsApp,
         tabs: tabs.map((t, idx) => ({
           id: t.id,
           key: t.key,
@@ -416,6 +500,10 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
           systemTitleEn: payload.systemTitleEn,
           educationMode,
           enableSubjects,
+          pushFirstSaveWhatsApp,
+          companySlug,
+          publicCode,
+          customDomain,
           tabs: tabs.map((t, idx) => ({
             ...t,
             order: idx,
@@ -674,6 +762,16 @@ export function EducationSettingsTab({ onSaved }: EducationSettingsTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side (Controls): 8 cols */}
         <div className="lg:col-span-8 space-y-5">
+          <PortalInviteAndPushCard
+            companySlug={companySlug}
+            publicCode={publicCode}
+            customDomain={customDomain}
+            pushFirstSaveWhatsApp={pushFirstSaveWhatsApp}
+            onTogglePushFirst={handleTogglePushFirst}
+            savingPushFirst={savingPushFirst}
+            isEn={isEn}
+          />
+
           {/* System Name Box */}
           <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xs">
             <div className="flex items-center gap-2 border-b border-border/50 pb-3">

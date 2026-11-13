@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { ShoppingBag, FileText, Tag, PlusCircle, Building2 } from 'lucide-react';
+import { PortalPushToggle } from '../../components/common/PortalPushToggle';
 
 export const WholesalePortalHub: React.FC = () => {
   const location = useLocation();
@@ -41,6 +42,7 @@ export const WholesalePortalHub: React.FC = () => {
               </NavLink>
             );
           })}
+          <PortalPushToggle portal="wholesale" className="ms-auto shrink-0" />
         </div>
       </div>
 

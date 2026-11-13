@@ -108,6 +108,7 @@ describe("portalPushService", () => {
     expect(getPortalPushBearerToken("teacher")).toBeNull();
     expect(getPortalPushBearerToken("customer")).toBe("customer_jwt_token");
     expect(getPortalPushBearerToken("wholesale")).toBe("customer_jwt_token");
+    expect(getPortalPushBearerToken("client")).toBe("customer_jwt_token");
   });
 
   it("checks support and converts Base64URL VAPID keys to Uint8Array", () => {

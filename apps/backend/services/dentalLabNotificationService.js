@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { parseSettingValue } = require('../utils/dentalLabHelpers');
+const { tryPushFirstNotification } = require('./portalPushFirstHelper');
 
 const DENTAL_NOTIFICATION_EVENTS = {
   CASE_RECEIVED: 'DENTAL_CASE_RECEIVED',
@@ -231,16 +232,71 @@ async function saveNotificationSchedule(companyId, patch) {
   }
 }
 
-async function sendDentalNotification({ companyId, eventType, caseRow, doctor }) {
+async function sendDentalNotification({ companyId, eventType, caseRow, doctor, forceWhatsApp = false }) {
   try {
     const schedule = await getNotificationSchedule(companyId);
     const event = (Array.isArray(schedule) ? schedule : []).find((s) => s && s.eventType === eventType);
     if (!event || event.enabled === false) return { success: false, reason: 'disabled' };
 
     const phone = (doctor && doctor.phone) || (caseRow && caseRow.doctor && caseRow.doctor.phone);
+    const vars = buildVars(caseRow);
+    const baseTitle = TEMPLATE_NAMES[eventType] || 'إشعار معمل الأسنان';
+    const pushTitle = caseRow?.caseNumber ? `${baseTitle} (${caseRow.caseNumber})` : baseTitle;
+    const pushBody = replaceVariables(DEFAULT_TEMPLATES[eventType] || '', vars);
+
+    const isPatientActor = doctor?.actorType === 'PATIENT';
+    const actorType = isPatientActor ? 'PATIENT' : 'DENTIST';
+    const actorId = isPatientActor
+      ? (doctor?.id || caseRow?.patientId || null)
+      : (doctor?.id || caseRow?.doctorId || null);
+    const portalUrl = isPatientActor ? '/patient-portal' : '/dental-portal';
+
+    const shouldForceWhatsApp = Boolean(
+      forceWhatsApp ||
+      eventType === DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER ||
+      event.activeChannel === 'WHATSAPP'
+    );
+
+    const pushPayload = {
+      companyId,
+      actorType,
+      actorId: actorId ? String(actorId) : null,
+      typeId: eventType,
+      title: pushTitle,
+      body: pushBody,
+      url: portalUrl,
+      data: {
+        eventType,
+        caseId: caseRow?.id || null,
+        caseNumber: caseRow?.caseNumber || null,
+      },
+      tag: caseRow?.id ? `dental:${eventType}:${caseRow.id}` : undefined,
+    };
+
+    if (actorId && !shouldForceWhatsApp) {
+      const pushRes = await tryPushFirstNotification(pushPayload);
+      if (pushRes.pushed) {
+        return {
+          success: true,
+          via: 'PUSH',
+          channel: 'PUSH',
+          deliveredCount: pushRes.deliveredCount,
+          skippedWhatsApp: true,
+        };
+      }
+    } else if (actorId && eventType === DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER) {
+      try {
+        const { sendToPortalActor } = require('./browserPushService');
+        Promise.resolve(sendToPortalActor(pushPayload)).catch((err) =>
+          console.error('[DentalNotification] additive push error:', err?.message || err)
+        );
+      } catch (err) {
+        console.error('[DentalNotification] additive push error:', err?.message || err);
+      }
+    }
+
     if (!phone) return { success: false, reason: 'no_phone' };
 
-    const vars = buildVars(caseRow);
     const prisma = getSharedPrismaClient();
     let stored = null;
     if (prisma && prisma.whatsappNotificationTemplate && typeof prisma.whatsappNotificationTemplate.findFirst === 'function') {
@@ -311,6 +367,8 @@ async function notifyCaseEvent(caseId, eventType) {
             eventType,
             caseRow: ctx.caseRow,
             doctor: {
+              id: ctx.caseRow.patientId || null,
+              actorType: 'PATIENT',
               name: ctx.caseRow.patientName || 'المريض العزيز',
               phone: patientPhone,
             },

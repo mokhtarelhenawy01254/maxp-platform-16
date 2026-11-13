@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { tryPushFirstNotification } = require('./portalPushFirstHelper');
 
 const COURIER_NOTIFICATION_EVENTS = {
   OUT_FOR_DELIVERY: 'courier_out_for_delivery',
@@ -45,6 +46,12 @@ function formatAmount(value) {
   return Number.isFinite(num) ? `${num} ج.م` : '';
 }
 
+const PUSH_TITLES = {
+  [COURIER_NOTIFICATION_EVENTS.OUT_FOR_DELIVERY]: 'طلبك خرج للتوصيل',
+  [COURIER_NOTIFICATION_EVENTS.DELIVERED]: 'تم تسليم طلبك',
+  [COURIER_NOTIFICATION_EVENTS.RETURNED]: 'تعذّر تسليم طلبك',
+};
+
 /**
  * Send a fleet-path customer notification. Fire-and-forget friendly: never throws.
  * Gated by the fleet app settings (notifications.*) on top of the company-wide
@@ -52,7 +59,8 @@ function formatAmount(value) {
  */
 async function sendCourierNotification({ companyId, eventType, order, courier, amount, reason, storeName, otpLine }) {
   try {
-    if (!order?.customerPhone) return { success: false, reason: 'no_phone' };
+    const customerId = order?.customerId || null;
+    if (!order?.customerPhone && !customerId) return { success: false, reason: 'no_phone' };
 
     // Fleet-level toggle (settings/notifications.*) — read fresh per send, cheap query
     const prisma = getSharedPrismaClient();
@@ -75,8 +83,8 @@ async function sendCourierNotification({ companyId, eventType, order, courier, a
     if (!template) return { success: false, reason: 'no_template' };
 
     const vars = {
-      customerName: order.customerName || 'عميلنا العزيز',
-      orderNumber: order.orderNumber || '',
+      customerName: order?.customerName || 'عميلنا العزيز',
+      orderNumber: order?.orderNumber || '',
       courierName: courier?.name || 'مندوب التوصيل',
       courierPhone: courier?.phone || '',
       amount: formatAmount(amount),
@@ -85,6 +93,46 @@ async function sendCourierNotification({ companyId, eventType, order, courier, a
       otpLine: otpLine || ''
     };
     const content = replaceVariables(template, vars);
+
+    const hasOtp = Boolean(otpLine && String(otpLine).trim());
+    const baseTitle = PUSH_TITLES[eventType] || 'تحديث حالة الطلب';
+    const pushTitle = order?.orderNumber ? `${baseTitle} (${order.orderNumber})` : baseTitle;
+    const pushPayload = {
+      companyId,
+      actorType: 'CUSTOMER',
+      actorId: customerId ? String(customerId) : null,
+      typeId: eventType,
+      title: pushTitle,
+      body: content,
+      url: '/customer-portal',
+      data: { eventType, orderId: order?.id || null, orderNumber: order?.orderNumber || null },
+      tag: order?.id ? `courier:${eventType}:${order.id}` : undefined,
+    };
+
+    if (!hasOtp && customerId) {
+      const pushRes = await tryPushFirstNotification(pushPayload);
+      if (pushRes.pushed) {
+        return {
+          success: true,
+          via: 'PUSH',
+          channel: 'PUSH',
+          deliveredCount: pushRes.deliveredCount,
+          skippedWhatsApp: true,
+        };
+      }
+    } else if (hasOtp && customerId) {
+      // OTP delivery MUST ALWAYS go through WhatsApp; fire additive push without blocking
+      try {
+        const { sendToPortalActor } = require('./browserPushService');
+        Promise.resolve(sendToPortalActor(pushPayload)).catch((e) =>
+          console.error('[CourierNotification] additive OTP push failed:', e?.message || e)
+        );
+      } catch (e) {
+        console.error('[CourierNotification] additive OTP push failed:', e?.message || e);
+      }
+    }
+
+    if (!order?.customerPhone) return { success: false, reason: 'no_phone' };
 
     const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
     return await sendNotification({
@@ -123,6 +171,27 @@ function notifyRunDispatched(companyId, { run, shipments, courier, otpByShipment
         ? `🔑 كود الاستلام: ${otp} — اعرضه للكابتن عند استلام الطلب`
         : ''
     }).catch((e) => console.error('[CourierNotification] dispatch notify failed:', e.message));
+  }
+
+  if (courier?.id && (shipments || []).length > 0) {
+    try {
+      const { sendToPortalActor } = require('./browserPushService');
+      Promise.resolve(
+        sendToPortalActor({
+          companyId,
+          actorType: 'COURIER',
+          actorId: String(courier.id),
+          typeId: 'COURIER_RUN_DISPATCHED',
+          title: 'وردية توصيل جديدة',
+          body: `تم إسناد ${shipments.length} شحنة إليك في رحلة التوصيل.`,
+          url: '/courier-portal',
+          data: { runId: run?.id || null, shipmentCount: shipments.length },
+          tag: run?.id ? `courier-run:${run.id}` : undefined,
+        })
+      ).catch((e) => console.error('[CourierNotification] courier run push failed:', e?.message || e));
+    } catch (e) {
+      console.error('[CourierNotification] courier run push failed:', e?.message || e);
+    }
   }
 }
 

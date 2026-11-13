@@ -16,7 +16,7 @@ export type PortalPushActorRole =
   | "student"
   | "customer";
 
-export type PortalPushRole = PortalPushActorRole | "wholesale";
+export type PortalPushRole = PortalPushActorRole | "wholesale" | "client";
 
 export interface PortalPushPublicKeyResult {
   configured: boolean;
@@ -36,7 +36,7 @@ function buildAuthConfig(token: string) {
 
 export function getPortalPushBearerToken(role: PortalPushRole): string | null {
   const token =
-    role === "customer" || role === "wholesale"
+    role === "customer" || role === "wholesale" || role === "client"
       ? tokenManager.getAccessToken()
       : getActivePortalToken(role);
   return typeof token === "string" && token.trim() ? token.trim() : null;

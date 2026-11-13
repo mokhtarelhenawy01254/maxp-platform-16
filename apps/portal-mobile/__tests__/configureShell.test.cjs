@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 
 const {
@@ -120,8 +121,143 @@ test('package.json, capacitor.config.ts, AndroidManifest.xml, and www/app.js sat
   const appJs = fs.readFileSync(path.join(ROOT_DIR, 'www', 'app.js'), 'utf8');
   assert.equal(appJs.includes('maxp_portal_tenant_v1'), true);
   assert.equal(appJs.includes('/api/v1/public/portal/lookup'), true);
+  assert.equal(appJs.includes('/api/v1/app/version/android?app='), true);
+  assert.equal(appJs.includes('checkAppUpdateNonBlocking'), true);
   assert.equal(appJs.includes('appUrlOpen'), true);
   assert.equal(appJs.includes('getLaunchUrl'), true);
+
+  const indexHtml = fs.readFileSync(path.join(ROOT_DIR, 'www', 'index.html'), 'utf8');
+  assert.equal(indexHtml.includes('id="updateBanner"'), true);
+  assert.equal(indexHtml.includes('id="updateDownloadLink"'), true);
+  assert.equal(indexHtml.includes('id="updateDismissBtn"'), true);
+});
+
+function createMockElement(id) {
+  const classes = new Set(
+    id === 'updateBanner' || id === 'offlineBanner' || id === 'savedView' || id === 'statusMsg' || id === 'portalPickerWrap' || id === 'directPrimaryWrap'
+      ? ['hidden']
+      : [],
+  );
+  const attrs = {};
+  const listeners = {};
+  return {
+    id,
+    textContent: '',
+    value: '',
+    disabled: false,
+    innerHTML: '',
+    children: [],
+    parentElement: { classList: { add() {}, remove() {} } },
+    style: { setProperty() {} },
+    classList: {
+      add(c) { classes.add(c); },
+      remove(c) { classes.delete(c); },
+      contains(c) { return classes.has(c); },
+    },
+    setAttribute(k, v) { attrs[k] = String(v); },
+    getAttribute(k) { return attrs[k]; },
+    addEventListener(ev, fn) { (listeners[ev] ||= []).push(fn); },
+    trigger(ev) { (listeners[ev] || []).forEach((fn) => fn({ preventDefault() {} })); },
+    appendChild(child) { this.children.push(child); },
+    focus() {},
+  };
+}
+
+test('www/app.js non-blocking version banner shows on newer https release, dismisses, and ignores errors silently', async () => {
+  const appJs = fs.readFileSync(path.join(ROOT_DIR, 'www', 'app.js'), 'utf8');
+  const sizeBytes = getDirectorySizeBytes(path.join(ROOT_DIR, 'www'));
+  assert.ok(sizeBytes < 80 * 1024, `www/ size (${sizeBytes} B) must stay < 80 KB`);
+
+  async function runScenario(versionResponseImpl) {
+    const ids = [
+      'metaThemeColor', 'offlineBanner', 'retryBtn', 'updateBanner', 'updateTitle',
+      'updateDownloadLink', 'updateDismissBtn', 'savedView', 'savedAvatar', 'savedCodeBadge',
+      'savedTitle', 'savedSubtitle', 'openSavedBtn', 'switchTenantBtn', 'connectView',
+      'flavorBadge', 'appTitle', 'appSubtitle', 'directPrimaryWrap', 'directPrimaryBtn',
+      'lookupForm', 'lookupInput', 'lookupBtn', 'portalPickerWrap', 'portalPills',
+      'statusMsg', 'resultsList', 'directFallbackBtn',
+    ];
+    const elements = Object.fromEntries(ids.map((id) => [id, createMockElement(id)]));
+    const windowObj = {
+      location: { search: '', replace() {} },
+      localStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
+      addEventListener() {},
+      Capacitor: null,
+    };
+    const sandbox = {
+      window: windowObj,
+      document: {
+        title: '',
+        documentElement: { style: { setProperty() {} } },
+        getElementById(id) { return elements[id] || null; },
+        createElement(tag) { return createMockElement(tag); },
+      },
+      navigator: { onLine: true },
+      AbortController,
+      URL,
+      URLSearchParams,
+      setTimeout,
+      clearTimeout,
+      encodeURIComponent,
+      fetch: async (url) => {
+        if (url === 'shell-config.json') {
+          return {
+            ok: true,
+            json: async () => ({
+              flavor: 'portal',
+              appKey: 'portal',
+              versionCode: 1,
+              portals: [{ key: 'parent', label: 'ولي الأمر', loginPath: '/parent/login' }],
+            }),
+          };
+        }
+        if (String(url).includes('/api/v1/app/version/android?app=portal')) {
+          return versionResponseImpl();
+        }
+        throw new Error('Unexpected fetch: ' + url);
+      },
+    };
+    sandbox.window.window = sandbox.window;
+    vm.runInNewContext(appJs, sandbox);
+    await new Promise((r) => setTimeout(r, 30));
+    return elements;
+  }
+
+  // Case 1: newer version with https:// URL shows banner and dismiss button hides it
+  const el1 = await runScenario(async () => ({
+    ok: true,
+    json: async () => ({
+      data: {
+        latestVersionCode: 3,
+        latestVersionName: '1.3.0',
+        apkDownloadUrl: 'https://maxp.online/downloads/portal-v1.3.0.apk',
+      },
+    }),
+  }));
+  assert.equal(el1.updateBanner.classList.contains('hidden'), false);
+  assert.equal(el1.updateTitle.textContent, 'تحديث متاح v1.3.0');
+  assert.equal(el1.updateDownloadLink.getAttribute('href'), 'https://maxp.online/downloads/portal-v1.3.0.apk');
+  el1.updateDismissBtn.trigger('click');
+  assert.equal(el1.updateBanner.classList.contains('hidden'), true);
+
+  // Case 2: network failure silently ignored without touching statusMsg
+  const el2 = await runScenario(async () => {
+    throw new Error('Network down');
+  });
+  assert.equal(el2.updateBanner.classList.contains('hidden'), true);
+  assert.equal(el2.statusMsg.textContent, '');
+  assert.equal(el2.statusMsg.classList.contains('hidden'), true);
+
+  // Case 3: non-https URL rejected silently
+  const el3 = await runScenario(async () => ({
+    ok: true,
+    json: async () => ({
+      latestVersionCode: 5,
+      latestVersionName: '2.0.0',
+      apkDownloadUrl: 'http://insecure.example.com/app.apk',
+    }),
+  }));
+  assert.equal(el3.updateBanner.classList.contains('hidden'), true);
 });
 
 test('CLI configure and --verify work end-to-end', () => {

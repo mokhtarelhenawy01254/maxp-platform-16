@@ -201,7 +201,7 @@ const getSettings = async (req, res) => {
     const prisma = sharedDatabase.getSharedPrismaClient();
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { settings: true }
+      select: { settings: true, slug: true, publicCode: true, name: true, customDomain: true }
     });
 
     if (!company) {
@@ -291,6 +291,11 @@ const getSettings = async (req, res) => {
         systemTitleEn,
         educationMode,
         enableSubjects,
+        pushFirstSaveWhatsApp: savedEducation.pushFirstSaveWhatsApp !== false,
+        companySlug: company.slug || null,
+        publicCode: company.publicCode || null,
+        companyName: company.name || null,
+        customDomain: company.customDomain || null,
         tabs: mergedTabs
       }
     });
@@ -327,7 +332,7 @@ const updateSettings = async (req, res) => {
 
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
-    const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects } = req.body || {};
+    const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects, pushFirstSaveWhatsApp } = req.body || {};
 
     let sanitizedTitle = "النظام التعليمي";
     if (systemTitle !== undefined && systemTitle !== null) {
@@ -360,7 +365,7 @@ const updateSettings = async (req, res) => {
     const prisma = sharedDatabase.getSharedPrismaClient();
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { settings: true }
+      select: { settings: true, slug: true, publicCode: true, name: true, customDomain: true }
     });
 
     if (!company) {
@@ -384,6 +389,10 @@ const updateSettings = async (req, res) => {
       : (enableSubjects !== undefined
         ? Boolean(enableSubjects)
         : (existingEdu.enableSubjects !== undefined ? Boolean(existingEdu.enableSubjects) : true));
+
+    const resolvedPushFirstSaveWhatsApp = typeof pushFirstSaveWhatsApp === 'boolean'
+      ? pushFirstSaveWhatsApp
+      : (existingEdu.pushFirstSaveWhatsApp !== false);
 
     let validatedTabs = [];
     if (Array.isArray(tabs)) {
@@ -459,6 +468,7 @@ const updateSettings = async (req, res) => {
       systemTitleEn: sanitizedTitleEn,
       educationMode: resolvedMode,
       enableSubjects: resolvedEnableSubjects,
+      pushFirstSaveWhatsApp: resolvedPushFirstSaveWhatsApp,
       tabs: validatedTabs
     };
 
@@ -565,6 +575,7 @@ const updateSettings = async (req, res) => {
         systemTitleEn: sanitizedTitleEn,
         educationMode: resolvedMode,
         enableSubjects: resolvedEnableSubjects,
+        pushFirstSaveWhatsApp: resolvedPushFirstSaveWhatsApp,
         tabs: validatedTabs
       },
       message: 'تم حفظ إعدادات النظام التعليمي بنجاح'

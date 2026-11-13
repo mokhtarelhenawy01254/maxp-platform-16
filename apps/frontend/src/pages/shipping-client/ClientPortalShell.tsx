@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { PortalPushToggle } from '../../components/common/PortalPushToggle';
 import { tokenManager } from '../../utils/tokenManager';
 
 const NAV_ITEMS = [
@@ -33,14 +34,17 @@ export default function ClientPortalShell() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col" dir="rtl">
       {/* Top bar */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-2">
         <span className="font-semibold text-gray-900 text-base">بوابة العميل — الشحن</span>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          تسجيل الخروج
-        </button>
+        <div className="flex items-center gap-2">
+          <PortalPushToggle portal="client" />
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            تسجيل الخروج
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">

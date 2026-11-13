@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const { tryPushFirstNotification } = require('./portalPushFirstHelper');
 
 const BOOKING_NOTIFICATION_EVENTS = {
   APPOINTMENT_BOOKED: 'booking_appointment_booked',
@@ -70,21 +71,52 @@ function buildVars(appointment) {
   };
 }
 
-async function sendBookingNotification({ companyId, eventType, appointment, recipientPhone, recipientName }) {
+async function sendBookingNotification({ companyId, eventType, appointment, recipientPhone, recipientName, forceWhatsApp = false }) {
   try {
-    if (!recipientPhone) return { success: false, reason: 'no_phone' };
+    const actorId = appointment?.patientId || null;
+    if (!recipientPhone && !actorId) return { success: false, reason: 'no_phone' };
 
     const template = NOTIFICATION_TEMPLATES[eventType];
     if (!template) return { success: false, reason: 'no_template' };
 
-    const vars = buildVars(appointment);
+    const vars = buildVars(appointment || {});
     const content = replaceVariables(template, vars);
+
+    if (actorId) {
+      const pushTitle = appointment?.serviceName
+        ? `تحديث الموعد: ${appointment.serviceName}`
+        : 'تحديث الموعد';
+      const pushRes = await tryPushFirstNotification({
+        companyId,
+        actorType: 'PATIENT',
+        actorId,
+        typeId: eventType,
+        title: pushTitle,
+        body: content,
+        url: '/patient-portal',
+        data: { eventType, appointmentId: appointment?.id || null },
+        tag: appointment?.id ? `booking:${eventType}:${appointment.id}` : undefined,
+        forceWhatsApp,
+      });
+
+      if (pushRes.pushed) {
+        return {
+          success: true,
+          via: 'PUSH',
+          channel: 'PUSH',
+          deliveredCount: pushRes.deliveredCount,
+          skippedWhatsApp: true,
+        };
+      }
+    }
+
+    if (!recipientPhone) return { success: false, reason: 'no_phone' };
 
     const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
     return await sendNotification({
       companyId,
       recipientPhone,
-      recipientName: recipientName || appointment.customerName || 'عميلنا العزيز',
+      recipientName: recipientName || appointment?.customerName || 'عميلنا العزيز',
       recipientType: 'CUSTOMER',
       category: 'booking',
       eventType,

@@ -64,6 +64,50 @@ body {
   font-size: 13px;
 }
 
+.update-banner {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.update-copy {
+  font-size: 13px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.update-btn {
+  text-decoration: none;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.update-dismiss {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
