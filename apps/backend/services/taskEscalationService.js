@@ -749,6 +749,184 @@ async function getAttentionSummary(companyId, options = {}, prisma = getSharedPr
   };
 }
 
+/**
+ * Build dead tasks report for a company (+7 days overdue, non-terminal).
+ * Read-only: does not modify tasks, dueDate, status, or assignments.
+ *
+ * Recommendation rules (deterministic order, first match wins):
+ * 1. cancel   — overdue > 30 days AND updatedAt > 14 days ago
+ * 2. reassign — assignee has >= 3 dead tasks in this report
+ * 3. extend   — fallback: 1-week extension proposed
+ *
+ * @param {string} companyId
+ * @param {Object} [options]
+ * @param {number} [options.windowDays=7]
+ * @param {Date|string} [options.now]
+ * @param {Object} [prisma]
+ */
+async function buildDeadTasksReport(companyId, options = {}, prisma = getSharedPrismaClient()) {
+  const db = prisma || options.prisma || getSharedPrismaClient();
+  const now = options.now ? new Date(options.now) : new Date();
+  const rawWindow = options.windowDays !== undefined && options.windowDays !== null ? Number(options.windowDays) : 7;
+  const windowDays = Number.isFinite(rawWindow) && rawWindow > 0 ? Math.floor(rawWindow) : 7;
+  const cutoff = new Date(now.getTime() - windowDays * MS_PER_DAY);
+
+  if (!companyId) {
+    return {
+      companyId: null,
+      generatedAt: now,
+      windowDays,
+      total: 0,
+      byRecommendation: { extend: 0, reassign: 0, cancel: 0 },
+      tasks: [],
+    };
+  }
+
+  const tasks = await db.task.findMany({
+    where: {
+      companyId,
+      status: { notIn: TERMINAL_STATUSES },
+      dueDate: { not: null, lt: cutoff },
+    },
+    include: {
+      project: { select: { id: true, name: true } },
+      assignee: { select: { id: true, firstName: true, lastName: true, phone: true } },
+    },
+    orderBy: { dueDate: 'asc' },
+  });
+
+  const assigneeCounts = new Map();
+  for (const t of tasks) {
+    const aId = t.assignedTo || t.assignee?.id;
+    if (aId) {
+      assigneeCounts.set(aId, (assigneeCounts.get(aId) || 0) + 1);
+    }
+  }
+
+  const byRecommendation = {
+    extend: 0,
+    reassign: 0,
+    cancel: 0,
+  };
+
+  const reportTasks = [];
+
+  for (const task of tasks) {
+    const dueMs = new Date(task.dueDate).getTime();
+    const elapsedMs = Math.max(0, now.getTime() - dueMs);
+    const daysOverdue = Math.floor(elapsedMs / MS_PER_DAY);
+
+    const updatedMs = task.updatedAt ? new Date(task.updatedAt).getTime() : dueMs;
+    const daysSinceUpdate = Math.floor(Math.max(0, now.getTime() - updatedMs) / MS_PER_DAY);
+
+    const aId = task.assignedTo || task.assignee?.id;
+    const assigneeDeadCount = aId ? (assigneeCounts.get(aId) || 0) : 0;
+
+    let recommendation = 'extend';
+    let reason = 'تمديد أسبوع مقترح';
+
+    if (daysOverdue > 30 && daysSinceUpdate > 14) {
+      recommendation = 'cancel';
+      reason = `متأخرة ${daysOverdue} يوم بدون تحديث ${daysSinceUpdate} يوم`;
+    } else if (aId && assigneeDeadCount >= 3) {
+      recommendation = 'reassign';
+      reason = `المكلَّف عليه ${assigneeDeadCount} مهام ميتة`;
+    } else {
+      recommendation = 'extend';
+      reason = 'تمديد أسبوع مقترح';
+    }
+
+    byRecommendation[recommendation] += 1;
+
+    reportTasks.push({
+      id: task.id,
+      title: task.title,
+      status: task.status,
+      dueDate: task.dueDate,
+      daysOverdue,
+      escalationLevel: Number(task.escalationLevel || 0),
+      assignee: task.assignee || (task.assignedTo ? { id: task.assignedTo } : null),
+      project: task.project || (task.projectId ? { id: task.projectId } : null),
+      snoozedUntil: task.snoozedUntil || null,
+      recommendation,
+      reason,
+    });
+  }
+
+  return {
+    companyId,
+    generatedAt: now,
+    windowDays,
+    total: reportTasks.length,
+    byRecommendation,
+    tasks: reportTasks,
+  };
+}
+
+/**
+ * Sweep all companies with dead tasks and generate reports.
+ * Logs one summary line per company and returns { companies, totals }.
+ *
+ * @param {Object} [options]
+ * @param {string} [options.companyId]
+ * @param {number} [options.windowDays]
+ * @param {Date|string} [options.now]
+ * @param {Object} [options.prisma]
+ */
+async function runWeeklyDeadTasksReport(options = {}) {
+  const prisma = options.prisma || getSharedPrismaClient();
+  const now = options.now ? new Date(options.now) : new Date();
+  const rawWindow = options.windowDays !== undefined && options.windowDays !== null ? Number(options.windowDays) : 7;
+  const windowDays = Number.isFinite(rawWindow) && rawWindow > 0 ? Math.floor(rawWindow) : 7;
+  const cutoff = new Date(now.getTime() - windowDays * MS_PER_DAY);
+
+  let companyIds = [];
+  if (options.companyId) {
+    companyIds = [options.companyId];
+  } else {
+    try {
+      if (prisma?.task && typeof prisma.task.findMany === 'function') {
+        const rows = await prisma.task.findMany({
+          where: {
+            dueDate: { not: null, lt: cutoff },
+            status: { notIn: TERMINAL_STATUSES },
+          },
+          select: { companyId: true },
+        });
+        companyIds = Array.from(new Set(rows.map((r) => r.companyId).filter(Boolean)));
+      }
+    } catch (error) {
+      console.error('[taskEscalationService.runWeeklyDeadTasksReport] Error finding companies with dead tasks:', error);
+      throw error;
+    }
+  }
+
+  const totals = {
+    total: 0,
+    extend: 0,
+    reassign: 0,
+    cancel: 0,
+  };
+  const companies = [];
+
+  for (const cId of companyIds) {
+    const report = await buildDeadTasksReport(cId, { ...options, now, windowDays }, prisma);
+    console.log(
+      `📋 [DEAD-TASKS-REPORT] Company ${cId}: total=${report.total}, extend=${report.byRecommendation.extend}, reassign=${report.byRecommendation.reassign}, cancel=${report.byRecommendation.cancel}`
+    );
+    companies.push(report);
+    totals.total += report.total;
+    totals.extend += report.byRecommendation.extend;
+    totals.reassign += report.byRecommendation.reassign;
+    totals.cancel += report.byRecommendation.cancel;
+  }
+
+  return {
+    companies,
+    totals,
+  };
+}
+
 module.exports = {
   DEFAULT_ESCALATION_SETTINGS,
   MAX_SNOOZE_DAYS,
@@ -765,4 +943,6 @@ module.exports = {
   runEscalationSweep,
   snoozeTask,
   getAttentionSummary,
+  buildDeadTasksReport,
+  runWeeklyDeadTasksReport,
 };

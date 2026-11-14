@@ -1704,12 +1704,20 @@ try {
   );
 }
 
-// Start Task Overdue Escalation Cron Service (daily 09:00 Africa/Cairo)
+// Start Task Overdue Escalation Cron Service (every 30 mins Africa/Cairo)
 try {
   const { startTaskEscalationScheduler } = require("./cron/taskEscalationCron");
   startTaskEscalationScheduler();
 } catch (error) {
   console.error("❌ [TASK-ESCALATION-CRON] Failed to start task escalation service:", error);
+}
+
+// Start Weekly Dead Tasks Report Scheduler (Mondays 09:00 Africa/Cairo)
+try {
+  const { startDeadTasksReportScheduler } = require("./cron/taskEscalationCron");
+  startDeadTasksReportScheduler();
+} catch (error) {
+  console.error("❌ [TASK-ESCALATION-CRON] Failed to start dead tasks report scheduler:", error);
 }
 
 // Start Recurring Tasks Cron Service

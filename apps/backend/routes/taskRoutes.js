@@ -197,6 +197,7 @@ router.put(
   taskEscalationController.updateSettings,
 );
 router.get("/escalation/attention", taskEscalationController.getAttentionTasks);
+router.get("/escalation/dead-tasks", taskEscalationController.getDeadTasksReport);
 router.post("/:id/snooze", taskEscalationController.snoozeTask);
 
 router.post("/", taskController.createTask);

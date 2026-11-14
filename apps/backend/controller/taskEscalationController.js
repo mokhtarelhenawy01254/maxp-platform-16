@@ -152,6 +152,42 @@ const taskEscalationController = {
       });
     }
   },
+
+  /**
+   * GET /api/v1/tasks/escalation/dead-tasks
+   */
+  getDeadTasksReport: async (req, res) => {
+    try {
+      const companyId = getCompanyIdFromToken(req);
+      if (!companyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'معرف الشركة مفقود في التوكن',
+        });
+      }
+
+      let windowDays = 7;
+      if (req.query?.windowDays !== undefined && req.query?.windowDays !== null && req.query?.windowDays !== '') {
+        const parsed = Number(req.query.windowDays);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          windowDays = Math.min(Math.floor(parsed), 90);
+        }
+      }
+
+      const data = await taskEscalationService.buildDeadTasksReport(companyId, { windowDays });
+      return res.json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error('[taskEscalationController.getDeadTasksReport] Error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'فشل جلب تقرير المهام الميتة',
+        error: error.message,
+      });
+    }
+  },
 };
 
 module.exports = taskEscalationController;
