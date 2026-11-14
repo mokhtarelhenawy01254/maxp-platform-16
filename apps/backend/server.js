@@ -261,6 +261,7 @@ const educationParentPortalRoutes = require("./routes/educationParentPortalRoute
 const educationSettingsRoutes = require("./routes/educationSettingsRoutes");
 const educationLogsRoutes = require("./routes/educationLogsRoutes");
 const educationDemoDayRoutes = require("./routes/educationDemoDayRoutes");
+const educationBranchesRoutes = require("./routes/educationBranchesRoutes");
 const hotelRoutes = require("./routes/hotelRoutes");
 const servicesRoutes = require("./routes/servicesRoutes");
 const serviceOrdersRoutes = require("./routes/serviceOrdersRoutes");
@@ -1231,6 +1232,8 @@ app.use("/api/v1/education/parent-portal", educationParentPortalRoutes);
 app.use("/api/v1/education/settings", educationSettingsRoutes);
 app.use("/api/v1/education/logs", educationLogsRoutes);
 app.use("/api/v1/education/demo-day", educationDemoDayRoutes);
+app.use("/api/v1/education/branches", educationBranchesRoutes);
+app.use("/api/education/branches", educationBranchesRoutes);
 app.use("/api/v1/academy", academyRoutes);
 app.use("/api/v1/hotel", hotelRoutes);
 app.use("/api/v1/services", servicesRoutes);

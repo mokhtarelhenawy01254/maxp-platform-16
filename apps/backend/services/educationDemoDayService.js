@@ -49,7 +49,11 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS "idx_edu_demo_att_demoday" ON "education_demo_attendees"("demoDayId")`,
   `CREATE INDEX IF NOT EXISTS "idx_edu_demo_att_customer" ON "education_demo_attendees"("customerId")`,
   `CREATE INDEX IF NOT EXISTS "idx_edu_demo_att_phone" ON "education_demo_attendees"("phone")`,
-  `CREATE INDEX IF NOT EXISTS "idx_edu_demo_att_status" ON "education_demo_attendees"("attendanceStatus")`
+  `CREATE INDEX IF NOT EXISTS "idx_edu_demo_att_status" ON "education_demo_attendees"("attendanceStatus")`,
+
+  `ALTER TABLE "education_demo_days" ADD COLUMN IF NOT EXISTS "branchId" TEXT;`,
+  `ALTER TABLE "education_demo_days" ADD COLUMN IF NOT EXISTS "classroomId" TEXT;`,
+  `ALTER TABLE "education_demo_days" ADD COLUMN IF NOT EXISTS "googleMapsUrl" TEXT;`
 ];
 
 async function ensureTablesExist(prisma) {

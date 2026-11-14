@@ -22,6 +22,20 @@ const getCompanyId = (req) => {
   return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
 };
 
+const resolveClassroomName = (classroomId, branchClassrooms, fallbackRoom = null) => {
+  if (!classroomId) return fallbackRoom || null;
+  if (branchClassrooms) {
+    try {
+      const rooms = typeof branchClassrooms === 'string' ? JSON.parse(branchClassrooms) : branchClassrooms;
+      if (Array.isArray(rooms)) {
+        const found = rooms.find(r => String(r.id) === String(classroomId));
+        if (found && found.name) return found.name;
+      }
+    } catch (_) {}
+  }
+  return classroomId || fallbackRoom || null;
+};
+
 // 1. Get all demo days with counts
 const getAllDemoDays = async (req, res) => {
   try {
@@ -38,12 +52,19 @@ const getAllDemoDays = async (req, res) => {
         d.*,
         s.name AS "subjectName",
         t.name AS "teacherName",
+        b.name AS "branchName",
+        b.address AS "branchAddress",
+        b.city AS "branchCity",
+        b.phone AS "branchPhone",
+        b.classrooms AS "branchClassrooms",
+        COALESCE(d."googleMapsUrl", b."googleMapsUrl") AS "branchGoogleMapsUrl",
         COALESCE(a.total_attendees, 0)::integer AS "totalAttendees",
         COALESCE(a.attended_count, 0)::integer AS "attendedCount",
         COALESCE(a.converted_count, 0)::integer AS "convertedCount"
       FROM "education_demo_days" d
       LEFT JOIN "education_subjects" s ON s.id = d."subjectId" AND s."companyId" = d."companyId"
       LEFT JOIN "education_teachers" t ON t.id = d."teacherId" AND t."companyId" = d."companyId"
+      LEFT JOIN "branches" b ON b.id = d."branchId" AND b."companyId" = d."companyId"
       LEFT JOIN (
         SELECT 
           "demoDayId",
@@ -74,6 +95,7 @@ const getAllDemoDays = async (req, res) => {
     const demoDays = await prisma.$queryRawUnsafe(query, ...params);
     const sanitized = (demoDays || []).map(d => ({
       ...d,
+      classroomName: resolveClassroomName(d.classroomId, d.branchClassrooms, d.room),
       totalAttendees: Number(d.totalAttendees || 0),
       attendedCount: Number(d.attendedCount || 0),
       convertedCount: Number(d.convertedCount || 0)
@@ -100,16 +122,26 @@ const getDemoDayById = async (req, res) => {
       SELECT 
         d.*,
         s.name AS "subjectName",
-        t.name AS "teacherName"
+        t.name AS "teacherName",
+        b.name AS "branchName",
+        b.address AS "branchAddress",
+        b.city AS "branchCity",
+        b.phone AS "branchPhone",
+        b.classrooms AS "branchClassrooms",
+        COALESCE(d."googleMapsUrl", b."googleMapsUrl") AS "branchGoogleMapsUrl"
       FROM "education_demo_days" d
       LEFT JOIN "education_subjects" s ON s.id = d."subjectId" AND s."companyId" = d."companyId"
       LEFT JOIN "education_teachers" t ON t.id = d."teacherId" AND t."companyId" = d."companyId"
+      LEFT JOIN "branches" b ON b.id = d."branchId" AND b."companyId" = d."companyId"
       WHERE d.id = $1 AND d."companyId" = $2
     `, id, companyId);
 
     if (!demoDays.length) {
       return res.status(404).json({ success: false, error: 'الفعالية غير موجودة' });
     }
+
+    const event = demoDays[0];
+    const classroomName = resolveClassroomName(event.classroomId, event.branchClassrooms, event.room);
 
     const attendees = await prisma.$queryRawUnsafe(`
       SELECT 
@@ -125,7 +157,8 @@ const getDemoDayById = async (req, res) => {
     res.json({
       success: true,
       data: {
-        ...demoDays[0],
+        ...event,
+        classroomName,
         attendees
       }
     });
@@ -152,7 +185,10 @@ const createDemoDay = async (req, res) => {
       meetingLink,
       room,
       capacity,
-      notes
+      notes,
+      branchId,
+      classroomId,
+      googleMapsUrl
     } = req.body;
 
     if (!title || !scheduledAt) {
@@ -168,16 +204,37 @@ const createDemoDay = async (req, res) => {
     const loc = locationType === 'OFFLINE' ? 'OFFLINE' : 'ONLINE';
     const parsedDate = new Date(scheduledAt);
 
+    let finalBranchId = branchId ? String(branchId).trim() : null;
+    let finalClassroomId = classroomId ? String(classroomId).trim() : null;
+    let finalGoogleMapsUrl = googleMapsUrl ? String(googleMapsUrl).trim() : null;
+
+    // If branchId is provided and googleMapsUrl is empty, auto-lookup branch's googleMapsUrl
+    if (finalBranchId && !finalGoogleMapsUrl) {
+      try {
+        const branchRows = await prisma.$queryRawUnsafe(`
+          SELECT "googleMapsUrl" FROM "branches" WHERE id = $1 AND "companyId" = $2
+        `, finalBranchId, companyId);
+        if (branchRows.length > 0 && branchRows[0].googleMapsUrl) {
+          finalGoogleMapsUrl = branchRows[0].googleMapsUrl;
+        }
+      } catch (err) {
+        console.warn('Failed to lookup branch googleMapsUrl on create:', err.message);
+      }
+    }
+
     await prisma.$executeRawUnsafe(`
       INSERT INTO "education_demo_days" (
         "id", "companyId", "title", "description", "subjectId", "teacherId",
         "scheduledAt", "durationMinutes", "locationType", "meetingLink", "room",
-        "capacity", "status", "notes", "createdAt", "updatedAt"
+        "capacity", "status", "notes", "branchId", "classroomId", "googleMapsUrl",
+        "createdAt", "updatedAt"
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'SCHEDULED', $13, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'SCHEDULED', $13,
+        $14, $15, $16, NOW(), NOW()
       )
     `, id, companyId, title.trim(), description || null, subjectId || null, teacherId || null,
-       parsedDate, duration, loc, meetingLink || null, room || null, cap, notes || null);
+       parsedDate, duration, loc, meetingLink || null, room || null, cap, notes || null,
+       finalBranchId, finalClassroomId, finalGoogleMapsUrl);
 
     await logEducationEvent({
       companyId,
@@ -188,7 +245,17 @@ const createDemoDay = async (req, res) => {
       targetName: title
     });
 
-    res.status(201).json({ success: true, data: { id, title, scheduledAt: parsedDate } });
+    res.status(201).json({
+      success: true,
+      data: {
+        id,
+        title,
+        scheduledAt: parsedDate,
+        branchId: finalBranchId,
+        classroomId: finalClassroomId,
+        googleMapsUrl: finalGoogleMapsUrl
+      }
+    });
   } catch (error) {
     console.error('Error in createDemoDay:', error);
     res.status(500).json({ success: false, error: 'فشل إنشاء فعالية الديمو داي' });
@@ -214,15 +281,45 @@ const updateDemoDay = async (req, res) => {
       room,
       capacity,
       status,
-      notes
+      notes,
+      branchId,
+      classroomId,
+      googleMapsUrl
     } = req.body;
 
     const prisma = getSharedPrismaClient();
     await ensureTablesExist(prisma);
 
-    const duration = durationMinutes !== undefined ? parseInt(durationMinutes, 10) : 60;
-    const cap = capacity !== undefined ? parseInt(capacity, 10) : 20;
-    const loc = locationType === 'OFFLINE' ? 'OFFLINE' : 'ONLINE';
+    const existingRows = await prisma.$queryRawUnsafe(`
+      SELECT * FROM "education_demo_days" WHERE id = $1 AND "companyId" = $2
+    `, id, companyId);
+
+    if (!existingRows.length) {
+      return res.status(404).json({ success: false, error: 'الفعالية غير موجودة' });
+    }
+
+    const current = existingRows[0];
+    const duration = durationMinutes !== undefined ? parseInt(durationMinutes, 10) : current.durationMinutes;
+    const cap = capacity !== undefined ? parseInt(capacity, 10) : current.capacity;
+    const loc = locationType !== undefined ? (locationType === 'OFFLINE' ? 'OFFLINE' : 'ONLINE') : current.locationType;
+
+    let finalBranchId = branchId !== undefined ? (branchId ? String(branchId).trim() : null) : current.branchId;
+    let finalClassroomId = classroomId !== undefined ? (classroomId ? String(classroomId).trim() : null) : current.classroomId;
+    let finalGoogleMapsUrl = googleMapsUrl !== undefined ? (googleMapsUrl ? String(googleMapsUrl).trim() : null) : current.googleMapsUrl;
+
+    // If branchId is provided/updated and googleMapsUrl is empty, auto-lookup branch's googleMapsUrl
+    if (finalBranchId && !finalGoogleMapsUrl) {
+      try {
+        const branchRows = await prisma.$queryRawUnsafe(`
+          SELECT "googleMapsUrl" FROM "branches" WHERE id = $1 AND "companyId" = $2
+        `, finalBranchId, companyId);
+        if (branchRows.length > 0 && branchRows[0].googleMapsUrl) {
+          finalGoogleMapsUrl = branchRows[0].googleMapsUrl;
+        }
+      } catch (err) {
+        console.warn('Failed to lookup branch googleMapsUrl on update:', err.message);
+      }
+    }
 
     await prisma.$executeRawUnsafe(`
       UPDATE "education_demo_days"
@@ -239,11 +336,19 @@ const updateDemoDay = async (req, res) => {
         "capacity" = $10,
         "status" = COALESCE($11, "status"),
         "notes" = $12,
+        "branchId" = $13,
+        "classroomId" = $14,
+        "googleMapsUrl" = $15,
         "updatedAt" = NOW()
-      WHERE "id" = $13 AND "companyId" = $14
-    `, title || null, description || null, subjectId || null, teacherId || null,
-       scheduledAt ? new Date(scheduledAt) : null, duration, loc, meetingLink || null,
-       room || null, cap, status || null, notes || null, id, companyId);
+      WHERE "id" = $16 AND "companyId" = $17
+    `, title || null, description !== undefined ? description : current.description,
+       subjectId !== undefined ? subjectId : current.subjectId,
+       teacherId !== undefined ? teacherId : current.teacherId,
+       scheduledAt ? new Date(scheduledAt) : null, duration, loc,
+       meetingLink !== undefined ? meetingLink : current.meetingLink,
+       room !== undefined ? room : current.room, cap, status || null,
+       notes !== undefined ? notes : current.notes,
+       finalBranchId, finalClassroomId, finalGoogleMapsUrl, id, companyId);
 
     await logEducationEvent({
       companyId,
@@ -615,13 +720,22 @@ const getPublicDemoDay = async (req, res) => {
         d."durationMinutes",
         d."locationType",
         d.room,
+        d."branchId",
+        d."classroomId",
         d.capacity,
         d.status,
         c.name AS "companyName",
-        s.name AS "subjectName"
+        s.name AS "subjectName",
+        b.name AS "branchName",
+        b.address AS "branchAddress",
+        b.city AS "branchCity",
+        b.phone AS "branchPhone",
+        b.classrooms AS "branchClassrooms",
+        COALESCE(d."googleMapsUrl", b."googleMapsUrl") AS "branchGoogleMapsUrl"
       FROM "education_demo_days" d
       LEFT JOIN "companies" c ON c.id = d."companyId"
       LEFT JOIN "education_subjects" s ON s.id = d."subjectId" AND s."companyId" = d."companyId"
+      LEFT JOIN "branches" b ON b.id = d."branchId"
       WHERE d.id = $1 AND d.status != 'CANCELLED'
     `, id);
 
@@ -630,6 +744,8 @@ const getPublicDemoDay = async (req, res) => {
     }
 
     const event = demoDays[0];
+    const classroomName = resolveClassroomName(event.classroomId, event.branchClassrooms, event.room);
+
     const counts = await prisma.$queryRawUnsafe(`
       SELECT COUNT(*) AS total FROM "education_demo_attendees" WHERE "demoDayId" = $1
     `, id);
@@ -641,6 +757,7 @@ const getPublicDemoDay = async (req, res) => {
       success: true,
       data: {
         ...event,
+        classroomName,
         registeredCount: registered,
         spotsLeft,
         isFull: spotsLeft <= 0
