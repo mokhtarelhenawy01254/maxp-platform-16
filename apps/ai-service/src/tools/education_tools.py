@@ -35,10 +35,15 @@ async def get_center_info(company_id: str) -> dict[str, Any]:
             except ValueError:
                 continue
             if scheduled_dt >= now_utc:
+                # 2026-11-14 TZ fix: present the slot in Egypt local time — the raw UTC ISO
+                # made the agent say the wrong hour ("2 الظهر" for 16:00 Cairo).
+                from zoneinfo import ZoneInfo
+                cairo_dt = scheduled_dt.astimezone(ZoneInfo("Africa/Cairo"))
                 upcoming_demo_days.append({
                     "id": d.get("id"),
                     "title": d.get("title", ""),
-                    "scheduledAt": scheduled,
+                    "scheduledAt": scheduled_dt.astimezone(timezone.utc).isoformat(),
+                    "scheduledAtCairo": cairo_dt.strftime("%Y-%m-%d %I:%M %p (توقيت مصر)"),
                     "durationMinutes": d.get("durationMinutes", 60),
                     "locationType": d.get("locationType", "ONLINE"),
                     "capacity": d.get("capacity", 20),
