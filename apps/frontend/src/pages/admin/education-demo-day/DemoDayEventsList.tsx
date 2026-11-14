@@ -208,8 +208,10 @@ export function DemoDayEventsList({
                     </>
                   ) : (
                     <>
-                      <MapPin className="w-3 h-3 text-emerald-500" />
-                      <span>{evt.room || (isEn ? "In-Person Center" : "حضوري بالمقر")}</span>
+                      <MapPin className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span className="truncate max-w-[160px]" title={evt.branchName ? `${evt.branchName}${evt.room ? ` - ${evt.room}` : ""}` : (evt.room || "")}>
+                        {evt.branchName ? `${evt.branchName}${evt.room ? ` - ${evt.room}` : ""}` : (evt.room || (isEn ? "In-Person Center" : "حضوري بالمقر"))}
+                      </span>
                     </>
                   )}
                 </span>

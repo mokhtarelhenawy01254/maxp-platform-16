@@ -12,6 +12,9 @@ import {
   School,
   AlertCircle,
   Check,
+  ExternalLink,
+  PhoneCall,
+  Building2,
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 
@@ -162,10 +165,10 @@ export default function EducationPublicDemoPage() {
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-muted/40 border border-border/60 flex items-center gap-2.5">
+            <div className="p-3 rounded-2xl bg-muted/40 border border-border/60 flex items-start gap-2.5">
               {event.locationType === "ONLINE" ? (
                 <>
-                  <Link2 className="w-4 h-4 text-purple-500 shrink-0" />
+                  <Link2 className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
                   <div>
                     <div className="text-[10px] text-muted-foreground font-medium">نوع الحضور</div>
                     <div className="font-bold text-foreground">أونلاين (عبر رابط مباشر)</div>
@@ -173,10 +176,43 @@ export default function EducationPublicDemoPage() {
                 </>
               ) : (
                 <>
-                  <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <div>
-                    <div className="text-[10px] text-muted-foreground font-medium">مكان الحضور</div>
-                    <div className="font-bold text-foreground">{event.room || "مقر الأكاديمية"}</div>
+                  <Building2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-muted-foreground font-medium">مكان الحضور والمقر</div>
+                    <div className="font-bold text-foreground">
+                      {event.branchName || event.room || "مقر الأكاديمية"}
+                      {event.room && event.branchName && (
+                        <span className="text-xs font-normal text-muted-foreground mr-1.5">({event.room})</span>
+                      )}
+                    </div>
+                    {(event.branchAddress || event.branchCity) && (
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span>{[event.branchAddress, event.branchCity].filter(Boolean).join("، ")}</span>
+                      </div>
+                    )}
+                    {event.branchPhone && (
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <PhoneCall className="w-3 h-3 shrink-0 text-primary" />
+                        <a href={`tel:${event.branchPhone}`} className="hover:underline font-mono text-foreground dir-ltr">
+                          {event.branchPhone}
+                        </a>
+                      </div>
+                    )}
+                    {(event.branchGoogleMapsUrl || event.googleMapsUrl) && (
+                      <div className="pt-1">
+                        <a
+                          href={event.branchGoogleMapsUrl || event.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold transition-colors"
+                        >
+                          <MapPin className="w-3 h-3" />
+                          <span>فتح الموقع على خرائط Google</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -203,6 +239,20 @@ export default function EducationPublicDemoPage() {
               <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 شكراً لك. تم حجز مقعدك في اليوم التجريبي وسيصلك تفاصيل الموعد ورابط الدخول عبر رسالة واتساب على رقمك المسجل.
               </p>
+              {event.locationType === "OFFLINE" && (event.branchGoogleMapsUrl || event.googleMapsUrl) && (
+                <div className="pt-2">
+                  <a
+                    href={event.branchGoogleMapsUrl || event.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-xs"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>موقع الفرع على Google Maps</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
             </div>
           ) : event.isFull ? (
             <div className="text-center py-6 space-y-2">

@@ -148,6 +148,18 @@ const DEFAULT_EDUCATION_TABS = [
     iconName: "Presentation"
   },
   {
+    id: "branches",
+    key: "/admin/education/branches",
+    defaultLabelAr: "الفروع والقاعات",
+    defaultLabelEn: "Branches & Rooms",
+    labelAr: "الفروع والقاعات",
+    labelEn: "Branches & Rooms",
+    order: 9.7,
+    visible: true,
+    locked: false,
+    iconName: "Building2"
+  },
+  {
     id: "funnel",
     key: "/admin/education/funnel",
     defaultLabelAr: "الإشعارات والفانل",

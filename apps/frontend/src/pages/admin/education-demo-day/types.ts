@@ -10,6 +10,14 @@ export interface DemoDayEvent {
   locationType: "ONLINE" | "OFFLINE";
   meetingLink?: string | null;
   room?: string | null;
+  branchId?: string | null;
+  classroomId?: string | null;
+  googleMapsUrl?: string | null;
+  branchName?: string | null;
+  branchAddress?: string | null;
+  branchCity?: string | null;
+  branchPhone?: string | null;
+  branchGoogleMapsUrl?: string | null;
   capacity: number;
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   notes?: string | null;

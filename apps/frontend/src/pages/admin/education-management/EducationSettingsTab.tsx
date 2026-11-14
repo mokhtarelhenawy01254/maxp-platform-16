@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Settings,
@@ -9,6 +10,8 @@ import {
   Wand2,
   Presentation,
   Type,
+  Building2,
+  ArrowLeft,
   type LucideIcon,
 } from "lucide-react";
 import { PortalInviteAndPushCard } from "./PortalInviteAndPushCard";
@@ -207,6 +210,34 @@ export function EducationSettingsTab({ onSaved, onDirtyChange }: EducationSettin
                     onCheckedChange={(v) => c.handleToggleDemoDay(Boolean(v))}
                     aria-label={isEn ? "Toggle Demo Day section" : "تبديل تفعيل سيكشن الديمو داي"}
                   />
+                </div>
+              </div>
+            </section>
+
+            {/* 4. Branches & Classrooms Management */}
+            <section className="p-4 sm:p-5 border-b border-border/60">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Building2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-foreground">
+                      {isEn ? "Branches & Training Classrooms" : "فروع ومقرات المركز والقاعات التدريبية"}
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {isEn
+                        ? "Manage physical locations, classroom capacities, and Google Maps links"
+                        : "إدارة الفروع الميدانية، سعة المعامل والقاعات، وروابط خرائط Google المباشرة"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    to="/admin/education/branches"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-xs font-semibold text-foreground transition-all active:scale-[0.98]"
+                  >
+                    <span>{isEn ? "Manage Branches" : "إدارة الفروع والقاعات"}</span>
+                    <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-0 ltr:rotate-180" />
+                  </Link>
                 </div>
               </div>
             </section>

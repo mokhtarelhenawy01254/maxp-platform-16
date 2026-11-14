@@ -215,7 +215,9 @@ const create = async (req, res) => {
       status,
       startDate,
       endDate,
-      notes
+      notes,
+      branchId,
+      classroomId
     } = req.body;
 
     if (!name || !name.trim()) {
@@ -270,12 +272,12 @@ const create = async (req, res) => {
         "id", "companyId", "name", "code", "subjectId", "teacherId", "level",
         "capacity", "feeType", "feeAmount", "teacherRateType", "teacherRateValue",
         "scheduleDays", "startTime", "endTime", "room", "status",
-        "startDate", "endDate", "notes", "createdAt", "updatedAt"
+        "startDate", "endDate", "notes", "branchId", "classroomId", "createdAt", "updatedAt"
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
         $8, $9, $10, $11, $12,
         $13::jsonb, $14, $15, $16, $17,
-        $18, $19, $20, NOW(), NOW()
+        $18, $19, $20, $21, $22, NOW(), NOW()
       )
     `,
       id,
@@ -297,10 +299,12 @@ const create = async (req, res) => {
       status || 'OPEN',
       startDate ? new Date(startDate) : null,
       endDate ? new Date(endDate) : null,
-      notes || null
+      notes || null,
+      branchId ? String(branchId).trim() : null,
+      classroomId ? String(classroomId).trim() : null
     );
 
-    return res.json({ success: true, data: { id, message: 'تم إنشاء المجموعة بنجاح' } });
+    return res.json({ success: true, data: { id, branchId: branchId || null, classroomId: classroomId || null, message: 'تم إنشاء المجموعة بنجاح' } });
   } catch (err) {
     console.error('[EducationGroups] create error:', err);
     return res.status(500).json({ success: false, error: err.message });
@@ -334,7 +338,9 @@ const update = async (req, res) => {
       status,
       startDate,
       endDate,
-      notes
+      notes,
+      branchId,
+      classroomId
     } = req.body;
 
     const daysJson = JSON.stringify(Array.isArray(scheduleDays) ? scheduleDays : []);
