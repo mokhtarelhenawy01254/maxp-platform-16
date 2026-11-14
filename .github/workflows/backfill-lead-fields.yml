@@ -45,7 +45,7 @@ jobs:
           overwrite: true
 
       - name: Execute backfill on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           BACKFILL_MODE: ${{ github.event.inputs.mode }}

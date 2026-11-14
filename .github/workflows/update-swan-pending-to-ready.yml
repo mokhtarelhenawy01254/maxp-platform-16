@@ -47,7 +47,7 @@ jobs:
           overwrite: true
 
       - name: Execute migration script on server
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           COMPANY_SLUG: ${{ github.event.inputs.company_slug }}
           CUTOFF_DATE: ${{ github.event.inputs.cutoff_date }}
