@@ -217,11 +217,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next && busy) return;
-        onOpenChange(next);
-      }}
+      open={isModalOpen}
+      onOpenChange={handleOpenChange}
     >
       <DialogContent
         showCloseButton={!hideClose}
@@ -260,14 +257,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   {title}
                 </DialogTitle>
               )}
-              {description && (
+              {modalDescription && (
                 <DialogDescription
                   className={cn(
                     "text-sm leading-relaxed text-muted-foreground",
                     Icon && "text-center",
                   )}
                 >
-                  {description}
+                  {modalDescription}
                 </DialogDescription>
               )}
             </div>

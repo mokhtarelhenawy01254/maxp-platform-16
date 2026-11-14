@@ -41,14 +41,14 @@ export function usePreparationCarrierDispatch({
     void fetchActiveCarriers();
   }, [fetchActiveCarriers]);
 
-  const handleOpenDispatchModal = useCallback(async () => {
+  const handleOpenDispatchModal = useCallback(() => {
     if (selectedOrders.length === 0) {
       toast.error(t("preparation.page.selectOrderFirst"));
       return;
     }
 
-    await fetchActiveCarriers();
     setShowDispatchModal(true);
+    void fetchActiveCarriers();
   }, [fetchActiveCarriers, selectedOrders, t]);
 
   const handleDispatchToCarrier = useCallback(

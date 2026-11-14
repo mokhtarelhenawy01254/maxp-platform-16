@@ -64,4 +64,22 @@ describe("PreparationBulkActions Component", () => {
     fireEvent.change(select, { target: { value: "IN_PREPARATION" } });
     expect(defaultProps.onBulkStatusChange).toHaveBeenCalledWith("IN_PREPARATION");
   });
+
+  it("triggers onSendToShipping when send to shipping button is clicked", () => {
+    render(<PreparationBulkActions {...defaultProps} />);
+    const shipBtn = screen.getByText("preparation.bulkActions.sendToShipping");
+    fireEvent.click(shipBtn);
+    expect(defaultProps.onSendToShipping).toHaveBeenCalled();
+  });
+
+  it("falls back to onSendToTurbo if onSendToShipping is undefined", () => {
+    const propsWithoutSendToShipping = {
+      ...defaultProps,
+      onSendToShipping: undefined,
+    };
+    render(<PreparationBulkActions {...propsWithoutSendToShipping} />);
+    const shipBtn = screen.getByText("preparation.bulkActions.sendToShipping");
+    fireEvent.click(shipBtn);
+    expect(defaultProps.onSendToTurbo).toHaveBeenCalled();
+  });
 });
