@@ -208,7 +208,7 @@ interface EducationTabDef {
     id: string;
     to: string;
     itemId: string;
-    icon: any;
+    icon: unknown;
     i18nKey: string;
     defaultFallbackAr?: string;
     defaultHidden?: boolean;
