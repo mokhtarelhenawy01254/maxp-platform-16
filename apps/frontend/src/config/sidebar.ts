@@ -470,7 +470,11 @@ const applySidebarOverrides = (
                             ? (savedSec.labelEn || savedSec.labelAr)
                             : (savedSec.labelAr || savedSec.labelEn);
                         if (customLabel) {
-                            customTitle = customLabel;
+                            if (customLabel === 'إعدادات وتخصيص السكاشن' || customLabel === 'Sections & System Settings') {
+                                customTitle = isEn ? 'Education Settings' : (sectionKey === 'settings' ? 'الإعدادات' : 'إعدادات النظام');
+                            } else {
+                                customTitle = customLabel;
+                            }
                         }
                     }
                     if (savedSec.visible === false && !LOCKED_SIDEBAR_KEYS.has(sectionKey)) {
@@ -526,7 +530,11 @@ const applySidebarOverrides = (
                                 ? (savedItem.labelEn || savedItem.labelAr)
                                 : (savedItem.labelAr || savedItem.labelEn);
                             if (customLabel) {
-                                customItemLabel = customLabel;
+                                if (customLabel === 'إعدادات وتخصيص السكاشن' || customLabel === 'Sections & System Settings') {
+                                    customItemLabel = isEn ? 'Education Settings' : 'إعدادات النظام';
+                                } else {
+                                    customItemLabel = customLabel;
+                                }
                             }
                             const isLocked = LOCKED_SIDEBAR_KEYS.has(itemKey) || LOCKED_SIDEBAR_KEYS.has(item.to.toLowerCase());
                             if (savedItem.visible === false && !isLocked) {

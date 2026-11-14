@@ -8,7 +8,7 @@ import type {
 } from "../types/layout";
 
 const USER_SIDEBAR_KEY = "user-sidebar-settings";
-const SESSION_CACHE_PREFIX = "sidebar-session-cache:v1:";
+const SESSION_CACHE_PREFIX = "sidebar-session-cache:v2:";
 const SESSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface CachedSidebarPayload {
