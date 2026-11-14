@@ -319,6 +319,9 @@ model EducationDemoDay {
   description     String?
   subjectId       String?
   teacherId       String?
+  branchId        String?
+  classroomId     String?
+  googleMapsUrl   String?
   scheduledAt     DateTime
   durationMinutes Int      @default(60)
   locationType    String   @default("ONLINE")
@@ -331,6 +334,7 @@ model EducationDemoDay {
   updatedAt       DateTime @updatedAt
 
   @@index([companyId], map: "idx_edu_demo_days_company")
+  @@index([branchId], map: "idx_edu_demo_days_branch")
   @@index([scheduledAt], map: "idx_edu_demo_days_scheduled")
   @@index([status], map: "idx_edu_demo_days_status")
   @@map("education_demo_days")
