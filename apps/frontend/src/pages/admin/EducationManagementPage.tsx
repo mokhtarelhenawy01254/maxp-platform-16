@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { School, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import {
   useEducationManagementController,
   EducationDashboardTab,
@@ -13,11 +13,8 @@ import {
   EducationSettingsTab,
   EducationLogsTab,
   EducationSettingsData,
-  TABS,
 } from "./education-management";
 import { api, fetchJson } from "./education-management/api";
-import type { TabId } from "./education-management/types";
-import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EducationGroupsPage from "./EducationGroupsPage";
 
 export default function EducationManagementPage() {
@@ -86,8 +83,6 @@ export default function EducationManagementPage() {
 
   const [educationSettings, setEducationSettings] = useState<EducationSettingsData | null>(null);
   const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
-  const [settingsDirty, setSettingsDirty] = useState<boolean>(false);
-  const [pendingTabAfterWarning, setPendingTabAfterWarning] = useState<TabId | null>(null);
   const enableSubjects = educationSettings?.enableSubjects ?? false;
 
   useEffect(() => {
@@ -116,75 +111,21 @@ export default function EducationManagementPage() {
     };
   }, []);
 
-  const systemTitle = isEn
-    ? (educationSettings?.systemTitleEn || educationSettings?.systemTitle || t("education.systemTitle", "Education System"))
-    : (educationSettings?.systemTitle || t("education.systemTitle", "القطاع التعليمي"));
-
-  const systemSubtitle = isEn
-    ? (educationSettings?.systemTitleEn || t("education.systemTitleDefault", "Educational Centers & Academies Management"))
-    : (educationSettings?.systemTitle || t("education.systemTitleDefault", "إدارة المراكز والأكاديميات التعليمية"));
-
   return (
     <div
       className={`w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 font-sans ${isEn ? "ltr" : "rtl"}`}
       dir={isEn ? "ltr" : "rtl"}
     >
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/80">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-              <School className="w-3.5 h-3.5" />
-              {systemTitle}
-            </span>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {t("education.totalStudentsCount", { count: stats.totalStudents, defaultValue: isEn ? `${stats.totalStudents} enrolled students` : `${stats.totalStudents} طالب مسجل` })}
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            {systemSubtitle}
-          </h1>
-        </div>
-      </div>
-
-      {/* Education In-Page Navigation Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-border/60">
-        {TABS.filter((tab) => {
-          if (tab.id === "subjects" && !enableSubjects) return false;
-          return true;
-        }).map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                if (settingsDirty && tab.id !== activeTab) {
-                  setPendingTabAfterWarning(tab.id);
-                  return;
-                }
-                setActiveTab(tab.id);
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {isEn ? (tab.id === "dashboard" ? "Dashboard" : tab.id === "subjects" ? "Subjects" : tab.id === "packages" ? "Packages" : tab.id === "groups" ? "Groups" : tab.id === "students" ? "Students" : tab.id === "teachers" ? "Instructors" : tab.id === "enrollments" ? "Enrollments" : tab.id === "sessions" ? "Sessions" : tab.id === "settings" ? "Settings" : "Logs") : tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Sub-navigation lives exclusively in the central sidebar (sidebar.ts education section) —
+          in-page tab bar removed per Ban Duplicate In-Page Navigation rule.
+          NOTE: sidebar navigation keeps this component mounted (same catch-all route),
+          so unsaved settings edits persist across tab switches. */}
 
       {activeTab === "settings" ? (
         <EducationSettingsTab
           onSaved={(updated) => {
             setEducationSettings(updated);
           }}
-          onDirtyChange={setSettingsDirty}
         />
       ) : activeTab === "logs" ? (
         <EducationLogsTab />
@@ -360,27 +301,6 @@ export default function EducationManagementPage() {
           )}
         </>
       )}
-
-      {/* Guard: leaving settings with unsaved edits */}
-      <ConfirmDialog
-        open={pendingTabAfterWarning !== null}
-        title={isEn ? "Leave with unsaved changes?" : "الخروج بتعديلات غير محفوظة؟"}
-        content={
-          isEn
-            ? "You have unsaved edits in the settings tab. Leaving now discards them — you can save from the sticky bar first."
-            : "لديك تعديلات غير محفوظة في تاب الإعدادات — الخروج الآن سيضيعها. يمكنك حفظها من الشريط السفلي أولًا."
-        }
-        confirmLabel={isEn ? "Leave without saving" : "خروج بدون حفظ"}
-        cancelLabel={isEn ? "Stay" : "ابقَ هنا"}
-        confirmColor="warning"
-        onConfirm={() => {
-          const target = pendingTabAfterWarning;
-          setPendingTabAfterWarning(null);
-          setSettingsDirty(false);
-          if (target) setActiveTab(target);
-        }}
-        onCancel={() => setPendingTabAfterWarning(null)}
-      />
     </div>
   );
 }
