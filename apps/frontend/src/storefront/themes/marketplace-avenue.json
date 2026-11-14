@@ -635,10 +635,10 @@
             "latestTitle": "Latest products",
             "tabsTitle": "Featured products",
             "promoBadge": "Limited time",
-            "promoTitle": "Get discount on PS5 games",
-            "promoText": "S.T.A.L.K.E.R. 2 / Horizon Zero Dawn / Mafia / Cyberpunk 2077",
-            "promoImage": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
-            "promoLink": "/sale",
+            "promoTitle": "Special Deals on Home Appliances & Heaters",
+            "promoText": "Handpicked selection of home essentials with official warranty and fast shipping",
+            "promoImage": "",
+            "promoLink": "/shop",
             "appliancesTitle": "Top 100 appliances"
           }
         },

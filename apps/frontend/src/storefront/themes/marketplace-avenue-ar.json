@@ -1065,35 +1065,35 @@
             "latestTitle": "أحدث المنتجات",
             "tabsTitle": "منتجات مميزة",
             "promoBadge": "لفترة محدودة",
-            "promoTitle": "خصم خاص على ألعاب وإكسسوارات PS5",
-            "promoText": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
-            "promoImage": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80",
-            "promoLink": "/sale",
+            "promoTitle": "خصم خاص على الدفايات والأجهزة المنزلية",
+            "promoText": "تشكيلة مختارة من أقوى أجهزة التدفئة والأجهزة المنزلية بخصومات حصرية وضمان رسمي",
+            "promoImage": "",
+            "promoLink": "/shop",
             "appliancesTitle": "أقوى عروض الأجهزة المنزلية",
             "i18n": {
               "en": {
-                "bannerEyebrow": "Audio Tech",
-                "bannerTitle": "Crystal Clear Immersive Sound",
+                "bannerEyebrow": "Home Appliances",
+                "bannerTitle": "Premium Kitchen & Home Essentials",
                 "articlesTitle": "Latest Guides & Articles",
                 "articles": [
                   {
-                    "title": "Best Laptops for Gaming & Work",
+                    "title": "How to Choose the Right Pressure Cooker Size",
                     "date": "November 2026"
                   },
                   {
-                    "title": "How to Choose the Best Home Audio System",
+                    "title": "Top Energy-Efficient Room Heaters for Winter",
                     "date": "November 2026"
                   },
                   {
-                    "title": "Mechanical Keyboards Buyer's Guide",
+                    "title": "Essential Care Tips for Kitchenware & Cookware",
                     "date": "November 2026"
                   }
                 ],
                 "latestTitle": "Latest Products",
                 "tabsTitle": "Featured Products",
                 "promoBadge": "Limited Time",
-                "promoTitle": "Special Discount on PS5 Games & Gear",
-                "promoText": "S.T.A.L.K.E.R. 2 · Horizon Zero Dawn · Mafia · Cyberpunk 2077",
+                "promoTitle": "Special Deals on Home Appliances & Heaters",
+                "promoText": "Handpicked selection of home essentials with official warranty and fast shipping",
                 "appliancesTitle": "Top Home Appliances Deals"
               }
             }

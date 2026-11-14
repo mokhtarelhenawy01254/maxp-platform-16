@@ -152,7 +152,155 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
       ? (settings?.bannerLink || '/shop')
       : (featuredBannerProduct ? `/product/${(featuredBannerProduct as any).slug || (featuredBannerProduct as any).id}` : (settings?.bannerLink || '/shop')),
   };
-  const articles = (settings?.articles || []).slice(0, 3);
+
+  const promoProduct = useMemo(() => {
+    const list = controller.filteredProducts || [];
+    const nonBannerProducts = featuredBannerProduct
+      ? list.filter((p: any) => p.id !== (featuredBannerProduct as any).id)
+      : list;
+
+    // 1. Prefer featured product with discount
+    const discountedFeatured = nonBannerProducts.find((p: any) => {
+      const comp = compareValue(p);
+      const pr = priceValue(p);
+      return p.isFeatured && comp > pr && pr > 0;
+    });
+    if (discountedFeatured) return discountedFeatured;
+
+    // 2. Prefer any other featured product
+    const anyFeatured = nonBannerProducts.find((p: any) => p.isFeatured);
+    if (anyFeatured) return anyFeatured;
+
+    // 3. Prefer product with highest discount
+    const sortedByDiscount = [...nonBannerProducts].sort((a, b) => {
+      const compA = compareValue(a);
+      const prA = priceValue(a);
+      const discA = compA > prA && prA > 0 ? (compA - prA) / compA : 0;
+      const compB = compareValue(b);
+      const prB = priceValue(b);
+      const discB = compB > prB && prB > 0 ? (compB - prB) / compB : 0;
+      if (discB !== discA) return discB - discA;
+      return prB - prA;
+    });
+    if (sortedByDiscount.length > 0 && compareValue(sortedByDiscount[0]) > priceValue(sortedByDiscount[0])) {
+      return sortedByDiscount[0];
+    }
+
+    return nonBannerProducts[0] || list[0] || null;
+  }, [controller.filteredProducts, featuredBannerProduct]);
+
+  const rawPromoImage = settings?.promoImage || '';
+  const hasCustomPromo = rawPromoImage && !isStorefrontDemoImage(rawPromoImage);
+
+  const promoDiscountPercent = useMemo(() => {
+    if (!promoProduct) return 0;
+    const comp = compareValue(promoProduct);
+    const pr = priceValue(promoProduct);
+    return comp > pr && pr > 0 ? Math.round(((comp - pr) / comp) * 100) : 0;
+  }, [promoProduct]);
+
+  const promo = {
+    badge: hasCustomPromo
+      ? (settings?.promoBadge || (isRtl ? 'لفترة محدودة' : 'Limited Time'))
+      : (promoDiscountPercent > 0
+          ? (isRtl ? `وفر ${promoDiscountPercent}% لفترة محدودة` : `Save ${promoDiscountPercent}% Limited Time`)
+          : (settings?.promoBadge || (isRtl ? 'عرض خاص' : 'Special Offer'))),
+    title: hasCustomPromo
+      ? (settings?.promoTitle || (isRtl ? 'خصومات وعروض مميزة' : 'Special Deals & Offers'))
+      : (promoProduct?.name || settings?.promoTitle || (isRtl ? 'أقوى العروض الحصرية' : 'Exclusive Deal')),
+    text: hasCustomPromo
+      ? settings?.promoText
+      : (promoProduct
+          ? (isRtl
+              ? `منتج أصلي مع ضمان معتمد، شحن سريع لكل المحافظات والدفع عند الاستلام. اطلب الآن!`
+              : `Original verified product with full warranty, fast shipping and cash on delivery. Order now!`)
+          : settings?.promoText),
+    image: hasCustomPromo
+      ? rawPromoImage
+      : (promoProduct ? getPrimaryProductImage(promoProduct) : '') || rawPromoImage,
+    link: hasCustomPromo
+      ? (settings?.promoLink || '/sale')
+      : (promoProduct ? `/product/${(promoProduct as any).slug || (promoProduct as any).id}` : (settings?.promoLink || '/sale')),
+  };
+
+  const resolvedArticles = useMemo(() => {
+    const rawArticles = (settings?.articles || []).slice(0, 3);
+    const hasCustomArticles = rawArticles.some((a) => a.image && !isStorefrontDemoImage(a.image));
+    if (hasCustomArticles && rawArticles.length > 0) {
+      return rawArticles;
+    }
+
+    // Dynamic fallback using merchant's real products that have live uploaded imagery
+    const all = controller.filteredProducts || [];
+    const validProducts = all.filter((p: any) => {
+      const img = getPrimaryProductImage(p);
+      return img && !isStorefrontDemoImage(img);
+    });
+
+    if (validProducts.length === 0) {
+      return rawArticles;
+    }
+
+    const articlePresetsAr = [
+      {
+        titleTemplate: (name: string) => `دليل ومواصفات: ${name}`,
+        fallbackTitle: 'دليل اختيار سعة ومواصفات حلة الضغط المناسبة',
+        meta: 'أجهزة المطبخ · مواصفات وجودة',
+      },
+      {
+        titleTemplate: (name: string) => `كل ما تحتاج معرفته عن: ${name}`,
+        fallbackTitle: 'كيف تختار الدفاية الكهربائية الأكثر كفاءة وأماناً',
+        meta: 'تدفئة المنزل · إرشادات الأمان',
+      },
+      {
+        titleTemplate: (name: string) => `نصائح الاستخدام والعناية: ${name}`,
+        fallbackTitle: 'نصائح الحفاظ على الأجهزة المنزلية لتدوم طويلاً',
+        meta: 'البيت والمطبخ · نصائح وضمان',
+      },
+    ];
+
+    const articlePresetsEn = [
+      {
+        titleTemplate: (name: string) => `Buyer's Guide & Specs: ${name}`,
+        fallbackTitle: 'How to Choose the Right Pressure Cooker Size & Specs',
+        meta: 'Kitchen Appliances · Specifications',
+      },
+      {
+        titleTemplate: (name: string) => `Everything You Need to Know: ${name}`,
+        fallbackTitle: 'How to Choose the Most Efficient & Safe Electric Heater',
+        meta: 'Home Heating · Safety & Care',
+      },
+      {
+        titleTemplate: (name: string) => `Usage & Longevity Tips: ${name}`,
+        fallbackTitle: 'Essential Maintenance Tips for Home & Kitchen Essentials',
+        meta: 'Home & Kitchen · Quality & Warranty',
+      },
+    ];
+
+    const presets = isRtl ? articlePresetsAr : articlePresetsEn;
+    const nowMonth = new Date().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' });
+
+    const step = Math.max(1, Math.floor(validProducts.length / 3));
+    const pickedProducts = [
+      validProducts[0],
+      validProducts[Math.min(1 * step, validProducts.length - 1)],
+      validProducts[Math.min(2 * step, validProducts.length - 1)],
+    ];
+
+    return pickedProducts.map((p, idx) => {
+      const preset = presets[idx] || presets[0];
+      const pName = p?.name ? (p.name.length > 50 ? `${p.name.slice(0, 47)}...` : p.name) : '';
+      const catName = (p as any)?.category?.name;
+      return {
+        title: pName ? preset.titleTemplate(pName) : preset.fallbackTitle,
+        date: nowMonth,
+        meta: catName ? `${catName} · ${isRtl ? 'دليل الشراء' : "Buyer's Guide"}` : preset.meta,
+        image: getPrimaryProductImage(p),
+        link: p ? `/product/${(p as any).slug || (p as any).id}` : '/shop',
+      };
+    });
+  }, [settings?.articles, controller.filteredProducts, isRtl]);
+
   const tabsTitle = settings?.tabsTitle || (isRtl ? 'منتجات مميزة' : 'Featured Products');
   const cartProps = {
     styleOverrides: controller.shopProductCardStyleOverrides,
@@ -192,13 +340,13 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
               </span>
             </a>
 
-            {articles.length > 0 ? (
+            {resolvedArticles.length > 0 ? (
               <div className="border-t border-[#e7e7e7] pt-4">
                 <h2 className="mb-3 font-heading text-[16px] font-semibold text-[#333333]">
-                  {settings?.articlesTitle || (isRtl ? 'أحدث المقالات' : 'Latest Articles')}
+                  {settings?.articlesTitle || (isRtl ? 'أحدث المقالات والنصائح' : 'Latest Guides & Articles')}
                 </h2>
                 <div className="flex flex-col">
-                  {articles.map((article, index) => (
+                  {resolvedArticles.map((article, index) => (
                     <a
                       key={`${article.title}-${index}`}
                       href={scoped(article.link || '/shop')}
@@ -295,25 +443,27 @@ export const MarketplaceMagazine: React.FC<MagazineProps> = ({ section, settings
             </div>
 
             <a
-              href={scoped(settings?.promoLink || '/sale')}
+              href={scoped(promo.link)}
               className="group relative flex min-h-[220px] items-center overflow-hidden rounded-[20px] bg-[#1f1f1f] px-6 py-6 text-white lg:min-h-[260px]"
             >
-              {settings?.promoImage ? (
+              {promo.image ? (
                 <img
-                  src={settings.promoImage}
-                  alt={settings?.promoTitle || ''}
+                  src={promo.image}
+                  alt={promo.title || ''}
                   loading="lazy"
                   className="absolute inset-0 h-full w-full object-cover opacity-45 transition-transform duration-700 group-hover:scale-105"
                 />
               ) : null}
               <span className="relative flex flex-col items-start gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
-                  {settings?.promoBadge || (isRtl ? 'لفترة محدودة' : 'Limited Time')}
+                  {promo.badge}
                 </span>
                 <span className="font-heading text-[24px] font-semibold leading-tight lg:text-[32px]">
-                  {settings?.promoTitle || (isRtl ? 'خصم على ألعاب PS5' : 'Special Deals & Gaming')}
+                  {promo.title}
                 </span>
-                <span className="max-w-md text-[12px] leading-6 text-white/75">{settings?.promoText}</span>
+                {promo.text ? (
+                  <span className="max-w-md text-[12px] leading-6 text-white/75">{promo.text}</span>
+                ) : null}
                 <span className="mt-2 inline-flex h-[36px] items-center justify-center rounded-[35px] bg-white px-5 text-[12px] font-semibold text-[#333333] transition-colors hover:bg-[#333333] hover:text-white">
                   {isRtl ? 'اشترِ الآن' : 'Buy Now'}
                 </span>
