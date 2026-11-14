@@ -270,7 +270,7 @@ jobs:
           done
 
       - name: Upload Portal APK Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MaxP-Portal-APKs-${{ github.event.inputs.flavor || 'all' }}-${{ github.event.inputs.build_type || 'release' }}-${{ github.run_number }}
           path: dist-apks/
