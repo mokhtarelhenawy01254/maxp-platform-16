@@ -178,17 +178,25 @@ export function useFacebookInboxSocket({
       channel?: string;
       aiEnabled: boolean;
       aiPausedUntil?: string | null;
+      aiStatusHierarchy?: any;
     }) => {
       if (data?.conversationId) {
         updateConversationInList(data.conversationId, {
           aiEnabled: data.aiEnabled,
           aiPausedUntil:
             data.aiPausedUntil ?? (data.aiEnabled ? null : undefined),
+          ...(data.aiStatusHierarchy ? { aiStatusHierarchy: data.aiStatusHierarchy } : {}),
         });
       }
     };
 
     socket.on('conversation:ai_status_changed', handleAiStatusChanged);
+
+    const handleGlobalAiStatusChanged = () => {
+      debouncedLoadConversations();
+    };
+
+    socket.on('agent:global_ai_status_changed', handleGlobalAiStatusChanged);
 
     const handleMessageUpdated = (data: {
       id: string;
@@ -243,6 +251,7 @@ export function useFacebookInboxSocket({
       socket.off('messages_read', handleMessagesRead);
       socket.off('message_reaction_updated', handleReactionUpdated);
       socket.off('conversation:ai_status_changed', handleAiStatusChanged);
+      socket.off('agent:global_ai_status_changed', handleGlobalAiStatusChanged);
       socket.off('message_updated', handleMessageUpdated);
     };
   }, [

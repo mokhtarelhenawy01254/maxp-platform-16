@@ -168,35 +168,45 @@ export const UnifiedChatHeader: React.FC<UnifiedChatHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onToggleAi}
-              className="business-chip-button"
-              style={{
-                background:
-                  selectedConversation.aiEnabled !== false
-                    ? 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))'
-                    : 'none',
-                color:
-                  selectedConversation.aiEnabled !== false
-                    ? 'var(--color-primary)'
-                    : 'var(--color-muted-foreground)',
-              }}
-              title={
-                selectedConversation.aiEnabled !== false
-                  ? t(
-                      'unifiedInbox.aiToggleOn',
-                      'الرد الذكي مفعّل (اضغط للإيقاف)',
-                    )
-                  : t(
-                      'unifiedInbox.aiToggleOff',
-                      'الرد الذكي متوقف (تدخل بشري - اضغط لإعادة التفعيل)',
-                    )
+            {(() => {
+              const hierarchy = (selectedConversation as any).aiStatusHierarchy;
+              const isMasterDisabled = hierarchy
+                ? (!hierarchy.masterAutoReplyEnabled || hierarchy.masterAgentPaused || !hierarchy.hasActiveAiKey)
+                : false;
+              const isAiEffectivelyActive = hierarchy
+                ? hierarchy.isEffectiveActive
+                : selectedConversation.aiEnabled !== false;
+
+              let btnBg = 'none';
+              let btnColor = 'var(--color-muted-foreground)';
+              let btnTitle = t('unifiedInbox.aiToggleOff', 'الرد الذكي متوقف (تدخل بشري - اضغط لإعادة التفعيل)');
+
+              if (isMasterDisabled) {
+                btnBg = 'color-mix(in srgb, var(--color-destructive, #ef4444) 12%, var(--color-background))';
+                btnColor = 'var(--color-destructive, #ef4444)';
+                btnTitle = t('unifiedInbox.masterAiDisabled', 'الذكاء الاصطناعي معطل من الإعدادات الرئيسية — مطلوب رد يدوي');
+              } else if (isAiEffectivelyActive) {
+                btnBg = 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))';
+                btnColor = 'var(--color-primary)';
+                btnTitle = t('unifiedInbox.aiToggleOn', 'الرد الذكي مفعّل (اضغط للإيقاف)');
               }
-              aria-label="AI Assistant Toggle"
-            >
-              <CpuChipIcon className="w-5 h-5" aria-hidden="true" />
-            </button>
+
+              return (
+                <button
+                  type="button"
+                  onClick={onToggleAi}
+                  className="business-chip-button"
+                  style={{
+                    background: btnBg,
+                    color: btnColor,
+                  }}
+                  title={btnTitle}
+                  aria-label="AI Assistant Toggle"
+                >
+                  <CpuChipIcon className="w-5 h-5" aria-hidden="true" />
+                </button>
+              );
+            })()}
             <button
               type="button"
               onClick={onOpenQuickOrder}

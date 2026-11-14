@@ -42,6 +42,7 @@ interface FacebookChatHeaderDesktopMenuProps {
   showDesktopMoreMenu: boolean;
   setShowDesktopMoreMenu: React.Dispatch<React.SetStateAction<boolean>>;
   isAiActive: boolean;
+  isMasterAiDisabled?: boolean;
   onToggleAi: () => void;
   primaryAction?: InboxVerticalAction;
   availableActions?: InboxVerticalAction[];
@@ -60,6 +61,7 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
   showDesktopMoreMenu,
   setShowDesktopMoreMenu,
   isAiActive,
+  isMasterAiDisabled = false,
   onToggleAi,
   primaryAction,
   availableActions,
@@ -121,13 +123,19 @@ export const FacebookChatHeaderDesktopMenu: React.FC<FacebookChatHeaderDesktopMe
             >
               <Bot
                 className={`h-4 w-4 ${
-                  isAiActive ? 'text-amber-500' : 'text-emerald-500'
+                  isMasterAiDisabled
+                    ? 'text-rose-500'
+                    : isAiActive
+                      ? 'text-amber-500'
+                      : 'text-emerald-500'
                 }`}
               />
               <span>
-                {isAiActive
-                  ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-                  : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')}
+                {isMasterAiDisabled
+                  ? t('facebookInbox.masterAiDisabled', 'الذكاء الاصطناعي معطل رئيسياً')
+                  : isAiActive
+                    ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
+                    : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')}
               </span>
             </button>
 

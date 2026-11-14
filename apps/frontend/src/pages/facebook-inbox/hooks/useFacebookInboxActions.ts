@@ -230,13 +230,19 @@ export function useFacebookInboxActions({
     }
   }, [selectedConversation, companyId, togglePriority, activeTab, debouncedLoadConversations]);
 
-  // AI Active state and toggle
+  // AI Active state and toggle (Hierarchical SSOT)
+  const aiHierarchy = selectedConversation?.aiStatusHierarchy;
+  const isMasterAiDisabled = aiHierarchy
+    ? (!aiHierarchy.masterAutoReplyEnabled || aiHierarchy.masterAgentPaused || !aiHierarchy.hasActiveAiKey)
+    : false;
+  const aiStatusReason = aiHierarchy?.reason;
+
   const isAiPaused = Boolean(
     selectedConversation?.aiPausedUntil &&
       new Date(selectedConversation.aiPausedUntil).getTime() > Date.now(),
   );
   const isAiActive = selectedConversation
-    ? selectedConversation.aiEnabled !== false && !isAiPaused
+    ? (aiHierarchy ? aiHierarchy.isEffectiveActive : (selectedConversation.aiEnabled !== false && !isAiPaused))
     : true;
 
   const handleToggleAi = useCallback(async () => {
@@ -259,17 +265,27 @@ export function useFacebookInboxActions({
       await apiService.updateConversation(selectedConversation.id, {
         aiEnabled: nextAiEnabled,
       });
-      toast.success(
-        nextAiEnabled
-          ? t(
-              'facebookInbox.aiEnabledSuccess',
-              'تم تشغيل الرد الآلي للذكاء الاصطناعي لهذه المحادثة',
-            )
-          : t(
-              'facebookInbox.aiDisabledSuccess',
-              'تم إيقاف الذكاء الاصطناعي عن هذه المحادثة (التحكم يدوي)',
-            ),
-      );
+
+      if (isMasterAiDisabled && nextAiEnabled) {
+        toast.warning(
+          t(
+            'facebookInbox.masterAiDisabledWarning',
+            'الرد الآلي للإيجنت معطل من الإعدادات الرئيسية. لا يمكن تفعيل الرد الآلي لهذه المحادثة حتى يتم تشغيل الإيجنت من الإعدادات الرئيسية.',
+          ),
+        );
+      } else {
+        toast.success(
+          nextAiEnabled
+            ? t(
+                'facebookInbox.aiEnabledSuccess',
+                'تم تشغيل الرد الآلي للذكاء الاصطناعي لهذه المحادثة',
+              )
+            : t(
+                'facebookInbox.aiDisabledSuccess',
+                'تم إيقاف الذكاء الاصطناعي عن هذه المحادثة (التحكم يدوي)',
+              ),
+        );
+      }
     } catch (err) {
       console.error('Failed to toggle AI status:', err);
       toast.error(
@@ -535,6 +551,8 @@ export function useFacebookInboxActions({
     handleTogglePriority,
     isAiPaused,
     isAiActive,
+    isMasterAiDisabled,
+    aiStatusReason,
     handleToggleAi,
     handleTagsChange,
     handleDeleteConversation,

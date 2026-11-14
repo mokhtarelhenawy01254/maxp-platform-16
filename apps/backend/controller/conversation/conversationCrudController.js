@@ -13,6 +13,11 @@ const { proxyCustomerAvatarUrl } = require('../../utils/facebookMediaProxy');
 const { normalizeConversationStatus } = require('../../utils/validator');
 const { extractContentTokens, buildConversationSearchWhere } = require('./conversationSearchWhere');
 const { computeFacebookWindow, resolveFacebookLastInboundAt } = require('../../utils/facebookWindow');
+const {
+    getEffectiveAiAutoReplySetting,
+    checkHasActiveAiKey,
+    resolveAiHierarchy
+} = require('../../services/aiSettingsResolver');
 
 const parseJsonSafely = (value, fallback = {}) => {
     if (!value || typeof value !== 'string') {
@@ -400,6 +405,18 @@ const getConversations = async (req, res) => {
 
         // Format response
         console.log('🔄 [GET-CONV] Formatting response...');
+        let masterAiSetting = null;
+        let hasActiveAiKey = true;
+        try {
+            [masterAiSetting, hasActiveAiKey] = await Promise.all([
+                getEffectiveAiAutoReplySetting(companyId, prisma).catch(() => ({ autoReplyEnabled: false })),
+                checkHasActiveAiKey(companyId, prisma).catch(() => true)
+            ]);
+        } catch (e) {
+            masterAiSetting = { autoReplyEnabled: false };
+            hasActiveAiKey = true;
+        }
+
         const formattedConversations = await Promise.all(conversations.map(async (conv, index) => {
             // Extract pageName and pageId
             let pageName = null;
@@ -418,6 +435,13 @@ const getConversations = async (req, res) => {
                     // ignore parse errors
                 }
             }
+
+            const aiStatusHierarchy = await resolveAiHierarchy(companyId, {
+                masterSetting: masterAiSetting,
+                hasActiveKey: hasActiveAiKey,
+                conversationAiEnabled: conv.aiEnabled !== false,
+                aiPausedUntil: aiPausedUntil
+            }, prisma);
 
             // ⚡ PERFORMANCE FIX: Skip expensive queries - just use default for FACEBOOK
             if (!pageName && conv.channel === 'FACEBOOK') {
@@ -523,6 +547,7 @@ const getConversations = async (req, res) => {
                 priority: conv.priority > 1,
                 aiEnabled: conv.aiEnabled !== false,
                 aiPausedUntil: aiPausedUntil,
+                aiStatusHierarchy: aiStatusHierarchy,
                 metadata: conv.metadata,
                 snoozedUntil: snoozedUntil,
                 pageName: pageName,
@@ -540,6 +565,11 @@ const getConversations = async (req, res) => {
         res.json({
             success: true,
             data: formattedConversations,
+            aiHierarchy: {
+                masterAutoReplyEnabled: masterAiSetting?.autoReplyEnabled === true,
+                masterAgentPaused: masterAiSetting?.agentPaused === true,
+                hasActiveAiKey: Boolean(hasActiveAiKey)
+            },
             pagination: {
                 total: total,
                 page: parseInt(page),
@@ -655,10 +685,22 @@ const getConversation = async (req, res) => {
             isWindowExpired = windowState.isWindowExpired;
         }
 
+        let aiStatusHierarchy = null;
+        try {
+            const companyId = conversation.companyId || req.user?.companyId;
+            aiStatusHierarchy = await resolveAiHierarchy(companyId, {
+                conversationAiEnabled: conversation.aiEnabled !== false,
+                aiPausedUntil: metadata.aiPausedUntil || null
+            }, getSharedPrismaClient());
+        } catch (e) {
+            console.warn('⚠️ [GET-CONV-DETAIL] Failed to compute aiStatusHierarchy:', e.message);
+        }
+
         res.json({
             success: true,
             data: {
                 ...conversation,
+                aiStatusHierarchy,
                 customer: conversation.customer
                     ? {
                         ...conversation.customer,
@@ -780,6 +822,14 @@ const updateConversation = async (req, res) => {
             }
         });
 
+        let updatedHierarchy = null;
+        try {
+            updatedHierarchy = await resolveAiHierarchy(companyId, {
+                conversationAiEnabled: updated.aiEnabled !== false,
+                aiPausedUntil: null
+            }, prisma);
+        } catch (e) {}
+
         if (aiEnabled !== undefined) {
             try {
                 const io = socketService.getIO();
@@ -788,7 +838,8 @@ const updateConversation = async (req, res) => {
                         conversationId: updated.id,
                         channel: updated.channel,
                         aiEnabled: Boolean(aiEnabled),
-                        aiPausedUntil: null
+                        aiPausedUntil: null,
+                        aiStatusHierarchy: updatedHierarchy
                     });
                 }
             } catch (e) {}
@@ -810,6 +861,7 @@ const updateConversation = async (req, res) => {
                 priority: updated.priority > 1,
                 aiEnabled: updated.aiEnabled !== false,
                 aiPausedUntil: meta.aiPausedUntil || null,
+                aiStatusHierarchy: updatedHierarchy,
                 tab: meta.tab || null,
                 customerId: updated.customerId,
                 customerName: updated.customer ? `${updated.customer.firstName || ''} ${updated.customer.lastName || ''}`.trim() : 'Unknown',

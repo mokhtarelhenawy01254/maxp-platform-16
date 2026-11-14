@@ -121,6 +121,30 @@ export interface InboxConversation {
   hasFailedDelivery?: boolean;
   lastMessageDeliveryStatus?: "PENDING" | "SENT" | "FAILED" | null;
   lastMessageFailureReason?: string | null;
+
+  // 🤖 Hierarchical AI Status (Single Source of Truth)
+  aiStatusHierarchy?: AiStatusHierarchy;
+}
+
+export type AiStatusReason =
+  | 'ACTIVE'
+  | 'MASTER_AI_DISABLED'
+  | 'MASTER_AGENT_PAUSED'
+  | 'NO_ACTIVE_AI_KEY'
+  | 'CHANNEL_DISABLED'
+  | 'CONVERSATION_DISABLED'
+  | 'CONVERSATION_PAUSED';
+
+export interface AiStatusHierarchy {
+  masterAutoReplyEnabled: boolean;
+  masterAgentPaused: boolean;
+  hasActiveAiKey: boolean;
+  channelEnabled: boolean;
+  conversationAiEnabled: boolean;
+  isConversationPaused: boolean;
+  conversationPausedUntil: string | null;
+  isEffectiveActive: boolean;
+  reason: AiStatusReason;
 }
 
 export interface InboxFilters {

@@ -23,6 +23,7 @@ interface FacebookMessageStreamProps {
   userId: string;
   isAiActive: boolean;
   isAiPaused: boolean;
+  isMasterAiDisabled?: boolean;
   onToggleAi: () => void;
   onSendMessage: (content: string) => void;
   onSendFile: (file: File) => void;
@@ -63,6 +64,7 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
   userId,
   isAiActive,
   isAiPaused,
+  isMasterAiDisabled = false,
   onToggleAi,
   onSendMessage,
   onSendFile,
@@ -208,12 +210,27 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
 
       {/* Bottom composer & AI status banner */}
       <div className="flex-shrink-0 mt-auto border-t border-border/50 bg-card/80" style={{ flexShrink: 0, marginTop: 'auto' }}>
-        {!isAiActive && (
-          <div className="flex items-center justify-between px-3.5 py-1.5 text-xs border-b border-amber-500/20 bg-amber-500/10 text-foreground backdrop-blur-sm">
+        {(!isAiActive || isMasterAiDisabled) && (
+          <div
+            className={`flex items-center justify-between px-3.5 py-1.5 text-xs border-b backdrop-blur-sm ${
+              isMasterAiDisabled
+                ? 'border-rose-500/25 bg-rose-500/10 text-rose-800 dark:text-rose-200'
+                : 'border-amber-500/20 bg-amber-500/10 text-foreground'
+            }`}
+          >
             <div className="flex items-center gap-2 min-w-0">
-              <Bot className="h-4 w-4 flex-shrink-0 text-amber-500" />
+              <Bot
+                className={`h-4 w-4 flex-shrink-0 ${
+                  isMasterAiDisabled ? 'text-rose-600 dark:text-rose-400' : 'text-amber-500'
+                }`}
+              />
               <span className="truncate font-medium">
-                {isAiPaused
+                {isMasterAiDisabled
+                  ? t(
+                      'facebookInbox.masterAiDisabledBanner',
+                      'الذكاء الاصطناعي معطل من الإعدادات الرئيسية — لن يقوم الإيجنت بالرد التلقائي. مطلوب رد يدوي على العميل.',
+                    )
+                  : isAiPaused
                   ? t(
                       'facebookInbox.aiPausedHandover',
                       'الذكاء الاصطناعي متوقف مؤقتاً بسبب رد يدوي (تدخل بشري)',
@@ -224,13 +241,15 @@ export const FacebookMessageStream: React.FC<FacebookMessageStreamProps> = ({
                     )}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onToggleAi}
-              className="ms-2 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97] text-white transition-all flex-shrink-0 shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              {t('facebookInbox.resumeAi', 'تشغيل الرد الآلي')}
-            </button>
+            {!isMasterAiDisabled && (
+              <button
+                type="button"
+                onClick={onToggleAi}
+                className="ms-2 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97] text-white transition-all flex-shrink-0 shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t('facebookInbox.resumeAi', 'تشغيل الرد الآلي')}
+              </button>
+            )}
           </div>
         )}
 

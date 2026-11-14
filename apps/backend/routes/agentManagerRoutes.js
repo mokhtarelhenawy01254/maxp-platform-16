@@ -603,6 +603,16 @@ router.put('/auto-reply', async (req, res) => {
         create: createData,
       }),
     ]);
+    try {
+      const socketService = require('../services/socketService');
+      socketService.emitToCompany(companyId, 'agent:global_ai_status_changed', {
+        companyId,
+        autoReplyEnabled: enabled,
+        timestamp: new Date().toISOString()
+      });
+    } catch (sockErr) {
+      console.warn('⚠️ [AGENT-MANAGER] Failed to emit global AI status change socket:', sockErr.message);
+    }
     return res.json({ success: true, autoReplyEnabled: enabled });
   } catch (error) {
     return res.status(502).json({ success: false, error: error.message });
@@ -659,6 +669,17 @@ router.put('/pause', async (req, res) => {
       update: { agentPaused: paused, pauseReason: paused ? reason : null },
       create: { companyId, agentPaused: paused, pauseReason: paused ? reason : null },
     });
+    try {
+      const socketService = require('../services/socketService');
+      socketService.emitToCompany(companyId, 'agent:global_ai_status_changed', {
+        companyId,
+        paused,
+        pauseReason: paused ? reason : null,
+        timestamp: new Date().toISOString()
+      });
+    } catch (sockErr) {
+      console.warn('⚠️ [AGENT-MANAGER] Failed to emit global AI pause socket:', sockErr.message);
+    }
     return res.json({ success: true, paused: data?.paused === true, pauseReason: data?.pauseReason || null });
   } catch (error) {
     return res.status(502).json({ success: false, error: error.message });

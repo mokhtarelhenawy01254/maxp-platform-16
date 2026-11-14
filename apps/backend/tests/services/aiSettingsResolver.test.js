@@ -1,6 +1,8 @@
 const {
   getEffectiveAiAutoReplySetting,
   readAiSchemaAutoReplySetting,
+  checkHasActiveAiKey,
+  resolveAiHierarchy,
 } = require('../../services/aiSettingsResolver');
 
 describe('aiSettingsResolver', () => {
@@ -91,5 +93,78 @@ describe('aiSettingsResolver', () => {
       'SELECT "autoReplyEnabled" FROM ai.ai_settings WHERE "companyId" = $1 LIMIT 1',
       'co-1'
     );
+  });
+
+  describe('resolveAiHierarchy', () => {
+    test('returns MASTER_AI_DISABLED when master auto reply is disabled', async () => {
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: false },
+        hasActiveKey: true,
+        conversationAiEnabled: true
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(false);
+      expect(hierarchy.reason).toBe('MASTER_AI_DISABLED');
+      expect(hierarchy.masterAutoReplyEnabled).toBe(false);
+    });
+
+    test('returns MASTER_AGENT_PAUSED when master agent is paused', async () => {
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: true, agentPaused: true },
+        hasActiveKey: true,
+        conversationAiEnabled: true
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(false);
+      expect(hierarchy.reason).toBe('MASTER_AGENT_PAUSED');
+      expect(hierarchy.masterAgentPaused).toBe(true);
+    });
+
+    test('returns NO_ACTIVE_AI_KEY when company has no active AI key', async () => {
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: true },
+        hasActiveKey: false,
+        conversationAiEnabled: true
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(false);
+      expect(hierarchy.reason).toBe('NO_ACTIVE_AI_KEY');
+    });
+
+    test('returns CONVERSATION_DISABLED when conversation AI is toggled off', async () => {
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: true },
+        hasActiveKey: true,
+        conversationAiEnabled: false
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(false);
+      expect(hierarchy.reason).toBe('CONVERSATION_DISABLED');
+    });
+
+    test('returns CONVERSATION_PAUSED when conversation has active aiPausedUntil', async () => {
+      const future = new Date(Date.now() + 60000).toISOString();
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: true },
+        hasActiveKey: true,
+        conversationAiEnabled: true,
+        aiPausedUntil: future
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(false);
+      expect(hierarchy.isConversationPaused).toBe(true);
+      expect(hierarchy.reason).toBe('CONVERSATION_PAUSED');
+    });
+
+    test('returns ACTIVE when all hierarchy conditions are satisfied', async () => {
+      const hierarchy = await resolveAiHierarchy('co-1', {
+        masterSetting: { autoReplyEnabled: true, agentPaused: false },
+        hasActiveKey: true,
+        conversationAiEnabled: true
+      });
+
+      expect(hierarchy.isEffectiveActive).toBe(true);
+      expect(hierarchy.reason).toBe('ACTIVE');
+    });
   });
 });

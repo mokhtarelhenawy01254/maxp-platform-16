@@ -71,12 +71,23 @@ export const WhatsAppChatHeader: React.FC<WhatsAppChatHeaderProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-          {conversation.aiEnabled && (
-            <span className="inline-flex items-center gap-1 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+          {Boolean((conversation as any).aiStatusHierarchy ? (conversation as any).aiStatusHierarchy.isEffectiveActive : conversation.aiEnabled) ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
+              title="الرد الذكي مفعّل"
+            >
               <Bot className="size-3.5" />
               <span>AI</span>
             </span>
-          )}
+          ) : (conversation as any).aiStatusHierarchy?.reason === 'MASTER_AI_DISABLED' ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400"
+              title="الذكاء الاصطناعي معطل رئيسياً من إعدادات الإيجنت — مطلوب رد يدوي"
+            >
+              <Bot className="size-3.5" />
+              <span>AI متوقف (يدوي)</span>
+            </span>
+          ) : null}
 
           {conversation.window?.isOpen ? (
             <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] font-mono tabular-nums text-emerald-600 dark:text-emerald-400">

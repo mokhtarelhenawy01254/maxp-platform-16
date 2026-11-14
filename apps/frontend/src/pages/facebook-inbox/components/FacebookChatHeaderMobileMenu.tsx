@@ -21,6 +21,7 @@ interface FacebookChatHeaderMobileMenuProps {
   showMobileActionMenu: boolean;
   setShowMobileActionMenu: React.Dispatch<React.SetStateAction<boolean>>;
   isAiActive: boolean;
+  isMasterAiDisabled?: boolean;
   onToggleAi: () => void;
   primaryAction?: InboxVerticalAction;
   availableActions?: InboxVerticalAction[];
@@ -43,6 +44,7 @@ export const FacebookChatHeaderMobileMenu: React.FC<FacebookChatHeaderMobileMenu
   showMobileActionMenu,
   setShowMobileActionMenu,
   isAiActive,
+  isMasterAiDisabled = false,
   onToggleAi,
   primaryAction,
   availableActions,
@@ -100,13 +102,19 @@ export const FacebookChatHeaderMobileMenu: React.FC<FacebookChatHeaderMobileMenu
         >
           <Bot
             className={`h-4 w-4 ${
-              isAiActive ? 'text-amber-500' : 'text-emerald-500'
+              isMasterAiDisabled
+                ? 'text-rose-500'
+                : isAiActive
+                  ? 'text-amber-500'
+                  : 'text-emerald-500'
             }`}
           />
           <span>
-            {isAiActive
-              ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-              : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')}
+            {isMasterAiDisabled
+              ? t('facebookInbox.masterAiDisabled', 'الذكاء الاصطناعي معطل رئيسياً')
+              : isAiActive
+                ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
+                : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')}
           </span>
         </button>
 

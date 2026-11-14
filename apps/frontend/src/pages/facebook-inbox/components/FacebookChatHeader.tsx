@@ -32,6 +32,8 @@ interface FacebookChatHeaderProps {
   isWideDesktop: boolean;
   shouldCollapseActions: boolean;
   isAiActive: boolean;
+  isMasterAiDisabled?: boolean;
+  aiStatusReason?: string;
   onToggleAi: () => void;
   isProfilePanelActive: boolean;
   profilePanelToggleTitle: string;
@@ -62,6 +64,8 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
   isMobileViewport,
   shouldCollapseActions,
   isAiActive,
+  isMasterAiDisabled = false,
+  aiStatusReason,
   onToggleAi,
   isProfilePanelActive,
   profilePanelToggleTitle,
@@ -149,42 +153,47 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
   const iconBtnCls =
     'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer';
 
-  const renderAiToggleButton = () => (
-    <button
-      type="button"
-      onClick={onToggleAi}
-      className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
-        isAiActive
-          ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15'
-          : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15'
-      }`}
-      title={
-        isAiActive
-          ? t(
-              'facebookInbox.stopAiTooltip',
-              'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة',
-            )
-          : t(
-              'facebookInbox.startAiTooltip',
-              'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي',
-            )
-      }
-      aria-label={
-        isAiActive
-          ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
-          : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
-      }
-    >
-      <Bot className="h-4 w-4" />
-      <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
-        <span
-          className={`relative inline-flex rounded-full h-2 w-2 border border-card ${
-            isAiActive ? 'bg-emerald-500' : 'bg-amber-500'
-          }`}
-        />
-      </span>
-    </button>
-  );
+  const renderAiToggleButton = () => {
+    let btnClass = 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15';
+    let btnTitle = t('facebookInbox.startAiTooltip', 'الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي');
+
+    if (isMasterAiDisabled) {
+      btnClass = 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/15';
+      btnTitle = t('facebookInbox.masterAiDisabledTooltip', 'الذكاء الاصطناعي معطل من الإعدادات الرئيسية — مطلوب رد يدوي من الموظف');
+    } else if (isAiActive) {
+      btnClass = 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15';
+      btnTitle = t('facebookInbox.stopAiTooltip', 'الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة');
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onToggleAi}
+        className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${btnClass}`}
+        title={btnTitle}
+        aria-label={
+          isMasterAiDisabled
+            ? t('facebookInbox.masterAiDisabled', 'الذكاء الاصطناعي معطل رئيسياً')
+            : isAiActive
+              ? t('facebookInbox.stopAi', 'إيقاف الذكاء الاصطناعي')
+              : t('facebookInbox.startAi', 'تشغيل الذكاء الاصطناعي')
+        }
+      >
+        <Bot className="h-4 w-4" />
+        <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
+          <span
+            className={`relative inline-flex rounded-full h-2 w-2 border border-card ${
+              isMasterAiDisabled
+                ? 'bg-rose-500'
+                : isAiActive
+                  ? 'bg-emerald-500'
+                  : 'bg-amber-500'
+            }`}
+          />
+        </span>
+      </button>
+    );
+  };
 
   return (
     <div className="business-inbox-header business-inbox-chat-header border-b border-border/50 bg-card/80 px-2.5 py-2 sm:px-3.5 sm:py-2.5">
@@ -246,6 +255,33 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                     <span>متاح الرد {remainingHours ? `(متبقي ${remainingHours}س)` : ''}</span>
                   </span>
                 )
+              )}
+
+              {/* Hierarchical AI Status Indicator Pill */}
+              {isMasterAiDisabled ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+                  title={t('facebookInbox.masterAiDisabledTooltip', 'الذكاء الاصطناعي معطل من الإعدادات الرئيسية — مطلوب رد يدوي من الموظف')}
+                >
+                  <Bot className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                  <span>{t('facebookInbox.masterAiDisabledBadge', 'معطل رئيسياً (يدوي)')}</span>
+                </span>
+              ) : isAiActive ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30"
+                  title={t('facebookInbox.effectiveAiActiveTooltip', 'الرد الذكي مفعّل — الإيجنت يتولى الرد التلقائي')}
+                >
+                  <Bot className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                  <span>{t('facebookInbox.effectiveAiActiveBadge', 'الرد الذكي مفعّل')}</span>
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                  title={t('facebookInbox.conversationAiPausedTooltip', 'تم إيقاف الرد الذكي لهذه المحادثة (تدخل بشري)')}
+                >
+                  <Bot className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span>{t('facebookInbox.conversationAiPausedBadge', 'تحكم يدوي')}</span>
+                </span>
               )}
 
               {/* Failed message notice in header */}
@@ -457,6 +493,7 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                   showDesktopMoreMenu={showDesktopMoreMenu}
                   setShowDesktopMoreMenu={setShowDesktopMoreMenu}
                   isAiActive={isAiActive}
+                  isMasterAiDisabled={isMasterAiDisabled}
                   onToggleAi={onToggleAi}
                   primaryAction={resolvedPrimaryAction}
                   availableActions={availableActions}
@@ -480,6 +517,7 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
         showMobileActionMenu={showMobileActionMenu}
         setShowMobileActionMenu={setShowMobileActionMenu}
         isAiActive={isAiActive}
+        isMasterAiDisabled={isMasterAiDisabled}
         onToggleAi={onToggleAi}
         primaryAction={resolvedPrimaryAction}
         availableActions={availableActions}

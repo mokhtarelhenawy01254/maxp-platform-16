@@ -296,6 +296,17 @@ router.patch('/agents/:id/status', async (req, res) => {
     const nextStatus = req.body?.status === 'PAUSED' || req.body?.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
     const pyResult = await aiServiceAdminClient.updateAgentStatus(req.params.id, nextStatus);
     if (!pyResult) return res.status(502).json({ success: false, error: 'AI service unreachable' });
+    try {
+      const socketService = require('../services/socketService');
+      socketService.emitToCompany(companyId, 'agent:global_ai_status_changed', {
+        companyId,
+        agentId: req.params.id,
+        status: pyResult.status,
+        timestamp: new Date().toISOString()
+      });
+    } catch (sockErr) {
+      console.warn('⚠️ [AGENT-CONTROL] Failed to emit global AI agent status change socket:', sockErr.message);
+    }
     return res.json({
       success: true,
       agent: {

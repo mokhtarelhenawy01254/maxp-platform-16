@@ -42,5 +42,14 @@
   "humanTakeover": "Human Takeover",
   "aiPausedHandover": "AI paused temporarily due to manual reply (human handover)",
   "aiStoppedManually": "AI is stopped for this conversation (manual control)",
-  "resumeAi": "Enable AI"
+  "resumeAi": "Enable AI",
+  "masterAiDisabled": "AI Disabled Globally",
+  "masterAiDisabledBadge": "AI Disabled (Manual)",
+  "masterAiDisabledTooltip": "AI auto-reply is disabled in master agent settings — manual reply required",
+  "masterAiDisabledBanner": "AI auto-reply is disabled in master settings — agent will not reply automatically. Manual reply required.",
+  "masterAiDisabledWarning": "Master AI auto-reply is disabled. Enable it in Agent Settings before toggling individual conversations.",
+  "effectiveAiActiveBadge": "AI Active",
+  "effectiveAiActiveTooltip": "Smart auto-reply active — AI agent is handling replies",
+  "conversationAiPausedBadge": "Manual Control",
+  "conversationAiPausedTooltip": "AI paused for this conversation (human intervention)"
 }
