@@ -1486,6 +1486,30 @@
           }
         },
         {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "عروض الباقات والوفر",
+            "subtitle": "اختر الباقة المناسبة ووفر مع كل قطعة إضافية",
+            "placement": "inline-buybox",
+            "decisionMode": "primary",
+            "continueToFormLabel": "أكمل الطلب الآن"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "title": "بيانات الشحن السريع",
+            "subtitle": "اكتب بياناتك وسنؤكد طلبك ونجهزه للشحن فوراً — الدفع عند الاستلام.",
+            "submitButtonText": "تأكيد الطلب الآن",
+            "placement": "before-description",
+            "surfaceMode": "merged-buybox",
+            "showQuantity": false,
+            "showAddToCartButton": true,
+            "showOrderSummary": true
+          }
+        },
+        {
           "type": "related-products",
           "settings": {
             "title": "منتجات مشابهة قد تعجبك",

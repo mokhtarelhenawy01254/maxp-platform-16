@@ -877,6 +877,30 @@
           }
         },
         {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "Bundle Deals & Save",
+            "subtitle": "Choose the best bundle and save more on every additional item.",
+            "placement": "inline-buybox",
+            "decisionMode": "primary",
+            "continueToFormLabel": "Complete Order Now"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "title": "Fast Shipping & Order Details",
+            "subtitle": "Enter your details to confirm your order — Cash on delivery available.",
+            "submitButtonText": "Confirm Order Now",
+            "placement": "before-description",
+            "surfaceMode": "merged-buybox",
+            "showQuantity": false,
+            "showAddToCartButton": true,
+            "showOrderSummary": true
+          }
+        },
+        {
           "type": "related-products",
           "settings": {
             "title": "Related products",

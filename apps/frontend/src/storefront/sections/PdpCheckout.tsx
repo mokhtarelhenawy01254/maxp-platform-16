@@ -58,7 +58,8 @@ const PdpCheckout: React.FC<PdpCheckoutProps> = ({ section }) => {
       productInfoVariant === "utility-rail" ||
       productInfoVariant === "elessi-care-buybox" ||
       productInfoVariant === "gear-loadout" ||
-      productInfoVariant === "playful-story");
+      productInfoVariant === "playful-story" ||
+      productInfoVariant === "marketplace-bazaar");
 
   if (
     !productPageCheckoutEnabled ||

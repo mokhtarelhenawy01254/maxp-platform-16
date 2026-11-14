@@ -243,13 +243,18 @@ export const useProductInfoController = ({
       variant === 'style-ledger' ||
       variant === 'utility-rail' ||
       variant === 'gear-loadout' ||
-      variant === 'playful-story');
+      variant === 'playful-story' ||
+      variant === 'marketplace-bazaar');
 
   const forceInlineKhemetQuickOrder =
     isKhemetInlineQuickOrderBuybox && productPageCheckoutEnabled;
 
+  const forceInlineMarketplaceQuickOrder =
+    variant === 'marketplace-bazaar' && productPageCheckoutEnabled;
+
   const shouldRenderInlinePdpQuickOrder =
     forceInlineKhemetQuickOrder ||
+    forceInlineMarketplaceQuickOrder ||
     (hasEmbeddedPdpCheckout && supportsInlineQuickOrderPlacement);
 
   const quantityOffersEnabled = isStorefrontMarketplaceAppEnabled(
@@ -292,10 +297,15 @@ export const useProductInfoController = ({
     hasConfiguredQuantityOffers &&
     (!hideWhenSingleOffer || explicitQuantityOffers.length > 1);
 
+  const isMarketplaceBuybox = variant === 'marketplace-bazaar';
+
   const shouldRenderInlineQuantityOffers =
     canRenderQuantityOffers &&
-    Boolean(embeddedQuantityOffersSection) &&
-    embeddedQuantityOffersSettings?.placement === 'inline-buybox';
+    ((Boolean(embeddedQuantityOffersSection) &&
+      embeddedQuantityOffersSettings?.placement === 'inline-buybox') ||
+      (isMarketplaceBuybox &&
+        (!embeddedQuantityOffersSection ||
+          embeddedQuantityOffersSettings?.placement !== 'below-buybox')));
 
   const isPrimaryQuantityOffersDecision =
     shouldRenderInlineQuantityOffers &&

@@ -1075,9 +1075,17 @@ export const PageComposer: React.FC<PageComposerProps> = ({
                   : infoSection,
                 infoIndex,
               )}
-              {companionSections.map(({ sectionEntry, index }) =>
-                renderSection(sectionEntry, index),
-              )}
+              {companionSections.map(({ sectionEntry, index }) => {
+                const rendered = renderSection(sectionEntry, index);
+                if (!rendered) return null;
+                return isMarketplace3Col ? (
+                  <div key={index} className="lg:col-span-3 col-span-full w-full">
+                    {rendered}
+                  </div>
+                ) : (
+                  rendered
+                );
+              })}
             </div>
           </div>
           {extraSections.length > 0 ? (

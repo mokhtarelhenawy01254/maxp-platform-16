@@ -69,6 +69,9 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
     showExternalAffiliateCta,
     renderExternalPurchaseCta,
     shouldRenderStandaloneBuyBox,
+    mergedInlinePdpQuickOrder,
+    inlineQuantityOffers,
+    isPrimaryQuantityOffersDecision,
   } = ctrl;
 
   const [isCompared, setIsCompared] = useState(false);
@@ -268,8 +271,15 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
           </div>
         ) : null}
 
+        {/* Inline Quantity Offers (Bundle / Tier Deals) */}
+        {inlineQuantityOffers ? (
+          <div className="pt-2 space-y-2">
+            {inlineQuantityOffers}
+          </div>
+        ) : null}
+
         {/* Variant Selector */}
-        {product.productVariants && product.productVariants.length > 0 && (
+        {!isPrimaryQuantityOffersDecision && product.productVariants && product.productVariants.length > 0 && (
           <div id={STOREFRONT_BUYBOX_ID} className="space-y-4 pt-1">
             <VariantSelector
               variants={product.productVariants}
@@ -283,7 +293,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
         {/* 6. Quantity Stepper + Add to Cart + Buy Now Buttons (WoodMart layout) */}
         {externalOnlyProduct ? (
           <div className="pt-2">{renderExternalPurchaseCta('card')}</div>
-        ) : shouldRenderStandaloneBuyBox ? (
+        ) : (
           <div className="space-y-3 pt-1">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <QuantitySelector
@@ -312,8 +322,13 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
             </div>
             {showExternalAffiliateCta ? renderExternalPurchaseCta('block') : null}
           </div>
-        ) : showExternalAffiliateCta ? (
-          renderExternalPurchaseCta('block')
+        )}
+
+        {/* Merged Inline PDP Quick Order Checkout */}
+        {mergedInlinePdpQuickOrder ? (
+          <div className="pt-3">
+            {mergedInlinePdpQuickOrder}
+          </div>
         ) : null}
 
         {/* 7. Divider */}
