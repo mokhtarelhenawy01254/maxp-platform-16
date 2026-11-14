@@ -268,7 +268,13 @@
     "shop": {
       "sections": [
         {
-          "type": "shop-hero"
+          "type": "shop-hero",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "بالمقاس والمعدن والسعر — كل إصدارات الأتيليه في صفحة واحدة.",
+            "ctaText": "شوفي المجموعات",
+            "ctaLink": "/collections"
+          }
         },
         {
           "type": "filters-sidebar",
