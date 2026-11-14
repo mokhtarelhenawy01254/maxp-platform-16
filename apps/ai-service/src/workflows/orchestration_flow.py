@@ -394,7 +394,18 @@ async def run_orchestration(
 
     is_customer = _channel_normalized in ("whatsapp", "facebook", "messenger", "telegram", "instagram", "web_chat", "site")
     if not _channel_agent:
+        # 2026-11-14: specialty-aware customer fallback — an education company's
+        # customers must never receive replies from a generic sales/manager agent.
         default_template = "sales-agent" if is_customer else "manager-ceo"
+        if is_customer:
+            try:
+                from sqlalchemy import text as _sql_text
+                _spec = await session.execute(_sql_text('SELECT "businessSpecialtyId" FROM companies WHERE id = :cid'), {"cid": company_id})
+                _spec_id = (_spec.scalar() or "").strip().lower() if _spec.scalar() else ""
+                if "education" in _spec_id:
+                    default_template = "education-center-agent"
+            except Exception:
+                pass
         _channel_agent = await BaseAgent.from_template(default_template, company_id, session=session)
 
     if previous_state:

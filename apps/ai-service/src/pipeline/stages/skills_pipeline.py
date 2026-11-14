@@ -582,9 +582,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         elif not isinstance(raw_fallbacks, list):
             raw_fallbacks = []
         if not raw_fallbacks:
-            # 2026-11-13: gemini first — gpt-oss-120b Arabic is machine-translation-flavored
-            # and produced broken replies to real customers (CodeTreps incident).
-            raw_fallbacks = ["gemini-2.5-flash", "groq/openai/gpt-oss-120b"]
+            # 2026-11-13: gemini first; gpt-oss REMOVED — its Arabic is machine-translation-flavored and reached real customers twice (CodeTreps incidents). deepseek-chat as last resort: excellent Arabic.
+            raw_fallbacks = ["gemini-2.5-flash", "deepseek-chat"]
 
         recovered = False
         for fb in raw_fallbacks:
