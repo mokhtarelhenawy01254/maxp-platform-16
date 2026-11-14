@@ -9,7 +9,6 @@ import {
   Wand2,
   Presentation,
   Type,
-  Eye,
   type LucideIcon,
 } from "lucide-react";
 import { PortalInviteAndPushCard } from "./PortalInviteAndPushCard";
@@ -26,15 +25,6 @@ interface EducationSettingsTabProps {
   /** Notifies the page shell so it can guard tab switches while dirty (additive, optional). */
   onDirtyChange?: (dirty: boolean) => void;
 }
-
-const sbTheme = {
-  panel: "var(--sb-bg-panel, #0f172a)",
-  border: "var(--sb-border, rgba(255,255,255,0.08))",
-  text: "var(--sb-text-main, #e2e8f0)",
-  muted: "var(--sb-text-muted, #94a3b8)",
-  accent: "var(--sb-accent, #3b82f6)",
-  accentSoft: "var(--sb-accent-soft, rgba(59,130,246,0.15))",
-} as const;
 
 function SectionHeader({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
@@ -107,27 +97,21 @@ export function EducationSettingsTab({ onSaved, onDirtyChange }: EducationSettin
           <div className="h-5 w-64 rounded-lg bg-muted" />
           <div className="h-5 w-28 rounded-lg bg-muted" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-8 rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-5">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2.5">
-                <div className="h-4 w-40 rounded-md bg-muted" />
-                {i === 4 ? (
-                  <div className="space-y-2">
-                    {[0, 1, 2].map((j) => (
-                      <div key={j} className="h-9 rounded-lg bg-muted/70" />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-16 rounded-xl bg-muted/70" />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="lg:col-span-4">
-            <div className="h-4 w-44 rounded-md bg-muted mb-2" />
-            <div className="h-72 rounded-xl border border-border bg-card" />
-          </div>
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-2.5">
+              <div className="h-4 w-40 rounded-md bg-muted" />
+              {i === 4 ? (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((j) => (
+                    <div key={j} className="h-9 rounded-lg bg-muted/70" />
+                  ))}
+                </div>
+              ) : (
+                <div className="h-16 rounded-xl bg-muted/70" />
+              )}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -156,9 +140,9 @@ export function EducationSettingsTab({ onSaved, onDirtyChange }: EducationSettin
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left: single-surface chassis + portal card */}
-        <div className="lg:col-span-8 space-y-4">
+      <div className="space-y-4">
+        {/* Single-surface chassis + portal card */}
+        <div className="space-y-4">
           <div className="bg-card border border-border rounded-2xl">
             {/* 1. Operation mode */}
             <section className="p-4 sm:p-5 border-b border-border/60 space-y-3">
@@ -300,71 +284,6 @@ export function EducationSettingsTab({ onSaved, onDirtyChange }: EducationSettin
           />
         </div>
 
-        {/* Right: sidebar preview themed from real sidebar CSS variables */}
-        <div className="lg:col-span-4 lg:sticky lg:top-4 space-y-2">
-          <h3 className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-            <Eye className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
-            {t("education.settingsTab.previewTitle", isEn ? "Sidebar Preview" : "معاينة القائمة الجانبية")}
-          </h3>
-          <div
-            className="w-full rounded-xl border overflow-hidden select-none"
-            style={{ background: sbTheme.panel, borderColor: sbTheme.border, color: sbTheme.text }}
-            dir={isEn ? "ltr" : "rtl"}
-          >
-            <div
-              className="flex items-center gap-2.5 px-3.5 py-3 border-b"
-              style={{ borderColor: sbTheme.border }}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: sbTheme.accentSoft, color: sbTheme.accent }}
-              >
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold truncate">
-                  {isEn ? c.systemTitleEn || c.systemTitle : c.systemTitle || "النظام التعليمي"}
-                </div>
-                <div className="text-[10px] truncate" style={{ color: sbTheme.muted }}>
-                  {isEn ? c.systemTitle : c.systemTitleEn || "Education System"}
-                </div>
-              </div>
-            </div>
-            <div className="p-1.5 space-y-0.5">
-              {c.tabs
-                .filter((tb) => tb.visible)
-                .map((tab, idx) => {
-                  const active = idx === 0;
-                  return (
-                    <div
-                      key={tab.id}
-                      className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium truncate"
-                      style={
-                        active
-                          ? { background: sbTheme.accentSoft, color: sbTheme.accent }
-                          : { color: sbTheme.text }
-                      }
-                    >
-                      <span
-                        className="w-6 text-center text-[9px] tabular-nums shrink-0"
-                        style={{ color: active ? undefined : sbTheme.muted }}
-                      >
-                        #{idx + 1}
-                      </span>
-                      <span className="truncate">
-                        {isEn ? tab.labelEn || tab.defaultLabelEn || tab.labelAr : tab.labelAr || tab.defaultLabelAr}
-                      </span>
-                    </div>
-                  );
-                })}
-              {c.visibleCount === 0 && (
-                <div className="px-2.5 py-3 text-[11px] text-center" style={{ color: sbTheme.muted }}>
-                  {isEn ? "No visible sections" : "لا توجد سكاشن ظاهرة"}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Sticky save bar — appears only with unsaved changes */}
