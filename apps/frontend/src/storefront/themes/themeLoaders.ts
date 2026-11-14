@@ -8,6 +8,7 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "tpl-010-multi-department-kids-fashion": () => import("./tpl-010-multi-department-kids-fashion.json"),
   "tpl-011-local-market-kids-fashion": () => import("./tpl-011-local-market-kids-fashion.json"),
   "tpl-012-original-kids-fashion": () => import("./tpl-012-original-kids-fashion.json"),
+  "mono-jewel-atelier": () => import("./mono-jewel-atelier.json"),
   "modest-wear-lumiere": () => import("./modest-wear-lumiere.json"),
   "modest-wear-bazaar": () => import("./modest-wear-bazaar.json"),
   "modest-wear-noor": () => import("./modest-wear-noor.json"),

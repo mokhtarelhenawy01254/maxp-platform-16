@@ -2356,6 +2356,37 @@
     }
   },
   {
+    "id": "mono-jewel-atelier",
+    "name": "Mono Atelier — مجوهرات",
+    "description": "قالب مجوهرات أحادي اللون بمنطق الأتيليه: شريط إعلان رفيع، هيرو صورة واحدة كبيرة، فئات مختارة، شبكة منتجات ٤×٢، لوك بوك إصدارين، آراء ثلاثية، شريط مجلة، شبكة إنستجرام، ونشرة انضمام — حدود رقيقة وradius صغير.",
+    "category": "luxury",
+    "categoryMeta": {
+      "primary": {
+        "id": "luxury",
+        "label": "فخامة"
+      },
+      "secondary": {
+        "id": "jewelry-watches",
+        "label": "مجوهرات وساعات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "0 0% 13%",
+      "0 0% 96%",
+      "0 0% 90%"
+    ],
+    "previewImage": "/assets/themes/mono-jewel-atelier/preview.png",
+    "pageStats": {
+      "homeSections": 9,
+      "shopSections": 3,
+      "checkoutSections": 0,
+      "pdpSections": 4,
+      "cartSections": 2,
+      "totalSections": 18
+    }
+  },
+  {
     "id": "mystic-desert",
     "name": "Mystic Desert",
     "description": "واجهة دافئة مستوحاة من الصحراء مناسبة للأزياء التراثية والقطع ذات الهوية الشرقية الواضحة.",

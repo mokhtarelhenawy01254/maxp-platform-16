@@ -1,0 +1,402 @@
+{
+  "id": "mono-jewel-atelier",
+  "name": "Mono Atelier — مجوهرات",
+  "description": "قالب مجوهرات أحادي اللون بمنطق الأتيليه: شريط إعلان رفيع، هيرو صورة واحدة كبيرة، فئات مختارة، شبكة منتجات ٤×٢، لوك بوك إصدارين، آراء ثلاثية، شريط مجلة، شبكة إنستجرام، ونشرة انضمام — حدود رقيقة وradius صغير.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 13%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 96%",
+      "secondaryForeground": "0 0% 13%",
+      "accent": "0 0% 90%",
+      "accentForeground": "0 0% 13%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 13%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 47%",
+      "border": "0 0% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 13%",
+      "ring": "0 0% 13%"
+    },
+    "typography": {
+      "headingFont": "Jost, \"IBM Plex Sans Arabic\", sans-serif",
+      "bodyFont": "Jost, \"IBM Plex Sans Arabic\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "4px",
+      "buttonRadius": "2px"
+    },
+    "productCard": {
+      "borderRadius": "2px",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -32px hsl(0 0% 13% / .35)"
+    },
+    "layout": {
+      "contentAlign": "start",
+      "containerWidth": "1235px"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Mono Atelier",
+    "description": "مجوهرات أحادية اللون: فضة وذهب أبيض وحجر واحد في كل قطعة — إصدارات مرقّمة بكميات محدودة."
+  },
+  "preview": {
+    "colors": [
+      "0 0% 13%",
+      "0 0% 96%",
+      "0 0% 47%"
+    ],
+    "imageUrl": "/assets/themes/mono-jewel-atelier/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "MONO ATELIER",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن مجاني فوق ٢٠٠٠ ج.م · تغليف هدايا مجاني",
+    "announcementLinkText": "التفاصيل",
+    "announcementLinkTo": "/shipping",
+    "navigation": [
+      {
+        "label": "القطع",
+        "to": "/shop"
+      },
+      {
+        "label": "المجموعات",
+        "to": "/collections"
+      },
+      {
+        "label": "إصدار الخريف",
+        "to": "/shop?collection=autumn"
+      },
+      {
+        "label": "المدوّنة",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "MONO ATELIER — مجوهرات أحادية اللون، إصدارات مرقّمة بكميات محدودة.",
+    "copyrightText": "© 2026 MONO ATELIER",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "كل القطع",
+            "to": "/shop"
+          },
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "الهدايا",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "دليل المقاسات",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "standard",
+          "settings": {
+            "badge": "إصدار مرقّم",
+            "message": "مجموعة الخريف — ٤٨ قطعة مرقّمة يدويًا، شحن مجاني فوق ٢٠٠٠ ج.م",
+            "saleLabel": "اتفرجي على الإصدار"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "dawn-image-banner",
+          "settings": {
+            "eyebrow": "MONO ATELIER · إصدار الخريف",
+            "title": "قطعة واحدة تكفي",
+            "subtitle": "فضة مصقولة، ذهب أبيض، وحجر واحد هو البطل في كل قطعة.",
+            "ctaText": "شوفي المجموعة",
+            "ctaLink": "/shop",
+            "backgroundImage": "/assets/themes/mono-jewel-atelier/hero-gold-rings.jpg",
+            "panelImage": "/assets/themes/mono-jewel-atelier/hero-gold-rings.jpg"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "standard-showcase",
+          "settings": {
+            "title": "اختاري حسب القطعة",
+            "subtitle": "خواتم · قلادات · أقراط · أساور — كل قسم بمقاساته ودليل قياس.",
+            "limit": 6,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "قطع مختارة",
+            "limit": 8,
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "badge": "Trendy / Autumn Collection",
+            "title": "إصدار الخريف",
+            "subtitle": "لوكات كاملة: طبقات رقيقة وفرد واحد من الحجر في كل إطلالة.",
+            "limit": 6,
+            "ctaText": "شوفي اللوك كامل",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العميلات",
+            "reviewLimit": 3,
+            "showMediaFeed": false
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "badge": "Journal",
+            "title": "Read Journal",
+            "subtitle": "دليل القياس، عناية الفضة، واختيار الحجر المناسب.",
+            "items": [
+              {
+                "title": "دليل القياس: من الإصبع للورقة",
+                "meta": "دليل · ٤ دقائق",
+                "excerpt": "طريقة قياس الإصبع في البيت بأدق شكل قبل ما تطلبي، ومقاس كل طوق في الإصدار.",
+                "image": "/assets/themes/mono-jewel-atelier/circle-ring.jpg",
+                "link": "/shop"
+              },
+              {
+                "title": "عناية الفضة في ٣ خطوات",
+                "meta": "عناية · ٣ دقائق",
+                "excerpt": "تنظيف القطعة وتخزينها بعيد عن الرطوبة — من غير كيماويات تُتلف الطلاء.",
+                "image": "/assets/themes/mono-jewel-atelier/pearl-necklace.jpg",
+                "link": "/collections"
+              },
+              {
+                "title": "إزاي تختاري الحجر",
+                "meta": "اختيار · ٥ دقائق",
+                "excerpt": "الفرق بين الزركون والمويسانيت والماس المخبري — وأهم من كل ده: القطع والتثبيت.",
+                "image": "/assets/themes/mono-jewel-atelier/diamond-ring.jpg",
+                "link": "/collections"
+              }
+            ]
+          }
+        },
+        {
+          "type": "social-gallery",
+          "variant": "grid",
+          "settings": {
+            "badge": "Instagram",
+            "title": "@monoatelier",
+            "subtitle": "صور من العميلات — دوسي على أي صورة وشوفي اللوك كامل.",
+            "images": [
+              "/assets/themes/mono-jewel-atelier/hoops.jpg",
+              "/assets/themes/mono-jewel-atelier/jewelry-box.jpg",
+              "/assets/themes/mono-jewel-atelier/heart-necklace.jpg",
+              "/assets/themes/mono-jewel-atelier/pearl-necklace.jpg",
+              "/assets/themes/mono-jewel-atelier/circle-ring.jpg",
+              "/assets/themes/mono-jewel-atelier/diamond-ring.jpg"
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "Join our family",
+            "subtitle": "إصدار محدود كل شهر — يوصلك قبل ما نعلنه، ومعاه دليل القياس.",
+            "placeholder": "بريدك الإلكتروني",
+            "buttonText": "انضمي"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "badge": "فلتر",
+            "title": "اختاري بدقة",
+            "subtitle": "بالمقاس والمعدن والسعر — كل القطع في مكان واحد.",
+            "showSort": true
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل القطع",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "boutique-portrait-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "atelier-buybox",
+          "settings": {
+            "addToCartText": "أضيفي للسلة",
+            "descriptionTitle": "تفاصيل القطعة",
+            "shippingTitle": "الشحن والتغليف",
+            "shippingText": "تغليف هدايا مجاني · توصيل ٢–٤ أيام عمل داخل مصر.",
+            "sizeGuideText": "دليل المقاسات"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "pairing-rail",
+          "settings": {
+            "title": "قطعة تكمّل اللوك",
+            "subtitle": "العميلات بيختاروا القطعة دي معاها.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "standard",
+          "settings": {
+            "title": "تقييمات القطعة",
+            "reviewLimit": 3
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع والمقاسات قبل الدفع.",
+            "emptyTitle": "السلة فاضية",
+            "emptyText": "لسه ما اخترتيش قطعة.",
+            "continueShoppingText": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "إتمام الشراء",
+            "showFreeShippingProgress": true
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "badge": "المجموعات",
+            "title": "إصدارات الأتيليه",
+            "subtitle": "خريف، أساسيات، وهدايا — كل مجموعة بقطعهتها المحدودة.",
+            "columns": 4
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "قطع المجموعة",
+            "limit": 12
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "خدمة الأتيليه",
+            "subtitle": "تغليف هدايا · استبدال مقاس ١٤ يوم · شهادة أصالة مع كل قطعة."
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألينا عن المقاس أو الحجر أو التعديل — بنرد في نفس اليوم.",
+            "submitText": "ابعت الرسالة",
+            "successText": "وصلتنا رسالتك — هنرد عليك في نفس اليوم."
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "زيارة الأتيليه",
+            "subtitle": "استشارة مقاس مجانية أونلاين، وتعديل المقاس على حسابنا في أول ١٤ يوم."
+          }
+        }
+      ]
+    }
+  }
+}

@@ -245,6 +245,12 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "skincare",
     "عناية بالبشرة",
   ),
+  "mono-jewel-atelier": createThemeCategoryMeta(
+    "luxury",
+    "فخامة",
+    "jewelry-watches",
+    "مجوهرات وساعات",
+  ),
   "modern-minimal": createThemeCategoryMeta(
     "fashion",
     "أزياء",
@@ -835,6 +841,8 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "قالب عناية بالبشرة بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
   "tpl-036-skincare-atelier-origin":
     "قالب عناية بالبشرة أصلي بمنطق الأتيليه: هيرو بانر رشيق، موزاييك صور، ريل فئات مناسبات، قصة تحريرية عن تركيبة السيرم، وآراء بصوت العميلات. هوية بصرية خاصة.",
+  "mono-jewel-atelier":
+    "قالب مجوهرات أحادي اللون بمنطق الأتيليه: شريط إعلان رفيع، هيرو صورة واحدة كبيرة، فئات مختارة، شبكة منتجات ٤×٢، لوك بوك إصدارين، آراء ثلاثية، شريط مجلة، شبكة إنستجرام، ونشرة انضمام — حدود رقيقة وradius صغير.",
   "menswear-regent":
     "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز.",
   "menswear-oxford":
@@ -1046,6 +1054,8 @@ export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
     "/assets/themes/tpl-035-skincare-ritual-cod/preview.png",
   "tpl-036-skincare-atelier-origin":
     "/assets/themes/tpl-036-skincare-atelier-origin/preview.png",
+  "mono-jewel-atelier":
+    "/assets/themes/mono-jewel-atelier/preview.png",
   "menswear-regent":
     "/assets/themes/menswear-regent/preview.png",
   "menswear-oxford":
