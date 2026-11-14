@@ -111,6 +111,8 @@ def _build_runtime_agent_from_db(
     from src.agents.base import _load_hooks_for_template
     agent_hooks = _load_hooks_for_template(db_agent.template_slug or None)
 
+    db_config = db_agent.config or {}
+
     # 2026-11-13: thinking level → model adjustment (deepseek deep → reasoner)
     from src.services.thinking_level import resolve_agent_model
     resolved_model = resolve_agent_model(
@@ -119,7 +121,6 @@ def _build_runtime_agent_from_db(
         getattr(db_agent, "model_policy", None) or {},
     )
 
-    db_config = db_agent.config or {}
     config = BaseAgentConfig(
         id=getattr(db_agent, "id", None),
         name=getattr(db_agent, "name", ""),
