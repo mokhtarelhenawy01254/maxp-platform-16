@@ -1,4 +1,4 @@
-import type { CanvasNodeData, FlowConnection, FlowSubJourney } from './types';
+import type { CanvasNodeData, FlowConnection, FlowSubJourney, EducationFlowRecord, SmartVariableItem } from './types';
 
 export const SUB_JOURNEYS: FlowSubJourney[] = [
   {
@@ -33,6 +33,88 @@ export const SUB_JOURNEYS: FlowSubJourney[] = [
   },
 ];
 
+export const FLOW_RECORDS: EducationFlowRecord[] = [
+  {
+    id: 'flow-demo-day',
+    name: 'مسار حجز الديمو داي (Demo Day Onboarding)',
+    description: 'استقبال استفسارات الإعلانات، فحص عمر الطالب، وتثبيت حجز الورشة التجريبية آلياً',
+    category: 'demo_booking',
+    triggerEvent: 'education_demo_day_registered',
+    triggerLabel: 'تسجيل في الديمو داي',
+    isEnabled: true,
+    channels: ['WHATSAPP_WABA', 'FACEBOOK_MESSENGER', 'INSTAGRAM_DIRECT'],
+    totalEnrolled: 342,
+    deliveryRate: 98.4,
+    responseRate: 74.2,
+    nodeCount: 4,
+    updatedAt: 'اليوم، 11:30 ص',
+  },
+  {
+    id: 'flow-attendance-reminders',
+    name: 'مسار تذكيرات الحضور واستعادة الغائبين (Attendance Guard)',
+    description: 'تذكير قبل 24 ساعة وقبل ساعتين برابط الزووم، وتأهيل الغائبين بحجز موعد بديل فوري',
+    category: 'attendance',
+    triggerEvent: 'education_session_reminder',
+    triggerLabel: 'تذكير موعد الجلسة',
+    isEnabled: true,
+    channels: ['WHATSAPP_WABA', 'WHATSAPP_BAILEYS', 'PUSH_FIRST'],
+    totalEnrolled: 289,
+    deliveryRate: 99.1,
+    responseRate: 88.5,
+    nodeCount: 6,
+    updatedAt: 'أمس، 04:15 م',
+  },
+  {
+    id: 'flow-level-enrollment',
+    name: 'مسار تقييم المستوى والاشتراك (Assessment & Checkout)',
+    description: 'إرسال تقرير المدرب بعد الورشة، كود الخصم الحصري، ورابط الدفع الإلكتروني للباقة',
+    category: 'enrollment',
+    triggerEvent: 'education_demo_day_attended_feedback',
+    triggerLabel: 'انتهاء الديمو داي وتقييم الحضور',
+    isEnabled: true,
+    channels: ['WHATSAPP_WABA', 'FACEBOOK_MESSENGER'],
+    totalEnrolled: 184,
+    deliveryRate: 97.8,
+    responseRate: 68.9,
+    nodeCount: 3,
+    updatedAt: 'منذ 3 أيام',
+  },
+  {
+    id: 'flow-hours-retention',
+    name: 'مسار متابعة الحصص وتجديد الساعات (Hours Retention Loop)',
+    description: 'تأكيد الحصص الأسبوعية وخصم الساعات، مع إشعار استباقي لتجديد الباقة عند بقاء ساعتين',
+    category: 'retention',
+    triggerEvent: 'education_enrollment_low_hours',
+    triggerLabel: 'رصيد الساعات ≤ 2 ساعة',
+    isEnabled: true,
+    channels: ['PUSH_FIRST', 'WHATSAPP_WABA', 'WHATSAPP_BAILEYS'],
+    totalEnrolled: 412,
+    deliveryRate: 99.5,
+    responseRate: 81.0,
+    nodeCount: 4,
+    updatedAt: 'منذ 5 أيام',
+  },
+];
+
+export const SMART_VARIABLES: SmartVariableItem[] = [
+  { key: '{studentName}', label: 'اسم الطالب', category: 'student', sample: 'ياسين أحمد' },
+  { key: '{parentName}', label: 'اسم ولي الأمر', category: 'student', sample: 'أستاذ أحمد' },
+  { key: '{subjectName}', label: 'المادة التعليمية', category: 'student', sample: 'برمجة بايثون' },
+  { key: '{packageName}', label: 'اسم الباقة', category: 'student', sample: 'باقة الـ 16 ساعة' },
+  { key: '{remainingHours}', label: 'رصيد الساعات المتبقي', category: 'student', sample: '2 ساعة' },
+  { key: '{sessionDate}', label: 'تاريخ الحصة', category: 'session', sample: 'الجمعة 15 نوفمبر' },
+  { key: '{sessionTime}', label: 'وقت الحصة', category: 'session', sample: '04:00 عصراً' },
+  { key: '{teacherName}', label: 'اسم المحاضر', category: 'session', sample: 'م. أحمد ممدوح' },
+  { key: '{duration}', label: 'مدة الحصة (دقائق)', category: 'session', sample: '60 دقيقة' },
+  { key: '{eventTitle}', label: 'عنوان ورشة الديمو', category: 'demoday', sample: 'ورشة صناعة الألعاب' },
+  { key: '{eventTime}', label: 'توقيت ورشة الديمو', category: 'demoday', sample: '04:00 عصراً' },
+  { key: '{meetLink}', label: 'رابط قاعة الزووم المباشر', category: 'demoday', sample: 'https://zoom.us/j/demo' },
+  { key: '{eventLocation}', label: 'المقر أو العنوان', category: 'demoday', sample: 'مقر الأكاديمية - فرع التجمع' },
+  { key: '{discountCode}', label: 'كود خصم التسجيل', category: 'billing', sample: 'DEMO15' },
+  { key: '{amountPaid}', label: 'المبلغ المطلوب / المدفوع', category: 'billing', sample: '1,200 ج.م' },
+  { key: '{paymentLink}', label: 'رابط الدفع الإلكتروني', category: 'billing', sample: 'https://pay.maxp.online/inv-44' },
+];
+
 export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-trigger',
@@ -45,29 +127,33 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-1',
     type: 'message',
-    title: 'واتساب · رسالة #1: ترحيب وفحص السن',
-    channel: 'WHATSAPP',
-    messageText: 'أهلاً بحضرتك يا فندم في أكاديمية البرمجة 🌸\n\nعشان نساعدك في ترشيح أنسب مسار تدريبي ومجموعة مناسبة، كم عمر الطالب؟',
+    title: 'واتساب رسمي (WABA) · رسالة #1: ترحيب وفحص السن',
+    channel: 'WHATSAPP_WABA',
+    windowPolicy: 'INSIDE_24H',
+    messageText: 'أهلاً بحضرتك يا فندم في أكاديمية البرمجة 🌸\n\nعشان نساعدك في ترشيح أنسب مسار تدريبي ومجموعة مناسبة لـ {studentName}، كم عمر الطالب؟',
     buttons: [
       { id: 'btn-age-junior', label: 'من 8 إلى 11 سنة', targetNodeId: 'node-msg-2' },
       { id: 'btn-age-senior', label: 'من 12 إلى 16 سنة', targetNodeId: 'node-msg-2' },
     ],
     footerNote: 'في انتظار اختيار ولي الأمر للفئة العمرية...',
     category: 'demo_booking',
+    stats: { enteredCount: 342, deliveredCount: 338, responseRate: 84.1 },
   },
   {
     id: 'node-msg-2',
     type: 'message',
-    title: 'واتساب · رسالة #2: مواعيد الديمو داي المتاحة',
-    channel: 'WHATSAPP',
+    title: 'فيسبوك ماسنجر / واتساب · رسالة #2: مواعيد الديمو داي',
+    channel: 'FACEBOOK_MESSENGER',
+    windowPolicy: 'INSIDE_24H',
     messageText: 'ممتاز جداً! السن ده مناسب جداً يبدأ في ورشة تجربة البرمجة التفاعلية مجاناً.\n\nأقرب مواعيد متاحة للديمو داي:\n📅 الجمعة الساعة 4:00 عصراً (أونلاين عبر زووم)\n📅 السبت الساعة 2:00 ظهراً (في مقر الأكاديمية)',
     buttons: [
-      { id: 'btn-slot-fri', label: 'تأكيد حجز الجمعة 4 عصراً', targetNodeId: 'node-delay-1' },
-      { id: 'btn-slot-sat', label: 'تأكيد حجز السبت 2 ظهراً', targetNodeId: 'node-delay-1' },
+      { id: 'btn-slot-fri', label: 'تأكيد الجمعة 4 عصراً', targetNodeId: 'node-delay-1' },
+      { id: 'btn-slot-sat', label: 'تأكيد السبت 2 ظهراً', targetNodeId: 'node-delay-1' },
       { id: 'btn-slot-other', label: 'طلب موعد آخر', targetNodeId: 'node-delay-1' },
     ],
     footerNote: 'يتم قفل المقعد تلقائياً في قاعدة البيانات وتأكيد الحجز فورا...',
     category: 'demo_booking',
+    stats: { enteredCount: 288, deliveredCount: 284, responseRate: 79.5 },
   },
   {
     id: 'node-delay-1',
@@ -80,15 +166,18 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-3',
     type: 'message',
-    title: 'واتساب · رسالة #3: تذكير بالديمو وزر تأكيد الحضور',
-    channel: 'WHATSAPP',
-    messageText: 'تذكير بموعد جلسة البرمجة المجانية ⏰\n\nأهلاً بحضرتك، نذكركم بموعد ورشة العمل التجريبية لـ [اسم الطالب] غداً الساعة 4:00 عصراً.\n\n📌 يرجى الضغط على زر التأكيد أدناه لتفعيل المقعد والحصول على رابط القاعة.',
+    title: 'واتساب رسمي (WABA) · رسالة #3: تذكير بالديمو وزر تأكيد الحضور',
+    channel: 'WHATSAPP_WABA',
+    windowPolicy: 'OUTSIDE_24H_HSM',
+    metaTemplateName: 'demo_day_reminder_24h_approved',
+    messageText: 'تذكير بموعد جلسة البرمجة المجانية ⏰\n\nأهلاً {parentName}، نذكركم بموعد ورشة العمل التجريبية لـ {studentName} غداً الساعة {sessionTime}.\n\n📌 يرجى الضغط على زر التأكيد أدناه لتفعيل المقعد واستلام رابط القاعة.',
     buttons: [
       { id: 'btn-confirm-yes', label: 'تأكيد الحضور واستلام الرابط', targetNodeId: 'node-delay-2' },
       { id: 'btn-confirm-apology', label: 'اعتذار عن الموعد الحالي', targetNodeId: 'node-msg-5b' },
     ],
-    footerNote: 'نقر ولي الأمر يعيد فتح نافذة الـ 24 ساعة مجاناً للردود التفاعلية...',
+    footerNote: 'قالب معتمد من Meta (UTILITY) يصل حتى لو نافذة الـ 24 ساعة مغلقة...',
     category: 'attendance',
+    stats: { enteredCount: 260, deliveredCount: 258, responseRate: 88.2 },
   },
   {
     id: 'node-delay-2',
@@ -101,14 +190,16 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-4',
     type: 'message',
-    title: 'واتساب · رسالة #4: رابط قاعة الزووم المباشرة',
-    channel: 'WHATSAPP',
-    messageText: 'جلسة البرمجة هتبدأ بعد ساعتين! 🚀\n\nرابط الدخول المباشر إلى قاعة الزووم:\nhttps://zoom.us/j/code-demo-live\n\nكلمة المرور: 2026\nيفضل دخول الطالب من لابتوب أو كمبيوتر لتطبيق الأكواد عملياً.',
+    title: 'واتساب عادي / إنستجرام · رسالة #4: رابط قاعة الزووم المباشرة',
+    channel: 'WHATSAPP_BAILEYS',
+    windowPolicy: 'INSIDE_24H',
+    messageText: 'جلسة البرمجة هتبدأ بعد ساعتين! 🚀\n\nرابط الدخول المباشر إلى قاعة الزووم:\n{meetLink}\n\nكلمة المرور: 2026\nيفضل دخول الطالب من لابتوب أو كمبيوتر لتطبيق الأكواد عملياً.',
     buttons: [
-      { id: 'btn-zoom-enter', label: 'دخول القاعة الآن' },
+      { id: 'btn-zoom-enter', label: 'دخول القاعة الآن', actionType: 'OPEN_URL', url: 'https://zoom.us/j/demo' },
     ],
     footerNote: 'تم إرسال تنبيه للمهندس المشرف ببيانات الطالب...',
     category: 'attendance',
+    stats: { enteredCount: 242, deliveredCount: 240, responseRate: 91.0 },
   },
   {
     id: 'node-cond-1',
@@ -124,28 +215,32 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-5a',
     type: 'message',
-    title: 'واتساب · مسار الحضور: تقييم المستوى ورابط الدفع',
-    channel: 'WHATSAPP',
-    messageText: 'سعدنا جداً بمشاركة [اسم الطالب] في ورشة اليوم وتفاعله المتميز! 🌟\n\nبناءً على تقييم المدرب، المستوى المرشح له:\nالمستوى الأول: أساسيات التفكير البرمجي وصناعة الألعاب (16 ساعة تدريبية).\n\nسعر الباقة بعد خصم الديمو (10%): 1,200 ج.م بدلاً من 1,400 ج.م.\n\nرابط السداد الإلكتروني وتفعيل الاشتراك فوراً:',
+    title: 'واتساب رسمي (WABA) · مسار الحضور: تقييم المستوى ورابط الدفع',
+    channel: 'WHATSAPP_WABA',
+    windowPolicy: 'INSIDE_24H',
+    messageText: 'سعدنا جداً بمشاركة {studentName} في ورشة اليوم وتفاعله المتميز! 🌟\n\nبناءً على تقييم المدرب، المستوى المرشح له:\nالمستوى الأول: أساسيات التفكير البرمجي وصناعة الألعاب (16 ساعة تدريبية).\n\nسعر الباقة بعد خصم الديمو (10%): {amountPaid} بدلاً من 1,400 ج.م.\nكود الخصم: {discountCode}\n\nرابط السداد الإلكتروني وتفعيل الاشتراك فوراً:\n{paymentLink}',
     buttons: [
-      { id: 'btn-pay-link', label: 'الدفع وتأكيد الاشتراك (فوري / كارت / إنستاباي)', targetNodeId: 'node-delay-3' },
+      { id: 'btn-pay-link', label: 'الدفع الإلكتروني (إنستاباي / فوري / كارت)', targetNodeId: 'node-delay-3', actionType: 'OPEN_URL', url: 'https://pay.maxp.online' },
       { id: 'btn-talk-admin', label: 'تحدث مع المشرف التعليمي' },
     ],
     footerNote: 'بمجرد الدفع يتم تفعيل حساب الطالب وبوابة ولي الأمر تلقائياً...',
     category: 'enrollment',
+    stats: { enteredCount: 198, deliveredCount: 196, responseRate: 72.4 },
   },
   {
     id: 'node-msg-5b',
     type: 'message',
-    title: 'واتساب · مسار الغياب: استعادة العميل بحجز ديمو بديل',
-    channel: 'WHATSAPP',
-    messageText: 'لعله خير! لاحظنا أنكم لم تتمكنوا من حضور جلسة البرمجة اليوم 🌸\n\nلأننا حريصون على تجربة [اسم الطالب] للبرمجة، وفرنا لكم مقعداً بديلاً في ديمو الأسبوع القادم مجاناً.\n\nتحب نثبت حجز الجمعة القادمة 4 عصراً؟',
+    title: 'واتساب عادي (Baileys) · مسار الغياب: استعادة العميل بديمو بديل',
+    channel: 'WHATSAPP_BAILEYS',
+    windowPolicy: 'INSIDE_24H',
+    messageText: 'لعله خير! لاحظنا أنكم لم تتمكنوا من حضور جلسة البرمجة اليوم لـ {studentName} 🌸\n\nلأننا حريصون على تجربة الطالب للبرمجة، وفرنا لكم مقعداً بديلاً في ديمو الأسبوع القادم مجاناً.\n\nتحب نثبت حجز الجمعة القادمة 4 عصراً؟',
     buttons: [
       { id: 'btn-rebook-yes', label: 'نعم، احجز لي الجمعة القادمة', targetNodeId: 'node-delay-1' },
       { id: 'btn-rebook-cancel', label: 'إلغاء المتابعة حالياً' },
     ],
     footerNote: 'يمنع تسرب العميل ويرفع نسبة التحويل الإجمالية لأكثر من 70%...',
     category: 'attendance',
+    stats: { enteredCount: 44, deliveredCount: 44, responseRate: 59.1 },
   },
   {
     id: 'node-delay-3',
@@ -158,14 +253,16 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-6',
     type: 'message',
-    title: 'واتساب · رسالة تأكيد الحصة ورصيد الساعات المتبقي',
-    channel: 'WHATSAPP',
-    messageText: 'تم تأكيد حضور حصة اليوم بنجاح ✅\n\nالطالب: [اسم الطالب]\nالمادة: برمجة وتطوير الألعاب\nمدة الحصة: 60 دقيقة\n\n⏰ رصيد الساعات المتبقي في الباقة: [ساعتان فقط]',
+    title: 'إشعار البوابة أولاً (Push First) · تأكيد الحصة والرصيد المتبقي',
+    channel: 'PUSH_FIRST',
+    windowPolicy: 'NOT_APPLICABLE',
+    messageText: 'تم تأكيد حضور حصة اليوم بنجاح ✅\n\nالطالب: {studentName}\nالمادة: {subjectName}\nمدة الحصة: {duration}\n\n⏰ رصيد الساعات المتبقي في الباقة: {remainingHours}',
     buttons: [
       { id: 'btn-view-portal', label: 'متابعة تقرير الحصة في بوابة ولي الأمر' },
     ],
-    footerNote: 'يتم إرسال إشعار ويب مجاني أولاً ثم واتساب لتوفير التكاليف...',
+    footerNote: 'يوفر 100% من تكلفة محادثة واتساب عبر إرسال إشعار المتصفح أولاً...',
     category: 'retention',
+    stats: { enteredCount: 412, deliveredCount: 408, responseRate: 85.0 },
   },
   {
     id: 'node-cond-2',
@@ -181,15 +278,18 @@ export const FLOW_NODES: CanvasNodeData[] = [
   {
     id: 'node-msg-7',
     type: 'message',
-    title: 'واتساب · عرض التجديد الاستباقي بنقرة واحدة',
-    channel: 'WHATSAPP',
-    messageText: 'تنبيه رصيد الساعات ⏳\n\nأهلاً بحضرتك، رصيد [اسم الطالب] أوشك على الانتهاء (متبقي ساعتان فقط - حصة واحدة قادمة).\n\nلضمان استمرار الطالب في نفس المجموعة ومع نفس المهندس دون انقطاع، يمكنكم تجديد باقة الـ 16 ساعة القادمة بنقرة واحدة مع خصم الاستمرارية (10%).',
+    title: 'واتساب رسمي (WABA) · عرض التجديد الاستباقي بنقرة واحدة',
+    channel: 'WHATSAPP_WABA',
+    windowPolicy: 'OUTSIDE_24H_HSM',
+    metaTemplateName: 'low_hours_renewal_approved',
+    messageText: 'تنبيه رصيد الساعات ⏳\n\nأهلاً {parentName}، رصيد {studentName} أوشك على الانتهاء (متبقي {remainingHours} فقط - حصة واحدة قادمة).\n\nلضمان استمرار الطالب في نفس المجموعة دون انقطاع، يمكنكم تجديد الباقة بنقرة واحدة:\n{paymentLink}',
     buttons: [
-      { id: 'btn-renew-pay', label: 'تجديد الباقة الآن (سداد إلكتروني)' },
+      { id: 'btn-renew-pay', label: 'تجديد الباقة الآن (سداد إلكتروني)', actionType: 'OPEN_URL', url: 'https://pay.maxp.online/renew' },
       { id: 'btn-renew-talk', label: 'التحدث مع إدارة المركز' },
     ],
     footerNote: 'يحافظ على استبقاء الطلاب بنسبة تزيد عن 80% أوتوماتيكياً...',
     category: 'retention',
+    stats: { enteredCount: 88, deliveredCount: 88, responseRate: 81.8 },
   },
 ];
 
@@ -201,13 +301,10 @@ export const FLOW_CONNECTIONS: FlowConnection[] = [
   { fromId: 'node-msg-3', toId: 'node-delay-2' },
   { fromId: 'node-delay-2', toId: 'node-msg-4' },
   { fromId: 'node-msg-4', toId: 'node-cond-1' },
-  // Condition 1 branches:
   { fromId: 'node-cond-1', toId: 'node-msg-5a', fromPort: 'yes', color: '#10b981', label: 'نعم: حضر' },
   { fromId: 'node-cond-1', toId: 'node-msg-5b', fromPort: 'no', color: '#f59e0b', label: 'لا: غاب' },
-  // After enrollment:
   { fromId: 'node-msg-5a', toId: 'node-delay-3' },
   { fromId: 'node-delay-3', toId: 'node-msg-6' },
   { fromId: 'node-msg-6', toId: 'node-cond-2' },
-  // Condition 2 branches:
   { fromId: 'node-cond-2', toId: 'node-msg-7', fromPort: 'yes', color: '#f59e0b', label: 'الرصيد أوشك على الانتهاء' },
 ];
