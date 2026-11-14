@@ -1,4 +1,4 @@
-const { getSharedPrismaClient } = require('./sharedDatabase');
+const sharedDatabase = require('./sharedDatabase');
 
 /**
  * Education Audit Service
@@ -24,11 +24,11 @@ const ACTION_DEFINITIONS = {
   DELETE_STUDENT: { label: 'حذف طالب', severity: 'HIGH', entity: 'STUDENT' },
 
   // Teachers / Instructors
-  CREATE_TEACHER: { label: 'إضافة مهندس/معلم', severity: 'LOW', entity: 'TEACHER' },
-  UPDATE_TEACHER: { label: 'تحديث بيانات مهندس', severity: 'LOW', entity: 'TEACHER' },
-  DELETE_TEACHER: { label: 'حذف مهندس/معلم', severity: 'HIGH', entity: 'TEACHER' },
-  UPDATE_TEACHER_AVAILABILITY: { label: 'تحديث جدول توفر المهندس', severity: 'LOW', entity: 'TEACHER' },
-  TEACHER_LOGIN: { label: 'تسجيل دخول مهندس', severity: 'LOW', entity: 'PORTAL' },
+  CREATE_TEACHER: { label: 'إضافة مدرس/معلم', severity: 'LOW', entity: 'TEACHER' },
+  UPDATE_TEACHER: { label: 'تحديث بيانات مدرس/معلم', severity: 'LOW', entity: 'TEACHER' },
+  DELETE_TEACHER: { label: 'حذف مدرس/معلم', severity: 'HIGH', entity: 'TEACHER' },
+  UPDATE_TEACHER_AVAILABILITY: { label: 'تحديث جدول توفر المدرس/المعلم', severity: 'LOW', entity: 'TEACHER' },
+  TEACHER_LOGIN: { label: 'تسجيل دخول مدرس/معلم', severity: 'LOW', entity: 'PORTAL' },
 
   // Enrollments
   CREATE_ENROLLMENT: { label: 'تسجيل اشتراك جديد', severity: 'MEDIUM', entity: 'ENROLLMENT' },
@@ -43,8 +43,8 @@ const ACTION_DEFINITIONS = {
   DELETE_SESSION: { label: 'حذف حصة دراسية', severity: 'HIGH', entity: 'SESSION' },
 
   // Teacher Payments / Salaries
-  CREATE_PAYMENT: { label: 'إنشاء مسير استحقاق مهندس', severity: 'MEDIUM', entity: 'PAYMENT' },
-  PAY_TEACHER: { label: 'صرف مرتب/استحقاق مهندس', severity: 'HIGH', entity: 'PAYMENT' },
+  CREATE_PAYMENT: { label: 'إنشاء مسير استحقاق مدرس/معلم', severity: 'MEDIUM', entity: 'PAYMENT' },
+  PAY_TEACHER: { label: 'صرف مرتب/استحقاق مدرس/معلم', severity: 'HIGH', entity: 'PAYMENT' },
   CANCEL_PAYMENT: { label: 'إلغاء استحقاق مالي', severity: 'MEDIUM', entity: 'PAYMENT' },
 
   // Portals & Guardians
@@ -163,7 +163,7 @@ async function logEducationEvent({
 
     const tags = ['education', finalEntityType.toLowerCase(), (action || '').toLowerCase()];
 
-    const prisma = getSharedPrismaClient();
+    const prisma = sharedDatabase.getSharedPrismaClient();
     const createdLog = await prisma.activityLog.create({
       data: {
         userId: resolvedUserId,
@@ -217,7 +217,7 @@ async function getEducationLogs({
     };
   }
 
-  const prisma = getSharedPrismaClient();
+  const prisma = sharedDatabase.getSharedPrismaClient();
   const skip = (pageNum - 1) * pageSize;
 
   const where = {
@@ -342,7 +342,7 @@ async function getEducationLogsStats(companyId) {
     };
   }
 
-  const prisma = getSharedPrismaClient();
+  const prisma = sharedDatabase.getSharedPrismaClient();
 
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());

@@ -132,7 +132,7 @@ export const TABS: { id: TabId; label: string; icon: React.ComponentType<{ class
   { id: "packages", label: "الباقات", icon: Gift },
   { id: "groups", label: "المجموعات (الجروبات)", icon: Users },
   { id: "students", label: "الطلاب", icon: Users },
-  { id: "teachers", label: "المهندسين", icon: GraduationCap },
+  { id: "teachers", label: "المدرسين", icon: GraduationCap },
   { id: "enrollments", label: "التسجيلات", icon: Layers },
   { id: "sessions", label: "الحصص", icon: Clock },
   { id: "demo-day", label: "الديمو داي", icon: Presentation },

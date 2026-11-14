@@ -105,7 +105,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 })
               }
             >
-              <option value="">{t("education.sessions.allTeachers", isEn ? "All Instructors" : "كل المهندسين")}</option>
+              <option value="">{t("education.sessions.allTeachers", isEn ? "All Teachers" : "كل المدرسين")}</option>
               {teachers
                 .filter((t) => t.isActive)
                 .map((t) => (
@@ -165,7 +165,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <User className="w-3 h-3 text-primary shrink-0" />
-                  <span className="truncate">{s.teacher?.name || (isEn ? "Unassigned Instructor" : "مهندس غير محدد")}</span>
+                  <span className="truncate">{s.teacher?.name || (isEn ? "Unassigned Teacher" : "مدرس غير محدد")}</span>
                 </div>
               </div>
               <span
@@ -257,7 +257,7 @@ export const EducationSessionsTab: React.FC<EducationSessionsTabProps> = ({
               <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground text-xs">
                 {[
                   t("education.enrollments.student", isEn ? "Student" : "الطالب"),
-                  t("education.enrollments.teacher", isEn ? "Instructor" : "المهندس"),
+                  t("education.enrollments.teacher", isEn ? "Teacher" : "المدرس"),
                   t("education.enrollments.subject", isEn ? "Subject" : "المادة"),
                   t("education.sessions.dateAndTime", isEn ? "Date & Time" : "التاريخ والوقت"),
                   t("education.sessions.plannedDuration", isEn ? "Duration" : "المدة"),

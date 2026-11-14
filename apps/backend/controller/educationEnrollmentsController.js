@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 const educationNotificationService = require('../services/educationNotificationService');
 
 const ALLOWED_PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'PARTIALLY_PAID', 'FAILED', 'REFUNDED'];
@@ -119,13 +120,14 @@ const create = async (req, res) => {
     });
 
     const studentName = `${student.firstName} ${student.lastName || ''}`.trim();
+    const teacherLabel = teacher ? await getSingularTeacherLabel(companyId, 'ar') : '';
     logEducationEvent({
       companyId,
       action: 'CREATE_ENROLLMENT',
       entityType: 'ENROLLMENT',
       entityId: data.id,
       entityName: `${studentName} - ${pkg.name}`,
-      description: `تم تسجيل الطالب ${studentName} في باقة ${pkg.name} (${pkg.hoursCount} ساعة - المدفوع: ${amountPaid || 0} ج.م${teacher ? ` - المهندس: ${teacher.name}` : ''})`,
+      description: `تم تسجيل الطالب ${studentName} في باقة ${pkg.name} (${pkg.hoursCount} ساعة - المدفوع: ${amountPaid || 0} ج.م${teacher ? ` - ${teacherLabel}: ${teacher.name}` : ''})`,
       details: {
         studentId,
         packageId,

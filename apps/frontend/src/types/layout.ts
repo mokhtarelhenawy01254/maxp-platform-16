@@ -58,6 +58,28 @@ export interface SidebarCustomItem {
   visible: boolean;
   labelAr?: string;
   labelEn?: string;
+  iconName?: string;
+}
+
+export interface EducationTabSetting {
+  id: string;
+  key: string;
+  defaultLabelAr?: string;
+  defaultLabelEn?: string;
+  labelAr?: string;
+  labelEn?: string;
+  order: number;
+  visible: boolean;
+  locked?: boolean;
+  iconName?: string;
+}
+
+export interface EducationSettingsData {
+  systemTitle?: string;
+  systemTitleEn?: string;
+  educationMode?: "COURSES" | "ACADEMIC";
+  enableSubjects?: boolean;
+  tabs?: EducationTabSetting[];
 }
 
 export type SidebarManagementData =
@@ -66,6 +88,8 @@ export type SidebarManagementData =
       items?: SidebarCustomItem[];
       layout?: string;
       updatedAt?: string;
+      educationSettings?: EducationSettingsData | null;
+      apps?: Record<string, { customName?: string | null; name?: string | null }>;
     }
   | SidebarCustomItem[];
 

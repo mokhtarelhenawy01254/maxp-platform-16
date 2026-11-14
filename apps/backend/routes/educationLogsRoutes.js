@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller/educationLogsController');
 const verifyToken = require('../utils/verifyToken');
+const requireEducationAppInstalled = require('../middleware/requireEducationAppInstalled');
+
+router.use(verifyToken.authenticateToken, requireEducationAppInstalled);
 
 router.get('/', verifyToken.authenticateToken, controller.getLogs);
 router.get('/stats', verifyToken.authenticateToken, controller.getStats);

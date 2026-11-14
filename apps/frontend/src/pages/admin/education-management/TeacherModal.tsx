@@ -69,8 +69,8 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-border/80">
           <h3 className="text-sm font-bold text-foreground">
             {teacher?.id
-              ? t("education.teachers.modalTitleEdit", isEn ? "Edit Instructor Details" : "تعديل بيانات الكادر")
-              : t("education.teachers.modalTitleNew", isEn ? "Add New Instructor" : "إضافة مهندس / كادر جديد")}
+              ? t("education.teachers.modalTitleEdit", isEn ? "Edit Teacher Details" : "تعديل بيانات المدرس")
+              : t("education.teachers.modalTitleNew", isEn ? "Add New Teacher" : "إضافة مدرس جديد")}
           </h3>
           <button
             type="button"
@@ -83,13 +83,13 @@ export const TeacherModal: React.FC<TeacherModalProps> = ({
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
-              {t("education.teachers.name", isEn ? "Instructor Name *" : "اسم المعلم / المهندس *")}
+              {t("education.teachers.name", isEn ? "Teacher Name *" : "اسم المدرس *")}
             </label>
             <input
               className={INPUT_CLS}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={isEn ? "e.g. Eng. Sarah Mitchell" : "مثال: م. سارة أحمد"}
+              placeholder={isEn ? "e.g. Sarah Mitchell" : "مثال: أ. سارة أحمد"}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

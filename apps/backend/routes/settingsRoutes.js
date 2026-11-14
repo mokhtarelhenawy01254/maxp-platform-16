@@ -567,10 +567,16 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
           sidebarSettings.push({ key: 'education-subjects', visible: enableSubjects, order: 1 });
           sidebarSettings.push({ key: '/admin/education/subjects', visible: enableSubjects, order: 1 });
         }
-      } else if (sidebarSettings && typeof sidebarSettings === 'object' && (sidebarSettings.items || !sidebarSettings.sections)) {
-        if (!sidebarSettings.items) sidebarSettings.items = {};
-        sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
-        sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
+      } else if (sidebarSettings && typeof sidebarSettings === 'object' && !Array.isArray(sidebarSettings)) {
+        if (!sidebarSettings.items || Array.isArray(sidebarSettings.items) || typeof sidebarSettings.items !== 'object') {
+          if (!sidebarSettings.sections) {
+            sidebarSettings.items = {};
+          }
+        }
+        if (sidebarSettings.items && typeof sidebarSettings.items === 'object' && !Array.isArray(sidebarSettings.items)) {
+          sidebarSettings.items['education-subjects'] = { ...(sidebarSettings.items['education-subjects'] || {}), visible: enableSubjects };
+          sidebarSettings.items['/admin/education/subjects'] = { ...(sidebarSettings.items['/admin/education/subjects'] || {}), visible: enableSubjects };
+        }
       }
     }
 
@@ -579,10 +585,12 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
       data: {
         layout: company.sidebarLayout || 'classic',
         settings: sidebarSettings,
-        apps: appsMap
+        apps: appsMap,
+        educationSettings: parsedSettings.educationSettings || null
       },
       settings: sidebarSettings,
-      apps: appsMap
+      apps: appsMap,
+      educationSettings: parsedSettings.educationSettings || null
     });
   } catch (error) {
     console.error('❌ [SIDEBAR-SETTINGS] Error fetching:', error);
@@ -598,8 +606,11 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
 router.put('/sidebar', verifyToken.authenticateToken, async (req, res) => {
   try {
     const userRole = String(req.user?.role || '').toUpperCase();
-    const userPerms = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
-    if (!['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole) && !userPerms.includes('settings.manage')) {
+    const userPerms = Array.isArray(req.user?.userPermissions)
+      ? req.user.userPermissions
+      : (Array.isArray(req.user?.permissions) ? req.user.permissions : []);
+    const hasSidebarPerm = userPerms.includes('settings.manage') || userPerms.includes('education.settings.manage');
+    if (!['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole) && !hasSidebarPerm) {
       return res.status(403).json({
         success: false,
         message: 'غير مصرح لك بتعديل إعدادات القائمة الجانبية. هذه العملية مخصصة للمالك والمسؤولين فقط',

@@ -344,7 +344,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
           {/* Teacher Selection */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-foreground">
-              {t("education.enrollments.teacher", isEn ? "Assigned Instructor" : "المهندس المعين")}{" "}
+              {t("education.enrollments.teacher", isEn ? "Assigned Teacher" : "المدرس المعين")}{" "}
               {!enrollment?.id && (
                 <span className="text-muted-foreground text-[11px]">
                   ({t("education.students.addressOptional", isEn ? "Optional" : "اختياري")})
@@ -370,8 +370,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
             {filteredTeachers.length === 0 && form.packageId && (
               <p className="text-[11px] text-amber-500 mt-1">
                 {enableSubjects
-                  ? t("education.enrollments.unassignedNotice", isEn ? "No instructors for this subject. Please add an instructor with a rate for this subject first." : "لا يوجد مهندسين لهذه المادة. أضف مهندساً مع سعر للمادة أولاً.")
-                  : t("education.enrollments.noActiveInstructors", isEn ? "No active instructors found. Please add an instructor first." : "لا يوجد مدربين نشطين حالياً. أضف مدرباً أولاً.")}
+                  ? t("education.enrollments.unassignedNotice", isEn ? "No teachers for this subject. Please add a teacher with a rate for this subject first." : "لا يوجد مدرسين لهذه المادة. أضف مدرساً مع سعر للمادة أولاً.")
+                  : t("education.enrollments.noActiveInstructors", isEn ? "No active teachers found. Please add a teacher first." : "لا يوجد مدرسين نشطين حالياً. أضف مدرساً أولاً.")}
               </p>
             )}
           </div>

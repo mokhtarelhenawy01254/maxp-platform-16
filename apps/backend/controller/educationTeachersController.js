@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 const bcrypt = require('bcryptjs');
 
 const getAll = async (req, res) => {
@@ -37,7 +38,8 @@ const getById = async (req, res) => {
       }
     });
     if (!data) return res.status(404).json({ success: false, error: 'المدرس غير موجود' });
-    res.json({ success: true, data });
+    const { password: _pw, ...safeData } = data;
+    res.json({ success: true, data: safeData });
   } catch (error) {
     console.error('Error fetching teacher:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب المدرس' });
@@ -75,18 +77,20 @@ const create = async (req, res) => {
       include: { subjectRates: { include: { subject: { select: { id: true, name: true } } } } }
     });
 
+    const teacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CREATE_TEACHER',
       entityType: 'TEACHER',
       entityId: data.id,
       entityName: data.name,
-      description: `تم إضافة مهندس/معلم جديد: ${data.name} (هاتف: ${data.phone || 'غير مسجل'})`,
+      description: `تم إضافة ${teacherLabel} جديد: ${data.name} (هاتف: ${data.phone || 'غير مسجل'})`,
       details: { phone: data.phone, email: data.email, subjectRatesCount: subjectRates?.length || 0 },
       req,
     }).catch(e => console.error('[TeacherAudit]', e.message));
 
-    res.json({ success: true, data });
+    const { password: _createdPw, ...safeCreated } = data;
+    res.status(201).json({ success: true, data: safeCreated });
   } catch (error) {
     console.error('Error creating teacher:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء المدرس' });
@@ -118,13 +122,14 @@ const update = async (req, res) => {
       include: { subjectRates: { include: { subject: { select: { id: true, name: true } } } } }
     });
 
+    const updateTeacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'UPDATE_TEACHER',
       entityType: 'TEACHER',
       entityId: data.id,
       entityName: data.name,
-      description: `تم تحديث بيانات المهندس/المعلم: ${data.name}`,
+      description: `تم تحديث بيانات ${updateTeacherLabel}: ${data.name}`,
       details: {
         before: { name: existing.name, phone: existing.phone, isActive: existing.isActive },
         after: { name: data.name, phone: data.phone, isActive: data.isActive }
@@ -132,7 +137,8 @@ const update = async (req, res) => {
       req,
     }).catch(e => console.error('[TeacherAudit]', e.message));
 
-    res.json({ success: true, data });
+    const { password: _updatedPw, ...safeUpdated } = data;
+    res.json({ success: true, data: safeUpdated });
   } catch (error) {
     console.error('Error updating teacher:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المدرس' });
@@ -150,14 +156,16 @@ const remove = async (req, res) => {
 
     await getSharedPrismaClient().educationTeacher.delete({ where: { id } });
 
+    const deleteTeacherLabel = await getSingularTeacherLabel(companyId, 'ar');
+    const { password: _removedPassword, ...safeDeletedTeacher } = existing;
     logEducationEvent({
       companyId,
       action: 'DELETE_TEACHER',
       entityType: 'TEACHER',
       entityId: id,
       entityName: existing.name,
-      description: `تم حذف المهندس/المعلم: ${existing.name}`,
-      details: { deletedTeacher: existing },
+      description: `تم حذف ${deleteTeacherLabel}: ${existing.name}`,
+      details: { deletedTeacher: safeDeletedTeacher },
       severity: 'HIGH',
       req,
     }).catch(e => console.error('[TeacherAudit]', e.message));

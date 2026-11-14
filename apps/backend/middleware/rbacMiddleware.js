@@ -51,6 +51,7 @@ const PERMISSIONS = {
   // Settings
   'settings.read': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'education.settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'settings.whatsapp.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'settings.roles.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'settings.moderators.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],

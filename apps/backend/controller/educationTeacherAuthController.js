@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 const { resolvePortalLoginCandidates, verifySecretHash } = require('../utils/portalAuthFactory');
 
 const login = async (req, res) => {
@@ -76,6 +77,7 @@ const login = async (req, res) => {
     );
 
     const { password: _, ...teacherData } = teacher;
+    const teacherLabel = await getSingularTeacherLabel(teacher.companyId, 'ar');
 
     logEducationEvent({
       companyId: teacher.companyId,
@@ -83,7 +85,7 @@ const login = async (req, res) => {
       entityType: 'PORTAL',
       entityId: teacher.id,
       entityName: teacher.name,
-      description: `تسجيل دخول المهندس ${teacher.name} إلى بوابة التدريس`,
+      description: `تسجيل دخول ${teacherLabel} ${teacher.name} إلى بوابة التدريس`,
       actorType: 'TEACHER',
       userName: teacher.name,
       userRole: 'TEACHER',

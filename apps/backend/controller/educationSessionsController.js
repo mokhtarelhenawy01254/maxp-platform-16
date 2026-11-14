@@ -1,7 +1,7 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const educationNotificationService = require('../services/educationNotificationService');
 const { logEducationEvent } = require('../services/educationAuditService');
-const { getTeacherLabel } = require('../services/educationLabelService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 
 const getAll = async (req, res) => {
   try {
@@ -159,7 +159,7 @@ const create = async (req, res) => {
     const teacherName = data.teacher?.name || 'مدرس غير محدد';
     const subjectName = data.subject?.name || '';
     const dateFormatted = new Date(data.scheduledAt).toLocaleString('ar-EG');
-    const teacherLabel = await getTeacherLabel(companyId, 'ar');
+    const teacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'SCHEDULE_SESSION',
@@ -338,7 +338,7 @@ const confirm = async (req, res) => {
     const studentName = `${session.student?.firstName || ''} ${session.student?.lastName || ''}`.trim();
     const teacherName = session.teacher?.name || '';
     const subjectName = session.subject?.name || '';
-    const teacherLabel = await getTeacherLabel(companyId, 'ar');
+    const teacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CONFIRM_SESSION',
@@ -391,7 +391,7 @@ const cancel = async (req, res) => {
     });
 
     const studentName = `${data.student?.firstName || ''} ${data.student?.lastName || ''}`.trim();
-    const teacherLabel = await getTeacherLabel(companyId, 'ar');
+    const teacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CANCEL_SESSION',

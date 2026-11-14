@@ -278,7 +278,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
               className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 shadow-xs transition-colors shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
-              {isEn ? "Add Instructor" : "إضافة مهندس"}
+              {isEn ? "Add Teacher" : "إضافة مدرس"}
             </button>
           </div>
         </div>
@@ -288,8 +288,8 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
           <div className="flex items-center gap-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
             <span>
               {isEn
-                ? `Showing ${filtered.length} of ${totalCount} instructors`
-                : `تم العثور على ${filtered.length} من أصل ${totalCount} مهندس`}
+                ? `Showing ${filtered.length} of ${totalCount} teachers`
+                : `تم العثور على ${filtered.length} من أصل ${totalCount} مدرس`}
             </span>
             {(teacherSearch || statusFilter !== "all" || subjectFilter !== "all") && (
               <button
@@ -312,7 +312,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
       {/* Compact List View (صفوف أفقية مضغوطة ومنظمة) */}
       <div className="space-y-2">
         {filtered.map((t) => {
-          const displayName = t.name || (isEn ? "Unnamed Instructor" : "مهندس بدون اسم");
+          const displayName = t.name || (isEn ? "Unnamed Teacher" : "مدرس بدون اسم");
           const waPhone = cleanPhoneForWhatsApp(t.phone);
           const hasRates = t.subjectRates && t.subjectRates.length > 0;
 
@@ -469,7 +469,11 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
                         : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                     }`}
+<<<<<<< Updated upstream
                     aria-label={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")} title={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")}
+=======
+                    title={t.isActive ? (isEn ? "Deactivate Teacher" : "تعطيل المدرس") : (isEn ? "Activate Teacher" : "تفعيل المدرس")}
+>>>>>>> Stashed changes
                   >
                     <Power className="w-3 h-3" />
                     <span>{t.isActive ? (isEn ? "Deactivate" : "تعطيل") : (isEn ? "Activate" : "تفعيل")}</span>
@@ -480,7 +484,11 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => handleDeleteTeacher(t.id)}
                     className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+<<<<<<< Updated upstream
                     aria-label={isEn ? "Delete Instructor" : "حذف المهندس"} title={isEn ? "Delete Instructor" : "حذف المهندس"}
+=======
+                    title={isEn ? "Delete Teacher" : "حذف المدرس"}
+>>>>>>> Stashed changes
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -500,11 +508,11 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
               <h3 className="font-semibold text-sm text-foreground">
                 {teacherSearch || statusFilter !== "all" || subjectFilter !== "all"
                   ? isEn
-                    ? "No instructors match your search"
-                    : "لا يوجد مهندسين مطابقين لمعايير البحث"
+                    ? "No teachers match your search"
+                    : "لا يوجد مدرسين مطابقين لمعايير البحث"
                   : isEn
-                  ? "No registered instructors yet"
-                  : "لا يوجد مهندسين مسجلين حتى الآن"}
+                  ? "No registered teachers yet"
+                  : "لا يوجد مدرسين مسجلين حتى الآن"}
               </h3>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                 {teacherSearch || statusFilter !== "all" || subjectFilter !== "all"
@@ -512,8 +520,8 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     ? "Try clearing your filters or searching with different keywords."
                     : "جرّب تغيير كلمات البحث أو إلغاء التصفية لإظهار كافة النتائج."
                   : isEn
-                  ? "Click the button below to add your first instructor."
-                  : "اضغط على الزر أدناه لإضافة أول مهندس في النظام التعليمي."}
+                  ? "Click the button below to add your first teacher."
+                  : "اضغط على الزر أدناه لإضافة أول مدرس في النظام التعليمي."}
               </p>
             </div>
             {teacherSearch || statusFilter !== "all" || subjectFilter !== "all" ? (
@@ -536,7 +544,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:bg-primary/90 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {isEn ? "Add Instructor" : "إضافة مهندس"}
+                {isEn ? "Add Teacher" : "إضافة مدرس"}
               </button>
             )}
           </div>

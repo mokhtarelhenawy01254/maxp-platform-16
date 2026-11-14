@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const controller = require('../controller/educationNotificationController');
+const requireEducationAppInstalled = require('../middleware/requireEducationAppInstalled');
 
-router.use(verifyToken.authenticateToken);
+router.use(verifyToken.authenticateToken, requireEducationAppInstalled);
 
 // Restrict access: block non-staff roles (STUDENT, CUSTOMER, COURIER, SHIPPING_CLIENT)
 const DISALLOWED_ROLES = ['STUDENT', 'CUSTOMER', 'COURIER', 'SHIPPING_CLIENT'];

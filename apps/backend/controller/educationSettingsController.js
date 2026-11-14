@@ -1,4 +1,5 @@
 const sharedDatabase = require('../services/sharedDatabase');
+const permissionService = require('../services/permissionService');
 const { logEducationEvent } = require('../services/educationAuditService');
 const { isLegacyDefaultLabel, invalidateTeacherLabelCache } = require('../services/educationLabelService');
 
@@ -209,12 +210,95 @@ const resolveCompanyId = (req) => {
   if (DISALLOWED_ROLES.has(userRole)) return null;
   const headerCid = req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId;
   if (headerCid) {
-    if (userRole === 'SUPER_ADMIN') return String(headerCid).trim();
-    if (req.user?.companyId === headerCid) return String(headerCid).trim();
-    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === headerCid || uc.company?.id === headerCid);
-    if (hasCompany) return String(headerCid).trim();
+    const trimmedCid = String(headerCid).trim();
+    if (userRole === 'SUPER_ADMIN') return trimmedCid;
+    if (req.user?.companyId === trimmedCid) return trimmedCid;
+    const hasCompany = Array.isArray(req.user?.userCompanies) && req.user.userCompanies.some(uc => uc.companyId === trimmedCid || uc.company?.id === trimmedCid);
+    if (hasCompany) return trimmedCid;
+    return null;
   }
   return req.user?.companyId || req.user?.effectiveCompanyId || req.user?.userCompanies?.[0]?.companyId || null;
+};
+
+const resolveAuditCompanyId = (req, resolvedCompanyId) => {
+  return (
+    resolvedCompanyId ||
+    req.user?.companyId ||
+    req.user?.effectiveCompanyId ||
+    req.user?.userCompanies?.[0]?.companyId ||
+    null
+  );
+};
+
+const SETTINGS_MANAGE_PERMISSIONS = ['settings.manage', 'education.settings.manage'];
+
+const hasEducationSettingsManagePermission = async (req, companyId) => {
+  if (!req.user) return false;
+  const userRole = String(req.user?.role || '').toUpperCase();
+  if (DISALLOWED_ROLES.has(userRole)) return false;
+  if (req.user?.service === true || userRole === 'AI_SERVICE') return true;
+  if (['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole)) return true;
+
+  // Prefer DB-loaded userPermissions (populated by verifyToken.authenticateToken)
+  if (Array.isArray(req.user?.userPermissions)) {
+    return SETTINGS_MANAGE_PERMISSIONS.some((p) => req.user.userPermissions.includes(p));
+  }
+
+  // Fallback for direct token/unit test mocks where userPermissions is not populated
+  if (Array.isArray(req.user?.permissions) && SETTINGS_MANAGE_PERMISSIONS.some((p) => req.user.permissions.includes(p))) {
+    return true;
+  }
+
+  if (req.user?.id && companyId && typeof permissionService?.getUserPermissions === 'function') {
+    try {
+      const dbPerms = await permissionService.getUserPermissions(req.user.id, companyId);
+      if (Array.isArray(dbPerms) && SETTINGS_MANAGE_PERMISSIONS.some((p) => dbPerms.includes(p))) {
+        return true;
+      }
+    } catch {
+      // Ignore DB lookup errors if permission table/mock is absent
+    }
+  }
+
+  return false;
+};
+
+const logForbiddenAttempt = async (req, companyId) => {
+  const auditCompanyId = resolveAuditCompanyId(req, companyId);
+  if (!auditCompanyId) return;
+  await logEducationEvent({
+    companyId: auditCompanyId,
+    req,
+    action: 'UPDATE_EDUCATION_SETTINGS',
+    entityType: 'SETTINGS',
+    entityId: auditCompanyId,
+    isSuccess: false,
+    severity: 'HIGH',
+    errorMessage: 'FORBIDDEN'
+  });
+};
+
+const FORBIDDEN_RESPONSE = {
+  success: false,
+  message: 'غير مصرح لك بتعديل إعدادات النظام التعليمي. هذه العملية مخصصة للمالك والمسؤولين فقط',
+  code: 'FORBIDDEN'
+};
+
+const requireSettingsManage = async (req, res, next) => {
+  try {
+    const companyId = resolveCompanyId(req);
+    const allowed = companyId ? await hasEducationSettingsManagePermission(req, companyId) : false;
+    if (!allowed) {
+      await logForbiddenAttempt(req, companyId);
+      return res.status(403).json(FORBIDDEN_RESPONSE);
+    }
+    req._educationSettingsAuthorized = true;
+    req._educationSettingsCompanyId = companyId;
+    return next();
+  } catch (error) {
+    console.error('Error checking education settings permission:', error);
+    return res.status(403).json(FORBIDDEN_RESPONSE);
+  }
 };
 
 const getSettings = async (req, res) => {
@@ -292,6 +376,7 @@ const getSettings = async (req, res) => {
       if (saved) {
         const rawSavedAr = typeof saved.labelAr === 'string' ? saved.labelAr.trim() : '';
         const rawSavedEn = typeof saved.labelEn === 'string' ? saved.labelEn.trim() : '';
+        const savedIcon = typeof saved.iconName === 'string' ? saved.iconName.trim() : '';
         const isVisible = defTab.locked
           ? true
           : (isSubjectsTab
@@ -303,6 +388,7 @@ const getSettings = async (req, res) => {
           ...defTab,
           labelAr: rawSavedAr && !isLegacyDefaultLabel(defTab.id, 'ar', rawSavedAr) ? rawSavedAr : defTab.labelAr,
           labelEn: rawSavedEn && !isLegacyDefaultLabel(defTab.id, 'en', rawSavedEn) ? rawSavedEn : defTab.labelEn,
+          iconName: savedIcon || defTab.iconName,
           visible: isVisible,
           order: typeof saved.order === 'number' ? saved.order : idx
         };
@@ -350,58 +436,42 @@ const getSettings = async (req, res) => {
 
 const updateSettings = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
-    const userRole = String(req.user?.role || '').toUpperCase();
-    const userPerms = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
-    if (!['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole) && !userPerms.includes('settings.manage')) {
-      if (companyId) {
-        await logEducationEvent({
-          companyId,
-          req,
-          action: 'UPDATE_EDUCATION_SETTINGS',
-          entityType: 'SETTINGS',
-          entityId: companyId,
-          isSuccess: false,
-          severity: 'HIGH',
-          errorMessage: 'FORBIDDEN'
-        });
+    const companyId = req._educationSettingsCompanyId || resolveCompanyId(req);
+    if (!req._educationSettingsAuthorized) {
+      const allowed = companyId ? await hasEducationSettingsManagePermission(req, companyId) : false;
+      if (!allowed) {
+        await logForbiddenAttempt(req, companyId);
+        return res.status(403).json(FORBIDDEN_RESPONSE);
       }
-      return res.status(403).json({
-        success: false,
-        message: 'غير مصرح لك بتعديل إعدادات النظام التعليمي. هذه العملية مخصصة للمالك والمسؤولين فقط',
-        code: 'FORBIDDEN'
-      });
     }
 
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
 
     const { systemTitle, systemTitleEn, tabs, educationMode, enableSubjects, enableDemoDay, pushFirstSaveWhatsApp } = req.body || {};
 
-    let sanitizedTitle = "النظام التعليمي";
+    let hasIncomingTitle = false;
+    let parsedIncomingTitle = "النظام التعليمي";
     if (systemTitle !== undefined && systemTitle !== null) {
-      sanitizedTitle = sanitize(String(systemTitle));
-      if (sanitizedTitle.length > 60) {
+      hasIncomingTitle = true;
+      parsedIncomingTitle = sanitize(String(systemTitle));
+      if (parsedIncomingTitle.length > 60) {
         return res.status(400).json({
           success: false,
           message: 'مسمى النظام يجب ألا يتجاوز 60 حرفاً'
         });
       }
-      if (sanitizedTitle.length === 0) {
-        sanitizedTitle = "النظام التعليمي";
-      }
     }
 
-    let sanitizedTitleEn = "Education System";
+    let hasIncomingTitleEn = false;
+    let parsedIncomingTitleEn = "Education System";
     if (systemTitleEn !== undefined && systemTitleEn !== null) {
-      sanitizedTitleEn = sanitize(String(systemTitleEn));
-      if (sanitizedTitleEn.length > 60) {
+      hasIncomingTitleEn = true;
+      parsedIncomingTitleEn = sanitize(String(systemTitleEn));
+      if (parsedIncomingTitleEn.length > 60) {
         return res.status(400).json({
           success: false,
           message: 'مسمى النظام بالإنجليزية يجب ألا يتجاوز 60 حرفاً'
         });
-      }
-      if (sanitizedTitleEn.length === 0) {
-        sanitizedTitleEn = "Education System";
       }
     }
 
@@ -423,6 +493,13 @@ const updateSettings = async (req, res) => {
     }
 
     const existingEdu = currentSettings.educationSettings || {};
+    const sanitizedTitle = hasIncomingTitle
+      ? (parsedIncomingTitle || "النظام التعليمي")
+      : (existingEdu.systemTitle || "النظام التعليمي");
+    const sanitizedTitleEn = hasIncomingTitleEn
+      ? (parsedIncomingTitleEn || "Education System")
+      : (existingEdu.systemTitleEn || "Education System");
+
     const resolvedMode = educationMode !== undefined
       ? (educationMode === 'ACADEMIC' ? 'ACADEMIC' : 'COURSES')
       : (existingEdu.educationMode || (existingEdu.enableSubjects ? 'ACADEMIC' : 'COURSES'));
@@ -443,6 +520,15 @@ const updateSettings = async (req, res) => {
       ? pushFirstSaveWhatsApp
       : (existingEdu.pushFirstSaveWhatsApp !== false);
 
+    const existingSavedTabsMap = new Map();
+    if (Array.isArray(existingEdu.tabs)) {
+      existingEdu.tabs.forEach((tab) => {
+        if (tab && tab.id) {
+          existingSavedTabsMap.set(String(tab.id).toLowerCase(), tab);
+        }
+      });
+    }
+
     let validatedTabs = [];
     if (Array.isArray(tabs)) {
       for (let i = 0; i < tabs.length; i++) {
@@ -452,18 +538,20 @@ const updateSettings = async (req, res) => {
         if (!id) continue;
 
         const def = DEFAULT_EDUCATION_TABS.find((d) => d.id.toLowerCase() === id.toLowerCase());
+        const existingTab = existingSavedTabsMap.get(id.toLowerCase());
         const key = item.key || def?.key || `/admin/education/${id}`;
         const defaultLabelAr = def?.defaultLabelAr || item.defaultLabelAr || id;
         const defaultLabelEn = def?.defaultLabelEn || item.defaultLabelEn || id;
-        const iconName = def?.iconName || item.iconName || "GraduationCap";
+        const rawIconName = sanitize(String(item.iconName || existingTab?.iconName || def?.iconName || "GraduationCap"));
+        const iconName = rawIconName || def?.iconName || "GraduationCap";
         const locked = def?.locked === true;
 
         const rawLabelAr = item.labelAr !== undefined ? item.labelAr : defaultLabelAr;
-        const cleanedLabelAr = (sanitize(String(rawLabelAr || defaultLabelAr)) || defaultLabelAr).slice(0, 60);
+        const cleanedLabelAr = (sanitize(String(rawLabelAr ?? '')) || defaultLabelAr).slice(0, 60);
         const labelAr = isLegacyDefaultLabel(id, 'ar', cleanedLabelAr) ? defaultLabelAr : cleanedLabelAr;
 
         const rawLabelEn = item.labelEn !== undefined ? item.labelEn : defaultLabelEn;
-        const cleanedLabelEn = (sanitize(String(rawLabelEn || defaultLabelEn)) || defaultLabelEn).slice(0, 60);
+        const cleanedLabelEn = (sanitize(String(rawLabelEn ?? '')) || defaultLabelEn).slice(0, 60);
         const labelEn = isLegacyDefaultLabel(id, 'en', cleanedLabelEn) ? defaultLabelEn : cleanedLabelEn;
 
         const order = typeof item.order === 'number' && Number.isFinite(item.order) ? item.order : i;
@@ -491,9 +579,22 @@ const updateSettings = async (req, res) => {
         });
       }
     } else {
-      validatedTabs = DEFAULT_EDUCATION_TABS.map((def) => {
+      validatedTabs = DEFAULT_EDUCATION_TABS.map((def, idx) => {
+        const saved = existingSavedTabsMap.get(def.id.toLowerCase());
         const isSubjectsTab = def.id.toLowerCase() === 'subjects';
         const isDemoDayTab = def.id.toLowerCase() === 'demo-day';
+        if (saved) {
+          const rawSavedAr = typeof saved.labelAr === 'string' ? sanitize(saved.labelAr) : '';
+          const rawSavedEn = typeof saved.labelEn === 'string' ? sanitize(saved.labelEn) : '';
+          return {
+            ...def,
+            labelAr: rawSavedAr && !isLegacyDefaultLabel(def.id, 'ar', rawSavedAr) ? rawSavedAr.slice(0, 60) : def.labelAr,
+            labelEn: rawSavedEn && !isLegacyDefaultLabel(def.id, 'en', rawSavedEn) ? rawSavedEn.slice(0, 60) : def.labelEn,
+            iconName: sanitize(String(saved.iconName || '')) || def.iconName,
+            visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : (isDemoDayTab ? resolvedEnableDemoDay : (saved.visible !== false))),
+            order: typeof saved.order === 'number' && Number.isFinite(saved.order) ? saved.order : idx
+          };
+        }
         return {
           ...def,
           visible: def.locked
@@ -511,18 +612,23 @@ const updateSettings = async (req, res) => {
     const existingIds = new Set(validatedTabs.map((t) => t.id.toLowerCase()));
     DEFAULT_EDUCATION_TABS.forEach((def, defIdx) => {
       if (!existingIds.has(def.id.toLowerCase())) {
+        const saved = existingSavedTabsMap.get(def.id.toLowerCase());
         const isSubjectsTab = def.id.toLowerCase() === 'subjects';
         const isDemoDayTab = def.id.toLowerCase() === 'demo-day';
         validatedTabs.push({
           ...def,
-          visible: def.locked
-            ? true
-            : (isSubjectsTab
-              ? resolvedEnableSubjects
-              : (isDemoDayTab
-                ? resolvedEnableDemoDay
-                : def.visible)),
-          order: validatedTabs.length + defIdx
+          ...(saved ? {
+            labelAr: typeof saved.labelAr === 'string' && sanitize(saved.labelAr) && !isLegacyDefaultLabel(def.id, 'ar', saved.labelAr)
+              ? sanitize(saved.labelAr).slice(0, 60) : def.labelAr,
+            labelEn: typeof saved.labelEn === 'string' && sanitize(saved.labelEn) && !isLegacyDefaultLabel(def.id, 'en', saved.labelEn)
+              ? sanitize(saved.labelEn).slice(0, 60) : def.labelEn,
+            iconName: sanitize(String(saved.iconName || '')) || def.iconName,
+            visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : (isDemoDayTab ? resolvedEnableDemoDay : (saved.visible !== false))),
+            order: typeof saved.order === 'number' && Number.isFinite(saved.order) ? saved.order : validatedTabs.length + defIdx
+          } : {
+            visible: def.locked ? true : (isSubjectsTab ? resolvedEnableSubjects : (isDemoDayTab ? resolvedEnableDemoDay : def.visible)),
+            order: validatedTabs.length + defIdx
+          })
         });
       }
     });
@@ -543,66 +649,70 @@ const updateSettings = async (req, res) => {
       tabs: validatedTabs
     };
 
-    // 2. Synchronize into company.settings.sidebarSettings
-    let currentSidebar = Array.isArray(currentSettings.sidebarSettings)
-      ? [...currentSettings.sidebarSettings]
-      : [];
+    // 2. Synchronize into company.settings.sidebarSettings (supporting both array and { sections, items } shapes)
+    const rawSidebar = currentSettings.sidebarSettings;
+    if (rawSidebar && typeof rawSidebar === 'object' && !Array.isArray(rawSidebar)) {
+      const nextSidebar = { ...rawSidebar };
+      if (!nextSidebar.sections || typeof nextSidebar.sections !== 'object' || Array.isArray(nextSidebar.sections)) {
+        nextSidebar.sections = {};
+      }
+      const existingSec = nextSidebar.sections.education || {};
+      nextSidebar.sections.education = {
+        ...existingSec,
+        visible: existingSec.visible !== undefined ? existingSec.visible : true,
+        labelAr: sanitizedTitle,
+        labelEn: sanitizedTitleEn
+      };
+      if (nextSidebar.items && typeof nextSidebar.items === 'object' && !Array.isArray(nextSidebar.items)) {
+        validatedTabs.forEach((tab) => {
+          const itemPayload = {
+            order: tab.order,
+            visible: tab.visible,
+            labelAr: tab.labelAr,
+            labelEn: tab.labelEn,
+            iconName: tab.iconName
+          };
+          nextSidebar.items[tab.key] = { ...(nextSidebar.items[tab.key] || {}), ...itemPayload };
+          nextSidebar.items[`education-${tab.id.toLowerCase()}`] = {
+            ...(nextSidebar.items[`education-${tab.id.toLowerCase()}`] || {}),
+            ...itemPayload
+          };
+        });
+      }
+      currentSettings.sidebarSettings = nextSidebar;
+    } else {
+      let currentSidebar = Array.isArray(rawSidebar) ? [...rawSidebar] : [];
+      const educationSidebarItems = [];
 
-    // Map of keys to update/add
-    const educationSidebarItems = [];
+      const existingEduSection = currentSidebar.find(
+        (it) => it && String(it.key || '').toLowerCase() === 'education'
+      );
+      educationSidebarItems.push({
+        key: 'education',
+        order: typeof existingEduSection?.order === 'number' ? existingEduSection.order : 10,
+        visible: existingEduSection?.visible !== undefined ? existingEduSection.visible : true,
+        labelAr: sanitizedTitle,
+        labelEn: sanitizedTitleEn
+      });
 
-    // Top-level education section title (preserve existing order/visible if set)
-    const existingEduSection = currentSidebar.find(
-      (it) => it && String(it.key || '').toLowerCase() === 'education'
-    );
-    educationSidebarItems.push({
-      key: 'education',
-      order: typeof existingEduSection?.order === 'number' ? existingEduSection.order : 10,
-      visible: existingEduSection?.visible !== undefined ? existingEduSection.visible : true,
-      labelAr: sanitizedTitle,
-      labelEn: sanitizedTitleEn
-    });
+      validatedTabs.forEach((tab) => {
+        const basePayload = {
+          order: tab.order,
+          visible: tab.visible,
+          labelAr: tab.labelAr,
+          labelEn: tab.labelEn,
+          iconName: tab.iconName
+        };
+        educationSidebarItems.push({ key: tab.key, ...basePayload });
+        educationSidebarItems.push({ key: tab.key.replace(/^\//, ''), ...basePayload });
+        educationSidebarItems.push({ key: `education-${tab.id.toLowerCase()}`, ...basePayload });
+        educationSidebarItems.push({ key: `education/${tab.id.toLowerCase()}`, ...basePayload });
+      });
 
-    // Sub-items
-    validatedTabs.forEach((tab) => {
-      educationSidebarItems.push({
-        key: tab.key,
-        order: tab.order,
-        visible: tab.visible,
-        labelAr: tab.labelAr,
-        labelEn: tab.labelEn
-      });
-      // Also register clean relative key
-      const cleanRelKey = tab.key.replace(/^\//, '');
-      educationSidebarItems.push({
-        key: cleanRelKey,
-        order: tab.order,
-        visible: tab.visible,
-        labelAr: tab.labelAr,
-        labelEn: tab.labelEn
-      });
-      // Also register itemId key (e.g. education-subjects)
-      educationSidebarItems.push({
-        key: `education-${tab.id.toLowerCase()}`,
-        order: tab.order,
-        visible: tab.visible,
-        labelAr: tab.labelAr,
-        labelEn: tab.labelEn
-      });
-      // Also register relative sub-key (e.g. education/subjects)
-      educationSidebarItems.push({
-        key: `education/${tab.id.toLowerCase()}`,
-        order: tab.order,
-        visible: tab.visible,
-        labelAr: tab.labelAr,
-        labelEn: tab.labelEn
-      });
-    });
-
-    // Merge into currentSidebar without duplicating or losing other sections
-    const incomingKeys = new Set(educationSidebarItems.map((it) => it.key.toLowerCase()));
-    const remainingSidebar = currentSidebar.filter((it) => it && it.key && !incomingKeys.has(String(it.key).toLowerCase()));
-    currentSettings.sidebarSettings = [...remainingSidebar, ...educationSidebarItems];
+      const incomingKeys = new Set(educationSidebarItems.map((it) => it.key.toLowerCase()));
+      const remainingSidebar = currentSidebar.filter((it) => it && it.key && !incomingKeys.has(String(it.key).toLowerCase()));
+      currentSettings.sidebarSettings = [...remainingSidebar, ...educationSidebarItems];
+    }
 
     // 3. Update companyApp customName if exists
     try {
@@ -660,6 +770,7 @@ const updateSettings = async (req, res) => {
 
 module.exports = {
   DEFAULT_EDUCATION_TABS,
+  requireSettingsManage,
   getSettings,
   updateSettings
 };

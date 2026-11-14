@@ -66,7 +66,7 @@ const getEntityConfig = (
     color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
   },
   TEACHER: {
-    label: isEn ? "Instructors" : "المهندسين",
+    label: isEn ? "Teachers" : "المدرسين",
     icon: GraduationCap,
     color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
   },
@@ -366,7 +366,7 @@ export const EducationLogsTab: React.FC = () => {
 
         <div className="p-3 sm:p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-muted-foreground text-xs">
-            <span>{isEn ? "Instructors & Payroll" : "المهندسين والمرتبات"}</span>
+            <span>{isEn ? "Teachers & Payroll" : "المدرسين والمرتبات"}</span>
             <GraduationCap className="w-4 h-4 text-purple-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-purple-500 tabular-nums">
@@ -448,7 +448,7 @@ export const EducationLogsTab: React.FC = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder={isEn ? "Search logs (student, subject, instructor, description, actor...)" : "ابحث في السجلات (اسم الطالب، المادة، المهندس، الوصف، المنفذ...)"}
+              placeholder={isEn ? "Search logs (student, subject, teacher, description, actor...)" : "ابحث في السجلات (اسم الطالب، المادة، المدرس، الوصف، المنفذ...)"}
               className={`w-full py-2 rounded-lg text-xs bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary ${isEn ? "pl-9 pr-3" : "pl-3 pr-9"}`}
             />
             {search && (

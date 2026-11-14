@@ -119,6 +119,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
       "crm-basic": "إدارة العملاء الأساسي",
       "dental-lab-app": "معمل الأسنان",
       "dental-lab": "معمل الأسنان",
+      "education-app": "النظام التعليمي",
       "booking-app": "نظام الحجوزات",
       "business-tools": "المهام والمشاريع (أدوات الأعمال)",
       "pos-pro": "نقاط البيع الاحترافية POS",

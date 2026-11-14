@@ -116,10 +116,129 @@ export default function EducationManagementPage() {
       className={`w-full h-full min-h-0 flex-1 overflow-y-auto max-w-[1600px] mx-auto p-3.5 sm:p-5 lg:p-6 pb-24 sm:pb-12 space-y-4 sm:space-y-5 font-sans ${isEn ? "ltr" : "rtl"}`}
       dir={isEn ? "ltr" : "rtl"}
     >
+<<<<<<< Updated upstream
       {/* Sub-navigation lives exclusively in the central sidebar (sidebar.ts education section) —
           in-page tab bar removed per Ban Duplicate In-Page Navigation rule.
           NOTE: sidebar navigation keeps this component mounted (same catch-all route),
           so unsaved settings edits persist across tab switches. */}
+=======
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-border/80">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+              <School className="w-3.5 h-3.5" />
+              {systemTitle}
+            </span>
+            <span className="text-xs text-muted-foreground font-mono tabular-nums">
+              {t("education.totalStudentsCount", { count: stats.totalStudents, defaultValue: isEn ? `${stats.totalStudents} enrolled students` : `${stats.totalStudents} طالب مسجل` })}
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            {systemSubtitle}
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            {t("education.subtitle", isEn ? "Comprehensive system for managing subjects, session packages, instructors, students, and recurring schedules" : "نظام متكامل لإدارة المواد، باقات الحصص، الكوادر التعليمية، والطلاب وجداول الحصص الدورية")}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("logs")}
+            title={t("education.logs", isEn ? "Education System Logs" : "سجلات النظام التعليمي")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              activeTab === "logs"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            {t("education.logs", isEn ? "System Logs" : "سجلات النظام التعليمي")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            title={t("education.settings", isEn ? "Customize Sections & Settings" : "إعدادات وتخصيص السكاشن")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              activeTab === "settings"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/70 hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            {t("education.settings", isEn ? "Settings" : "إعدادات وتخصيص السكاشن")}
+          </button>
+        </div>
+      </div>
+
+      {/* Education In-Page Navigation Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-border/60">
+        {(() => {
+          const defaultEnLabels: Record<string, string> = {
+            dashboard: "Dashboard",
+            subjects: "Subjects",
+            packages: "Packages",
+            groups: "Groups",
+            students: "Students",
+            teachers: "Teachers",
+            enrollments: "Enrollments",
+            sessions: "Sessions",
+            settings: "Settings",
+            logs: "Logs",
+          };
+          const tabsById = new Map(
+            (educationSettings?.tabs || []).map((cfg) => [String(cfg.id || "").toLowerCase(), cfg]),
+          );
+          const orderedTabs = [...TABS]
+            .filter((tab) => {
+              if (tab.id === "subjects" && !enableSubjects) return false;
+              const cfg = tabsById.get(tab.id.toLowerCase());
+              if (cfg && cfg.visible === false && tab.id !== "settings") return false;
+              return true;
+            })
+            .sort((a, b) => {
+              const aOrder = tabsById.get(a.id.toLowerCase())?.order;
+              const bOrder = tabsById.get(b.id.toLowerCase())?.order;
+              if (typeof aOrder === "number" && typeof bOrder === "number") return aOrder - bOrder;
+              if (typeof aOrder === "number") return -1;
+              if (typeof bOrder === "number") return 1;
+              return 0;
+            });
+
+          return orderedTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const cfg = tabsById.get(tab.id.toLowerCase());
+            const rawConfigured = cfg ? (isEn ? cfg.labelEn || cfg.labelAr : cfg.labelAr || cfg.labelEn) : "";
+            const isLegacyDefault =
+              rawConfigured === "المهندسين" || rawConfigured === "Instructors";
+            const label =
+              rawConfigured && !isLegacyDefault
+                ? rawConfigured
+                : isEn
+                  ? defaultEnLabels[tab.id] || tab.label
+                  : tab.label;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            );
+          });
+        })()}
+      </div>
+>>>>>>> Stashed changes
 
       {activeTab === "settings" ? (
         <EducationSettingsTab

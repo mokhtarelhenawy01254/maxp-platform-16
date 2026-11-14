@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 
 const getAll = async (req, res) => {
   try {
@@ -130,13 +131,14 @@ const create = async (req, res) => {
       include: { teacher: { select: { id: true, name: true } } }
     });
 
+    const createTeacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'CREATE_PAYMENT',
       entityType: 'PAYMENT',
       entityId: data.id,
-      entityName: `مستحقات ${data.teacher?.name || 'مهندس'}`,
-      description: `تم إنشاء/تحديث مسير مستحقات المهندس ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م (${data.totalHours} ساعة - ${data.totalSessions} حصة)`,
+      entityName: `مستحقات ${data.teacher?.name || createTeacherLabel}`,
+      description: `تم إنشاء/تحديث مسير مستحقات ${createTeacherLabel} ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م (${data.totalHours} ساعة - ${data.totalSessions} حصة)`,
       details: {
         teacherId: data.teacherId,
         teacherName: data.teacher?.name,
@@ -173,13 +175,14 @@ const markPaid = async (req, res) => {
       include: { teacher: { select: { id: true, name: true } } }
     });
 
+    const payTeacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'PAY_TEACHER',
       entityType: 'PAYMENT',
       entityId: data.id,
-      entityName: `صرف مرتب ${data.teacher?.name || 'مهندس'}`,
-      description: `تم صرف وتأكيد دفع مرتب/استحقاق المهندس ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م`,
+      entityName: `صرف مرتب ${data.teacher?.name || payTeacherLabel}`,
+      description: `تم صرف وتأكيد دفع مرتب/استحقاق ${payTeacherLabel} ${data.teacher?.name || ''} بمبلغ ${data.netAmount} ج.م`,
       details: {
         teacherId: data.teacherId,
         teacherName: data.teacher?.name,

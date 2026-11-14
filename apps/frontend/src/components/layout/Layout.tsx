@@ -164,7 +164,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [isOrderSearchOpen, setIsOrderSearchOpen] = useState(false);
 
-  const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
+  const { settings: sidebarSettings, educationSettings, userSettings, userLayout } = useSidebarSettings();
 
   const getCompanySettings = () => {
     const settings = user?.company?.settings;
@@ -437,7 +437,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       return [];
     }
 
-    const config = getSidebarConfig(t, user ?? {}, sidebarSettings ?? undefined, userSettings, assignedApps);
+    const config = getSidebarConfig(t, user ?? {}, sidebarSettings ?? undefined, userSettings, assignedApps, educationSettings);
 
     return config.map((section) => ({
       ...section,
@@ -453,7 +453,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             : item.badge,
       })),
     }));
-  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings, sidebarBadges, assignedApps]);
+  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, educationSettings, userSettings, sidebarBadges, assignedApps]);
 
   const filteredSections = useMemo(() => {
     if (!searchQuery.trim()) return menuSections;
@@ -1246,8 +1246,12 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
  };
 
 const LayoutWithSidebarSettings: React.FC<LayoutProps> = (props) => {
+  const { user } = useAuth();
+  const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
+  const activeCompanyId = (currentCompany as { id?: string } | undefined)?.id ?? null;
+
   return (
-    <SidebarSettingsProvider>
+    <SidebarSettingsProvider companyId={activeCompanyId}>
       <Layout {...props} />
       <MerchantCopilotHost />
     </SidebarSettingsProvider>

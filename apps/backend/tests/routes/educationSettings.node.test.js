@@ -6,7 +6,16 @@ let activePrismaGetter = originalGetSharedPrisma;
 sharedDb.getSharedPrismaClient = () => activePrismaGetter();
 
 const controller = require('../../controller/educationSettingsController');
-const { getTeacherLabel, invalidateTeacherLabelCache } = require('../../services/educationLabelService');
+const sessionsController = require('../../controller/educationSessionsController');
+const teachersController = require('../../controller/educationTeachersController');
+const requireEducationAppInstalled = require('../../middleware/requireEducationAppInstalled');
+const {
+  getTeacherLabel,
+  getSingularTeacherLabel,
+  deriveSingularTeacherAr,
+  deriveSingularTeacherEn,
+  invalidateTeacherLabelCache
+} = require('../../services/educationLabelService');
 
 test('educationSettingsController unit test', async (t) => {
   let activityLogs = [];
@@ -423,6 +432,234 @@ test('educationSettingsController unit test', async (t) => {
     assert.strictEqual(data3.data.enableDemoDay, false);
     const demoTab3 = data3.data.tabs.find(t => t.id === 'demo-day');
     assert.strictEqual(demoTab3.visible, false);
+  });
+
+  await t.test('RBAC middleware enforces userPermissions/education.settings.manage and logs disallowed roles', async () => {
+    activityLogs = [];
+    // Stale/untrusted JWT permissions:['settings.manage'] must be rejected when DB userPermissions is empty
+    let nextCalled = false;
+    const resUntrusted = createMockRes();
+    await controller.requireSettingsManage(
+      {
+        user: { id: 'u-staff', role: 'EMPLOYEE', userPermissions: [], permissions: ['settings.manage'], companyId: 'comp-rbac' },
+        body: { systemTitle: 'x' }
+      },
+      resUntrusted,
+      () => { nextCalled = true; }
+    );
+    assert.strictEqual(nextCalled, false);
+    assert.strictEqual(resUntrusted.getStatusCode(), 403);
+    assert.strictEqual(activityLogs.length, 1);
+    assert.strictEqual(activityLogs[0].companyId, 'comp-rbac');
+    assert.strictEqual(activityLogs[0].isSuccess, false);
+
+    // DISALLOWED_ROLES (STUDENT) still logs failed audit attempt using user's companyId
+    activityLogs = [];
+    const resStudent = createMockRes();
+    await controller.requireSettingsManage(
+      { user: { id: 'u-stu', role: 'STUDENT', companyId: 'comp-rbac' }, body: {} },
+      resStudent,
+      () => { nextCalled = true; }
+    );
+    assert.strictEqual(resStudent.getStatusCode(), 403);
+    assert.strictEqual(activityLogs.length, 1);
+    assert.strictEqual(activityLogs[0].companyId, 'comp-rbac');
+    assert.strictEqual(activityLogs[0].action, 'UPDATE_EDUCATION_SETTINGS');
+
+    // User with DB permission education.settings.manage passes
+    nextCalled = false;
+    const resAllowed = createMockRes();
+    await controller.requireSettingsManage(
+      { user: { id: 'u-mgr', role: 'EMPLOYEE', userPermissions: ['education.settings.manage'], companyId: 'comp-rbac' }, body: {} },
+      resAllowed,
+      () => { nextCalled = true; }
+    );
+    assert.strictEqual(nextCalled, true);
+  });
+
+  await t.test('partial PUT preserves systemTitle, iconName, omitted tabs, and object sidebarSettings', async () => {
+    let savedRecord = {
+      id: 'comp-partial',
+      settings: JSON.stringify({
+        educationSettings: {
+          systemTitle: 'أكاديمية النجوم',
+          systemTitleEn: 'Stars Academy',
+          educationMode: 'COURSES',
+          enableSubjects: false,
+          tabs: [
+            { id: 'teachers', labelAr: 'المدربين', labelEn: 'Coaches', iconName: 'Users', order: 0, visible: true }
+          ]
+        },
+        sidebarSettings: {
+          sections: { education: { visible: true, order: 4 } },
+          items: { 'education-teachers': { visible: true, order: 0 } }
+        }
+      })
+    };
+    mockPrisma.company.findUnique = async () => ({ ...savedRecord });
+    mockPrisma.company.update = async ({ data }) => {
+      savedRecord.settings = data.settings;
+      return { ...savedRecord };
+    };
+    activityLogs = [];
+
+    // Partial PUT toggling educationMode only should NOT wipe systemTitle or custom tab icon/labels
+    const resPartial = createMockRes();
+    await controller.updateSettings(
+      { user: { id: 'u1', role: 'OWNER', companyId: 'comp-partial' }, body: { educationMode: 'ACADEMIC', enableSubjects: true } },
+      resPartial
+    );
+    assert.strictEqual(resPartial.getStatusCode(), 200);
+    const updated = resPartial.getData().data;
+    assert.strictEqual(updated.systemTitle, 'أكاديمية النجوم');
+    assert.strictEqual(updated.systemTitleEn, 'Stars Academy');
+    const teacherTab = updated.tabs.find(t => t.id === 'teachers');
+    assert.strictEqual(teacherTab.labelAr, 'المدربين');
+    assert.strictEqual(teacherTab.labelEn, 'Coaches');
+    assert.strictEqual(teacherTab.iconName, 'Users');
+
+    // sidebarSettings object shape preserved
+    const rawSaved = JSON.parse(savedRecord.settings);
+    assert.strictEqual(Array.isArray(rawSaved.sidebarSettings), false);
+    assert.strictEqual(rawSaved.sidebarSettings.sections.education.labelAr, 'أكاديمية النجوم');
+    assert.strictEqual(rawSaved.sidebarSettings.items['education-teachers'].iconName, 'Users');
+
+    // getSettings also returns persisted iconName
+    const resRead = createMockRes();
+    await controller.getSettings({ user: { id: 'u1', role: 'OWNER', companyId: 'comp-partial' } }, resRead);
+    assert.strictEqual(resRead.getData().data.tabs.find(t => t.id === 'teachers').iconName, 'Users');
+
+    // Audit log recorded before and after snapshots
+    assert.strictEqual(activityLogs.length, 1);
+    const meta = JSON.parse(activityLogs[0].metadata);
+    assert.ok(meta.details.before);
+    assert.ok(meta.details.after);
+    assert.strictEqual(meta.details.after.systemTitle, 'أكاديمية النجوم');
+  });
+
+  await t.test('singularization, session descriptions, teacher password redaction, and app gating', async () => {
+    assert.strictEqual(deriveSingularTeacherAr('المدرسين'), 'المدرس');
+    assert.strictEqual(deriveSingularTeacherAr('المدربين'), 'المدرب');
+    assert.strictEqual(deriveSingularTeacherAr('الأساتذة'), 'الأستاذ');
+    assert.strictEqual(deriveSingularTeacherAr('الدكاترة'), 'الدكتور');
+    assert.strictEqual(deriveSingularTeacherEn('Teachers'), 'Teacher');
+    assert.strictEqual(deriveSingularTeacherEn('Coaches'), 'Coach');
+
+    // Mock company settings for singular label lookup + session create/confirm/cancel
+    invalidateTeacherLabelCache('comp-sess-default');
+    invalidateTeacherLabelCache('comp-sess-custom');
+    mockPrisma.company.findUnique = async ({ where }) => {
+      if (where.id === 'comp-sess-custom') {
+        return {
+          id: 'comp-sess-custom',
+          settings: JSON.stringify({
+            educationSettings: { tabs: [{ id: 'teachers', labelAr: 'المدربين', labelEn: 'Coaches' }] }
+          })
+        };
+      }
+      return { id: where.id, settings: JSON.stringify({}) };
+    };
+    assert.strictEqual(await getSingularTeacherLabel('comp-sess-default', 'ar'), 'المدرس');
+    assert.strictEqual(await getSingularTeacherLabel('comp-sess-custom', 'ar'), 'المدرب');
+    assert.strictEqual(await getSingularTeacherLabel('comp-sess-custom', 'en'), 'Coach');
+
+    activityLogs = [];
+    mockPrisma.educationEnrollment = {
+      findFirst: async () => ({
+        id: 'enr-1',
+        studentId: 'stu-1',
+        teacherId: 'tch-1',
+        remainingHours: 10,
+        package: { subjectId: 'sub-1' }
+      })
+    };
+    mockPrisma.educationTeacher = {
+      findFirst: async () => ({ id: 'tch-1', companyId: 'comp-sess-custom', name: 'خالد' })
+    };
+    mockPrisma.educationSession = {
+      findFirst: async () => null,
+      create: async () => ({
+        id: 'sess-1',
+        scheduledAt: new Date('2026-11-15T10:00:00Z'),
+        plannedDuration: 60,
+        topic: 'Math',
+        student: { firstName: 'أحمد', lastName: 'علي' },
+        teacher: { id: 'tch-1', name: 'خالد' },
+        subject: { id: 'sub-1', name: 'رياضيات' }
+      })
+    };
+    const resSess = createMockRes();
+    await sessionsController.create(
+      {
+        user: { id: 'u1', role: 'OWNER', companyId: 'comp-sess-custom' },
+        body: { enrollmentId: 'enr-1', scheduledAt: '2026-11-15T10:00:00Z' }
+      },
+      resSess
+    );
+    await new Promise(r => setImmediate(r));
+    assert.strictEqual(resSess.getStatusCode(), 200);
+    const schedLog = activityLogs.find(l => l.action === 'SCHEDULE_SESSION');
+    assert.ok(schedLog);
+    assert.ok(schedLog.description.includes('مع المدرب خالد'), `Expected custom singular label, got: ${schedLog.description}`);
+    assert.strictEqual(schedLog.description.includes('المهندس'), false);
+
+    // Teacher removal strips password hash from audit details
+    activityLogs = [];
+    mockPrisma.educationTeacher = {
+      findFirst: async () => ({ id: 'tch-secret', companyId: 'comp-sess-default', name: 'أ. سارة', password: '$2a$10$hashedpassword' }),
+      delete: async () => ({})
+    };
+    const resDel = createMockRes();
+    await teachersController.remove(
+      { user: { id: 'u1', role: 'OWNER', companyId: 'comp-sess-default' }, params: { id: 'tch-secret' } },
+      resDel
+    );
+    await new Promise(r => setImmediate(r));
+    assert.strictEqual(resDel.getStatusCode(), 200);
+    const delLog = activityLogs.find(l => l.action === 'DELETE_TEACHER');
+    assert.ok(delLog);
+    const delMeta = JSON.parse(delLog.metadata);
+    assert.strictEqual(delMeta.details.deletedTeacher.password, undefined);
+
+    // requireEducationAppInstalled strictly blocks uninstalled/expired trial companies and never auto-creates
+    let createdApp = false;
+    mockPrisma.companyApp = {
+      findFirst: async () => null,
+      create: async () => { createdApp = true; return {}; }
+    };
+    let gateNext = false;
+    const resUninstalled = createMockRes();
+    await requireEducationAppInstalled(
+      { user: { id: 'u1', role: 'OWNER', companyId: 'comp-no-edu' } },
+      resUninstalled,
+      () => { gateNext = true; }
+    );
+    assert.strictEqual(gateNext, false);
+    assert.strictEqual(createdApp, false);
+    assert.strictEqual(resUninstalled.getStatusCode(), 403);
+    assert.strictEqual(resUninstalled.getData().code, 'APP_ACCESS_DENIED');
+
+    mockPrisma.companyApp.findFirst = async () => ({
+      id: 'ca-exp',
+      status: 'TRIAL',
+      trialEndsAt: new Date(Date.now() - 86400 * 1000).toISOString()
+    });
+    const resExpired = createMockRes();
+    await requireEducationAppInstalled(
+      { user: { id: 'u1', role: 'OWNER', companyId: 'comp-expired' } },
+      resExpired,
+      () => { gateNext = true; }
+    );
+    assert.strictEqual(gateNext, false);
+    assert.strictEqual(resExpired.getStatusCode(), 403);
+
+    mockPrisma.companyApp.findFirst = async () => ({ id: 'ca-ok', status: 'ACTIVE', trialEndsAt: null });
+    await requireEducationAppInstalled(
+      { user: { id: 'u1', role: 'OWNER', companyId: 'comp-ok' } },
+      createMockRes(),
+      () => { gateNext = true; }
+    );
+    assert.strictEqual(gateNext, true);
   });
 
   activePrismaGetter = originalGetSharedPrisma;

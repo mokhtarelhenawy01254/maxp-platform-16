@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller/educationTeacherPaymentsController');
 const verifyToken = require('../utils/verifyToken');
+const requireEducationAppInstalled = require('../middleware/requireEducationAppInstalled');
+
+router.use(verifyToken.authenticateToken, requireEducationAppInstalled);
 
 router.get('/', verifyToken.authenticateToken, controller.getAll);
 router.post('/calculate', verifyToken.authenticateToken, controller.calculate);

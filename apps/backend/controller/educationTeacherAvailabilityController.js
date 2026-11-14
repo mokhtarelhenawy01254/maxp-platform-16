@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { logEducationEvent } = require('../services/educationAuditService');
+const { getSingularTeacherLabel } = require('../services/educationLabelService');
 
 const getAll = async (req, res) => {
   try {
@@ -66,13 +67,14 @@ const save = async (req, res) => {
       orderBy: { dayOfWeek: 'asc' }
     });
 
+    const teacherLabel = await getSingularTeacherLabel(companyId, 'ar');
     logEducationEvent({
       companyId,
       action: 'UPDATE_TEACHER_AVAILABILITY',
       entityType: 'TEACHER',
       entityId: teacherId,
-      entityName: teacher?.name || 'مهندس',
-      description: `تم تحديث جدول أوقات توفر المهندس ${teacher?.name || ''} (${slots.length} فترات زمنية)`,
+      entityName: teacher?.name || teacherLabel,
+      description: `تم تحديث جدول أوقات توفر ${teacherLabel} ${teacher?.name || ''} (${slots.length} فترات زمنية)`,
       details: { teacherId, slotsCount: slots.length },
       req,
     }).catch(e => console.error('[AvailabilityAudit]', e.message));

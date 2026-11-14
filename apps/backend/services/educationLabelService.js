@@ -5,6 +5,33 @@ const DEFAULT_TEACHER_LABELS = {
   en: 'Teachers',
 };
 
+const DEFAULT_SINGULAR_TEACHER_LABELS = {
+  ar: 'المدرس',
+  en: 'Teacher',
+};
+
+const AR_IRREGULAR_SINGULARS = {
+  المدرسين: 'المدرس',
+  المدرسون: 'المدرس',
+  المدرسات: 'المدرسة',
+  المعلمين: 'المعلم',
+  المعلمون: 'المعلم',
+  المعلمات: 'المعلمة',
+  المدربين: 'المدرب',
+  المدربون: 'المدرب',
+  المدربات: 'المدربة',
+  المحاضرين: 'المحاضر',
+  المحاضرون: 'المحاضر',
+  المحاضرات: 'المحاضرة',
+  الأساتذة: 'الأستاذ',
+  الاساتذة: 'الأستاذ',
+  الدكاترة: 'الدكتور',
+  الشيوخ: 'الشيخ',
+  المشايخ: 'الشيخ',
+  المهندسين: 'المهندس',
+  المهندسون: 'المهندس',
+};
+
 const LEGACY_DEFAULT_TAB_LABELS = {
   teachers: { ar: 'المهندسين', en: 'Instructors' },
   'teacher-schedule': { ar: 'جدول المهندسين', en: 'Instructor Schedule' },
@@ -64,10 +91,50 @@ async function getTeacherLabel(companyId, lang = 'ar') {
   }
 }
 
+function deriveSingularTeacherAr(labelAr) {
+  const trimmed = typeof labelAr === 'string' ? labelAr.trim() : '';
+  if (!trimmed) return DEFAULT_SINGULAR_TEACHER_LABELS.ar;
+  if (AR_IRREGULAR_SINGULARS[trimmed]) return AR_IRREGULAR_SINGULARS[trimmed];
+  if (trimmed === 'طاقم التدريس' || trimmed === 'هيئة التدريس') return trimmed;
+
+  // Regular sound masculine plural ending in ين or ون
+  if (trimmed.length > 4 && (trimmed.endsWith('ين') || trimmed.endsWith('ون'))) {
+    return trimmed.slice(0, -2);
+  }
+  return trimmed;
+}
+
+function deriveSingularTeacherEn(labelEn) {
+  const trimmed = typeof labelEn === 'string' ? labelEn.trim() : '';
+  if (!trimmed) return DEFAULT_SINGULAR_TEACHER_LABELS.en;
+  if (/ies$/i.test(trimmed) && trimmed.length > 4) {
+    return trimmed.slice(0, -3) + 'y';
+  }
+  if (/(ch|sh|x|s|z)es$/i.test(trimmed) && trimmed.length > 4) {
+    return trimmed.slice(0, -2);
+  }
+  if (/s$/i.test(trimmed) && !/ss$/i.test(trimmed) && trimmed.length > 2) {
+    return trimmed.slice(0, -1);
+  }
+  return trimmed;
+}
+
+async function getSingularTeacherLabel(companyId, lang = 'ar') {
+  const normalizedLang = normalizeLang(lang);
+  const pluralOrLabel = await getTeacherLabel(companyId, normalizedLang);
+  return normalizedLang === 'en'
+    ? deriveSingularTeacherEn(pluralOrLabel)
+    : deriveSingularTeacherAr(pluralOrLabel);
+}
+
 module.exports = {
   DEFAULT_TEACHER_LABELS,
+  DEFAULT_SINGULAR_TEACHER_LABELS,
   LEGACY_DEFAULT_TAB_LABELS,
   isLegacyDefaultLabel,
   invalidateTeacherLabelCache,
   getTeacherLabel,
+  deriveSingularTeacherAr,
+  deriveSingularTeacherEn,
+  getSingularTeacherLabel,
 };

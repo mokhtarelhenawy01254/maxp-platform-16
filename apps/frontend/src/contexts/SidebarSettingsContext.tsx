@@ -1,8 +1,95 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "../services/apiClient";
-import type { SidebarLayoutType, SidebarManagementData, UserSidebarSettings } from "../types/layout";
+import type {
+  EducationSettingsData,
+  SidebarLayoutType,
+  SidebarManagementData,
+  UserSidebarSettings,
+} from "../types/layout";
 
 const USER_SIDEBAR_KEY = "user-sidebar-settings";
+const SESSION_CACHE_PREFIX = "sidebar-session-cache:v1:";
+const SESSION_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface CachedSidebarPayload {
+  settings: SidebarManagementData | null;
+  educationSettings: EducationSettingsData | null;
+  ts: number;
+}
+
+const memorySessionCache = new Map<string, CachedSidebarPayload>();
+const sessionInFlight = new Map<string, Promise<CachedSidebarPayload | null>>();
+
+function getCacheKey(companyId?: string | null): string {
+  return companyId ? String(companyId) : "default";
+}
+
+function readCachedState(companyId?: string | null): CachedSidebarPayload | null {
+  const key = getCacheKey(companyId);
+  const mem = memorySessionCache.get(key);
+  if (mem && Date.now() - mem.ts < SESSION_CACHE_TTL_MS) {
+    return mem;
+  }
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      const raw = sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${key}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CachedSidebarPayload;
+        if (parsed && typeof parsed.ts === "number" && Date.now() - parsed.ts < SESSION_CACHE_TTL_MS) {
+          memorySessionCache.set(key, parsed);
+          return parsed;
+        }
+      }
+    }
+  } catch {
+    // sessionStorage unavailable
+  }
+  return null;
+}
+
+function writeCachedState(companyId: string | null | undefined, payload: CachedSidebarPayload) {
+  const key = getCacheKey(companyId);
+  memorySessionCache.set(key, payload);
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(`${SESSION_CACHE_PREFIX}${key}`, JSON.stringify(payload));
+    }
+  } catch {
+    // sessionStorage unavailable
+  }
+}
+
+export function invalidateSidebarSettingsCache(companyId?: string | null) {
+  if (companyId) {
+    const key = getCacheKey(companyId);
+    memorySessionCache.delete(key);
+    sessionInFlight.delete(key);
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${key}`);
+      }
+    } catch {
+      // Ignore
+    }
+    return;
+  }
+  memorySessionCache.clear();
+  sessionInFlight.clear();
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      const toRemove: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i += 1) {
+        const k = sessionStorage.key(i);
+        if (k && k.startsWith(SESSION_CACHE_PREFIX)) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach((k) => sessionStorage.removeItem(k));
+    }
+  } catch {
+    // Ignore
+  }
+}
 
 interface UserAppSettings {
   sidebarLayout: SidebarLayoutType | null;
@@ -11,10 +98,11 @@ interface UserAppSettings {
 
 interface SidebarSettingsContextType {
   settings: SidebarManagementData | null;
+  educationSettings: EducationSettingsData | null;
   isLoading: boolean;
   error: string | null;
   updateSettings: (settings: Partial<SidebarManagementData>) => Promise<boolean>;
-  refreshSettings: () => Promise<void>;
+  refreshSettings: (options?: { force?: boolean }) => Promise<void>;
   userSettings: UserSidebarSettings;
   setUserEnabled: (enabled: boolean) => void;
   toggleUserItem: (sectionId: string, itemId: string) => void;
@@ -49,6 +137,7 @@ function saveUserSettings(settings: UserSidebarSettings) {
 
 const SidebarSettingsContext = createContext<SidebarSettingsContextType>({
   settings: null,
+  educationSettings: null,
   isLoading: false,
   error: null,
   updateSettings: async () => false,
@@ -64,11 +153,29 @@ const SidebarSettingsContext = createContext<SidebarSettingsContextType>({
 
 export const useSidebarSettings = () => useContext(SidebarSettingsContext);
 
-export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<SidebarManagementData | null>(null);
+export const SidebarSettingsProvider: React.FC<{
+  children: React.ReactNode;
+  companyId?: string | null;
+}> = ({ children, companyId }) => {
+  const initialCached = readCachedState(companyId);
+  const [settings, setSettings] = useState<SidebarManagementData | null>(initialCached?.settings ?? null);
+  const [educationSettings, setEducationSettings] = useState<EducationSettingsData | null>(
+    initialCached?.educationSettings ?? null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<UserSidebarSettings>(defaultUserSettings);
+  const requestIdRef = useRef(0);
+  const settingsRef = useRef<SidebarManagementData | null>(settings);
+  const educationSettingsRef = useRef<EducationSettingsData | null>(educationSettings);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  useEffect(() => {
+    educationSettingsRef.current = educationSettings;
+  }, [educationSettings]);
 
   // Load user settings from localStorage on mount
   useEffect(() => {
@@ -111,51 +218,109 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     syncUserLayout();
   }, []);
 
-  const refreshSettings = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await apiClient.get<{ success: boolean; data: { settings?: unknown } }>(
-        "/settings/sidebar",
-        { _skipErrorToast: true } as Record<string, unknown>,
-      );
-      if (res.data?.success && res.data?.data) {
-        const raw = res.data.data.settings !== undefined ? res.data.data.settings : res.data.data;
-        setSettings(raw as unknown as SidebarManagementData);
+  const refreshSettings = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      if (!force) {
+        const cached = readCachedState(companyId);
+        if (cached) {
+          setSettings(cached.settings);
+          setEducationSettings(cached.educationSettings);
+          return;
+        }
       }
-    } catch (err: unknown) {
-      const status =
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err &&
-        typeof (err as { response?: { status?: number } }).response === "object"
-          ? (err as { response?: { status?: number } }).response?.status
-          : undefined;
-      if (status !== 403 && status !== 401) {
-        const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية";
-        setError(msg);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
-  const updateSettings = useCallback(async (partial: any): Promise<boolean> => {
-    try {
-      const payload = Array.isArray(partial) ? partial : (partial?.items || partial?.settings || partial);
-      const res = await apiClient.put<{ success: boolean; data: SidebarManagementData }>(
-        "/settings/sidebar",
-        payload,
-      );
-      if (res.data?.success) {
-        setSettings(res.data.data);
-        return true;
+      const currentReqId = ++requestIdRef.current;
+      const cacheKey = getCacheKey(companyId);
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        let inFlight = !force ? sessionInFlight.get(cacheKey) : undefined;
+        if (!inFlight) {
+          const fetchPromise = (async (): Promise<CachedSidebarPayload | null> => {
+            const res = await apiClient.get<{
+              success: boolean;
+              data: { settings?: unknown; educationSettings?: EducationSettingsData | null };
+              educationSettings?: EducationSettingsData | null;
+            }>(
+              "/settings/sidebar",
+              { _skipErrorToast: true } as Record<string, unknown>,
+            );
+            if (res.data?.success && res.data?.data) {
+              const rawSettings =
+                res.data.data.settings !== undefined ? res.data.data.settings : res.data.data;
+              const resolvedEdu =
+                res.data.data.educationSettings ?? res.data.educationSettings ?? null;
+              const payload: CachedSidebarPayload = {
+                settings: rawSettings as unknown as SidebarManagementData,
+                educationSettings: resolvedEdu,
+                ts: Date.now(),
+              };
+              writeCachedState(companyId, payload);
+              return payload;
+            }
+            return null;
+          })();
+          inFlight = fetchPromise.finally(() => {
+            if (sessionInFlight.get(cacheKey) === fetchPromise) {
+              sessionInFlight.delete(cacheKey);
+            }
+          });
+          sessionInFlight.set(cacheKey, inFlight);
+        }
+
+        const result = await inFlight;
+        if (requestIdRef.current !== currentReqId) return;
+        if (result) {
+          setSettings(result.settings);
+          setEducationSettings(result.educationSettings);
+        }
+      } catch (err: unknown) {
+        if (requestIdRef.current !== currentReqId) return;
+        const status =
+          typeof err === "object" &&
+          err !== null &&
+          "response" in err &&
+          typeof (err as { response?: { status?: number } }).response === "object"
+            ? (err as { response?: { status?: number } }).response?.status
+            : undefined;
+        if (status !== 403 && status !== 401) {
+          const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية";
+          setError(msg);
+        }
+      } finally {
+        if (requestIdRef.current === currentReqId) {
+          setIsLoading(false);
+        }
       }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
+    },
+    [companyId],
+  );
+
+  const updateSettings = useCallback(
+    async (partial: any): Promise<boolean> => {
+      try {
+        const payload = Array.isArray(partial) ? partial : (partial?.items || partial?.settings || partial);
+        const res = await apiClient.put<{ success: boolean; data: SidebarManagementData }>(
+          "/settings/sidebar",
+          payload,
+        );
+        if (res.data?.success) {
+          setSettings(res.data.data);
+          writeCachedState(companyId, {
+            settings: res.data.data,
+            educationSettings: educationSettingsRef.current,
+            ts: Date.now(),
+          });
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
+    [companyId],
+  );
 
   const setUserEnabled = useCallback((enabled: boolean) => {
     setUserSettings((prev) => {
@@ -243,6 +408,7 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
 
   const contextValue = useMemo(() => ({
     settings,
+    educationSettings,
     isLoading,
     error,
     updateSettings,
@@ -254,11 +420,60 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     resetUserSettings,
     userLayout: userSettings.sidebarLayout ?? null,
     setUserLayout,
-  }), [settings, isLoading, error, updateSettings, refreshSettings, userSettings, setUserEnabled, toggleUserItem, toggleUserSection, resetUserSettings, setUserLayout]);
+  }), [
+    settings,
+    educationSettings,
+    isLoading,
+    error,
+    updateSettings,
+    refreshSettings,
+    userSettings,
+    setUserEnabled,
+    toggleUserItem,
+    toggleUserSection,
+    resetUserSettings,
+    setUserLayout,
+  ]);
 
   useEffect(() => {
+    const cached = readCachedState(companyId);
+    if (cached) {
+      setSettings(cached.settings);
+      setEducationSettings(cached.educationSettings);
+      return;
+    }
+    setSettings(null);
+    setEducationSettings(null);
     refreshSettings();
-  }, [refreshSettings]);
+  }, [companyId, refreshSettings]);
+
+  useEffect(() => {
+    const handleEduUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<EducationSettingsData | undefined>;
+      invalidateSidebarSettingsCache(companyId);
+      if (customEvent?.detail && typeof customEvent.detail === "object") {
+        setEducationSettings(customEvent.detail);
+        writeCachedState(companyId, {
+          settings: settingsRef.current,
+          educationSettings: customEvent.detail,
+          ts: Date.now(),
+        });
+      }
+      refreshSettings({ force: true });
+    };
+
+    const handleCompanySwitched = () => {
+      invalidateSidebarSettingsCache();
+      refreshSettings({ force: true });
+    };
+
+    window.addEventListener("education-settings-updated", handleEduUpdated);
+    window.addEventListener("company:switched", handleCompanySwitched);
+    return () => {
+      window.removeEventListener("education-settings-updated", handleEduUpdated);
+      window.removeEventListener("company:switched", handleCompanySwitched);
+    };
+  }, [companyId, refreshSettings]);
 
   return (
     <SidebarSettingsContext.Provider value={contextValue}>

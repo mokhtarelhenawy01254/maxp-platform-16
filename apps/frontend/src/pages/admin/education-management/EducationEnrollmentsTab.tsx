@@ -105,7 +105,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
 
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-border/40">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span>{t("education.enrollments.teacher", isEn ? "Instructor:" : "المهندس:")}</span>
+                  <span>{t("education.enrollments.teacher", isEn ? "Teacher:" : "المدرس:")}</span>
                   {e.teacher?.name ? (
                     <span className="font-medium text-foreground">{e.teacher.name}</span>
                   ) : (
@@ -221,7 +221,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                   t("education.enrollments.student", isEn ? "Student" : "الطالب"),
                   t("education.enrollments.package", isEn ? "Package" : "الباقة"),
                   ...(enableSubjects ? [t("education.enrollments.subject", isEn ? "Subject" : "المادة")] : []),
-                  t("education.enrollments.teacher", isEn ? "Instructor" : "المهندس"),
+                  t("education.enrollments.teacher", isEn ? "Teacher" : "المدرس"),
                   t("education.enrollments.remainingHours", isEn ? "Remaining Hours" : "الساعات المتبقية"),
                   t("education.enrollments.paidAmount", isEn ? "Paid Amount" : "المدفوع"),
                   t("education.enrollments.paymentStatus", isEn ? "Status" : "الحالة"),
@@ -344,7 +344,7 @@ export const EducationEnrollmentsTab: React.FC<EducationEnrollmentsTabProps> = (
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         {!e.teacher?.id && (
-                          <span title={isEn ? "Instructor assignment needed" : "مطلوب تعيين مهندس"}>
+                          <span title={isEn ? "Teacher assignment needed" : "مطلوب تعيين مدرس"}>
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           </span>
                         )}
