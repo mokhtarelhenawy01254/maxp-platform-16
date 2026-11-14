@@ -85,7 +85,14 @@ const KNOWN_COURIER_FIELDS = new Set([
   'notes',
   'userId',
   'pin',
-  'pinHash'
+  'pinHash',
+  'documentsStatus',
+  'hireDate',
+  'salaryBase',
+  'compensationModel',
+  'bonusPerOrder',
+  'bonusStartsAfterOrders',
+  'bonusTiers'
 ]);
 
 /**
@@ -133,7 +140,16 @@ async function createCourier(req, res) {
       isActive: rawBody.isActive,
       status: rawBody.status,
       notes: rawBody.notes,
-      userId: rawBody.userId
+      userId: rawBody.userId,
+      documentsStatus: rawBody.documentsStatus,
+      hireDate: rawBody.hireDate,
+      salaryBase: rawBody.salaryBase,
+      compensationModel: rawBody.compensationModel,
+      bonusPerOrder: rawBody.bonusPerOrder,
+      bonusStartsAfterOrders: rawBody.bonusStartsAfterOrders,
+      bonusTiers: rawBody.bonusTiers,
+      pin: rawBody.pin,
+      pinHash: rawBody.pinHash
     });
 
     res.status(201).json({ success: true, data: courier });

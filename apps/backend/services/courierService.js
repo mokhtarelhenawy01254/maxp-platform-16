@@ -243,6 +243,12 @@ async function createCourier(companyId, data) {
     }
   }
 
+  const parseHireDate = (val) => {
+    if (!val) return null;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const created = await prisma.courier.create({
     data: {
       companyId,
@@ -256,13 +262,13 @@ async function createCourier(companyId, data) {
       commissionAmount: normalizeAmount(data.commissionAmount),
       isActive: data.isActive !== false,
       documentsStatus: data.documentsStatus || 'INCOMPLETE',
-      hireDate: data.hireDate ? new Date(data.hireDate) : null,
+      hireDate: parseHireDate(data.hireDate),
       salaryBase: data.salaryBase !== undefined && data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null,
       compensationModel: data.compensationModel || (data.commissionType === 'SALARY_ONLY' ? 'SALARY_ONLY' : 'COMMISSION_ONLY'),
       bonusPerOrder: data.bonusPerOrder !== undefined && data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null,
       bonusStartsAfterOrders: data.bonusStartsAfterOrders !== undefined && data.bonusStartsAfterOrders !== null ? parseInt(data.bonusStartsAfterOrders, 10) : null,
       bonusTiers: data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null,
-      status: 'AVAILABLE',
+      status: data.status || 'AVAILABLE',
       notes: data.notes?.trim() || null,
       userId: data.userId || null
     }
@@ -311,7 +317,14 @@ async function updateCourier(companyId, courierId, data) {
   if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
   if (data.userId !== undefined) updateData.userId = data.userId || null;
   if (data.documentsStatus !== undefined) updateData.documentsStatus = data.documentsStatus;
-  if (data.hireDate !== undefined) updateData.hireDate = data.hireDate ? new Date(data.hireDate) : null;
+  if (data.hireDate !== undefined) {
+    if (!data.hireDate) {
+      updateData.hireDate = null;
+    } else {
+      const parsed = new Date(data.hireDate);
+      updateData.hireDate = isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
   if (data.salaryBase !== undefined) updateData.salaryBase = data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null;
   if (data.compensationModel !== undefined) updateData.compensationModel = data.compensationModel;
   if (data.bonusPerOrder !== undefined) updateData.bonusPerOrder = data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null;

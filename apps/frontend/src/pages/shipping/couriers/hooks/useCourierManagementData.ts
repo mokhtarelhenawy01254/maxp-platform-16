@@ -79,6 +79,12 @@ export const useCourierManagementData = () => {
       commissionAmount: defaultAmount,
       isActive: true,
       notes: '',
+      hireDate: '',
+      salaryBase: 0,
+      compensationModel: 'COMMISSION_ONLY',
+      bonusPerOrder: 0,
+      bonusStartsAfterOrders: 0,
+      bonusTiers: '',
     });
     setIsModalOpen(true);
   };
@@ -96,6 +102,12 @@ export const useCourierManagementData = () => {
       commissionAmount: c.commissionAmount,
       isActive: c.isActive,
       notes: c.notes || '',
+      hireDate: c.hireDate ? c.hireDate.slice(0, 10) : '',
+      salaryBase: c.salaryBase ?? 0,
+      compensationModel: c.compensationModel || 'COMMISSION_ONLY',
+      bonusPerOrder: c.bonusPerOrder ?? 0,
+      bonusStartsAfterOrders: c.bonusStartsAfterOrders ?? 0,
+      bonusTiers: c.bonusTiers || '',
     });
     setIsModalOpen(true);
   };
@@ -109,17 +121,21 @@ export const useCourierManagementData = () => {
 
     setSaving(true);
     try {
+      const payload: CourierInput = {
+        ...formData,
+        hireDate: formData.hireDate ? formData.hireDate : undefined,
+      };
       if (editingCourier) {
-        await courierService.updateCourier(editingCourier.id, formData);
+        await courierService.updateCourier(editingCourier.id, payload);
         toast.success('تم تحديث بيانات المندوب بنجاح');
       } else {
-        await courierService.createCourier(formData);
+        await courierService.createCourier(payload);
         toast.success('تمت إضافة المندوب بنجاح');
       }
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(err?.message || 'فشل حفظ بيانات المندوب');
+      toast.error(err?.response?.data?.message || err?.message || 'فشل حفظ بيانات المندوب');
     } finally {
       setSaving(false);
     }

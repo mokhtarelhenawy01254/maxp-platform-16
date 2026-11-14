@@ -156,15 +156,19 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   const handleClose = React.useCallback(() => {
     if (busy) return;
-    onOpenChange?.(false);
-    onClose?.();
+    if (onOpenChange) {
+      onOpenChange(false);
+    } else {
+      onClose?.();
+    }
   }, [busy, onOpenChange, onClose]);
 
   const handleOpenChange = React.useCallback(
     (next: boolean) => {
       if (!next && busy) return;
-      onOpenChange?.(next);
-      if (!next) {
+      if (onOpenChange) {
+        onOpenChange(next);
+      } else if (!next) {
         onClose?.();
       }
     },

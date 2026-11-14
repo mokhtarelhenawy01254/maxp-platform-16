@@ -168,6 +168,38 @@ describe('SHIP-W12: Courier Coverage & Distribution Counter Acceptance Tests', (
       expect(res.body.code).toBe('UNKNOWN_FIELDS');
       expect(res.body.message).toContain('baz');
     });
+
+    it('POST /couriers with compensation & hire date fields succeeds with 201', async () => {
+      let createdData = null;
+      mockPrisma.courier.create.mockImplementation(({ data }) => {
+        createdData = {
+          id: 'courier-comp-1',
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        return Promise.resolve(createdData);
+      });
+
+      const res = await request(app)
+        .post('/api/v1/couriers')
+        .send({
+          name: 'كابتن محمود',
+          phone: '01099998888',
+          hireDate: '2026-11-01',
+          compensationModel: 'SALARY_PLUS_BONUS',
+          salaryBase: 4500,
+          bonusPerOrder: 7,
+          bonusStartsAfterOrders: 25,
+          bonusTiers: JSON.stringify([{ from: 1, to: 50, amount: 7 }]),
+          documentsStatus: 'INCOMPLETE'
+        })
+        .expect(201);
+
+      expect(res.body.success).toBe(true);
+      expect(createdData.name).toBe('كابتن محمود');
+      expect(createdData.compensationModel).toBe('SALARY_PLUS_BONUS');
+    });
   });
 
   describe('2. Distribution counter & mathematical sum check (SHIP-W12)', () => {

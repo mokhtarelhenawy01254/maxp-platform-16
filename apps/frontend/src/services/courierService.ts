@@ -45,6 +45,13 @@ export interface CourierInput {
   commissionAmount?: number;
   isActive?: boolean;
   notes?: string;
+  documentsStatus?: 'INCOMPLETE' | 'PENDING_REVIEW' | 'VERIFIED' | string;
+  hireDate?: string | null;
+  salaryBase?: number | null;
+  compensationModel?: string | null;
+  bonusPerOrder?: number | null;
+  bonusStartsAfterOrders?: number | null;
+  bonusTiers?: string | any[] | null;
 }
 
 export interface CourierDocument {

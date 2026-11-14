@@ -1,6 +1,64 @@
-const courierService = require('../../services/courierService');
-const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const bcrypt = require('bcryptjs');
+
+const mockPrisma = {
+  deliveryRun: {
+    findFirst: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
+    findMany: jest.fn(),
+  },
+  treasuryAccount: {
+    findFirst: jest.fn(),
+    update: jest.fn(),
+  },
+  treasuryTransaction: {
+    create: jest.fn(),
+  },
+  shipment: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    count: jest.fn(),
+    groupBy: jest.fn(),
+    aggregate: jest.fn(),
+  },
+  courier: {
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+  },
+  companyApp: {
+    findFirst: jest.fn(),
+  },
+  installedApp: {
+    findFirst: jest.fn(),
+  },
+  shipmentEvent: {
+    create: jest.fn(),
+  },
+  order: {
+    update: jest.fn(),
+    updateMany: jest.fn(),
+  },
+  orderStatusHistory: {
+    create: jest.fn(),
+  },
+  courierCommission: {
+    findMany: jest.fn(),
+    groupBy: jest.fn(),
+    count: jest.fn(),
+    updateMany: jest.fn(),
+    createMany: jest.fn(),
+  },
+  $transaction: jest.fn((callback) => callback(mockPrisma)),
+};
 
 jest.mock('../../services/courierNotificationService', () => ({
   notifyRunDispatched: jest.fn(),
@@ -13,65 +71,13 @@ jest.mock('../../services/courierNotificationService', () => ({
   },
 }));
 
-jest.mock('../../services/sharedDatabase', () => {
-  const mPrisma = {
-    deliveryRun: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-      findMany: jest.fn(),
-    },
-    treasuryAccount: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-    },
-    treasuryTransaction: {
-      create: jest.fn(),
-    },
-    shipment: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      count: jest.fn(),
-      groupBy: jest.fn(),
-      aggregate: jest.fn(),
-    },
-    courier: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      deleteMany: jest.fn(),
-      count: jest.fn(),
-    },
-    companyApp: {
-      findFirst: jest.fn(),
-    },
-    order: {
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    orderStatusHistory: {
-      create: jest.fn(),
-    },
-    courierCommission: {
-      findMany: jest.fn(),
-      groupBy: jest.fn(),
-      count: jest.fn(),
-      updateMany: jest.fn(),
-      createMany: jest.fn(),
-    },
-    $transaction: jest.fn((callback) => callback(mPrisma)),
-  };
+jest.mock('../../services/sharedDatabase', () => ({
+  getSharedPrismaClient: jest.fn(() => mockPrisma),
+  getSharedPrismaClientAsync: jest.fn(async () => mockPrisma),
+}));
 
-  return {
-    getSharedPrismaClient: jest.fn(() => mPrisma),
-  };
-});
+const courierService = require('../../services/courierService');
+const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 describe('Courier Service Module Unit Tests', () => {
   const prisma = getSharedPrismaClient();
