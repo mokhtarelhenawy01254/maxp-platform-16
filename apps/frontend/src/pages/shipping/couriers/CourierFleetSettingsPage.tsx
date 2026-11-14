@@ -7,7 +7,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle2,
-  Settings,
   ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
@@ -123,12 +122,14 @@ export const CourierFleetSettingsPage: React.FC = () => {
         }
       }
 
-      if (targetAppId) {
-        await apiClient.put(`/my-apps/${targetAppId}/settings`, {
-          settings: normalized,
-        });
-        setCompanyApp((curr) => (curr ? { ...curr, settings: normalized } : curr));
+      if (!targetAppId) {
+        throw new Error('تعذر ربط حساب الشركة بحزمة أسطول التوصيل لحفظ الإعدادات');
       }
+
+      await apiClient.put(`/my-apps/${targetAppId}/settings`, {
+        settings: normalized,
+      });
+      setCompanyApp((curr) => (curr ? { ...curr, settings: normalized } : curr));
 
       toast.success('تم حفظ إعدادات أسطول المناديب والتوصيل بنجاح');
     } catch (err: any) {
@@ -165,7 +166,7 @@ export const CourierFleetSettingsPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <Settings className="w-6 h-6" />
+              <Truck className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">

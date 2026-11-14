@@ -78,13 +78,19 @@ const toneIconClasses: Record<ModalTone, string> = {
 
 export interface OrderModalProps {
   /** Controlled open state. */
-  open: boolean;
+  open?: boolean;
+  /** Backwards compatibility alias for open */
+  isOpen?: boolean;
   /** Called when the user tries to close the modal (backdrop, Esc, X). */
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  /** Backwards compatibility alias for onOpenChange(false) */
+  onClose?: () => void;
   /** Title shown in the header. Pass nothing to hide the header. */
   title?: React.ReactNode;
   /** Description shown below the title. */
   description?: React.ReactNode;
+  /** Backwards compatibility alias for description */
+  subtitle?: React.ReactNode;
   /** Optional icon — renders in a tinted circle above the title. */
   icon?: React.ComponentType<{ className?: string }>;
   /** Color tone for the icon circle and the default primary action. */
@@ -123,9 +129,12 @@ const toneToPrimaryVariant = (tone: ModalTone): ModalActionVariant => {
 
 export const OrderModal: React.FC<OrderModalProps> = ({
   open,
+  isOpen,
   onOpenChange,
+  onClose,
   title,
   description,
+  subtitle,
   icon: Icon,
   tone = "primary",
   size = "md",
@@ -141,12 +150,26 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   bodyClassName,
   flushBody = false,
 }) => {
-  const showHeader = Boolean(title || description || Icon);
+  const isModalOpen = open ?? isOpen ?? false;
+  const modalDescription = description ?? subtitle;
+  const showHeader = Boolean(title || modalDescription || Icon);
 
   const handleClose = React.useCallback(() => {
     if (busy) return;
-    onOpenChange(false);
-  }, [busy, onOpenChange]);
+    onOpenChange?.(false);
+    onClose?.();
+  }, [busy, onOpenChange, onClose]);
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (!next && busy) return;
+      onOpenChange?.(next);
+      if (!next) {
+        onClose?.();
+      }
+    },
+    [busy, onOpenChange, onClose],
+  );
 
   const renderFooter = () => {
     if (footer !== undefined) return footer;
