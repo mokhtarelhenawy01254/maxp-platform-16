@@ -501,7 +501,10 @@ const buildAppFromSection = (
     bgGradient: metadata?.bgGradient ?? `from-${fallbackColor}-500 to-${fallbackColor}-600`,
     sectionIds: [section.id],
     category,
-    displayName: section.title,
+    displayName:
+      section.title === 'إعدادات وتخصيص السكاشن' || section.title === 'Sections & System Settings'
+        ? (section.id === 'settings' ? t('sidebar.settingsSection') : 'إعدادات النظام')
+        : section.title,
     displayDescription: exactMetadata?.descriptionKey
       ? t(exactMetadata.descriptionKey)
       : t('appDashboard.toolsCount', { count: visibleItemCount }),
