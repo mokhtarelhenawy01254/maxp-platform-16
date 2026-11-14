@@ -68,7 +68,7 @@ jobs:
           Write-Host "Main installer generated: $($setupExe.FullName)"
 
       - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MaxP-Workspace-Windows-Installer-${{ github.run_number }}
           path: |
