@@ -192,7 +192,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
 
   return (
     <>
-      <header dir={headerDir} className="sticky top-0 z-50 w-full overflow-x-clip">
+      <header dir={headerDir} className="sticky top-0 z-50 w-full">
         {/* band 1 — utility */}
         <div className="hidden bg-[#0d0625] text-white md:block">
           <div className="container mx-auto flex h-[42px] items-center justify-between gap-4 px-4 text-[12px] md:px-6 max-w-full">
@@ -325,49 +325,115 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
         </div>
 
         {/* band 3 — categories + nav (WoodMart Marketplace 2 style) */}
-        <div className="bg-[#e14a5c] text-white">
-          <div className="container mx-auto flex h-[46px] md:h-[51px] items-center justify-between gap-4 px-4 text-[13.5px] xl:text-[14px] font-semibold md:px-6 max-w-full">
-            <div className="flex min-w-0 items-center gap-4 lg:gap-5 xl:gap-6 overflow-x-auto md:overflow-visible py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categories.map((dropdown, idx) => {
-                const items = (dropdown.items || []).filter(
-                  (item) => Boolean(item?.label && item?.to),
-                );
-                const label = dropdown.label || items[0]?.label || "";
-                const currentCategory = new URLSearchParams(location?.search || "").get("category");
-                const isCatActive = Boolean(
-                  currentCategory &&
-                  (isCategoryUrlMatch(dropdown.to, currentCategory, dbCategories) ||
-                   items.some((item) => isCategoryUrlMatch(item.to, currentCategory, dbCategories)))
-                );
-                return (
-                  <div key={`${dropdown.slug || label}-${idx}`} className="group relative shrink-0">
-                    <Link
-                      to={dropdown.to || items[0]?.to || "/collections"}
-                      className={`flex items-center gap-1.5 whitespace-nowrap py-1.5 transition-colors ${
-                        isCatActive
-                          ? "text-white font-bold underline decoration-2 underline-offset-8"
-                          : "text-white/95 hover:text-white"
-                      }`}
-                    >
-                      {renderDepartmentIcon(dropdown.slug || label)}
-                      <span>{label}</span>
+        <div className="w-full bg-[#e14a5c] text-white">
+          <div className="container mx-auto flex h-[46px] md:h-[51px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 md:px-6 max-w-full overflow-hidden">
+            {/* Scrollable Categories Strip */}
+            <div
+              className="flex-1 min-w-0 w-full overflow-x-auto py-1 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:overflow-visible"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-x pan-y",
+                overscrollBehaviorX: "contain",
+              }}
+              onWheel={(e) => {
+                if (e.deltaY !== 0 && e.currentTarget.scrollWidth > e.currentTarget.clientWidth) {
+                  e.currentTarget.scrollLeft += isRtl ? -e.deltaY : e.deltaY;
+                }
+              }}
+            >
+              <div className="flex w-max min-w-full items-center gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
+                {categories.map((dropdown, idx) => {
+                  const items = (dropdown.items || []).filter(
+                    (item) => Boolean(item?.label && item?.to),
+                  );
+                  const label = dropdown.label || items[0]?.label || "";
+                  const currentCategory = new URLSearchParams(location?.search || "").get("category");
+                  const isCatActive = Boolean(
+                    currentCategory &&
+                    (isCategoryUrlMatch(dropdown.to, currentCategory, dbCategories) ||
+                     items.some((item) => isCategoryUrlMatch(item.to, currentCategory, dbCategories)))
+                  );
+                  return (
+                    <div key={`${dropdown.slug || label}-${idx}`} className="group relative shrink-0 flex-none">
+                      <Link
+                        to={dropdown.to || items[0]?.to || "/collections"}
+                        className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap py-1.5 transition-colors ${
+                          isCatActive
+                            ? "text-white font-bold underline decoration-2 underline-offset-8"
+                            : "text-white/95 hover:text-white"
+                        }`}
+                      >
+                        {renderDepartmentIcon(dropdown.slug || label)}
+                        <span className="shrink-0 whitespace-nowrap">{label}</span>
+                        {items.length ? (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="shrink-0 opacity-80">
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        ) : null}
+                      </Link>
+                      {/* department flyout — desktop only */}
                       {items.length ? (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="opacity-80">
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
+                        <div className="pointer-events-none invisible hidden xl:block absolute start-0 top-full z-50 w-[240px] translate-y-1 rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground opacity-0 shadow-xl transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                          <ul className="flex flex-col">
+                            {items.map((item) => (
+                              <li key={item.to + item.label}>
+                                <Link
+                                  to={item.to}
+                                  className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
+                                >
+                                  {item.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ) : null}
-                    </Link>
-                    {/* department flyout */}
-                    {items.length ? (
-                      <div className="pointer-events-none invisible absolute start-0 top-full z-50 w-[240px] translate-y-1 rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground opacity-0 shadow-xl transition-all duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
-                        <ul className="flex flex-col">
-                          {items.map((item) => (
-                            <li key={item.to + item.label}>
+                    </div>
+                  );
+                })}
+                {/* Clean More menu for overflow categories & static pages */}
+                {(allDropdownCategories.length > 6 || (navLinks && navLinks.length > 0)) ? (
+                  <div className="relative shrink-0 flex-none hidden md:block">
+                    <button
+                      type="button"
+                      onClick={() => setMoreOpen((open) => !open)}
+                      aria-label={isRtl ? "المزيد من الأقسام" : "More departments"}
+                      aria-expanded={moreOpen}
+                      className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                    >
+                      <span className="shrink-0 whitespace-nowrap">{isRtl ? "المزيد" : "More"}</span>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" className="shrink-0">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    {moreOpen ? (
+                      <div className="absolute start-0 top-full z-50 mt-1 w-[240px] rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground shadow-xl">
+                        <ul className="flex max-h-[340px] flex-col overflow-y-auto">
+                          {allDropdownCategories.map((dropdown, idx) => {
+                            const label = dropdown.label || "";
+                            return (
+                              <li key={`more-${dropdown.slug || label}-${idx}`}>
+                                <Link
+                                  to={dropdown.to || "/collections"}
+                                  onClick={() => setMoreOpen(false)}
+                                  className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
+                                >
+                                  {label}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                          {allDropdownCategories.length > 0 && navLinks && navLinks.length > 0 ? (
+                            <li className="my-1 border-t border-border" />
+                          ) : null}
+                          {(navLinks || []).map((link: { label: string; to: string }) => (
+                            <li key={`more-nav-${link.to}-${link.label}`}>
                               <Link
-                                to={item.to}
+                                to={link.to}
+                                onClick={() => setMoreOpen(false)}
                                 className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
                               >
-                                {item.label}
+                                {link.label}
                               </Link>
                             </li>
                           ))}
@@ -375,94 +441,55 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
                       </div>
                     ) : null}
                   </div>
-                );
-              })}
-              {/* Clean More menu for overflow categories & static pages */}
-              {(allDropdownCategories.length > 6 || (navLinks && navLinks.length > 0)) ? (
-                <div className="relative shrink-0 hidden md:block">
-                  <button
-                    type="button"
-                    onClick={() => setMoreOpen((open) => !open)}
-                    aria-label={isRtl ? "المزيد من الأقسام" : "More departments"}
-                    aria-expanded={moreOpen}
-                    className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-white/90 transition hover:bg-white/10 hover:text-white"
+                ) : null}
+                {/* On mobile: if store has more categories, link to all collections */}
+                {allDropdownCategories.length > 6 ? (
+                  <Link
+                    to="/collections"
+                    className="flex shrink-0 items-center gap-1 whitespace-nowrap py-1.5 text-white/90 transition-colors hover:text-white md:hidden"
                   >
-                    <span>{isRtl ? "المزيد" : "More"}</span>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                      <path d="m6 9 6 6 6-6" />
+                    <span className="shrink-0 whitespace-nowrap">{isRtl ? "كل الأقسام" : "All Categories"}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`shrink-0 ${isRtl ? "rotate-180" : ""}`}>
+                      <path d="m9 18 6-6-6-6" />
                     </svg>
-                  </button>
-                  {moreOpen ? (
-                    <div className="absolute start-0 top-full z-50 mt-1 w-[240px] rounded-b-xl border border-border bg-white p-2 text-[14px] font-medium text-foreground shadow-xl">
-                      <ul className="flex max-h-[340px] flex-col overflow-y-auto">
-                        {allDropdownCategories.map((dropdown, idx) => {
-                          const label = dropdown.label || "";
-                          return (
-                            <li key={`more-${dropdown.slug || label}-${idx}`}>
-                              <Link
-                                to={dropdown.to || "/collections"}
-                                onClick={() => setMoreOpen(false)}
-                                className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
-                              >
-                                {label}
-                              </Link>
-                            </li>
-                          );
-                        })}
-                        {allDropdownCategories.length > 0 && navLinks && navLinks.length > 0 ? (
-                          <li className="my-1 border-t border-border" />
-                        ) : null}
-                        {(navLinks || []).map((link: { label: string; to: string }) => (
-                          <li key={`more-nav-${link.to}-${link.label}`}>
-                            <Link
-                              to={link.to}
-                              onClick={() => setMoreOpen(false)}
-                              className="block rounded-lg px-3 py-1.5 text-foreground/80 transition-colors hover:bg-muted hover:text-[#e14a5c]"
-                            >
-                              {link.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {/* Fallback to navLinks only when store has zero categories */}
-              {categories.length === 0 && navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
-                <Link
-                  key={link.to + link.label}
-                  to={link.to}
-                  className={`whitespace-nowrap transition-colors ${
-                    isActive?.(link.to) ? "text-white underline decoration-2 underline-offset-8" : "text-white/90 hover:text-white"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+                  </Link>
+                ) : null}
+                {/* Fallback to navLinks only when store has zero categories */}
+                {categories.length === 0 && navLinks?.slice(0, 4).map((link: { label: string; to: string }) => (
+                  <Link
+                    key={link.to + link.label}
+                    to={link.to}
+                    className={`flex-none shrink-0 whitespace-nowrap transition-colors ${
+                      isActive?.(link.to) ? "text-white underline decoration-2 underline-offset-8" : "text-white/90 hover:text-white"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Right side of red bar (WoodMart Marketplace 2: Wishlist + Account) */}
-            <div className="ms-auto hidden shrink-0 items-center gap-4 text-[13px] font-medium lg:flex">
+            <div className="ms-auto hidden shrink-0 items-center gap-4 text-[13px] font-medium xl:flex">
               <Link
                 to="/shop"
-                className="flex items-center gap-1.5 text-white/90 transition-colors hover:text-white"
+                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-white/90 transition-colors hover:text-white"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                 </svg>
-                <span>{isRtl ? "قائمة الرغبات" : "Wishlist"}</span>
+                <span className="whitespace-nowrap">{isRtl ? "قائمة الرغبات" : "Wishlist"}</span>
               </Link>
-              <span className="h-3.5 w-px bg-white/30" />
+              <span className="h-3.5 w-px bg-white/30 shrink-0" />
               <Link
                 to="/contact"
-                className="flex items-center gap-1.5 text-white/90 transition-colors hover:text-white"
+                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-white/90 transition-colors hover:text-white"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                <span>{isRtl ? "تسجيل الدخول / حسابي" : "Login / Register"}</span>
+                <span className="whitespace-nowrap">{isRtl ? "تسجيل الدخول / حسابي" : "Login / Register"}</span>
               </Link>
             </div>
           </div>
