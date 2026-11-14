@@ -21,6 +21,7 @@ import {
   ExternalLink,
   MessageSquare,
   Sparkles,
+  Target,
 } from "lucide-react";
 import {
   getCompanyId as getEducationCompanyId,
@@ -108,8 +109,14 @@ export default function EducationFunnelPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
-  const [activeView, setActiveView] = useState<"templates" | "funnel" | "logs">(
-    initialTab === "funnel" ? "funnel" : initialTab === "logs" ? "logs" : "templates"
+  const [activeView, setActiveView] = useState<"templates" | "funnel" | "attribution" | "logs">(
+    initialTab === "funnel"
+      ? "funnel"
+      : initialTab === "logs"
+      ? "logs"
+      : initialTab === "attribution"
+      ? "attribution"
+      : "templates"
   );
 
   const [funnel, setFunnel] = useState<any>(null);
@@ -135,7 +142,7 @@ export default function EducationFunnelPage() {
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
   const [testMessage, setTestMessage] = useState("");
 
-  const changeView = (view: "templates" | "funnel" | "logs") => {
+  const changeView = (view: "templates" | "funnel" | "attribution" | "logs") => {
     setActiveView(view);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", view);
@@ -381,7 +388,7 @@ export default function EducationFunnelPage() {
             <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{t("education.funnel.tabTemplates", isEn ? "WhatsApp Templates" : "قوالب رسائل الواتساب")}</span>
             <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-              11 {t("education.funnel.templatesCount", isEn ? "templates" : "قوالب")}
+              16 {t("education.funnel.templatesCount", isEn ? "templates" : "قوالب")}
             </span>
           </button>
 
@@ -401,6 +408,22 @@ export default function EducationFunnelPage() {
                 {activeFunnel?.funnel?.totalStudents} {t("education.students.students", isEn ? "students" : "طالب")}
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => changeView("attribution")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              activeView === "attribution"
+                ? "bg-background text-foreground shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span>{t("education.funnel.tabAttribution", isEn ? "Campaign Attribution" : "تتبع مصادر الحملات والإعلانات")}</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono font-bold">
+              {attribution?.summary?.totalLeads ?? 0} {t("education.funnel.leads", isEn ? "leads" : "ليد")}
+            </span>
           </button>
 
           <button
@@ -882,7 +905,182 @@ export default function EducationFunnelPage() {
           </div>
         )}
 
-        {/* VIEW 3: Notification Activity Logs */}
+        {/* VIEW 3: Campaign & Messaging Attribution */}
+        {activeView === "attribution" && (
+          <div className="space-y-4">
+            {/* Header Attribution Banner */}
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 text-foreground">
+                <Target className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0" />
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">
+                    {isEn ? "Lead & Campaign Attribution Engine" : "محرك تتبع مصادر الليدات والحملات الإعلانية"}
+                  </h2>
+                  <p className="text-muted-foreground text-[11px] mt-0.5">
+                    {isEn
+                      ? "Precise attribution connecting WhatsApp clicks, Meta Ads, and web landing leads with Demo Day attendance and revenue"
+                      : "ربط دقيق بين نقرات حملات رسائل الواتساب، إعلانات ميتا (فيسبوك)، ونماذج الموقع مع حضور الديمو داي والتحويل للاشتراكات"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <a
+                  href="/admin/education/demo-day"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors shadow-2xs"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{isEn ? "View Demo Day Attendees" : "عرض مسجلي الديمو داي"}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => changeView("templates")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted font-semibold transition-colors text-foreground"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{isEn ? "WhatsApp Automation" : "أتمتة الواتساب"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Attribution KPI Summary Ribbon */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-4 rounded-xl bg-card border border-border/80 shadow-2xs space-y-1">
+                <div className="text-[11px] text-muted-foreground font-medium">{isEn ? "Total Leads Registered" : "إجمالي الليدات المسجلة"}</div>
+                <div className="text-2xl font-bold text-foreground font-mono tabular-nums">
+                  {attribution?.summary?.totalLeads ?? 0}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {isEn ? "From campaigns & messages" : "من حملات الرسائل والإعلانات"}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card border border-border/80 shadow-2xs space-y-1">
+                <div className="text-[11px] text-muted-foreground font-medium">{isEn ? "Attended Demo Day" : "حضروا اليوم التجريبي (ديمو داي)"}</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums flex items-baseline gap-1.5">
+                  <span>{attribution?.summary?.totalAttended ?? 0}</span>
+                  <span className="text-xs text-muted-foreground font-normal">({attribution?.summary?.overallAttendanceRate ?? 0}%)</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {isEn ? "Actual show-up rate" : "نسبة الحضور الفعلي"}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card border border-border/80 shadow-2xs space-y-1">
+                <div className="text-[11px] text-muted-foreground font-medium">{isEn ? "Converted to Enrolled" : "تحولوا لطلاب مقيدين"}</div>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums flex items-baseline gap-1.5">
+                  <span>{attribution?.summary?.totalConverted ?? 0}</span>
+                  <span className="text-xs text-muted-foreground font-normal">({attribution?.summary?.overallConversionRate ?? 0}%)</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {isEn ? "Enrolled into packages" : "اشتركوا في باقات وحصص"}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card border border-border/80 shadow-2xs space-y-1">
+                <div className="text-[11px] text-muted-foreground font-medium">{isEn ? "Direct Generated Revenue" : "العائد المالي المباشر"}</div>
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+                  {attribution?.summary?.totalRevenue ?? 0} ج.م
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {isEn ? "Revenue from campaign leads" : "عائد الاشتراكات الناتجة"}
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Campaigns Table Card */}
+            <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    {isEn ? "Campaign & Ad Breakdown" : "تفصيل الحملات والإعلانات ومعدلات التحويل"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isEn
+                      ? "Breakdown per ad campaign, creative, and ad ID with attendance and conversion numbers"
+                      : "تحليل كل حملة إعلانية، معرّف الإعلان (Ad ID) ورقم البوست لمعرفة الإعلان الأكثر تحقيقاً للمبيعات"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-full overflow-hidden rounded-xl border border-border/70 bg-background shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-right divide-y divide-border/60">
+                    <thead className="bg-muted/40 text-muted-foreground text-[11px] font-semibold">
+                      <tr>
+                        <th className="py-2.5 px-3 whitespace-nowrap">{isEn ? "Campaign / Ad / Post" : "اسم الحملة / الإعلان / البوست"}</th>
+                        <th className="py-2.5 px-3 whitespace-nowrap">{isEn ? "Channel Source" : "مصدر القناة"}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Leads" : "المسجلين"}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Attended" : "الحضور الفعلي"}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Enrolled Students" : "المشتركين"}</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">{isEn ? "Conversion %" : "نسبة التحويل"}</th>
+                        <th className="py-2.5 px-3 text-left whitespace-nowrap">{isEn ? "Revenue" : "العائد المالي"}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40 text-foreground">
+                      {attribution?.campaigns && attribution.campaigns.length > 0 ? (
+                        attribution.campaigns.map((camp: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-foreground flex items-center gap-1.5">
+                                <span>{camp.campaignName}</span>
+                                {camp.adId && <span className="text-[10px] font-mono text-muted-foreground">({camp.adId})</span>}
+                              </div>
+                              {camp.postId && (
+                                <div className="text-[10px] text-muted-foreground/80 font-mono">بوست: #{camp.postId}</div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                                camp.channel === "WHATSAPP"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                  : camp.channel === "FACEBOOK" || camp.channel === "MESSENGER"
+                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                  : "bg-muted text-muted-foreground border border-border"
+                              }`}>
+                                {camp.channelLabel}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold">{camp.leadsCount}</td>
+                            <td className="py-2.5 px-3 text-center font-mono tabular-nums">
+                              <span className="text-blue-600 dark:text-blue-400 font-bold">{camp.attendedCount}</span>
+                              <span className="text-[10px] text-muted-foreground mr-1">({camp.attendanceRate}%)</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-bold">
+                              {camp.convertedCount}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold">
+                              <span className="px-1.5 py-0.5 rounded bg-muted text-[11px]">{camp.conversionRate}%</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-left font-mono font-bold text-foreground tabular-nums">
+                              {camp.revenueGenerated} ج.م
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-muted-foreground text-xs space-y-2">
+                            <Target className="w-6 h-6 text-muted-foreground/50 mx-auto" />
+                            <div>{isEn ? "No campaign attribution data for this period yet" : "لا توجد بيانات حملات مسجلة لهذه الفترة حتى الآن"}</div>
+                            <div className="text-[11px] text-muted-foreground/80">
+                              {isEn
+                                ? "Leads registered with campaign tags (Click-to-WhatsApp, Facebook ad_id, UTM) will automatically appear here."
+                                : "أي ليد أو عميل يسجل عبر إعلانات رسائل الواتساب أو فيسبوك أو الموقع سيظهر مصدره وحملته هنا تلقائياً."}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: Notification Activity Logs */}
         {activeView === "logs" && (
           <div className="bg-card border border-border/80 rounded-xl overflow-hidden shadow-xs space-y-0">
             <div className="p-3.5 border-b border-border/80 bg-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

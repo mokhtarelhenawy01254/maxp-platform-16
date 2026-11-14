@@ -40,6 +40,7 @@ export interface DemoDayAttendee {
   createdAt: string;
   leadStage?: string | null;
   leadPriority?: string | null;
+  leadSource?: string | null;
 }
 
 export interface DemoDayStats {

@@ -18,15 +18,26 @@ interface DemoDayAttendeesTableProps {
   isEn?: boolean;
 }
 
-function parseAttribution(notes?: string | null) {
-  if (!notes || !notes.includes("[ATTR:")) return null;
-  try {
-    const match = notes.match(/\[ATTR:\s*({.*?})\]/);
-    if (match && match[1]) {
-      return JSON.parse(match[1]);
-    }
-  } catch (_) {}
-  return null;
+function parseAttribution(notes?: string | null, fallbackLeadSource?: string | null) {
+  if (notes && notes.includes("[ATTR:")) {
+    try {
+      const match = notes.match(/\[ATTR:\s*({.*?})\]/);
+      if (match && match[1]) {
+        return JSON.parse(match[1]);
+      }
+    } catch (_) {}
+  }
+  if (fallbackLeadSource) {
+    const src = fallbackLeadSource.toUpperCase();
+    return {
+      source: src,
+      campaign: src === "WHATSAPP" ? "محادثات الواتساب" : src === "FACEBOOK" ? "إعلانات فيسبوك" : src === "WEBSITE" ? "الموقع ولاندينج بيج" : "تسجيل مباشر / هاتف",
+    };
+  }
+  return {
+    source: "OTHER",
+    campaign: "تسجيل مباشر / الإدارة",
+  };
 }
 
 function cleanNotes(notes?: string | null) {
@@ -165,7 +176,7 @@ export function DemoDayAttendeesTable({
                           </div>
                         )}
                         {(() => {
-                          const attr = parseAttribution(att.notes);
+                          const attr = parseAttribution(att.notes, att.leadSource);
                           if (!attr) return null;
                           return (
                             <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">
@@ -270,7 +281,7 @@ export function DemoDayAttendeesTable({
                 {att.age && <span className="text-muted-foreground">{att.age} {isEn ? "yrs" : "سنة"}</span>}
                 {att.grade && <span className="text-muted-foreground truncate">{att.grade}</span>}
                 {(() => {
-                  const attr = parseAttribution(att.notes);
+                  const attr = parseAttribution(att.notes, att.leadSource);
                   if (!attr) return null;
                   return (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">
