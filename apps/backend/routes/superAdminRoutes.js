@@ -973,6 +973,10 @@ router.get("/agents/:slug/companies", async (req, res) => {
     return res.json({ success: true, ...result });
   } catch (error) {
     console.error('[SA-AGENTS] GET template companies error:', error.message);
+    // قالب محذوف/غير موجود → 404 صادقة بدل 500 مضلل (نفس رسالة تفاصيل القالب)
+    if (error.statusCode === 404) {
+      return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
+    }
     return res.status(500).json({ success: false, error: 'فشل تحميل الشركات المستخدمة للوكيل' });
   }
 });

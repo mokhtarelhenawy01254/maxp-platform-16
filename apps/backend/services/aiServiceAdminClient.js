@@ -50,7 +50,9 @@ async function request(method, path, body, extraHeaders = {}) {
             } else if (typeof detail === 'object' && detail !== null) {
               detail = JSON.stringify(detail);
             }
-            return reject(new Error(detail || parsed.message || parsed.error || `AI service error (${res.statusCode})`));
+            const err = new Error(detail || parsed.message || parsed.error || `AI service error (${res.statusCode})`);
+            err.statusCode = res.statusCode;
+            return reject(err);
           }
           resolve(parsed);
         } catch (e) {
