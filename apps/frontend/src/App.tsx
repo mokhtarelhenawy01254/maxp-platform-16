@@ -1353,6 +1353,12 @@ const EducationStudentProfilePage = React.lazy(
 const EducationDemoDayPage = React.lazy(
   () => import("./pages/admin/EducationDemoDayPage"),
 );
+const EducationBranchesPage = React.lazy(
+  () => import("./pages/admin/education-branches/EducationBranchesPage"),
+);
+const EducationReportsPage = React.lazy(
+  () => import("./pages/admin/education-reports/EducationReportsPage"),
+);
 const EducationPublicDemoPage = React.lazy(
   () => import("./pages/education/EducationPublicDemoPage"),
 );
@@ -9648,10 +9654,26 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/admin/education/branches"
+                  element={
+                    <Layout fullWidth>
+                      <EducationBranchesPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/admin/education/demo-day"
                   element={
                     <Layout fullWidth>
                       <EducationDemoDayPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/education/reports"
+                  element={
+                    <Layout fullWidth>
+                      <EducationReportsPage />
                     </Layout>
                   }
                 />

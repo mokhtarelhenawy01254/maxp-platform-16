@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Sparkles,
   Target,
+  BarChart3,
 } from "lucide-react";
 import {
   getCompanyId as getEducationCompanyId,
@@ -371,6 +372,16 @@ export default function EducationFunnelPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span>{t("education.common.refresh", isEn ? "Refresh" : "تحديث")}</span>
             </button>
+
+            <a
+              href="/admin/education/reports"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-semibold hover:bg-purple-500/20 transition-colors shadow-xs"
+              title={isEn ? "Open Dedicated Education Reports & Attribution" : "فتح تقارير الأكاديمية ومصادر الحملات"}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>{isEn ? "Education Reports" : "تقارير الأكاديمية"}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
 

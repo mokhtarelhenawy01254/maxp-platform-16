@@ -1897,6 +1897,7 @@ export const getSidebarConfig = (
             hidden: !isAppInstalled('education-app'),
             items: [
                 { to: '/admin/education/dashboard', itemId: 'education-dashboard', icon: BarChart3, label: t('sidebar.educationDashboard') },
+                { to: '/admin/education/branches', itemId: 'education-branches', icon: Building2, label: t('sidebar.educationBranches', 'الفروع والقاعات') },
                 { to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, label: t('sidebar.educationSubjects'), hidden: true },
                 { to: '/admin/education/packages', itemId: 'education-packages', icon: Gift, label: t('sidebar.educationPackages') },
                 { to: '/admin/education/groups', itemId: 'education-groups', icon: Users, label: t('sidebar.educationGroups', 'المجموعات الدراسية (الجروبات)') },
@@ -1909,7 +1910,8 @@ export const getSidebarConfig = (
                 { to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, label: t('sidebar.educationCalendar') },
                 { to: '/admin/education/demo-day', itemId: 'education-demo-day', icon: Presentation, label: t('sidebar.educationDemoDay', 'الديمو داي'), hidden: true },
                 { to: '/admin/education/flows', itemId: 'education-flows', icon: GitBranch, label: t('sidebar.educationFlows', 'مسارات الرسايل والأتمتة') },
-                { to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, label: t('sidebar.educationFunnel') },
+                { to: '/admin/education/funnel', itemId: 'education-funnel', icon: MessageSquare, label: t('sidebar.educationFunnel', 'قوالب رسائل الواتساب') },
+                { to: '/admin/education/reports', itemId: 'education-reports', icon: BarChart3, label: t('sidebar.educationReports', 'التقارير وتحليل الحملات') },
                 { to: '/admin/education/settings', itemId: 'education-settings', icon: Settings, label: t('sidebar.educationSettings', 'إعدادات وتخصيص السكاشن') },
                 { to: '/admin/education/logs', itemId: 'education-logs', icon: History, label: t('sidebar.educationLogs', 'سجلات النظام التعليمي') },
             ]
