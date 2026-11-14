@@ -192,10 +192,10 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
 
   return (
     <>
-      <header dir={headerDir} className="sticky top-0 z-50 w-full">
+      <header dir={headerDir} className="sticky top-0 z-50 w-full overflow-x-clip">
         {/* band 1 — utility */}
         <div className="hidden bg-[#0d0625] text-white md:block">
-          <div className="container flex h-[42px] items-center justify-between gap-4 px-4 text-[12px] md:px-6">
+          <div className="container mx-auto flex h-[42px] items-center justify-between gap-4 px-4 text-[12px] md:px-6 max-w-full">
             <div className="flex items-center gap-6">
               {quickLinks.map((action, index) => (
                 <Link key={`${action.label}-${index}`} to={action.to} className="text-white/70 transition-colors hover:text-white">
@@ -217,7 +217,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
 
         {/* band 2 — brand + search */}
         <div className="bg-[#0d0625] text-white">
-          <div className="container flex h-[95px] items-center gap-6 px-4 md:px-6">
+          <div className="container mx-auto flex h-[70px] md:h-[95px] items-center gap-4 md:gap-6 px-4 md:px-6 max-w-full">
             <button
               type="button"
               className="rounded-full p-2 text-white transition-colors hover:bg-white/10 md:hidden"
@@ -326,7 +326,7 @@ export const MarketplaceHeader: React.FC<MarketplaceHeaderProps> = ({ controller
 
         {/* band 3 — categories + nav (WoodMart Marketplace 2 style) */}
         <div className="bg-[#e14a5c] text-white">
-          <div className="container flex h-[51px] items-center justify-between gap-4 px-4 text-[13.5px] xl:text-[14px] font-semibold md:px-6">
+          <div className="container mx-auto flex h-[46px] md:h-[51px] items-center justify-between gap-4 px-4 text-[13.5px] xl:text-[14px] font-semibold md:px-6 max-w-full">
             <div className="flex min-w-0 items-center gap-4 lg:gap-5 xl:gap-6 overflow-x-auto md:overflow-visible py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {categories.map((dropdown, idx) => {
                 const items = (dropdown.items || []).filter(

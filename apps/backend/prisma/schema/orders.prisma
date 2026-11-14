@@ -5,8 +5,12 @@ model Branche {
   city         String?
   phone        String
   email        String?
-  workingHours String?
-  isActive     Boolean  @default(true)
+  workingHours  String?
+  classrooms    Json?
+  googleMapsUrl String?
+  managerName   String?
+  managerPhone  String?
+  isActive      Boolean  @default(true)
   companyId    String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

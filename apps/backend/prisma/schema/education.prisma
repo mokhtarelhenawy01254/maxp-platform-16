@@ -246,6 +246,8 @@ model EducationGroup {
   startTime        String?   @default("17:00")
   endTime          String?   @default("18:30")
   room             String?
+  branchId         String?
+  classroomId      String?
   status           String    @default("OPEN")
   startDate        DateTime?
   endDate          DateTime?
