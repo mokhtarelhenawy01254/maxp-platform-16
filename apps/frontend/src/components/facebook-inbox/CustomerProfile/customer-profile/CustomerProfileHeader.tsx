@@ -307,6 +307,18 @@ export const CustomerProfileHeader: React.FC<CustomerProfileHeaderProps> = ({
             </button>
           )}
 
+          {onCreateOrder && primaryId !== "order" && (
+            <button
+              type="button"
+              onClick={onCreateOrder}
+              className={`${compactActionCls} border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15`}
+              title="إنشاء طلب سريع"
+              aria-label="إنشاء طلب سريع"
+            >
+              <ShoppingBag className="h-3.5 w-3.5" />
+            </button>
+          )}
+
           {onOpenServiceOrder && primaryId !== "service_order" && (
             <button
               type="button"

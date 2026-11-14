@@ -16,6 +16,7 @@ export function useFacebookInboxModals() {
   const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
   const [showDentalCaseModal, setShowDentalCaseModal] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showEducationDemoDayModal, setShowEducationDemoDayModal] = useState(false);
 
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockReason, setBlockReason] = useState('');
@@ -51,6 +52,8 @@ export function useFacebookInboxModals() {
     setShowDentalCaseModal,
     showAppointmentModal,
     setShowAppointmentModal,
+    showEducationDemoDayModal,
+    setShowEducationDemoDayModal,
     showBlockModal,
     setShowBlockModal,
     blockReason,

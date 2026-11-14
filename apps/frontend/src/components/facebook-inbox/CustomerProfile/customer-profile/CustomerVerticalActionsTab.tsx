@@ -105,14 +105,14 @@ export const CustomerVerticalActionsTab: React.FC<CustomerVerticalActionsTabProp
           </div>
         )}
 
-        {/* Commerce Specific Secondary Action */}
-        {vertical === "commerce" && onCreateOrder && (
+        {/* Quick Order Action (Available across all verticals) */}
+        {onCreateOrder && primaryAction?.id !== "order" && (
           <button
             type="button"
             onClick={onCreateOrder}
-            className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors cursor-pointer active:scale-[0.98]"
+            className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors cursor-pointer active:scale-[0.98]"
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground" />
+            <ShoppingBag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>إنشاء طلب سريع مع الشحن</span>
           </button>
         )}

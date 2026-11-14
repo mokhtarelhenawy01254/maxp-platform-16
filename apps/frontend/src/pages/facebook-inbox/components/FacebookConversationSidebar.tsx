@@ -130,33 +130,15 @@ export const FacebookConversationSidebar: React.FC<FacebookConversationSidebarPr
                 windowStatus: prev.windowStatus === 'open' ? 'all' : 'open',
               }))
             }
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
               filters.windowStatus === 'open'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-background text-foreground border border-border/60 hover:bg-emerald-500/10 hover:border-emerald-500/40'
             }`}
-            title="إظهار الرسائل التي لا تزال داخل نافذة الـ 24 ساعة (ينفع يترد عليها)"
+            title="إظهار الرسائل التي لا تزال داخل نافذة الـ 24 ساعة للرد"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>ينفع ترد</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                windowStatus: prev.windowStatus === 'expired' ? 'all' : 'expired',
-              }))
-            }
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-150 active:scale-[0.97] select-none flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
-              filters.windowStatus === 'expired'
-                ? 'bg-zinc-700 text-white shadow-xs'
-                : 'bg-background text-foreground border border-border/60 hover:bg-zinc-500/10 hover:border-zinc-500/40'
-            }`}
-            title="إظهار الرسائل التي انتهت نافذة الـ 24 ساعة للرد عليها"
-          >
-            <span>النافذة مغلقة</span>
+            <span>متاح الرد (24س)</span>
           </button>
 
           <button

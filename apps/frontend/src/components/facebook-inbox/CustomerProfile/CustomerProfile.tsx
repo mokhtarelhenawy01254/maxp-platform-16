@@ -65,7 +65,7 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({
   onOpenTasks,
   onInsertSnippet,
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>("actions");
+  const [activeTab, setActiveTab] = useState<Tab>("timeline");
   const [syncingMessages, setSyncingMessages] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [editingPhone, setEditingPhone] = useState(false);
@@ -227,21 +227,59 @@ export const CustomerProfile: React.FC<CustomerProfileProps> = ({
         onOpenTasks={onOpenTasks}
       />
 
-      <div className="business-inbox-tabs mx-2 my-1">
-        <button type="button" onClick={() => setActiveTab("actions")} className="business-inbox-tab" data-active={activeTab === "actions" ? "true" : "false"}>
-          <span className="flex items-center justify-center gap-1"><Sparkles size={13} className="text-primary" /> أدوات النشاط</span>
-        </button>
-        <button type="button" onClick={() => setActiveTab("orders")} className="business-inbox-tab" data-active={activeTab === "orders" ? "true" : "false"}>
+      {/* Primary Vertical Action Button (Instant 1-click action right at top of profile) */}
+      {verticalCapabilities?.primaryAction && onPrimaryAction && (
+        <div className="px-2 pt-2 pb-1">
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <Sparkles size={13} className="text-primary-foreground shrink-0" />
+            <span className="truncate">{verticalCapabilities.primaryAction.label}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Clean 3 Tabs: النشاط (Customer activity + Facebook message sync) | المواعيد/الطلبات | معلومات */}
+      <div className="business-inbox-tabs mx-2 my-1 grid grid-cols-3 gap-0.5">
+        <button
+          type="button"
+          onClick={() => setActiveTab("timeline")}
+          className="business-inbox-tab text-center justify-center"
+          data-active={activeTab === "timeline" ? "true" : "false"}
+        >
           <span className="flex items-center justify-center gap-1">
-            <ShoppingBag size={13} /> {recordsTabLabel}
-            {recordsCount > 0 && <span className="business-inbox-tab-count tabular-nums">{recordsCount}</span>}
+            <Activity size={13} className="shrink-0" />
+            <span>النشاط</span>
           </span>
         </button>
-        <button type="button" onClick={() => setActiveTab("info")} className="business-inbox-tab" data-active={activeTab === "info" ? "true" : "false"}>
-          <span className="flex items-center justify-center gap-1"><User size={13} /> معلومات</span>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("orders")}
+          className="business-inbox-tab text-center justify-center"
+          data-active={activeTab === "orders" ? "true" : "false"}
+        >
+          <span className="flex items-center justify-center gap-1 truncate">
+            <ShoppingBag size={13} className="shrink-0" />
+            <span className="truncate">{recordsTabLabel}</span>
+            {recordsCount > 0 && (
+              <span className="business-inbox-tab-count tabular-nums">{recordsCount}</span>
+            )}
+          </span>
         </button>
-        <button type="button" onClick={() => setActiveTab("timeline")} className="business-inbox-tab" data-active={activeTab === "timeline" ? "true" : "false"}>
-          <span className="flex items-center justify-center gap-1"><Activity size={13} /> سجل</span>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("info")}
+          className="business-inbox-tab text-center justify-center"
+          data-active={activeTab === "info" ? "true" : "false"}
+        >
+          <span className="flex items-center justify-center gap-1">
+            <User size={13} className="shrink-0" />
+            <span>معلومات</span>
+          </span>
         </button>
       </div>
 

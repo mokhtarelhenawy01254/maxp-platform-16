@@ -210,6 +210,21 @@ export const DesktopToolsRow: React.FC<DesktopToolsRowProps> = ({
         </div>
       )}
 
+      {/* Quick Order Button (Direct Access) */}
+      {onOpenOrder && (
+        <div className="relative flex-shrink-0">
+          <button
+            type="button"
+            onClick={onOpenOrder}
+            className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-500/10"
+            title="إنشاء طلب سريع (أوردر)"
+            aria-label="إنشاء طلب سريع"
+          >
+            <ShoppingCartIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+        </div>
+      )}
+
       {/* Quick Replies Button (Desktop) */}
       <div className="relative flex-shrink-0">
         <button

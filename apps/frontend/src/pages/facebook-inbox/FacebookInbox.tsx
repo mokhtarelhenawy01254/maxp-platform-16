@@ -93,6 +93,10 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
 
   const handleTriggerVerticalAction = useCallback(
     (actionId: InboxVerticalActionId) => {
+      if (actionId === 'appointment' && capabilities.vertical === 'education') {
+        modals.setShowEducationDemoDayModal(true);
+        return;
+      }
       const actionMap: Record<InboxVerticalActionId, (v: boolean) => void> = {
         dental_case: modals.setShowDentalCaseModal,
         appointment: modals.setShowAppointmentModal,
@@ -103,6 +107,8 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
       actionMap[actionId]?.(true);
     },
     [
+      capabilities.vertical,
+      modals.setShowEducationDemoDayModal,
       modals.setShowDentalCaseModal, modals.setShowAppointmentModal,
       modals.setShowServiceOrderModal, modals.setShowQuickTaskModal, modals.setShowQuickOrderModal,
     ],
@@ -252,7 +258,7 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
                 onOpenTextGallery={() => modals.setShowTextGallery(true)}
                 onOpenImageGallery={() => modals.setShowImageGallery(true)}
                 onOpenProductPicker={capabilities.showProductPicker ? () => modals.setShowProductPicker(true) : undefined}
-                onOpenOrder={hasOrderAction ? () => modals.setShowQuickOrderModal(true) : undefined}
+                onOpenOrder={() => modals.setShowQuickOrderModal(true)}
                 onOpenServiceOrder={hasServiceOrderAction ? () => modals.setShowServiceOrderModal(true) : undefined}
                 onOpenTasks={hasTaskAction ? () => modals.setShowQuickTaskModal(true) : undefined}
                 composerDraft={modals.composerDraft}
@@ -344,6 +350,9 @@ export const FacebookInbox: React.FC<FacebookInboxProps> = ({
         onCloseDentalCaseModal={() => modals.setShowDentalCaseModal(false)}
         showAppointmentModal={modals.showAppointmentModal}
         onCloseAppointmentModal={() => modals.setShowAppointmentModal(false)}
+        showEducationDemoDayModal={modals.showEducationDemoDayModal}
+        onCloseEducationDemoDayModal={() => modals.setShowEducationDemoDayModal(false)}
+        onInsertConfirmation={modals.setComposerDraft}
         onVerticalRecordCreated={refetchVerticalContext}
         platform={platform}
         onOrderCreated={handleOrderCreated}

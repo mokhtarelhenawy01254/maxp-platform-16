@@ -56,6 +56,9 @@ interface FacebookInboxModalsContainerProps {
   onCloseDentalCaseModal: () => void;
   showAppointmentModal: boolean;
   onCloseAppointmentModal: () => void;
+  showEducationDemoDayModal?: boolean;
+  onCloseEducationDemoDayModal?: () => void;
+  onInsertConfirmation?: (text: string) => void;
   onVerticalRecordCreated?: () => void;
   platform: string;
   onOrderCreated: (orderId: string, order: any, confirmationMessage?: any) => void;
@@ -100,6 +103,9 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
   onCloseDentalCaseModal,
   showAppointmentModal,
   onCloseAppointmentModal,
+  showEducationDemoDayModal,
+  onCloseEducationDemoDayModal,
+  onInsertConfirmation,
   onVerticalRecordCreated,
   platform,
   onOrderCreated,
@@ -234,6 +240,9 @@ export const FacebookInboxModalsContainer: React.FC<FacebookInboxModalsContainer
         onCloseDentalCaseModal={onCloseDentalCaseModal}
         showAppointmentModal={showAppointmentModal}
         onCloseAppointmentModal={onCloseAppointmentModal}
+        showEducationDemoDayModal={showEducationDemoDayModal}
+        onCloseEducationDemoDayModal={onCloseEducationDemoDayModal}
+        onInsertConfirmation={onInsertConfirmation}
         onVerticalRecordCreated={onVerticalRecordCreated}
       />
 

@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import CreateServiceOrderModal from "@/components/facebook-inbox/Modals/CreateServiceOrderModal";
 import QuickCreateTaskModal from "@/components/facebook-inbox/Modals/QuickCreateTaskModal";
 import QuickAppointmentDialog from "./QuickAppointmentDialog";
+import { EducationDemoDayLeadModal } from "./EducationDemoDayLeadModal";
 import type { InboxConversation } from "@/types/inbox.types";
 
 const DentalQuickOrderModal = lazy(
@@ -18,6 +19,9 @@ interface VerticalActionModalsProps {
   onCloseDentalCaseModal: () => void;
   showAppointmentModal: boolean;
   onCloseAppointmentModal: () => void;
+  showEducationDemoDayModal?: boolean;
+  onCloseEducationDemoDayModal?: () => void;
+  onInsertConfirmation?: (text: string) => void;
   onVerticalRecordCreated?: () => void;
 }
 
@@ -31,6 +35,9 @@ export const VerticalActionModals: React.FC<VerticalActionModalsProps> = ({
   onCloseDentalCaseModal,
   showAppointmentModal,
   onCloseAppointmentModal,
+  showEducationDemoDayModal = false,
+  onCloseEducationDemoDayModal,
+  onInsertConfirmation,
   onVerticalRecordCreated,
 }) => {
   return (
@@ -61,6 +68,16 @@ export const VerticalActionModals: React.FC<VerticalActionModalsProps> = ({
         onCreated={() => {
           onVerticalRecordCreated?.();
         }}
+      />
+
+      <EducationDemoDayLeadModal
+        isOpen={Boolean(showEducationDemoDayModal)}
+        onClose={onCloseEducationDemoDayModal || (() => {})}
+        conversation={selectedConversation}
+        onCreated={() => {
+          onVerticalRecordCreated?.();
+        }}
+        onInsertConfirmation={onInsertConfirmation}
       />
 
       {showDentalCaseModal && (

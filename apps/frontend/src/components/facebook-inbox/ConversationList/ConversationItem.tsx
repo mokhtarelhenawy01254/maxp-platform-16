@@ -271,7 +271,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                     title="نافذة الرد مفتوحة — يمكنك الرد على هذه المحادثة الآن"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>ينفع ترد {remainingHours ? `(${remainingHours}س)` : ''}</span>
+                    <span>متاح الرد {remainingHours ? `(${remainingHours}س)` : ''}</span>
                   </span>
                 )
               )}

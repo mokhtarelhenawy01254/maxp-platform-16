@@ -77,9 +77,9 @@ const SPECIALTY_META: Record<
   education: {
     label: "أكاديمية وتعليم",
     badgeClassName: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/50",
-    primaryAction: { id: "appointment", label: "حجز موعد / ديمو داي" },
-    recordsTabLabel: "المواعيد والاشتراكات",
-    kpiLabels: { countLabel: "المواعيد والاشتراكات", valueLabel: "المدفوعات" },
+    primaryAction: { id: "appointment", label: "حجز ديمو داي / تسجيل Lead" },
+    recordsTabLabel: "المواعيد",
+    kpiLabels: { countLabel: "المواعيد", valueLabel: "المدفوعات" },
   },
   agency: {
     label: "وكالة تسويق",
@@ -132,6 +132,13 @@ export function resolveVertical(
     .join(" ")
     .toLowerCase();
 
+  const hasStoreApp = Array.from(STORE_APPS).some((slug) => apps.has(slug));
+  const isCommerceStore =
+    hasStoreApp ||
+    apps.has("women-fashion-eg") ||
+    apps.has("woocommerce-pro") ||
+    /store|shop|market|boutique|fashion|clothing|retail|متجر|سوق|أزياء|ملابس|تجارة|براند/.test(textCues);
+
   // Tier 2: Database Official Business Specialty & Domain Keywords
   const isEducation =
     /education|academy|school|course|learning|training|quran|student|tutor|أكاديمية|تعليم|تدريب|مدرسة|كورس|سنتر|حضونة|طلاب|تلميذ|قرآن/.test(
@@ -141,14 +148,17 @@ export function resolveVertical(
     apps.has("academy-app") ||
     apps.has("quran-app");
 
-  if (isEducation) return "education";
+  if (isEducation && !isCommerceStore) return "education";
+  if (isEducation && /education|academy|أكاديمية|تعليم|تدريب|مدرسة|كورس/.test(specialtySlug || "")) return "education";
 
-  // Tier 2b: Dental
+  // Tier 2b: Dental (CRITICAL: Only if specialty/name is dental, or if dental apps exist WITHOUT commerce store apps)
+  const hasDentalCues = /dental|أسنان/.test(textCues);
   if (
-    /dental|أسنان/.test(textCues) ||
-    apps.has("dental-lab-app") ||
-    apps.has("dental-materials-pro") ||
-    apps.has("dental-lab")
+    hasDentalCues ||
+    ((apps.has("dental-lab-app") ||
+      apps.has("dental-materials-pro") ||
+      apps.has("dental-lab")) &&
+      !isCommerceStore)
   ) {
     return "dental";
   }
@@ -272,9 +282,8 @@ export function useInboxVerticalCapabilities(): InboxVerticalCapabilities {
     ) {
       addAction({ id: "service_order", label: "طلب صيانة / خدمة" });
     }
-    if (showProductPicker) {
-      addAction({ id: "order", label: "إنشاء طلب سريع" });
-    }
+    // Always provide quick order capability across all verticals (taking orders/invoices is core platform functionality)
+    addAction({ id: "order", label: "إنشاء طلب سريع" });
     addAction({ id: "task", label: "إنشاء مهمة" });
 
     return {

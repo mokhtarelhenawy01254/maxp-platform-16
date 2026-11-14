@@ -32,7 +32,7 @@ export const CustomerTimelineTab: React.FC<CustomerTimelineTabProps> = ({
       style={{ borderRight: "2px solid var(--business-muted-line)" }}
     >
       {/* Sync Facebook Messages Button - Only for Facebook conversations */}
-      {conversation.platform === "facebook" && (
+      {(!conversation.platform || conversation.platform.toLowerCase() === "facebook") && (
         <div className="relative pr-6 mb-4">
           <div
             className="absolute -right-[29px] top-1 w-3 h-3 rounded-full border-2"

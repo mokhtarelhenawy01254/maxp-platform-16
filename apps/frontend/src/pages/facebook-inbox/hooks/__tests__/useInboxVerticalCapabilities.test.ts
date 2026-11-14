@@ -73,6 +73,20 @@ describe("resolveVertical (Facebook Inbox 4-Tier dynamic vertical resolution)", 
     expect(vertical).toBe("dental");
   });
 
+  it("Protects commerce stores: Swan brand with store apps & dental-lab-app resolves to commerce (NEVER dental)", () => {
+    // Exact scenario from Swan: Luxury fashion merchant that installed/tested dental-lab-app
+    const apps = new Set(["store", "pos-pro", "woocommerce-pro", "women-fashion-eg", "dental-lab-app"]);
+    const vertical = resolveVertical(
+      null, // had null specialty in database initially
+      apps,
+      "Swan",
+      "swan",
+      null,
+    );
+    expect(vertical).toBe("commerce");
+    expect(vertical).not.toBe("dental");
+  });
+
   it("Tier 4 Default: Resolves ecommerce stores to commerce vertical", () => {
     const apps = new Set(["store", "order-core"]);
     const vertical = resolveVertical(null, apps, "متجر زارا ستايل", "zara-style");

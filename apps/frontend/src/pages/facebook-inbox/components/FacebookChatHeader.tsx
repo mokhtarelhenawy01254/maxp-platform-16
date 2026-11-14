@@ -243,7 +243,7 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
                     title="نافذة الرد متاحة — يمكنك الرد على هذه المحادثة الآن"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>ينفع ترد {remainingHours ? `(متبقي ${remainingHours}س)` : ''}</span>
+                    <span>متاح الرد {remainingHours ? `(متبقي ${remainingHours}س)` : ''}</span>
                   </span>
                 )
               )}
@@ -307,6 +307,17 @@ export const FacebookChatHeader: React.FC<FacebookChatHeaderProps> = ({
           ) : shouldCollapseActions ? (
             <>
               {renderAiToggleButton()}
+
+              <button
+                type="button"
+                onClick={handlePrimaryClick}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2 text-xs font-semibold text-primary hover:bg-primary/15 transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+                title={resolvedPrimaryAction.label}
+                aria-label={resolvedPrimaryAction.label}
+              >
+                {renderVerticalActionIcon(resolvedPrimaryAction.id, 'h-3.5 w-3.5')}
+                <span className="hidden 2xl:inline">{resolvedPrimaryAction.label}</span>
+              </button>
 
               <ConversationActionsBar
                 isPriority={selectedConversation.priority}
