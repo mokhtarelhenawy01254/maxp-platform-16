@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy.exc import IntegrityError
+
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.deps import get_company_id, get_customer_id
@@ -158,39 +160,65 @@ async def chat(
             result = await session.execute(stmt)
             thread = result.scalar_one_or_none()
             if not thread:
-                thread = Thread(
-                    id=thread_uuid,
-                    company_id=company_id,
-                    customer_id=customer_id,
-                    channel=channel,
-                    status="active",
+                # (company_id, customer_id, channel) is unique — the requested
+                # thread_id may belong to a superseded conversation while an
+                # older thread row for the same customer already exists.
+                # Reuse it instead of violating the unique constraint.
+                stmt = select(Thread).where(
+                    Thread.company_id == company_id,
+                    Thread.customer_id == customer_id,
+                    Thread.channel == channel,
                 )
-                session.add(thread)
-                await session.commit()
-                await session.refresh(thread)
+                result = await session.execute(stmt)
+                thread = result.scalar_one_or_none()
         except Exception as exc:
-            logger.warning("thread_lookup_or_create_failed", error=str(exc))
+            logger.warning("thread_lookup_failed", error=str(exc))
+            await session.rollback()
 
-    if not thread:
-        stmt = select(Thread).where(
-            Thread.company_id == company_id,
-            Thread.customer_id == customer_id,
-            Thread.channel == channel,
-        )
-        result = await session.execute(stmt)
-        thread = result.scalar_one_or_none()
+    if thread is None:
+        try:
+            stmt = select(Thread).where(
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == channel,
+            )
+            result = await session.execute(stmt)
+            thread = result.scalar_one_or_none()
+        except Exception as exc:
+            logger.warning("thread_triple_lookup_failed", error=str(exc))
+            await session.rollback()
 
-    if not thread:
-        thread = Thread(
-            id=uuid.uuid4(),
-            company_id=company_id,
-            customer_id=customer_id,
-            channel=channel,
-            status="active",
-        )
-        session.add(thread)
-        await session.commit()
-        await session.refresh(thread)
+    if thread is None:
+        new_thread_id = thread_uuid if body.thread_id else uuid.uuid4()
+        try:
+            thread = Thread(
+                id=new_thread_id,
+                company_id=company_id,
+                customer_id=customer_id,
+                channel=channel,
+                status="active",
+            )
+            session.add(thread)
+            await session.commit()
+            await session.refresh(thread)
+        except IntegrityError:
+            # Concurrent creation raced us — roll back the poisoned session
+            # and reuse whichever thread won the race.
+            await session.rollback()
+            try:
+                stmt = select(Thread).where(
+                    Thread.company_id == company_id,
+                    Thread.customer_id == customer_id,
+                    Thread.channel == channel,
+                )
+                result = await session.execute(stmt)
+                thread = result.scalar_one_or_none()
+            except Exception as exc:
+                logger.warning("thread_race_reselect_failed", error=str(exc))
+                await session.rollback()
+        except Exception as exc:
+            logger.warning("thread_create_failed", error=str(exc))
+            await session.rollback()
 
     thread_id = str(thread.id)
     logger.info(

@@ -15,6 +15,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from src.services.agent_registry import get_agent_registry
+
 from src.agents.base import BaseAgent
 from src.agents.loader import get_template, list_templates, seed_templates
 from src.api.admin.agents_schemas import (
@@ -1599,6 +1601,13 @@ async def patch_agent_status(
     agent.status = body.status
     await session.commit()
     await session.refresh(agent)
+    if agent.status != "ACTIVE":
+        # Evict any cached runtime so a stopped agent never serves messages
+        # from the in-memory registry.
+        try:
+            get_agent_registry().remove(agent.company_id, agent.id)
+        except Exception:
+            logger.warning("agent_registry_eviction_failed", agent_id=agent_id)
     logger.info("Agent status updated", agent_id=agent_id, status=body.status)
     return _agent_to_read(agent)
 
@@ -1619,6 +1628,10 @@ async def delete_agent(
 
     res_val = _agent_to_read(agent)
     if permanent:
+        try:
+            get_agent_registry().remove(agent.company_id, agent.id)
+        except Exception:
+            logger.warning("agent_registry_eviction_failed", agent_id=agent_id)
         await session.delete(agent)
         await session.commit()
         logger.info("Agent permanently deleted", agent_id=agent_id)
@@ -1627,6 +1640,10 @@ async def delete_agent(
         agent.status = "ARCHIVED"
         await session.commit()
         await session.refresh(agent)
+        try:
+            get_agent_registry().remove(agent.company_id, agent.id)
+        except Exception:
+            logger.warning("agent_registry_eviction_failed", agent_id=agent_id)
         logger.info("Agent archived", agent_id=agent_id)
         return _agent_to_read(agent)
 

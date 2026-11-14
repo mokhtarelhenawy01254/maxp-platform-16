@@ -296,11 +296,14 @@ async def run_orchestration(
     _assignment_source = "none"
 
     # Direct agent routing (e.g. per-WhatsApp-number dedicated agent assignment)
+    # Assigned-agent-only policy: the pinned agent must be ACTIVE to reply —
+    # an INACTIVE/ARCHIVED pin means NO ONE replies (no channel-agent takeover).
+    direct_agent_requested = bool(agent_id)
     if agent_id and session:
         try:
             repo = AgentRepository(session)
             db_agent = await repo.get_agent(agent_id, company_id)
-            if db_agent and db_agent.status != "ARCHIVED":
+            if db_agent and db_agent.status == "ACTIVE":
                 resolved_model = await _resolve_agent_model(db_agent, session)
                 tmpl_instr = None
                 if db_agent.template_slug:
@@ -334,8 +337,12 @@ async def run_orchestration(
         except Exception as exc:
             logger.warning("direct_agent_lookup_failed", agent_id=agent_id, error=str(exc))
 
-    # If no direct agent was assigned or found, fall back to channel routing
-    if not _channel_agent:
+    is_customer = _channel_normalized in ("whatsapp", "facebook", "messenger", "telegram", "instagram", "web_chat", "site")
+
+    # If no direct agent was assigned or found, fall back to channel routing —
+    # but only when no agent was explicitly requested. A pinned-but-inactive
+    # agent means NO ONE replies (assigned-agent-only policy).
+    if not _channel_agent and not direct_agent_requested:
         _channel_agent_id, _channel_agent, _assignment_source = await _resolve_channel_agent(
             company_id=company_id,
             channel=_channel_normalized,
@@ -349,6 +356,25 @@ async def run_orchestration(
             channel=_channel_normalized,
             assignment_source=_assignment_source,
         )
+
+    if not _channel_agent and is_customer:
+        # Assigned-agent-only policy: customer channels NEVER fall back to a
+        # generic template. No assigned ACTIVE agent → silence for the customer
+        # and a silent escalation to the company team.
+        logger.warning(
+            "orchestration_no_assigned_agent",
+            company_id=company_id,
+            channel=_channel_normalized,
+            requested_agent_id=agent_id,
+        )
+        return {
+            "reply": None,
+            "thread_id": thread_id,
+            "tool_results": [],
+            "response_attachments": [],
+            "escalation_requested": True,
+            "escalation_meta": {"reason": "no_agent_assigned", "channel": _channel_normalized},
+        }
 
     # Get the LLM client from the channel agent (or fall back)
     client = None
@@ -392,21 +418,13 @@ async def run_orchestration(
     if state_manager:
         previous_state = await state_manager.get_latest_state(thread_id)
 
-    is_customer = _channel_normalized in ("whatsapp", "facebook", "messenger", "telegram", "instagram", "web_chat", "site")
     if not _channel_agent:
-        # 2026-11-14: specialty-aware customer fallback — an education company's
-        # customers must never receive replies from a generic sales/manager agent.
-        default_template = "sales-agent" if is_customer else "manager-ceo"
-        if is_customer:
-            try:
-                from sqlalchemy import text as _sql_text
-                _spec = await session.execute(_sql_text('SELECT "businessSpecialtyId" FROM companies WHERE id = :cid'), {"cid": company_id})
-                _spec_id = (_spec.scalar() or "").strip().lower() if _spec.scalar() else ""
-                if "education" in _spec_id:
-                    default_template = "education-center-agent"
-            except Exception:
-                pass
-        _channel_agent = await BaseAgent.from_template(default_template, company_id, session=session)
+        # Internal channels only (e.g. dashboard). Customer channels never
+        # reach this line — the assigned-agent-only policy above returns an
+        # escalation instead of substituting a generic template.
+        # (2026-11-14 owner decision: NO template fallback for customers —
+        # the assigned agent replies or NO ONE does.)
+        _channel_agent = await BaseAgent.from_template("manager-ceo", company_id, session=session)
 
     if previous_state:
         state_id, _state_data = previous_state
