@@ -2,6 +2,7 @@ import React from "react";
 import { OrdersToolbarSection } from "./components/OrdersToolbarSection";
 import { OrdersTableSection } from "./components/OrdersTableSection";
 import { OrdersModalsContainer } from "./components/OrdersModalsContainer";
+import { OrderStatusAlertBell } from "./components/OrderStatusAlertBell";
 import { useOrdersPageController } from "./hooks/useOrdersPageController";
 
 /* eslint-disable react-refresh/only-export-components */
@@ -17,6 +18,9 @@ const Orders: React.FC = () => {
       className="orders-page-root flex-1 h-full min-h-0 overflow-y-auto bg-slate-50/60 dark:bg-zinc-950 px-2 py-2 sm:px-3 sm:py-2.5"
     >
       <div className="w-full max-w-none">
+        <div className="flex justify-end mb-2">
+          <OrderStatusAlertBell />
+        </div>
         <OrdersToolbarSection {...toolbarSectionProps} />
         <OrdersTableSection {...tableSectionProps} />
       </div>

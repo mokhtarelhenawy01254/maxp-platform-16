@@ -106,9 +106,32 @@ const getMappedRegularOrderStatus = (preparationStatus, customStatusMap = null) 
 // بتحدّث الأوردر وتكتب History من غير أي رسالة واتساب — على عكس نفس الحالات لما
 // تتغير من صفحة الطلبات. الدالة دي بترسل إشعار تغيير الحالة بنفس مسار orderService
 // (dedup + sendOrderStatusNotification) fire-and-forget عشان مايعطلش العملية.
-const notifyPreparationStageChange = async ({ companyId, orderPayload, status }) => {
+const notifyPreparationStageChange = async ({
+  companyId,
+  orderPayload,
+  status,
+  oldStatus = null,
+  userId = null,
+  userName = null,
+}) => {
   try {
     if (!orderPayload || !companyId || !status) return;
+    try {
+      const { alertStatusChange } = require('./orderStatusAlertService');
+      void alertStatusChange({
+        companyId,
+        order: orderPayload,
+        oldStatus,
+        newStatus: status,
+        changedBy: userId || null,
+        changedByName: userName || null,
+      }).catch((err) => {
+        console.warn(`⚠️ [PREP-QUEUE] Team/owner status alert failed (${status}):`, err.message);
+      });
+    } catch (alertErr) {
+      console.warn(`⚠️ [PREP-QUEUE] Team/owner alert hook error (${status}):`, alertErr.message);
+    }
+
     const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
     const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
 
@@ -243,7 +266,14 @@ const updatePreparationOrderStatus = async ({
 
     // 🛡️ PRODUCTION-FIX (prep-stage-notify): أبلغ العميل بتغيير الحالة (fire-and-forget)
     setImmediate(() => {
-      notifyPreparationStageChange({ companyId, orderPayload: updatedOrder, status: normalizedStatus });
+      notifyPreparationStageChange({
+        companyId,
+        orderPayload: updatedOrder,
+        status: normalizedStatus,
+        oldStatus: previousPreparationStatus,
+        userId,
+        userName,
+      });
     });
 
     // 🚚 Turbo Auto-Create shipment if status mapped/updated to CONFIRMED or released from hold stages
@@ -409,7 +439,10 @@ const updatePreparationOrderStatus = async ({
           items: guestItems,
           currency: 'EGP'
         },
-        status: normalizedStatus
+        status: normalizedStatus,
+        oldStatus: previousPreparationStatus,
+        userId,
+        userName,
       });
     });
 

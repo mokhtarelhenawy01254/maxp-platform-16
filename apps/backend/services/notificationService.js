@@ -32,11 +32,10 @@ async function createNotification({
 
     try {
       const socketService = require('./socketService');
-      if (socketService?.emitToCompany) {
-        socketService.emitToCompany(companyId, 'notification:new', notification);
-      }
       if (userId && socketService?.emitToUser) {
         socketService.emitToUser(userId, 'notification:new', notification);
+      } else if (!userId && socketService?.emitToCompany) {
+        socketService.emitToCompany(companyId, 'notification:new', notification);
       }
     } catch (_) {}
 

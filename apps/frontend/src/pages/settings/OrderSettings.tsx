@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   ShieldAlert,
   Webhook,
+  BellRing,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -41,9 +42,11 @@ import OrderSoundSettings from "./OrderSoundSettings";
 import ExchangeReturnSettings from "./ExchangeReturnSettings";
 import DiscountApprovalSettings from "./DiscountApprovalSettings";
 import OrderWebhookSettings from "./OrderWebhookSettings";
+import StatusAlertsSettings from "./StatusAlertsSettings";
 
 type TabId =
   | "status"
+  | "status_alerts"
   | "ratings"
   | "scheduled"
   | "minimum"
@@ -65,6 +68,7 @@ type TabId =
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
+  "status_alerts",
   "ratings",
   "scheduled",
   "minimum",
@@ -145,6 +149,12 @@ const OrderSettings: React.FC = () => {
       label: t('orderSettings.k_1'),
       icon: Tag,
       description: t('orderSettings.k_2'),
+    },
+    {
+      id: "status_alerts",
+      label: "تنبيهات حالات الطلبات",
+      icon: BellRing,
+      description: "تنبيه فوري عند انتقال الطلب لحالة معينة",
     },
     {
       id: "minimum",
@@ -330,6 +340,7 @@ const OrderSettings: React.FC = () => {
           {/* Content Area */}
           <div className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto px-1 pb-12">
             {activeTab === "status" && <OrderStatusManager />}
+            {activeTab === "status_alerts" && <StatusAlertsSettings isEmbedded={true} />}
             {activeTab === "minimum" && <MinimumOrderSettings />}
             {activeTab === "scheduled" && <ScheduledOrderSettings />}
             {activeTab === "columns" && <OrderColumnsSettings />}

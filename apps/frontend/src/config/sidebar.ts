@@ -1,6 +1,17 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
+<<<<<<< HEAD
 import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Columns3, Clapperboard, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Presentation, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
+=======
+import { AlertTriangle, Archive, ArrowLeftRight, Award, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Clapperboard, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, ListTree, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, Ruler, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Terminal, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History, Factory, Layers } from 'lucide-react'
+import {
+    EducationSettingsData,
+    EducationTabSetting,
+    SidebarManagementData,
+    SidebarSection,
+    SidebarSectionSettings,
+} from '../types/layout';
+>>>>>>> 5fac21221 (feat(orders): order status change alerts with multi-channel dispatch, dedup, settings tab & live orders bell)
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
 import { getSuperAdminMenuGroups, type SuperAdminMenuGroup } from './superAdminMenuConfig';
@@ -167,6 +178,158 @@ const LOCKED_SIDEBAR_KEYS = new Set([
     '/settings',
 ]);
 
+const EDUCATION_ICON_MAP: Record<string, any> = {
+    BarChart3,
+    BookOpen,
+    Gift,
+    Users,
+    GraduationCap,
+    CalendarDays,
+    DollarSign,
+    Layers,
+    Clock,
+    Megaphone,
+    Settings,
+    History,
+};
+
+const LEGACY_EDU_LABELS: Record<string, { ar: string; en: string; replaceAr: string; replaceEn: string }> = {
+    teachers: { ar: 'المهندسين', en: 'Instructors', replaceAr: 'المدرسين', replaceEn: 'Teachers' },
+    'teacher-schedule': { ar: 'جدول المهندسين', en: 'Instructor Schedule', replaceAr: 'جدول المدرسين', replaceEn: 'Teachers Schedule' },
+    'teacher-payments': { ar: 'مرتبات المهندسين', en: 'Instructor Payments', replaceAr: 'مرتبات المدرسين', replaceEn: 'Teachers Payments' },
+};
+
+const normalizeLegacyEduLabel = (tabId: string, isEn: boolean, rawValue?: string | null): string | null => {
+    const trimmed = typeof rawValue === 'string' ? rawValue.trim() : '';
+    if (!trimmed) return null;
+    const legacy = LEGACY_EDU_LABELS[tabId.toLowerCase()];
+    if (!legacy) return trimmed;
+    if (isEn && trimmed === legacy.en) return legacy.replaceEn;
+    if (!isEn && trimmed === legacy.ar) return legacy.replaceAr;
+    return trimmed;
+};
+
+interface EducationTabDef {
+    id: string;
+    to: string;
+    itemId: string;
+    icon: any;
+    i18nKey: string;
+    defaultFallbackAr?: string;
+    defaultHidden?: boolean;
+    locked?: boolean;
+    requiredRoles?: string[];
+    requiredPermissions?: string[];
+}
+
+const EDUCATION_TAB_DEFS: EducationTabDef[] = [
+    { id: 'dashboard', to: '/admin/education/dashboard', itemId: 'education-dashboard', icon: BarChart3, i18nKey: 'sidebar.educationDashboard' },
+    { id: 'subjects', to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, i18nKey: 'sidebar.educationSubjects', defaultHidden: true },
+    { id: 'packages', to: '/admin/education/packages', itemId: 'education-packages', icon: Gift, i18nKey: 'sidebar.educationPackages' },
+    { id: 'groups', to: '/admin/education/groups', itemId: 'education-groups', icon: Users, i18nKey: 'sidebar.educationGroups', defaultFallbackAr: 'المجموعات الدراسية (الجروبات)' },
+    { id: 'students', to: '/admin/education/students', itemId: 'education-students', icon: Users, i18nKey: 'sidebar.educationStudents' },
+    { id: 'teachers', to: '/admin/education/teachers', itemId: 'education-teachers', icon: GraduationCap, i18nKey: 'sidebar.educationTeachers' },
+    { id: 'enrollments', to: '/admin/education/enrollments', itemId: 'education-enrollments', icon: Layers, i18nKey: 'sidebar.educationEnrollments' },
+    { id: 'teacher-schedule', to: '/admin/education/teacher-schedule', itemId: 'education-teacher-schedule', icon: CalendarDays, i18nKey: 'sidebar.educationTeacherSchedule' },
+    { id: 'teacher-payments', to: '/admin/education/teacher-payments', itemId: 'education-teacher-payments', icon: DollarSign, i18nKey: 'sidebar.educationTeacherPayments' },
+    { id: 'sessions', to: '/admin/education/sessions', itemId: 'education-sessions', icon: Clock, i18nKey: 'sidebar.educationSessions' },
+    { id: 'calendar', to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, i18nKey: 'sidebar.educationCalendar' },
+    { id: 'funnel', to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, i18nKey: 'sidebar.educationFunnel' },
+    {
+        id: 'settings',
+        to: '/admin/education/settings',
+        itemId: 'education-settings',
+        icon: Settings,
+        i18nKey: 'sidebar.educationSettings',
+        defaultFallbackAr: 'إعدادات وتخصيص السكاشن',
+        locked: true,
+        requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'],
+        requiredPermissions: ['settings.manage', 'education.settings.manage'],
+    },
+    {
+        id: 'logs',
+        to: '/admin/education/logs',
+        itemId: 'education-logs',
+        icon: History,
+        i18nKey: 'sidebar.educationLogs',
+        defaultFallbackAr: 'سجلات النظام التعليمي',
+        requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'],
+        requiredPermissions: ['settings.manage', 'education.settings.manage'],
+    },
+];
+
+const buildEducationSection = (
+    t: (key: string, fallback?: string) => string,
+    isEn: boolean,
+    isAppInstalled: (slug: string) => boolean,
+    educationSettings?: EducationSettingsData | null,
+): SidebarSection => {
+    const title = educationSettings
+        ? (isEn
+            ? (educationSettings.systemTitleEn || educationSettings.systemTitle || t('sidebar.educationModule'))
+            : (educationSettings.systemTitle || educationSettings.systemTitleEn || t('sidebar.educationModule')))
+        : t('sidebar.educationModule');
+
+    const eduMode = educationSettings?.educationMode
+        ?? (educationSettings?.enableSubjects ? 'ACADEMIC' : 'COURSES');
+    const enableSubjects = eduMode === 'COURSES'
+        ? false
+        : (educationSettings?.enableSubjects !== undefined ? Boolean(educationSettings.enableSubjects) : false);
+
+    const savedTabs = Array.isArray(educationSettings?.tabs) ? educationSettings.tabs : [];
+    const savedTabsMap = new Map<string, EducationTabSetting>();
+    savedTabs.forEach((tab) => {
+        if (tab && tab.id) {
+            savedTabsMap.set(tab.id.toLowerCase(), tab);
+        }
+    });
+
+    const items = EDUCATION_TAB_DEFS.map((def, idx) => {
+        const saved = savedTabsMap.get(def.id.toLowerCase());
+        const isSubjects = def.id === 'subjects';
+        const i18nLabel = def.defaultFallbackAr ? t(def.i18nKey, def.defaultFallbackAr) : t(def.i18nKey);
+
+        let label = i18nLabel;
+        if (saved) {
+            const rawSaved = isEn ? (saved.labelEn || saved.labelAr) : (saved.labelAr || saved.labelEn);
+            const normalized = normalizeLegacyEduLabel(def.id, isEn, rawSaved);
+            if (normalized) {
+                label = normalized;
+            }
+        }
+
+        const icon = (saved?.iconName && EDUCATION_ICON_MAP[saved.iconName]) || def.icon;
+        const hidden = def.locked
+            ? false
+            : (isSubjects
+                ? !(enableSubjects && (saved ? saved.visible !== false : true))
+                : (saved ? saved.visible === false : Boolean(def.defaultHidden)));
+        const hasCustomOrder = typeof saved?.order === 'number';
+        const order = hasCustomOrder
+            ? saved.order
+            : (savedTabsMap.size > 0 ? EDUCATION_TAB_DEFS.length + idx : idx);
+
+        return {
+            to: def.to,
+            itemId: def.itemId,
+            icon,
+            label,
+            hidden,
+            requiredRoles: def.requiredRoles,
+            requiredPermissions: def.requiredPermissions,
+            _order: order,
+        };
+    }).sort((a, b) => (a._order ?? 0) - (b._order ?? 0));
+
+    return {
+        id: 'education',
+        title,
+        icon: GraduationCap,
+        hidden: !isAppInstalled('education-app'),
+        items,
+    };
+};
+
 interface SavedSidebarCustomItem {
     key: string;
     order: number;
@@ -182,6 +345,7 @@ const applySidebarOverrides = (
     userSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> } | undefined,
     user?: SidebarUser | undefined,
     isEn?: boolean,
+    educationSettings?: EducationSettingsData | null,
 ): SidebarSection[] => {
     let savedItemsList: SavedSidebarCustomItem[] | null = null;
     const labelsMap = new Map<string, string>();
@@ -281,24 +445,37 @@ const applySidebarOverrides = (
                 let sectionHidden = section.hidden === true;
                 const sectionOrder = savedSec !== undefined ? savedSec.order : 9999 + secIdx;
 
-                // 1. Check direct label or app customName
-                const sectionSlugs = resolveSectionAppSlugs(section.id);
-                for (const slug of sectionSlugs) {
-                    if (appCustomNamesMap.has(slug.toLowerCase())) {
-                        customTitle = appCustomNamesMap.get(slug.toLowerCase())!;
-                        break;
+                const isEduAuthoritative = Boolean(
+                    sectionKey === 'education' &&
+                    educationSettings &&
+                    (educationSettings.systemTitle ||
+                        educationSettings.systemTitleEn ||
+                        (Array.isArray(educationSettings.tabs) && educationSettings.tabs.length > 0))
+                );
+
+                // 1. Check direct label or app customName (unless educationSettings is authoritative)
+                if (!isEduAuthoritative) {
+                    const sectionSlugs = resolveSectionAppSlugs(section.id);
+                    for (const slug of sectionSlugs) {
+                        const mappedName = appCustomNamesMap.get(slug.toLowerCase());
+                        if (mappedName && !(isEn && /[\u0600-\u06FF]/.test(mappedName))) {
+                            customTitle = mappedName;
+                            break;
+                        }
                     }
-                }
-                if (labelsMap.has(sectionKey)) {
-                    customTitle = labelsMap.get(sectionKey)!;
+                    if (labelsMap.has(sectionKey)) {
+                        customTitle = labelsMap.get(sectionKey)!;
+                    }
                 }
 
                 if (savedSec) {
-                    const customLabel = isEn
-                        ? (savedSec.labelEn || savedSec.labelAr)
-                        : (savedSec.labelAr || savedSec.labelEn);
-                    if (customLabel) {
-                        customTitle = customLabel;
+                    if (!isEduAuthoritative) {
+                        const customLabel = isEn
+                            ? (savedSec.labelEn || savedSec.labelAr)
+                            : (savedSec.labelAr || savedSec.labelEn);
+                        if (customLabel) {
+                            customTitle = customLabel;
+                        }
                     }
                     if (savedSec.visible === false && !LOCKED_SIDEBAR_KEYS.has(sectionKey)) {
                         sectionHidden = true;
@@ -307,12 +484,28 @@ const applySidebarOverrides = (
                     }
                 }
 
+                const hasAuthoritativeEduTabs = Boolean(
+                    isEduAuthoritative &&
+                    Array.isArray(educationSettings?.tabs) &&
+                    educationSettings!.tabs!.length > 0
+                );
+
                 const updatedItems = section.items
                     .map((item, itemIdx) => {
                         const itemRoleAccess = hasRoleAccess(user?.role, item.requiredRoles);
                         const itemPermissionAccess = isSuperOrAdmin || !item.requiredPermissions || item.requiredPermissions.length === 0 ||
                             userPerms.some(p => item.requiredPermissions!.includes(p));
                         const itemAccess = itemRoleAccess && itemPermissionAccess;
+
+                        if (hasAuthoritativeEduTabs) {
+                            return {
+                                ...item,
+                                hidden: !itemAccess || item.hidden === true,
+                                _order: typeof (item as { _order?: number })._order === 'number'
+                                    ? (item as { _order?: number })._order!
+                                    : itemIdx,
+                            };
+                        }
 
                         const itemKey = (item.itemId || getItemId(item) || item.to.replace(/^\//, '')).toLowerCase();
                         const savedItem = entryMap.get(itemKey) || entryMap.get(item.to.toLowerCase());
@@ -323,7 +516,10 @@ const applySidebarOverrides = (
                         const itemOrder = savedItem !== undefined ? savedItem.order : 9999 + itemIdx;
 
                         if (appCustomNamesMap.has(itemKey)) {
-                            customItemLabel = appCustomNamesMap.get(itemKey)!;
+                            const mappedItemName = appCustomNamesMap.get(itemKey)!;
+                            if (!(isEn && /[\u0600-\u06FF]/.test(mappedItemName))) {
+                                customItemLabel = mappedItemName;
+                            }
                         }
                         if (labelsMap.has(itemKey)) {
                             customItemLabel = labelsMap.get(itemKey)!;
@@ -382,9 +578,10 @@ const applySidebarOverrides = (
             items: section.items.map(item => {
                 const isSuperOrAdmin = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
                 const userPerms = user?.permissions || [];
+                const itemRoleAccess = hasRoleAccess(user?.role, item.requiredRoles);
                 const itemPermissionAccess = isSuperOrAdmin || !item.requiredPermissions || item.requiredPermissions.length === 0 ||
                     userPerms.some(p => item.requiredPermissions!.includes(p));
-                return { ...item, hidden: !itemPermissionAccess || item.hidden === true };
+                return { ...item, hidden: !(itemRoleAccess && itemPermissionAccess) || item.hidden === true };
             })
         }));
     }
@@ -433,6 +630,7 @@ export const getSidebarConfig = (
     sidebarManagementData?: SidebarManagementData,
     userSidebarSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> },
     assignedApps?: string[],
+    educationSettings?: EducationSettingsData | null,
 ): SidebarSection[] => {
     const savedLang = typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? localStorage.getItem('language') : null;
     const docLang = typeof document !== 'undefined' ? document.documentElement.lang : null;
@@ -910,6 +1108,7 @@ export const getSidebarConfig = (
                 { to: '/bulk-search', icon: ListOrdered, label: t('sidebar.bulkSearch'), requiredPermissions: ['orders.bulk-search.view'], hidden: !isAppActive('bulk-search') },
                 { to: '/products/reviews', icon: Star, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'], hidden: !isAnyAppActive(['ugc-reviews-pro', 'store-pro']) },
                 { to: '/settings/orders', icon: Cog, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
+                { to: '/settings/orders/status-alerts', icon: BellRing, label: isEn ? 'Order Status Alerts' : 'تنبيهات حالات الطلبات', requiredPermissions: ['orders.settings.view'] },
                 { to: '/settings/customer-blocks', icon: ShieldAlert, label: t('sidebar.customerBlockSettings'), requiredPermissions: ['orders.customer-blocks.view'], hidden: !isAppActive('customer-blocks') },
                 { to: '/orders/shipments', icon: Truck, label: isEn ? 'Shipments & Delivery Logs' : 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
                 { to: '/tickets', icon: Ticket, label: isEn ? 'Shipping Tickets & Chat' : 'تذاكر ودعم الشحن (Turbo)', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
@@ -1890,6 +2089,7 @@ export const getSidebarConfig = (
         },
 
         // 7️⃣.7️⃣ النظام التعليمي
+<<<<<<< HEAD
         {
             id: 'education',
             title: t('sidebar.educationModule'),
@@ -1916,6 +2116,9 @@ export const getSidebarConfig = (
                 { to: '/admin/education/logs', itemId: 'education-logs', icon: History, label: t('sidebar.educationLogs', 'سجلات النظام التعليمي') },
             ]
         },
+=======
+        buildEducationSection(t, isEn, isAppInstalled, educationSettings),
+>>>>>>> 5fac21221 (feat(orders): order status change alerts with multi-channel dispatch, dedup, settings tab & live orders bell)
 
         // 7️⃣.8️⃣ نظام الفنادق
         {
@@ -2028,7 +2231,7 @@ export const getSidebarConfig = (
     ];
 
     // Apply dynamic sidebar management overrides (from DB settings + user settings)
-    let result = applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user, isEn);
+    let result = applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user, isEn, educationSettings);
 
     // Strict per-user app assignment: when assignedApps is configured (non-empty),
     // only the sections belonging to those apps remain.

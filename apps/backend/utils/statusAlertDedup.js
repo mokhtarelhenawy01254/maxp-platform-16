@@ -73,6 +73,11 @@ function checkStatusAlertDedup({
     };
   }
 
+  // Delete expired entry before re-inserting so LRU insertion order refreshes cleanly.
+  if (existing) {
+    dedupCache.delete(key);
+  }
+
   if (dedupCache.size >= MAX_ENTRIES) {
     pruneExpired(now);
     if (dedupCache.size >= MAX_ENTRIES) {
@@ -87,6 +92,11 @@ function checkStatusAlertDedup({
   return { allowed: true, retryAfterMs: 0 };
 }
 
+function releaseStatusAlertDedupKey({ companyId, orderId, statusCode } = {}) {
+  if (!companyId || !orderId || !statusCode) return;
+  dedupCache.delete(buildStatusAlertDedupKey({ companyId, orderId, statusCode }));
+}
+
 function clearStatusAlertDedupCache() {
   dedupCache.clear();
 }
@@ -95,5 +105,6 @@ module.exports = {
   DEFAULT_WINDOW_MINUTES,
   buildStatusAlertDedupKey,
   checkStatusAlertDedup,
+  releaseStatusAlertDedupKey,
   clearStatusAlertDedupCache,
 };

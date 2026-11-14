@@ -135,6 +135,12 @@ router.post('/:notificationId/read', authenticateToken, async (req, res) => {
   try {
     const { notificationId } = req.params;
     const { userId, companyId } = req.user;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Company ID is required'
+      });
+    }
 
     //console.log(`✅ [NOTIFICATIONS-API] Mark as read request for notification: ${notificationId}`);
 
@@ -187,6 +193,12 @@ router.delete('/:notificationId', authenticateToken, async (req, res) => {
   try {
     const { notificationId } = req.params;
     const { userId, companyId } = req.user;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Company ID is required'
+      });
+    }
 
     //console.log(`🗑️ [NOTIFICATIONS-API] Delete request for notification: ${notificationId}`);
 
@@ -234,6 +246,12 @@ router.delete('/:notificationId', authenticateToken, async (req, res) => {
 router.post('/mark-all-read', authenticateToken, async (req, res) => {
   try {
     const { userId, companyId } = req.user;
+    if (!companyId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Company ID is required'
+      });
+    }
 
     //console.log(`✅ [NOTIFICATIONS-API] Mark all as read for user: ${userId}`);
 

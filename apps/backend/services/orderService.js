@@ -2587,11 +2587,11 @@ class OrderService {
       (async () => {
         let statusAlertSettings = null;
         try {
-          // 🔔 Team / Owner Status-Change Alert (in-app + WhatsApp)
+          // 🔔 Team / Owner Status-Change Alert (non-blocking In-App + WhatsApp + Telegram)
           try {
             const { getStatusAlertSettings, alertStatusChange } = require('./orderStatusAlertService');
             statusAlertSettings = await getStatusAlertSettings(order.companyId, this.getPrisma());
-            await alertStatusChange({
+            void alertStatusChange({
               companyId: order.companyId,
               order: updatedOrder || order,
               oldStatus: order.customStatusCode || order.status,
@@ -2601,9 +2601,11 @@ class OrderService {
               changedByName: userName || null,
               prisma: this.getPrisma(),
               settings: statusAlertSettings,
+            }).catch((statusAlertErr) => {
+              console.warn('⚠️ [ORDER-STATUS-ALERT] Background alert failed:', statusAlertErr?.message || statusAlertErr);
             });
           } catch (statusAlertErr) {
-            console.warn('⚠️ [ORDER-STATUS-ALERT] Background alert failed:', statusAlertErr?.message || statusAlertErr);
+            console.warn('⚠️ [ORDER-STATUS-ALERT] Background alert setup failed:', statusAlertErr?.message || statusAlertErr);
           }
 
           // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on order events
@@ -2928,18 +2930,19 @@ class OrderService {
               statusAlertSettings || (await getStatusAlertSettings(order.companyId, this.getPrisma()));
             const alertTargetCode = originalRequestedStatus || status;
             const shouldGatePush = Boolean(
-              effectiveAlertSettings?._hasExplicitConfig && effectiveAlertSettings?.enabled === true
+              effectiveAlertSettings?._hasExplicitConfig
             );
 
             if (!shouldGatePush || isStatusAlertEnabled(effectiveAlertSettings, alertTargetCode)) {
               const { sendBrowserPushToCompany } = require('./browserPushService');
+              const resolvedOrderNum = order.orderNumber || orderNumber;
               void sendBrowserPushToCompany({
                 companyId: order.companyId,
                 typeId: 'order_status_changed',
-                title: `تحديث حالة الطلب #${order.orderNumber || orderNumber}`,
+                title: `تحديث حالة الطلب #${resolvedOrderNum}`,
                 body: `تغيرت حالة الطلب إلى: ${status}`,
-                compactBody: `تغيرت حالة الطلب #${order.orderNumber || orderNumber}`,
-                url: `/orders?orderId=${order.id}`,
+                compactBody: `تغيرت حالة الطلب #${resolvedOrderNum}`,
+                url: resolvedOrderNum ? `/orders/${encodeURIComponent(resolvedOrderNum)}` : '/orders',
                 data: {
                   source: 'order_status_changed',
                   orderId: order.id,
@@ -3253,6 +3256,23 @@ class OrderService {
                 }).catch(() => {});
               }
             } catch (rErr) {}
+          }
+
+          try {
+            const { alertStatusChange } = require('./orderStatusAlertService');
+            void alertStatusChange({
+              companyId: guestOrder.companyId,
+              order: updatedGuestOrder,
+              oldStatus: guestOrder.status,
+              newStatus: status,
+              changedBy: userId || null,
+              changedByName: userName || null,
+              prisma: this.getPrisma(),
+            }).catch((alertErr) => {
+              console.warn('⚠️ [STATUS-ALERT] Non-blocking guest dispatch error:', alertErr?.message || alertErr);
+            });
+          } catch (alertBootErr) {
+            console.warn('⚠️ [STATUS-ALERT] Init error:', alertBootErr?.message || alertBootErr);
           }
 
           try {

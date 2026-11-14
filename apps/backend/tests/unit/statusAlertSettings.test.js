@@ -13,12 +13,17 @@ test('TASK 1eff9f7a: statusAlertSettings normalization, validation, and gating',
     clearStatusAlertDedupCache();
   });
 
-  await t.test('new company defaults to SHIPPED only, both channels true, 5m window', () => {
+  await t.test('new company defaults to SHIPPED only, inApp+whatsapp true, telegram false, OWNER included, 5m window', () => {
     const settings = normalizeStatusAlertSettings(undefined);
     assert.equal(settings.enabled, true);
     assert.deepEqual(settings.statuses, ['SHIPPED']);
-    assert.deepEqual(settings.channels, { inApp: true, whatsapp: true });
-    assert.deepEqual(settings.recipients, { roles: ['COMPANY_ADMIN', 'MANAGER'], phones: [] });
+    assert.deepEqual(settings.channels, { inApp: true, whatsapp: true, telegram: false });
+    assert.deepEqual(settings.recipients, {
+      roles: ['OWNER', 'COMPANY_ADMIN', 'MANAGER'],
+      userIds: [],
+      phones: [],
+      telegramChatIds: [],
+    });
     assert.equal(settings.windowMinutes, 5);
 
     assert.equal(isStatusAlertEnabled(settings, 'SHIPPED'), true);
@@ -36,25 +41,35 @@ test('TASK 1eff9f7a: statusAlertSettings normalization, validation, and gating',
     const settings = normalizeStatusAlertSettings({
       enabled: true,
       statuses: [],
-      channels: { inApp: true, whatsapp: false },
-      recipients: { roles: [], phones: '201012345678, 201098765432\n201012345678' },
+      channels: { inApp: true, whatsapp: false, telegram: true },
+      recipients: {
+        roles: [],
+        userIds: ['user-1'],
+        phones: '201012345678, 201098765432\n201012345678',
+        telegramChatIds: ['123456789'],
+      },
       windowMinutes: 15,
     });
     assert.deepEqual(settings.statuses, []);
-    assert.deepEqual(settings.channels, { inApp: true, whatsapp: false });
+    assert.deepEqual(settings.channels, { inApp: true, whatsapp: false, telegram: true });
     assert.deepEqual(settings.recipients.roles, []);
+    assert.deepEqual(settings.recipients.userIds, ['user-1']);
     assert.deepEqual(settings.recipients.phones, ['201012345678', '201098765432']);
+    assert.deepEqual(settings.recipients.telegramChatIds, ['123456789']);
     assert.equal(settings.windowMinutes, 15);
     assert.equal(isStatusAlertEnabled(settings, 'SHIPPED'), false);
   });
 
-  await t.test('validates payloads cleanly', () => {
+  await t.test('validates payloads cleanly including phones, roles, and telegram chat ids', () => {
     assert.equal(validateStatusAlertSettings({ enabled: true, statuses: ['SHIPPED'], windowMinutes: 5 }).isValid, true);
     assert.equal(validateStatusAlertSettings(null).isValid, false);
     assert.equal(validateStatusAlertSettings({ statuses: 'SHIPPED' }).isValid, false);
     assert.equal(validateStatusAlertSettings({ windowMinutes: 5000 }).isValid, false);
     assert.equal(validateStatusAlertSettings({ channels: [] }).isValid, false);
     assert.equal(validateStatusAlertSettings({ recipients: { roles: 'MANAGER' } }).isValid, false);
+    assert.equal(validateStatusAlertSettings({ recipients: { phones: ['bad-phone'] } }).isValid, false);
+    assert.equal(validateStatusAlertSettings({ recipients: { roles: ['HACKER_ROLE'] } }).isValid, false);
+    assert.equal(validateStatusAlertSettings({ unexpectedField: true }).isValid, false);
   });
 
   await t.test('alertStatusChange sends in-app + WhatsApp for SHIPPED and emits zero alerts for unselected status', async () => {

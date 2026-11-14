@@ -9601,7 +9601,9 @@ const AppContent = () => {
                   path="/admin/education/funnel"
                   element={
                     <Layout fullWidth>
-                      <EducationFunnelPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationFunnelPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9609,7 +9611,9 @@ const AppContent = () => {
                   path="/admin/education/calendar"
                   element={
                     <Layout fullWidth>
-                      <EducationCalendarPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationCalendarPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9617,7 +9621,9 @@ const AppContent = () => {
                   path="/admin/education/groups"
                   element={
                     <Layout fullWidth>
-                      <EducationGroupsPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationGroupsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9625,7 +9631,9 @@ const AppContent = () => {
                   path="/admin/education/teacher-schedule"
                   element={
                     <Layout fullWidth>
-                      <EducationTeacherSchedulePage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationTeacherSchedulePage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9633,7 +9641,9 @@ const AppContent = () => {
                   path="/admin/education/teacher-payments"
                   element={
                     <Layout fullWidth>
-                      <EducationTeacherPaymentsPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationTeacherPaymentsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9641,7 +9651,9 @@ const AppContent = () => {
                   path="/admin/education/teacher/:id"
                   element={
                     <Layout fullWidth>
-                      <EducationTeacherProfilePage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationTeacherProfilePage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9649,7 +9661,9 @@ const AppContent = () => {
                   path="/admin/education/student/:id"
                   element={
                     <Layout fullWidth>
-                      <EducationStudentProfilePage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationStudentProfilePage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9681,7 +9695,9 @@ const AppContent = () => {
                   path="/admin/education/settings"
                   element={
                     <Layout fullWidth>
-                      <EducationManagementPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationManagementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9689,7 +9705,9 @@ const AppContent = () => {
                   path="/admin/education/*"
                   element={
                     <Layout fullWidth>
-                      <EducationManagementPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationManagementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />

@@ -62,6 +62,8 @@ export const useNotificationsController = () => {
     };
 
     socketService.on("new_notification", handleRealtimeUpdate);
+    socketService.on("notification:new", handleRealtimeUpdate);
+    socketService.on("order:status_alert", handleRealtimeUpdate);
     socketService.on("order:created", handleRealtimeUpdate);
 
     const handleVisibilityChange = () => {
@@ -73,6 +75,8 @@ export const useNotificationsController = () => {
 
     return () => {
       socketService.off("new_notification", handleRealtimeUpdate);
+      socketService.off("notification:new", handleRealtimeUpdate);
+      socketService.off("order:status_alert", handleRealtimeUpdate);
       socketService.off("order:created", handleRealtimeUpdate);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };

@@ -33,6 +33,8 @@ export interface SocketEvents {
 
   // إشعارات
   notification: (notification: any) => void;
+  "notification:new": (notification: any) => void;
+  "order:status_alert": (alert: any) => void;
 }
 
 export interface UseSocketReturn {

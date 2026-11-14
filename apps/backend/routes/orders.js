@@ -1429,7 +1429,10 @@ const updateAnyOrderStatus = async ({
         preparationQueueService.notifyPreparationStageChange({
           companyId,
           orderPayload: { ...order, ...updatedOrder },
-          status: normalizedStatus
+          status: normalizedStatus,
+          oldStatus: previousPreparationStatus,
+          userId,
+          userName,
         });
       });
 
