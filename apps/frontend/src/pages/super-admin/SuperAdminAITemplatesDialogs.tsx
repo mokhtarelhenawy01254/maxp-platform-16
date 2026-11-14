@@ -534,38 +534,45 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-foreground block mb-1">مستوى التفكير والاستدلال المنطقي (DeepSeek Flash 4)</label>
-                <div className="grid grid-cols-3 gap-2 mt-1">
-                  {[
-                    { key: "none", label: "فوري (بدون تفكير)", icon: "⚡" },
-                    { key: "low", label: "تفكير متزن", icon: "⚖️" },
-                    { key: "high", label: "تفكير استدلالي عميق", icon: "🧠" },
-                  ].map(opt => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      className={`p-2 rounded-lg border text-start transition-all cursor-pointer flex items-center gap-1.5 ${
-                        (form.model_policy?.reasoning_effort || form.config?.reasoning_effort || "none") === opt.key
-                          ? "border-primary bg-primary/10 text-primary font-medium"
-                          : "border-border/60 bg-muted/20 hover:border-border text-muted-foreground"
-                      }`}
-                      onClick={() => {
-                        update("model_policy", {
-                          ...form.model_policy,
-                          reasoning_effort: opt.key,
-                          thinking: opt.key === "none" ? "fast" : opt.key === "low" ? "balanced" : "deep",
-                        });
-                        update("config", {
-                          ...form.config,
-                          reasoning_effort: opt.key,
-                        });
-                      }}
-                    >
-                      <span className="text-sm">{opt.icon}</span>
-                      <span className="text-xs">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
+                <label className="text-xs font-medium text-foreground block mb-1">
+                  مستوى التفكير والاستدلال المنطقي (DeepSeek Flash 4)
+                </label>
+                <select
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus:ring-1 focus:ring-primary"
+                  value={form.model_policy?.reasoning_effort || form.config?.reasoning_effort || "none"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const thinkingMap: Record<string, string> = {
+                      none: "fast",
+                      minimal: "minimal",
+                      low: "balanced",
+                      medium: "medium",
+                      high: "deep",
+                      xhigh: "xhigh",
+                      max: "max",
+                    };
+                    update("model_policy", {
+                      ...form.model_policy,
+                      reasoning_effort: val,
+                      thinking: thinkingMap[val] || "fast",
+                    });
+                    update("config", {
+                      ...form.config,
+                      reasoning_effort: val,
+                    });
+                  }}
+                >
+                  <option value="none">فوري (بدون تفكير — 0 توكن)</option>
+                  <option value="minimal">تدقيق خاطف (~1K توكن)</option>
+                  <option value="low">تفكير سريع وموجز (~2K توكن)</option>
+                  <option value="medium">تفكير متزن (~4K توكن)</option>
+                  <option value="high">استدلال عميق (~8K توكن)</option>
+                  <option value="xhigh">استدلال فائق (~16K توكن)</option>
+                  <option value="max">أقصى استدلال منطقي (~32K+ توكن)</option>
+                </select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  يحدد عمق تفكير النموذج وميزانية التوكنز المخصصة للاستدلال قبل توليد الرد.
+                </p>
               </div>
               <FormInput label="الميزانية اليومية ($)" type="number" value={form.budget?.dailyUsd || ""} onChange={e => update("budget", { ...form.budget, dailyUsd: e.target.value ? parseFloat(e.target.value) : undefined })} />
               <div className="flex items-center gap-2">
@@ -869,7 +876,15 @@ export const EditCompanyAgentDialog: React.FC<{
         },
         model_policy: {
           reasoning_effort: form.reasoning_effort || "none",
-          thinking: form.reasoning_effort === "high" ? "deep" : form.reasoning_effort === "low" ? "balanced" : "fast",
+          thinking: {
+            none: "fast",
+            minimal: "minimal",
+            low: "balanced",
+            medium: "medium",
+            high: "deep",
+            xhigh: "xhigh",
+            max: "max",
+          }[form.reasoning_effort || "none"] || "fast",
         },
         allowed_tools: form.allowed_tools,
         allowed_skills: form.allowed_skills,
@@ -921,27 +936,22 @@ export const EditCompanyAgentDialog: React.FC<{
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">مستوى التفكير والاستدلال المنطقي (DeepSeek Flash 4)</label>
-            <div className="grid grid-cols-3 gap-2 mt-1">
-              {[
-                { key: "none", label: "فوري (بدون تفكير)", icon: "⚡" },
-                { key: "low", label: "تفكير متزن", icon: "⚖️" },
-                { key: "high", label: "تفكير استدلالي عميق", icon: "🧠" },
-              ].map(opt => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  className={`p-2 rounded-lg border text-start transition-all cursor-pointer flex items-center gap-1.5 ${
-                    (form.reasoning_effort || "none") === opt.key
-                      ? "border-primary bg-primary/10 text-primary font-medium"
-                      : "border-border/60 bg-muted/20 hover:border-border text-muted-foreground"
-                  }`}
-                  onClick={() => update("reasoning_effort", opt.key)}
-                >
-                  <span className="text-sm">{opt.icon}</span>
-                  <span className="text-xs">{opt.label}</span>
-                </button>
-              ))}
-            </div>
+            <select
+              value={form.reasoning_effort || "none"}
+              onChange={e => update("reasoning_effort", e.target.value)}
+              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mt-1"
+            >
+              <option value="none">فوري (بدون تفكير — 0 توكن)</option>
+              <option value="minimal">تدقيق خاطف (~1K توكن)</option>
+              <option value="low">تفكير سريع وموجز (~2K توكن)</option>
+              <option value="medium">تفكير متزن (~4K توكن)</option>
+              <option value="high">استدلال عميق (~8K توكن)</option>
+              <option value="xhigh">استدلال فائق (~16K توكن)</option>
+              <option value="max">أقصى استدلال منطقي (~32K+ توكن)</option>
+            </select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              يحدد عمق تفكير النموذج وميزانية التوكنز المخصصة للاستدلال قبل توليد الرد.
+            </p>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">الشخصية (Soul)</label>

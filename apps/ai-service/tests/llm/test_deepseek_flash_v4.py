@@ -54,10 +54,38 @@ async def test_deepseek_flash_thinking_mode_options():
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
         assert call_kwargs["model"] == "deepseek-flash"
         assert call_kwargs["reasoning_effort"] == "high"
+        assert call_kwargs["extra_body"]["thinking"] == {"type": "enabled", "budget_tokens": 8192}
         assert res.text == "Final response text"
         assert res.reasoning_content == "Chain of thought steps..."
         assert res.usage["prompt_cache_hit_tokens"] == 80
         assert res.usage["cache_hit_ratio"] == 0.8
+
+        # Call with reasoning_effort="none" -> thinking is disabled
+        await client.generate(
+            messages=[{"role": "user", "content": "Fast query"}],
+            options={"reasoning_effort": "none"}
+        )
+        call_kwargs_none = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs_none["reasoning_effort"] == "none"
+        assert call_kwargs_none["extra_body"]["thinking"] == {"type": "disabled"}
+
+        # Verify all 6 active reasoning levels set proper token budgets
+        budgets = {
+            "minimal": 1024,
+            "low": 2048,
+            "medium": 4096,
+            "high": 8192,
+            "xhigh": 16384,
+            "max": 32768,
+        }
+        for level, expected_budget in budgets.items():
+            await client.generate(
+                messages=[{"role": "user", "content": "Budget test"}],
+                options={"reasoning_effort": level}
+            )
+            kwargs = mock_instance.chat.completions.create.call_args.kwargs
+            assert kwargs["reasoning_effort"] == level
+            assert kwargs["extra_body"]["thinking"] == {"type": "enabled", "budget_tokens": expected_budget}
 
 
 @pytest.mark.asyncio
@@ -164,5 +192,17 @@ def test_resolve_reasoning_effort_from_agent_config():
 
     mock_agent4.policies = {"model_policy": {"thinking": "fast"}}
     assert _resolve_reasoning_effort(ctx4) == "none"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "minimal"}}
+    assert _resolve_reasoning_effort(ctx4) == "minimal"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "medium"}}
+    assert _resolve_reasoning_effort(ctx4) == "medium"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "xhigh"}}
+    assert _resolve_reasoning_effort(ctx4) == "xhigh"
+
+    mock_agent4.policies = {"model_policy": {"thinking": "max"}}
+    assert _resolve_reasoning_effort(ctx4) == "max"
 
 

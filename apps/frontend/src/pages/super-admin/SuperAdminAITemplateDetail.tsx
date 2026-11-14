@@ -243,13 +243,19 @@ const SuperAdminAITemplateDetail: React.FC = () => {
                 <MetaCard label="النموذج البديل" value={Array.isArray(t.model_policy?.fallback) ? t.model_policy.fallback.join(" → ") : (t.model_policy?.fallback || "-")} />
                 <MetaCard
                   label="مستوى التفكير (Reasoning Effort)"
-                  value={
-                    (t.model_policy?.reasoning_effort === "high" || t.model_policy?.thinking === "deep")
-                      ? "🧠 تفكير استدلالي عميق"
-                      : (t.model_policy?.reasoning_effort === "low" || t.model_policy?.thinking === "balanced")
-                      ? "⚖️ تفكير متزن"
-                      : "⚡ فوري (بدون تفكير - DeepSeek Flash)"
-                  }
+                  value={(() => {
+                    const effort = t.model_policy?.reasoning_effort || (t.model_policy?.thinking === "deep" ? "high" : t.model_policy?.thinking === "balanced" ? "low" : "none");
+                    const labels: Record<string, string> = {
+                      none: "فوري (بدون تفكير — 0 توكن)",
+                      minimal: "تدقيق خاطف (~1K توكن)",
+                      low: "تفكير سريع وموجز (~2K توكن)",
+                      medium: "تفكير متزن (~4K توكن)",
+                      high: "استدلال عميق (~8K توكن)",
+                      xhigh: "استدلال فائق (~16K توكن)",
+                      max: "أقصى استدلال منطقي (~32K+ توكن)",
+                    };
+                    return labels[effort] || labels.none;
+                  })()}
                 />
               </div>
               <ModelPolicyEditor slug={t.slug} policy={t.model_policy || {}} onSaved={fetchTemplate} />
@@ -625,30 +631,44 @@ const ModelPolicyEditor = ({ slug, policy, onSaved }: {
   const [fallbackText, setFallbackText] = useState(
     Array.isArray(policy?.fallback) ? policy.fallback.join(", ") : (policy?.fallback || "")
   );
-  const [thinking, setThinking] = useState(policy?.thinking || "fast");
+  const [reasoningEffort, setReasoningEffort] = useState(
+    policy?.reasoning_effort || (policy?.thinking === "deep" ? "high" : policy?.thinking === "balanced" ? "low" : "none")
+  );
   const [err, setErr] = useState("");
+
+  const thinkingMap: Record<string, string> = {
+    none: "fast",
+    minimal: "minimal",
+    low: "balanced",
+    medium: "medium",
+    high: "deep",
+    xhigh: "xhigh",
+    max: "max",
+  };
 
   React.useEffect(() => {
     if (open) {
       setDefaultModel(policy?.default || "");
       setFallbackText(Array.isArray(policy?.fallback) ? policy.fallback.join(", ") : (policy?.fallback || ""));
-      setThinking(policy?.thinking || "fast");
+      setReasoningEffort(
+        policy?.reasoning_effort || (policy?.thinking === "deep" ? "high" : policy?.thinking === "balanced" ? "low" : "none")
+      );
       setErr("");
     }
-  }, [open]);
+  }, [open, policy]);
 
   const save = async () => {
     setSaving(true); setErr("");
     try {
       const fallbackList = fallbackText.split(",").map(s => s.trim()).filter(Boolean);
-      const reasoning_effort = thinking === "fast" ? "none" : thinking === "balanced" ? "low" : "high";
+      const thinking = thinkingMap[reasoningEffort] || "fast";
       const body: Record<string, any> = {
         model_policy: {
           ...policy,
           default: defaultModel.trim(),
           fallback: fallbackList,
           thinking,
-          reasoning_effort,
+          reasoning_effort: reasoningEffort,
         },
       };
       await apiClient.put(`/super-admin/agents/${slug}`, body);
@@ -675,11 +695,15 @@ const ModelPolicyEditor = ({ slug, policy, onSaved }: {
             onChange={(e) => setDefaultModel(e.target.value)} placeholder="deepseek-flash" />
         </label>
         <label className="text-xs font-medium text-muted-foreground">مستوى التفكير الاستدلالي (DeepSeek Flash 4)
-          <select className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-sm" value={thinking}
-            onChange={(e) => setThinking(e.target.value)}>
-            <option value="fast">⚡ فوري (بدون تفكير - DeepSeek Flash 4)</option>
-            <option value="balanced">⚖️ تفكير متزن (مراجعة سريعة)</option>
-            <option value="deep">🧠 تفكير استدلالي عميق (تحليل وحسابات)</option>
+          <select className="mt-1 w-full h-8 rounded-md border bg-background px-2 text-xs" value={reasoningEffort}
+            onChange={(e) => setReasoningEffort(e.target.value)}>
+            <option value="none">فوري (بدون تفكير — 0 توكن)</option>
+            <option value="minimal">تدقيق خاطف (~1K توكن)</option>
+            <option value="low">تفكير سريع وموجز (~2K توكن)</option>
+            <option value="medium">تفكير متزن (~4K توكن)</option>
+            <option value="high">استدلال عميق (~8K توكن)</option>
+            <option value="xhigh">استدلال فائق (~16K توكن)</option>
+            <option value="max">أقصى استدلال منطقي (~32K+ توكن)</option>
           </select>
         </label>
       </div>

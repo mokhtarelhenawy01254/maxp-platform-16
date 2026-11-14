@@ -903,12 +903,20 @@ def _resolve_reasoning_effort(ctx: PipelineContext) -> str | None:
             thinking = mp.get("thinking")
             if thinking:
                 t_str = str(thinking).lower()
-                if t_str in ("fast", "none", "off", "0"):
+                if t_str in ("fast", "none", "off", "0", "disabled"):
                     return "none"
-                elif t_str in ("balanced", "low", "medium"):
+                elif t_str in ("minimal", "min"):
+                    return "minimal"
+                elif t_str in ("balanced", "low"):
                     return "low"
+                elif t_str in ("medium", "med"):
+                    return "medium"
                 elif t_str in ("deep", "high", "thinking"):
                     return "high"
+                elif t_str in ("xhigh", "extra-high", "extra_high"):
+                    return "xhigh"
+                elif t_str in ("max", "maximum"):
+                    return "max"
 
         default_opts = getattr(ctx.agent, "default_options", None) or {}
         if isinstance(default_opts, dict):
@@ -918,12 +926,20 @@ def _resolve_reasoning_effort(ctx: PipelineContext) -> str | None:
             thinking = default_opts.get("thinking")
             if thinking:
                 t_str = str(thinking).lower()
-                if t_str in ("fast", "none", "off", "0"):
+                if t_str in ("fast", "none", "off", "0", "disabled"):
                     return "none"
-                elif t_str in ("balanced", "low", "medium"):
+                elif t_str in ("minimal", "min"):
+                    return "minimal"
+                elif t_str in ("balanced", "low"):
                     return "low"
+                elif t_str in ("medium", "med"):
+                    return "medium"
                 elif t_str in ("deep", "high", "thinking"):
                     return "high"
+                elif t_str in ("xhigh", "extra-high", "extra_high"):
+                    return "xhigh"
+                elif t_str in ("max", "maximum"):
+                    return "max"
 
     return None
 

@@ -405,7 +405,32 @@ class LLMClient:
 
         reasoning_effort = opts.get("reasoning_effort")
         if reasoning_effort is not None:
-            extra_params["reasoning_effort"] = reasoning_effort
+            r_str = str(reasoning_effort).lower()
+            extra_params["reasoning_effort"] = r_str
+            # Configure thinking payload for DeepSeek models and OpenAI-compatible gateways
+            is_deepseek = (
+                (self.provider or "").upper() == "DEEPSEEK"
+                or (self.base_url and "api.deepseek.com" in self.base_url)
+                or "deepseek" in (self.model or "").lower()
+            )
+            if is_deepseek:
+                if "extra_body" not in extra_params:
+                    extra_params["extra_body"] = {}
+                if r_str in ("none", "off", "0", "fast", "disabled"):
+                    extra_params["extra_body"]["thinking"] = {"type": "disabled"}
+                else:
+                    budget_map = {
+                        "minimal": 1024,
+                        "low": 2048,
+                        "medium": 4096,
+                        "high": 8192,
+                        "xhigh": 16384,
+                        "max": 32768,
+                    }
+                    thinking_payload: dict[str, Any] = {"type": "enabled"}
+                    if r_str in budget_map:
+                        thinking_payload["budget_tokens"] = budget_map[r_str]
+                    extra_params["extra_body"]["thinking"] = thinking_payload
         elif opts.get("thinking") is not None:
             extra_params["extra_body"] = {"thinking": opts.get("thinking")}
 
