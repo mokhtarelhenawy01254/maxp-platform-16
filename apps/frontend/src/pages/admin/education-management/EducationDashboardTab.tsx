@@ -10,7 +10,6 @@ import {
   Clock,
   Calendar,
   CheckCircle2,
-  ArrowUpRight,
   Plus,
   Search,
   AlertTriangle,
@@ -607,21 +606,23 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Search sessions */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={
-                isEn
-                  ? "Search by student, instructor, subject, or topic..."
-                  : "بحث باسم الطالب، المهندس، المادة، أو موضوع الحصة..."
-              }
-              value={sessionSearch}
-              onChange={(e) => setSessionSearch(e.target.value)}
-              className="w-full bg-background border border-input rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
+          {/* Search sessions (hidden while list is empty) */}
+          {filteredSessions.length > 0 && (
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={
+                  isEn
+                    ? "Search by student, instructor, subject, or topic..."
+                    : "بحث باسم الطالب، المهندس، المادة، أو موضوع الحصة..."
+                }
+                value={sessionSearch}
+                onChange={(e) => setSessionSearch(e.target.value)}
+                className="w-full bg-background border border-input rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
 
           {/* Sessions List */}
           <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1.5">
@@ -749,14 +750,9 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             })}
 
             {filteredSessions.length === 0 && (
-              <div className="p-8 text-center border border-dashed border-border/80 rounded-xl space-y-1.5">
-                <p className="text-xs font-semibold text-foreground">
-                  {isEn ? "No sessions found" : "لا توجد حصص تطابق التصفية"}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {isEn
-                    ? "Try changing filters or schedule a new session"
-                    : "يمكنك تغيير الفلتر أو جدولة حصة جديدة مباشرة من الزر أعلاه"}
+              <div className="py-5 text-center border border-dashed border-border/80 rounded-xl">
+                <p className="text-xs text-muted-foreground">
+                  {isEn ? "No sessions match the filters" : "لا توجد حصص تطابق التصفية"}
                 </p>
               </div>
             )}
@@ -775,13 +771,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
               </div>
             </div>
 
-            <Link
-              to="/admin/education/teacher-schedule"
-              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-            >
-              {isEn ? "Full Schedule" : "الجدول الكامل"}
-              <ArrowUpRight className="w-3 h-3" />
-            </Link>
+            {/* «الجدول الكامل» link removed — duplicates the action-bar «جدول المهندسين» button (same /teacher-schedule destination) */}
           </div>
 
           {/* Search instructors */}
@@ -936,29 +926,23 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder={
-                  isEn ? "Search students by name, phone..." : "بحث باسم الطالب أو الهاتف..."
-                }
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="w-full bg-background border border-input rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+          {filteredStudents.length > 0 && (
+            <div className="flex items-center w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute right-3 top-2.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder={
+                    isEn ? "Search students by name, phone..." : "بحث باسم الطالب أو الهاتف..."
+                  }
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="w-full bg-background border border-input rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("students")}
-              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium shrink-0"
-            >
-              {isEn ? "Full Table" : "الجدول الكامل"}
-              <ArrowUpRight className="w-3 h-3" />
-            </button>
-          </div>
+          )}
+          {/* «الجدول الكامل» button removed — duplicates the «الطلاب» tab in the tab bar above */}
         </div>
 
         {/* Students Grid */}
@@ -1102,7 +1086,7 @@ export const EducationDashboardTab: React.FC<EducationDashboardTabProps> = ({
           })}
 
           {filteredStudents.length === 0 && (
-            <div className="col-span-full p-8 text-center border border-dashed border-border/80 rounded-xl space-y-1 text-xs text-muted-foreground">
+            <div className="col-span-full py-5 text-center border border-dashed border-border/80 rounded-xl space-y-1 text-xs text-muted-foreground">
               {isEn ? "No students found" : "لم يتم العثور على طلاب مسجلين"}
             </div>
           )}
