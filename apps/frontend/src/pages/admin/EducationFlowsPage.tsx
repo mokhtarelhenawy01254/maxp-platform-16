@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EducationFlowTopBar } from './education-flows/EducationFlowTopBar';
 import { EducationFlowCanvas } from './education-flows/EducationFlowCanvas';
 import { EducationFlowsListView } from './education-flows/EducationFlowsListView';
@@ -14,6 +14,8 @@ import type {
   FlowNodeType,
 } from './education-flows/types';
 import { X, Plus, Sparkles, Workflow } from 'lucide-react';
+import { api, fetchJson } from './education-management/api';
+import { toast } from 'sonner';
 
 export default function EducationFlowsPage() {
   const [viewMode, setViewMode] = useState<'canvas' | 'list'>('canvas');
@@ -22,6 +24,7 @@ export default function EducationFlowsPage() {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isNewFlowModalOpen, setIsNewFlowModalOpen] = useState(false);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
 
   // Flows list state
   const [flows, setFlows] = useState<EducationFlowRecord[]>(FLOW_RECORDS);
@@ -32,6 +35,28 @@ export default function EducationFlowsPage() {
   const [newFlowName, setNewFlowName] = useState('');
   const [newFlowCategory, setNewFlowCategory] = useState<FlowCategory>('demo_booking');
   const [newFlowChannel, setNewFlowChannel] = useState<EducationChannelType>('WHATSAPP_WABA');
+
+  // Load cloud persistent flows on mount
+  useEffect(() => {
+    let mounted = true;
+    const loadCloudFlows = async () => {
+      try {
+        const res = await fetchJson(api('notifications/flows'));
+        if (mounted && res?.success && res?.data?.flows) {
+          setFlows(res.data.flows);
+          if (Array.isArray(res.data.nodes) && res.data.nodes.length > 0) {
+            setNodes(res.data.nodes);
+          }
+        }
+      } catch (_) {
+        // Fallback cleanly to default constants
+      }
+    };
+    loadCloudFlows();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const currentJourney =
     SUB_JOURNEYS.find((j) => j.id === activeCategory) || SUB_JOURNEYS[0];
@@ -44,15 +69,40 @@ export default function EducationFlowsPage() {
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(0.65, prev - 0.15));
   const handleZoomReset = () => setZoomLevel(1);
 
-  const handleToggleFlow = (flowId: string) => {
+  const handleToggleFlow = async (flowId: string) => {
     setFlows((prev) =>
       prev.map((f) => (f.id === flowId ? { ...f, isEnabled: !f.isEnabled } : f))
     );
+    try {
+      await fetchJson(api(`notifications/flows/${flowId}/toggle`), {
+        method: 'PATCH',
+      });
+      toast.success('تم تحديث حالة تفعيل المسار بنجاح');
+    } catch (_) {}
   };
 
   const handleOpenCanvas = (flowId: string, category: FlowCategory) => {
     setActiveCategory(category);
     setViewMode('canvas');
+  };
+
+  const handleSaveCloud = async () => {
+    setIsSavingCloud(true);
+    try {
+      const res = await fetchJson(api('notifications/flows'), {
+        method: 'PUT',
+        body: JSON.stringify({ flows, nodes }),
+      });
+      if (res?.success) {
+        toast.success('تم حفظ وتحديث مسارات الأتمتة سحابياً بنجاح');
+      } else {
+        toast.error('تعذر حفظ المسارات، يرجى المحاولة لاحقاً');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'حدث خطأ في حفظ المسارات');
+    } finally {
+      setIsSavingCloud(false);
+    }
   };
 
   const handleSaveNode = (
@@ -180,6 +230,8 @@ export default function EducationFlowsPage() {
         onZoomReset={handleZoomReset}
         onOpenTestModal={() => setIsTestModalOpen(true)}
         currentFlowTitle={currentJourney.name}
+        onSaveCloud={handleSaveCloud}
+        isSavingCloud={isSavingCloud}
       />
 
       {/* 2. Main Content: Flows Directory (List) or Visual Canvas (Builder) */}

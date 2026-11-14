@@ -478,4 +478,160 @@ const updateSchedule = async (req, res) => {
   }
 };
 
-module.exports = { getFunnel, getLogs, sendTest, getSchedule, updateSchedule };
+const getFlows = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true },
+    });
+
+    let flows = null;
+    let nodes = null;
+    if (company?.settings) {
+      try {
+        const parsed = JSON.parse(company.settings);
+        flows = parsed.educationFlows || null;
+        nodes = parsed.educationFlowNodes || null;
+      } catch (_) {}
+    }
+
+    res.json({ success: true, data: flows ? { flows, nodes } : null });
+  } catch (error) {
+    console.error('Error fetching education flows:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب مسارات الأتمتة' });
+  }
+};
+
+const saveFlows = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const { flows, nodes } = req.body;
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true },
+    });
+
+    let currentSettings = {};
+    if (company?.settings) {
+      try {
+        currentSettings = JSON.parse(company.settings);
+      } catch (_) {}
+    }
+
+    currentSettings.educationFlows = flows || currentSettings.educationFlows;
+    currentSettings.educationFlowNodes = nodes || currentSettings.educationFlowNodes;
+    currentSettings.educationFlowsUpdatedAt = new Date().toISOString();
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) },
+    });
+
+    res.json({ success: true, data: { flows, nodes } });
+  } catch (error) {
+    console.error('Error saving education flows:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حفظ مسارات الأتمتة' });
+  }
+};
+
+const updateFlow = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const flowId = req.params.id;
+    const { flow, nodes } = req.body;
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true },
+    });
+
+    let currentSettings = {};
+    if (company?.settings) {
+      try {
+        currentSettings = JSON.parse(company.settings);
+      } catch (_) {}
+    }
+
+    let existingFlows = Array.isArray(currentSettings.educationFlows) ? currentSettings.educationFlows : [];
+    const index = existingFlows.findIndex((f) => f.id === flowId);
+    if (index >= 0) {
+      existingFlows[index] = { ...existingFlows[index], ...flow, updatedAt: 'الآن' };
+    } else if (flow) {
+      existingFlows.push(flow);
+    }
+    currentSettings.educationFlows = existingFlows;
+    if (nodes) currentSettings.educationFlowNodes = nodes;
+    currentSettings.educationFlowsUpdatedAt = new Date().toISOString();
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) },
+    });
+
+    res.json({ success: true, data: { flowId, flow } });
+  } catch (error) {
+    console.error('Error updating education flow:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث المسار' });
+  }
+};
+
+const toggleFlow = async (req, res) => {
+  try {
+    const companyId = await resolveCompanyId(req);
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح - يرجى تحديد الشركة' });
+
+    const flowId = req.params.id;
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { settings: true },
+    });
+
+    let currentSettings = {};
+    if (company?.settings) {
+      try {
+        currentSettings = JSON.parse(company.settings);
+      } catch (_) {}
+    }
+
+    let existingFlows = Array.isArray(currentSettings.educationFlows) ? currentSettings.educationFlows : [];
+    let nextState = true;
+    const index = existingFlows.findIndex((f) => f.id === flowId);
+    if (index >= 0) {
+      existingFlows[index].isEnabled = !existingFlows[index].isEnabled;
+      nextState = existingFlows[index].isEnabled;
+    }
+    currentSettings.educationFlows = existingFlows;
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { settings: JSON.stringify(currentSettings) },
+    });
+
+    res.json({ success: true, data: { flowId, isEnabled: nextState } });
+  } catch (error) {
+    console.error('Error toggling education flow:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تغيير حالة المسار' });
+  }
+};
+
+module.exports = {
+  getFunnel,
+  getLogs,
+  sendTest,
+  getSchedule,
+  updateSchedule,
+  getFlows,
+  saveFlows,
+  updateFlow,
+  toggleFlow,
+};

@@ -24,6 +24,8 @@ interface EducationFlowTopBarProps {
   onZoomReset: () => void;
   onOpenTestModal: () => void;
   currentFlowTitle?: string;
+  onSaveCloud?: () => void;
+  isSavingCloud?: boolean;
 }
 
 export const EducationFlowTopBar: React.FC<EducationFlowTopBarProps> = ({
@@ -37,6 +39,8 @@ export const EducationFlowTopBar: React.FC<EducationFlowTopBarProps> = ({
   onZoomReset,
   onOpenTestModal,
   currentFlowTitle,
+  onSaveCloud,
+  isSavingCloud,
 }) => {
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 sm:px-6 sticky top-0 z-30 shadow-xs">
@@ -163,6 +167,19 @@ export const EducationFlowTopBar: React.FC<EducationFlowTopBarProps> = ({
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
+          )}
+
+          {/* Save to Cloud Button (Canvas Mode) */}
+          {viewMode === 'canvas' && onSaveCloud && (
+            <button
+              type="button"
+              onClick={onSaveCloud}
+              disabled={isSavingCloud}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-all shadow-2xs disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+              <span>{isSavingCloud ? 'جاري الحفظ...' : 'حفظ التغييرات'}</span>
+            </button>
           )}
 
           {/* Test Message Button */}

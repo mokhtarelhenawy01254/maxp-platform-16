@@ -20,5 +20,9 @@ router.get('/logs', controller.getLogs);
 router.post('/test', controller.sendTest);
 router.get('/schedule', controller.getSchedule);
 router.put('/schedule', controller.updateSchedule);
+router.get('/flows', controller.getFlows);
+router.put('/flows', controller.saveFlows);
+router.put('/flows/:id', controller.updateFlow);
+router.patch('/flows/:id/toggle', controller.toggleFlow);
 
 module.exports = router;
