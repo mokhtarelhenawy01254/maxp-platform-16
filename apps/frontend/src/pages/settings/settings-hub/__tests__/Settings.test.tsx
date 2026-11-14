@@ -34,6 +34,15 @@ vi.mock('../../../../components/settings/AppVersionSettingsCard', () => ({
   AppVersionSettingsCard: () => <div data-testid="app-version-card">App Version 1.0.0</div>,
 }));
 
+vi.mock('../../../../services/apiClient', () => ({
+  apiClient: {
+    get: vi.fn().mockResolvedValue({ data: { success: true, data: [] } }),
+    patch: vi.fn().mockResolvedValue({ data: { success: true } }),
+    delete: vi.fn().mockResolvedValue({ data: { success: true } }),
+    post: vi.fn().mockResolvedValue({ data: { success: true } }),
+  },
+}));
+
 vi.mock('../../../../utils/tokenManager', () => ({
   default: {
     createAuthHeaders: (headers = {}) => ({
@@ -87,7 +96,8 @@ describe('Settings Component (Batch 442)', () => {
 
     expect(screen.getByText('الإعدادات')).toBeInTheDocument();
     expect(screen.getByText('إدارة تفضيلات الحساب والمتجر والأمان')).toBeInTheDocument();
-    expect(screen.getByTestId('app-version-card')).toBeInTheDocument();
+    // App version card lives exclusively on the Authorized Devices tab, not in the shared shell
+    expect(screen.queryByTestId('app-version-card')).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('أحمد')).toBeInTheDocument();
@@ -114,6 +124,21 @@ describe('Settings Component (Batch 442)', () => {
     expect(screen.getByText('حرف كبير واحد على الأقل (A-Z)')).toBeInTheDocument();
     expect(screen.getByText('حرف صغير واحد على الأقل (a-z)')).toBeInTheDocument();
     expect(screen.getByText('رقم واحد على الأقل (0-9)')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-version-card')).not.toBeInTheDocument();
+  });
+
+  it('renders Authorized Devices tab with the exclusive app version card', () => {
+    mockParams = { tab: 'devices' };
+
+    render(
+      <MemoryRouter initialEntries={['/settings/devices']}>
+        <Routes>
+          <Route path="/settings/:tab?" element={<Settings />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('app-version-card')).toBeInTheDocument();
   });
 
   it('redirects to /marketplace when tab is billing', () => {

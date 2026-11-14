@@ -6,6 +6,7 @@ import {
   AuthorizedDevicesFilterToolbar,
   AuthorizedDevicesTable,
 } from "./authorized-devices";
+import { AppVersionSettingsCard } from "../../components/settings/AppVersionSettingsCard";
 
 export const AuthorizedDevicesTab: React.FC = () => {
   const {
@@ -44,6 +45,7 @@ export const AuthorizedDevicesTab: React.FC = () => {
         onDeleteDevice={handleDeleteDevice}
         onCopyFingerprint={handleCopyFingerprint}
       />
+      <AppVersionSettingsCard />
     </div>
   );
 };

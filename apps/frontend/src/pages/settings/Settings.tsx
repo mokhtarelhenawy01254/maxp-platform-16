@@ -8,7 +8,6 @@ import SidebarSettings from './SidebarSettings';
 import AuthorizedDevicesTab from './AuthorizedDevicesTab';
 import OvertimeManagementTab from './OvertimeManagementTab';
 import DeveloperHubPage from './developer/DeveloperHubPage';
-import { AppVersionSettingsCard } from '../../components/settings/AppVersionSettingsCard';
 import {
   ProfileSettings,
   SecuritySettings,
@@ -68,10 +67,6 @@ const Settings: React.FC = () => {
       {/* MOB-015: Single-depth rule: no box-in-box under 768px */}
       <div className="md:rounded-3xl md:border md:border-border md:bg-card">
         <ActiveComponent />
-      </div>
-
-      <div className="mt-8">
-        <AppVersionSettingsCard />
       </div>
     </div>
   );
