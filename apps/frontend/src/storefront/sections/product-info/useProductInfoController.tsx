@@ -697,10 +697,25 @@ export const useProductInfoController = ({
   // Parsed metadata & copy
   const specs = parseDetailRows(product?.['specs']);
   const shortDescription = typeof product?.['shortDescription'] === 'string' ? product['shortDescription'] : '';
+  const selectedVariantDescription =
+    typeof selectedVariant?.description === 'string' && selectedVariant.description.trim()
+      ? selectedVariant.description.trim()
+      : null;
+  const firstVariantWithDescription =
+    ((product?.productVariants || (product as any)?.variants) as any[])?.find(
+      (v: any) => typeof v?.description === 'string' && v.description.trim(),
+    )?.description?.trim() || null;
+  const effectiveDescription =
+    selectedVariantDescription || firstVariantWithDescription || product?.description || '';
+  const safeDescription = sanitizeStorefrontHtml(effectiveDescription);
+
+  const effectiveShortDescription =
+    typeof (selectedVariant as any)?.shortDescription === 'string' && (selectedVariant as any).shortDescription.trim()
+      ? (selectedVariant as any).shortDescription.trim()
+      : shortDescription;
   const descriptionPreviewText =
-    shortDescription ||
+    effectiveShortDescription ||
     (prefersArabicCopy ? 'لا يوجد وصف متاح لهذا المنتج حالياً.' : 'No description available.');
-  const safeDescription = sanitizeStorefrontHtml(product?.description || '');
 
   const breadcrumbHomeLabel = prefersArabicCopy ? 'الرئيسية' : 'Home';
   const breadcrumbShopLabel = prefersArabicCopy ? 'المتجر' : 'Shop';

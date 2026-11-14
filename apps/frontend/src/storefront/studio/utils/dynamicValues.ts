@@ -60,6 +60,7 @@ export interface DynamicTokenOption {
 
 export const DYNAMIC_TOKENS: DynamicTokenOption[] = [
   { token: "{{product.title}}", label: "عنوان المنتج", group: "product", example: "قميص كتان" },
+  { token: "{{product.description}}", label: "وصف المنتج", group: "product", example: "وصف تفصيلي ومواصفات المنتج..." },
   { token: "{{product.price}}", label: "سعر المنتج (رقم)", group: "product", example: "250" },
   { token: "{{product.priceFormatted}}", label: "سعر المنتج (منسق بالعملة)", group: "product", example: "250 ج.م" },
   { token: "{{product.compareAtPrice}}", label: "السعر قبل الخصم", group: "product", example: "350" },

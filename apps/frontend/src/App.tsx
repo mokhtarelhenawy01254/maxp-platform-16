@@ -477,6 +477,9 @@ const DeliveryRunsPage = React.lazy(
 const CourierSettlementPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierSettlementPage"),
 );
+const CourierFleetSettingsPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierFleetSettingsPage"),
+);
 const CourierMobileRunPage = React.lazy(
   () => import("./pages/shipping/couriers/CourierMobileRunPage"),
 );
@@ -3879,6 +3882,14 @@ const AppContent = () => {
                       <AppDetails />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/marketplace/apps/internal-courier-fleet/settings"
+                  element={<Navigate to="/shipping/fleet-settings" replace />}
+                />
+                <Route
+                  path="/marketplace/internal-courier-fleet/settings"
+                  element={<Navigate to="/shipping/fleet-settings" replace />}
                 />
                 <Route
                   path="/marketplace/apps/:slug/settings"
@@ -7783,6 +7794,20 @@ const AppContent = () => {
                       </AppAccessRoute>
                     </Layout>
                   }
+                />
+                <Route
+                  path="/shipping/fleet-settings"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
+                        <CourierFleetSettingsPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/courier-settings"
+                  element={<Navigate to="/shipping/fleet-settings" replace />}
                 />
                 {/* Shipping Operations (Internal Logistics) - Protected from SHIPPING_CLIENT (SHIP-W13) */}
                 <Route

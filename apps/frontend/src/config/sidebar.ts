@@ -1148,7 +1148,7 @@ export const getSidebarConfig = (
                 { to: '/shipping/courier-payroll', icon: Banknote, label: isEn ? 'Courier Payroll & Bonus' : 'مسير الرواتب والمكافآت', requiredPermissions: ['orders.shipping.view', 'courier.view'] },
                 { to: '/shipping/delivery-runs', icon: MapPin, label: isEn ? 'Delivery Runs & Manifests' : 'رحلات التوزيع والمانيفست', requiredPermissions: ['orders.shipping.view', 'courier.runs.view'] },
                 { to: '/shipping/courier-settlements', icon: Banknote, label: isEn ? 'Courier Settlements & Remittance' : 'تسويات وتوريد المناديب', requiredPermissions: ['orders.shipping.view', 'courier.settlement.view'] },
-                { to: '/marketplace/apps/internal-courier-fleet/settings', icon: Cog, label: isEn ? 'Fleet Settings' : 'إعدادات أسطول التوصيل', requiredPermissions: ['orders.shipping.view', 'courier.settings.view'] },
+                { to: '/shipping/fleet-settings', icon: Cog, label: isEn ? 'Fleet Settings' : 'إعدادات أسطول التوصيل', requiredPermissions: ['orders.shipping.view', 'courier.settings.view'] },
             ],
             // 🔒 إخفاء القسم بالكامل إذا كان التطبيق غير مفعل في الماركت بليس
             hidden: user?.role === 'AFFILIATE' || !isAppActive('internal-courier-fleet')
