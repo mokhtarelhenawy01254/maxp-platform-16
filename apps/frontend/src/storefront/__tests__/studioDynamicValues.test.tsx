@@ -78,16 +78,23 @@ describe("Ticket DYN-1: Dynamic tags + شروط عرض", () => {
       const ctx: DynamicContext = {
         product: {
           title: "قميص كتان بيج",
+          description: "وصف قميص كتان مريح وعصري",
           price: 450,
           compareAtPrice: 600,
           stock: 15,
           image: "https://swan.com/images/shirt.jpg",
+        },
+        item: {
+          title: "عنصر loop",
+          description: "وصف عنصر loop",
         },
         currency: "EGP",
         locale: "ar-EG",
       };
 
       expect(resolveDynamicValue("{{product.title}}", ctx)).toBe("قميص كتان بيج");
+      expect(resolveDynamicValue("{{product.description}}", ctx)).toBe("وصف قميص كتان مريح وعصري");
+      expect(resolveDynamicValue("{{item.description}}", ctx)).toBe("وصف عنصر loop");
       expect(resolveDynamicValue("{{product.price}}", ctx)).toBe("450");
       expect(resolveDynamicValue("{{product.priceFormatted}}", ctx)).toBe("450 ج.م");
       expect(resolveDynamicValue("{{product.compareAtPrice}}", ctx)).toBe("600");
