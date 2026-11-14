@@ -136,20 +136,20 @@ export default function EducationReportsPage() {
           </div>
         </div>
 
-        {/* View Switcher Tabs Bar */}
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-muted/60 border border-border/80 w-fit flex-wrap">
+        {/* Seamless Underline Tabs Bar (No nested card box wrapper) */}
+        <div className="flex items-center gap-6 border-b border-border/70 text-xs">
           <button
             type="button"
             onClick={() => handleTabChange("campaigns")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+            className={`inline-flex items-center gap-2 py-2.5 px-0.5 text-xs font-semibold border-b-2 transition-all ${
               activeTab === "campaigns"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
-                : "text-muted-foreground hover:text-foreground"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <Target className="w-3.5 h-3.5 text-primary" />
             <span>{isEn ? "Campaign Attribution" : "تتبع مصادر الحملات والإعلانات"}</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono font-bold">
+            <span className="px-1.5 py-0.2 rounded text-[10px] bg-muted font-mono font-bold text-foreground">
               {attribution?.summary?.totalLeads ?? 0} {isEn ? "leads" : "ليد"}
             </span>
           </button>
@@ -157,15 +157,15 @@ export default function EducationReportsPage() {
           <button
             type="button"
             onClick={() => handleTabChange("funnel")}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+            className={`inline-flex items-center gap-2 py-2.5 px-0.5 text-xs font-semibold border-b-2 transition-all ${
               activeTab === "funnel"
-                ? "bg-background text-foreground shadow-xs border border-border/60"
-                : "text-muted-foreground hover:text-foreground"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <GitCommit className="w-4 h-4 text-primary" />
+            <GitCommit className="w-3.5 h-3.5 text-primary" />
             <span>{isEn ? "Conversion Funnel" : "مسار التحويل وقمع الأكاديمية"}</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary font-mono font-bold">
+            <span className="px-1.5 py-0.2 rounded text-[10px] bg-muted font-mono font-bold text-foreground">
               {funnel?.registeredStudents ?? 0} {isEn ? "students" : "طالب"}
             </span>
           </button>
@@ -205,47 +205,31 @@ export default function EducationReportsPage() {
           />
         )}
 
-        {/* Cross-linking Shortcuts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <a
-            href="/admin/education/demo-day"
-            className="p-3.5 rounded-xl border border-border/70 bg-card hover:bg-muted/40 transition-colors flex items-center justify-between text-xs group"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-foreground">
-                  {isEn ? "Demo Day Attendees Bench" : "جدول وقائمة حضور الديمو داي"}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {isEn ? "View attendees and convert leads directly" : "متابعة الحاضرين وتحويلهم لطلاب مقيدين"}
-                </div>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </a>
-
-          <a
-            href="/admin/education/funnel"
-            className="p-3.5 rounded-xl border border-border/70 bg-card hover:bg-muted/40 transition-colors flex items-center justify-between text-xs group"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-foreground">
-                  {isEn ? "WhatsApp Notification Templates" : "مركز قوالب رسائل الواتساب"}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {isEn ? "Configure triggers and approved Meta Cloud templates" : "تخصيص رسائل الطلاب والمعلمين والتذكيرات"}
-                </div>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          </a>
+        {/* Connected Ecosystem Shortcuts - Sleek Flat Links (No Box inside Box) */}
+        <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="font-semibold text-foreground text-[11px] uppercase tracking-wider">
+              {isEn ? "Linked Education Modules:" : "أقسام الأكاديمية المرتبطة:"}
+            </span>
+            <a
+              href="/admin/education/demo-day"
+              className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors font-medium hover:underline"
+            >
+              <Users className="w-3.5 h-3.5 text-primary" />
+              <span>{isEn ? "Demo Day Attendees Bench" : "جدول وقائمة حضور الديمو داي"}</span>
+            </a>
+            <span className="text-border hidden sm:inline">•</span>
+            <a
+              href="/admin/education/funnel"
+              className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors font-medium hover:underline"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{isEn ? "WhatsApp Notification Templates" : "مركز قوالب رسائل وأتمتة الواتساب"}</span>
+            </a>
+          </div>
+          <div className="text-[11px] text-muted-foreground/80 font-mono">
+            {isEn ? "Synced with central company attribution" : "متناغم مع محرك التتبع المركزي للشركة"}
+          </div>
         </div>
       </div>
     </div>
