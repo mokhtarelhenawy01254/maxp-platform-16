@@ -49,10 +49,10 @@
       "expected_behavior": "شرح مسار 9-12 ثم طلب رقم موبايل ولي الأمر لتثبيت موعد Demo Day أو المتابعة"
     },
     {
-      "name": "single_branch_online",
+      "name": "alexandria_branches_online",
       "input": "عندكم فرع في القاهرة؟",
       "must_contain": ["الإسكندرية"],
-      "expected_behavior": "فرع واحد في الإسكندرية + البرنامج متاح أونلاين"
+      "expected_behavior": "فروعنا في الإسكندرية (فؤاد وجليم) + البرنامج متاح أونلاين"
     },
     {
       "name": "siblings_discount_boundary",
