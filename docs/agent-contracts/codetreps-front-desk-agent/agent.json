@@ -33,7 +33,8 @@
     "education_sessions",
     "education_cancel_session",
     "agent_handoff_to",
-    "knowledge_search"
+    "knowledge_search",
+    "knowledge_ask_merchant"
   ],
   "allowedSkills": [
     "education-center-info",
@@ -72,7 +73,7 @@
     "companyId": "cmw4rkr0o00eujuoh37tcjise",
     "instanceId": "agent_cdtreps_nour_01",
     "page": "CodeTreps (105327651894858)",
-    "notes": "الحقائق الثابتة (العنوان/السن/Demo Day) محقونة في persona.soulInstructions كـ Static Prefix — الأسعار إجبارياً من education_info (education_packages). المعرفة RAG (ai.knowledge_embeddings) تحسين لاحق عبر answer_knowledge_question endpoint.",
+    "notes": "الحقائق الثابتة (العنوان/السن/Demo Day) محقونة في persona.soulInstructions كـ Static Prefix — الأسعار إجبارياً من education_info (education_packages). المعرفة RAG (ai.knowledge_embeddings) تحسين لاحق عبر answer_knowledge_question endpoint. | أدوات إضافية 2026-11-14: knowledge_ask_merchant (تسجيل أسئلة العملاء غير المجهوبة في ai.knowledge_questions → الإدارة تجاوب → تتعلم كمعرفة).",
     "governance": "أُنشئت بمساعدة المنصة بطلب المالك 2026-11-12 (created_by: mokhtar) — مخالفة إجرائية اتوثقت والسياسة رُسّخت في SKILL.md ❽.16. [2026-11-13] العقد نقل من apps/backend/agents/ (مسار الـ seed) إلى docs/agent-contracts/ — القالب المزروع في السوبر أدمن يحتاج حذفاً يدوياً من الواجهة (يتيم 0 شركات). التحرير مسلَّم لفريق كودتريبس من استوديوهم."
   }
 }

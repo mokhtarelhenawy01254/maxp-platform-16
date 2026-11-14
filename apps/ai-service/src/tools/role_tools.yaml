@@ -402,6 +402,7 @@ roles:
     - education_cancel_session
     - agent_handoff_to
     - knowledge_search
+    - knowledge_ask_merchant
 
   HOTEL:
     - hotel_info
