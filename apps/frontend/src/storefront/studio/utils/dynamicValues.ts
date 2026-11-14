@@ -5,6 +5,7 @@ export interface DynamicProductContext {
   id?: string | number;
   title?: string;
   name?: string;
+  description?: string | null;
   price?: number | string | null;
   compareAtPrice?: number | string | null;
   comparePrice?: number | string | null;
@@ -67,6 +68,7 @@ export const DYNAMIC_TOKENS: DynamicTokenOption[] = [
   { token: "{{product.stock}}", label: "المخزون المتوفر", group: "product", example: "12" },
   { token: "{{product.image}}", label: "صورة المنتج", group: "product", example: "https://..." },
   { token: "{{item.title}}", label: "عنوان العنصر (Loop)", group: "product", example: "قميص كتان" },
+  { token: "{{item.description}}", label: "وصف العنصر (Loop)", group: "product", example: "وصف المنتج..." },
   { token: "{{item.price}}", label: "سعر العنصر (Loop)", group: "product", example: "250" },
   { token: "{{item.priceFormatted}}", label: "سعر العنصر منسق (Loop)", group: "product", example: "250 ج.م" },
   { token: "{{item.image}}", label: "صورة العنصر (Loop)", group: "product", example: "https://..." },
