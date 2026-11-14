@@ -186,56 +186,56 @@ jobs:
           CHANGED=$(git diff --name-only "$BEFORE" "$COMMIT_SHA")
 
           # 1. Facebook Ads Changes
-          if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
+          if grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)" <<< "$CHANGED"; then
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "fb-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 1b. Copilot reliability surface (agent chat history + attachments sanitizer)
-          if echo "$CHANGED" | grep -qE "apps/backend/(controller/aiAgentChatController|services/(aiServiceAdminClient|aiSessionService|agentStudioSessionService)|tests/(controller/aiAgentChatController|services/aiServiceAdminClient))"; then
+          if grep -qE "apps/backend/(controller/aiAgentChatController|services/(aiServiceAdminClient|aiSessionService|agentStudioSessionService)|tests/(controller/aiAgentChatController|services/aiServiceAdminClient))" <<< "$CHANGED"; then
             echo "copilot-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "copilot-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 1c. Manufacturing Partner Agreements Lifecycle
-          if echo "$CHANGED" | grep -qE "apps/backend/(controller/manufacturingController|services/manufacturingFactoryAgreementService|routes/manufacturingRoutes|tests/controller/manufacturingFactoryAgreements)"; then
+          if grep -qE "apps/backend/(controller/manufacturingController|services/manufacturingFactoryAgreementService|routes/manufacturingRoutes|tests/controller/manufacturingFactoryAgreements)" <<< "$CHANGED"; then
             echo "manufacturing-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "manufacturing-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 2. Frontend Changes (apps/frontend, shared, nginx_configs, customer-portal guard)
-          if echo "$CHANGED" | grep -qE "^(apps/frontend/|shared/|nginx_configs/|scripts/check-customer-portal-routing\.js)"; then
+          if grep -qE "^(apps/frontend/|shared/|nginx_configs/|scripts/check-customer-portal-routing\.js)" <<< "$CHANGED"; then
             echo "fe-needed=true" >> "$GITHUB_OUTPUT"
           else
             echo "fe-needed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 3. Marketplace Catalog Changes
-          if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
+          if grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/" <<< "$CHANGED"; then
             echo "cat-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "cat-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 4. Backend Dependencies Changed
-          if echo "$CHANGED" | grep -qE "^apps/backend/package-lock\.json"; then
+          if grep -qE "^apps/backend/package-lock\.json" <<< "$CHANGED"; then
             echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "backend-deps-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 5. Prisma Schema Changed
-          if echo "$CHANGED" | grep -qE "^apps/backend/prisma/"; then
+          if grep -qE "^apps/backend/prisma/" <<< "$CHANGED"; then
             echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "prisma-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
           # 6. Python AI Service Changed
-          if echo "$CHANGED" | grep -qE "^apps/ai-service/"; then
+          if grep -qE "^apps/ai-service/" <<< "$CHANGED"; then
             echo "ai-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "ai-changed=false" >> "$GITHUB_OUTPUT"

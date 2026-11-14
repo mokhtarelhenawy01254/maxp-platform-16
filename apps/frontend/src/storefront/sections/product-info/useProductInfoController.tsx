@@ -250,7 +250,9 @@ export const useProductInfoController = ({
     isKhemetInlineQuickOrderBuybox && productPageCheckoutEnabled;
 
   const forceInlineMarketplaceQuickOrder =
-    variant === 'marketplace-bazaar' && productPageCheckoutEnabled;
+    (variant === 'marketplace-bazaar' ||
+      Boolean(theme?.id && theme.id.includes('marketplace-avenue'))) &&
+    productPageCheckoutEnabled;
 
   const shouldRenderInlinePdpQuickOrder =
     forceInlineKhemetQuickOrder ||

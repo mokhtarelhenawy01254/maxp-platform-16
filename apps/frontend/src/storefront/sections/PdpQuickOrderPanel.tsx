@@ -28,6 +28,10 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
   sectionSettings,
   isOpen = true,
 }) => {
+  if (!product || !isOpen) {
+    return null;
+  }
+
   const { theme } = useStorefrontTheme();
   const isSelectionReadyForProduct = usePdpSelectionStore(
     (state) =>
@@ -334,8 +338,6 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       />
     </section>
   );
-
-  if (!isOpen) return null;
 };
 
 export default PdpQuickOrderPanel;
