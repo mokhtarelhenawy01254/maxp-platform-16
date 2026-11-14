@@ -36,6 +36,7 @@ const LEGACY_DEFAULT_TAB_LABELS = {
   teachers: { ar: 'المهندسين', en: 'Instructors' },
   'teacher-schedule': { ar: 'جدول المهندسين', en: 'Instructor Schedule' },
   'teacher-payments': { ar: 'مرتبات المهندسين', en: 'Instructor Payments' },
+  settings: { ar: 'إعدادات وتخصيص السكاشن', en: 'Sections & System Settings' },
 };
 
 const CACHE_TTL_MS = 120 * 1000;

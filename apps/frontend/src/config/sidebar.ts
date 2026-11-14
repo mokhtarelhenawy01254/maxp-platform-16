@@ -192,6 +192,7 @@ const LEGACY_EDU_LABELS: Record<string, { ar: string; en: string; replaceAr: str
     teachers: { ar: 'المهندسين', en: 'Instructors', replaceAr: 'المدرسين', replaceEn: 'Teachers' },
     'teacher-schedule': { ar: 'جدول المهندسين', en: 'Instructor Schedule', replaceAr: 'جدول المدرسين', replaceEn: 'Teachers Schedule' },
     'teacher-payments': { ar: 'مرتبات المهندسين', en: 'Instructor Payments', replaceAr: 'مرتبات المدرسين', replaceEn: 'Teachers Payments' },
+    settings: { ar: 'إعدادات وتخصيص السكاشن', en: 'Sections & System Settings', replaceAr: 'إعدادات النظام', replaceEn: 'Education Settings' },
 };
 
 const normalizeLegacyEduLabel = (tabId: string, isEn: boolean, rawValue?: string | null): string | null => {
@@ -236,7 +237,7 @@ const EDUCATION_TAB_DEFS: EducationTabDef[] = [
         itemId: 'education-settings',
         icon: Settings,
         i18nKey: 'sidebar.educationSettings',
-        defaultFallbackAr: 'إعدادات وتخصيص السكاشن',
+        defaultFallbackAr: 'إعدادات النظام',
         locked: true,
         requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'],
         requiredPermissions: ['settings.manage', 'education.settings.manage'],

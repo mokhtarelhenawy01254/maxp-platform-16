@@ -144,12 +144,12 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
     : [
         {
           label: prefersArabicCopy ? 'توصيل عادي' : 'Standard Delivery',
-          meta: prefersArabicCopy ? '2-3 أيام | من 65 ج.م' : '2-3 Days | From 65 EGP',
+          meta: prefersArabicCopy ? '2-4 أيام | من 65 ج.م' : '2-4 Days | From 65 EGP',
           note: prefersArabicCopy ? 'مندوبنا هيوصل الطلب لحد العنوان المحدد' : 'Delivered directly to your door',
         },
         {
           label: prefersArabicCopy ? 'توصيل إكسبريس (DHL)' : 'Express Delivery (DHL)',
-          meta: prefersArabicCopy ? '1-3 أيام | من 80 ج.م' : '1-3 Days | From 80 EGP',
+          meta: prefersArabicCopy ? '1-2 أيام | من 80 ج.م' : '1-2 Days | From 80 EGP',
           note: prefersArabicCopy ? 'شحن سريع مؤمن لباب البيت' : 'Fast, insured express shipping',
         },
       ];

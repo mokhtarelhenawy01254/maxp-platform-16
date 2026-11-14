@@ -20,7 +20,7 @@ describe("sidebar dynamic education-settings integration", () => {
       "sidebar.educationSessions": "الحصص",
       "sidebar.educationCalendar": "التقويم التعليمي",
       "sidebar.educationFunnel": "الإشعارات والفانل",
-      "sidebar.educationSettings": "إعدادات وتخصيص السكاشن",
+      "sidebar.educationSettings": "إعدادات النظام",
       "sidebar.educationLogs": "سجلات النظام التعليمي",
     };
     return map[key] || key;

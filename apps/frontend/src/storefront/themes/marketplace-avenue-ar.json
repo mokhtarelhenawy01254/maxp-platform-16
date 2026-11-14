@@ -1440,7 +1440,7 @@
                 "shippingText": "Orders are packed within 24 hours and delivered in 1-3 business days.",
                 "returnsTitle": "Returns & Exchanges",
                 "returnsText": "Free returns within 60 days of delivery in original product condition.",
-                "shippingWarranty": "Official Product Warranty",
+                "shippingWarranty": "Official 1 to 2 Years Warranty (Product-based)",
                 "shippingReturns": "Easy 30-Day Free Returns"
               }
             },
@@ -1458,30 +1458,30 @@
             "shippingMethods": [
               {
                 "label": "توصيل عادي",
-                "meta": "2-3 أيام",
+                "meta": "2-4 أيام",
                 "note": "شحن مجاني فوق 500 ج.م",
                 "i18n": {
                   "en": {
                     "label": "Standard Delivery",
-                    "meta": "2-3 Days",
+                    "meta": "2-4 Days",
                     "note": "Free over 500 EGP"
                   }
                 }
               },
               {
                 "label": "توصيل سريع",
-                "meta": "1-3 أيام",
+                "meta": "1-2 أيام",
                 "note": "رسوم إضافية حسب المحافظة",
                 "i18n": {
                   "en": {
                     "label": "Express Delivery",
-                    "meta": "1-3 Days",
+                    "meta": "1-2 Days",
                     "note": "Extra fee by governorate"
                   }
                 }
               }
             ],
-            "shippingWarranty": "ضمان رسمي معتمد على المنتج",
+            "shippingWarranty": "ضمان رسمي من سنة إلى سنتين معتمد على المنتج",
             "shippingReturns": "إرجاع مجاني ميسر خلال 30 يوم"
           }
         },

@@ -863,16 +863,16 @@
             "shippingMethods": [
               {
                 "label": "Standard Delivery",
-                "meta": "2-3 Days",
+                "meta": "2-4 Days",
                 "note": "Free over 500 EGP"
               },
               {
                 "label": "Express Delivery",
-                "meta": "1-3 Days",
+                "meta": "1-2 Days",
                 "note": "Extra fee by governorate"
               }
             ],
-            "shippingWarranty": "1 year official product warranty",
+            "shippingWarranty": "Official 1 to 2 Years Warranty (Product-based)",
             "shippingReturns": "Free 30-day easy returns"
           }
         },

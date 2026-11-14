@@ -4,7 +4,7 @@
   "subtitle": "Comprehensive system for managing subjects, session packages, instructors, students, and recurring schedules",
   "totalStudentsCount": "{{count}} enrolled students",
   "logs": "Education System Logs",
-  "settings": "Customize Sections & Settings",
+  "settings": "Education Settings",
   "retry": "Retry",
   "loading": "Loading educational data...",
   "errorLoading": "Failed to load educational center data",
