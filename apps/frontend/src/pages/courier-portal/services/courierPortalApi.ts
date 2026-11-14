@@ -129,9 +129,14 @@ courierClient.interceptors.request.use((reqConfig) => {
       reqConfig.headers[headerKey] = headerValue;
     }
   }
-  const token = getCourierToken();
-  if (token && !reqConfig.headers.Authorization) {
-    reqConfig.headers.Authorization = `Bearer ${token}`;
+  const isAuthRoute = reqConfig.url?.includes('courier-portal/login');
+  if (isAuthRoute) {
+    delete reqConfig.headers.Authorization;
+  } else {
+    const token = getCourierToken();
+    if (token && !reqConfig.headers.Authorization) {
+      reqConfig.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return reqConfig;
 });

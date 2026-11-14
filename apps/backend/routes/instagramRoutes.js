@@ -3,7 +3,8 @@ const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const instagramController = require('../controller/instagramController');
 
-router.use(verifyToken.authenticateToken);
+// 🛡️ Scope authentication strictly to /instagram routes to prevent shadowing siblings under /api/v1
+router.use('/instagram', verifyToken.authenticateToken);
 
 // instagram_basic
 router.get('/instagram/targets', instagramController.getTargets);
