@@ -724,16 +724,18 @@ router.post('/kashier/webhook', async (req, res) => {
       ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })()
       : (order.metadata || {});
 
+    const discountSource = existingMeta?.discountSource || DISCOUNT_SOURCE.MANUAL;
+    existingMeta.discountSource = discountSource;
+
     const released = resolveDiscountApproval({
       discountAmount: Number(order.discount || 0),
       requireDiscountApproval: existingMeta?.needsDiscountApproval === true,
-      discountSource: existingMeta?.discountSource || DISCOUNT_SOURCE.SYSTEM,
+      discountSource,
       paymentStatus: isSuccess ? 'COMPLETED' : 'PENDING',
     });
 
     const isDiscountAutoApproved = Boolean(
       isSuccess &&
-      existingMeta?.discountApprovalStatus === 'PENDING_APPROVAL' &&
       released.discountApprovalStatus === 'AUTO_APPROVED_PAID'
     );
 
@@ -753,15 +755,23 @@ router.post('/kashier/webhook', async (req, res) => {
       kashierPayment,
     });
 
+    const isTerminalStatus = TERMINAL_ORDER_STATUSES.includes(order.status);
+    const isUpgradeable = ALLOWED_CONFIRMATION_STATUSES.includes(order.status);
+
     const updateData = {
       paymentStatus,
       paymentMethod: resolvedPaymentMethod,
-      // ⚠️ الطلبات المدفوعة مسبقاً/أونلاين تدخل مرحلة المراجعة (PENDING) ولا يتم تأكيدها آلياً دون مراجعة وتأكيد يدوي
-      ...(isDiscountAutoApproved
-        ? { status: 'CONFIRMED' }
-        : (order.status === 'PENDING' ? { status: 'PENDING' } : {})),
       metadata: updatedMetadata,
     };
+
+    // الترقية لـCONFIRMED تحصل فقط لو order.status من ALLOWED_CONFIRMATION_STATUSES ومفيش كتابة status خالص للأوردرات النهائية
+    if (!isTerminalStatus && isUpgradeable) {
+      if (isDiscountAutoApproved) {
+        updateData.status = 'CONFIRMED';
+      } else if (order.status === 'PENDING') {
+        updateData.status = 'PENDING';
+      }
+    }
 
     if (isGuest) {
       await prisma.guestOrder.update({
@@ -898,5 +908,25 @@ router.post('/kashier/test-connection', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+const TERMINAL_ORDER_STATUSES = Object.freeze([
+  'CANCELLED',
+  'REFUNDED',
+  'DELIVERED',
+  'EXCHANGED',
+  'RETURNED',
+  'COMPLETED',
+  'FAILED',
+]);
+
+const ALLOWED_CONFIRMATION_STATUSES = Object.freeze([
+  'PENDING',
+  'PENDING_APPROVAL',
+  'CONFIRMED',
+  'PROCESSING',
+]);
+
+router.TERMINAL_ORDER_STATUSES = TERMINAL_ORDER_STATUSES;
+router.ALLOWED_CONFIRMATION_STATUSES = ALLOWED_CONFIRMATION_STATUSES;
 
 module.exports = router;

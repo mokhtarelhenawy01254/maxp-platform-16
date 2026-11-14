@@ -1,12 +1,14 @@
 /**
- * Report Stuck Discount Approvals (TASK 33bf4717)
- * Audits all COMPLETED payment orders from the last 60 days
- * where discount approval status is PENDING_APPROVAL.
+ * Report Stuck Discount Approvals (TASK 33bf4717 — Round 2)
+ * Audits orders from the last 60 days with discountApprovalStatus === 'PENDING_APPROVAL'
+ * for a mandatory companyId across all payment statuses.
  *
- * READ-ONLY AUDIT: Zero automatic database mutations or refunds.
+ * Provides safe CLI release for paid stuck orders without mutating order status.
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+const PAID_PAYMENT_STATUSES = new Set(['COMPLETED', 'PAID', 'CAPTURED', 'SETTLED']);
 
 function safeParseJson(raw, fallback = {}) {
   if (!raw) return fallback;
@@ -18,18 +20,24 @@ function safeParseJson(raw, fallback = {}) {
   }
 }
 
-async function reportStuckDiscountApprovals({ days = 60 } = {}) {
-  const prisma = getSharedPrismaClient();
+async function reportStuckDiscountApprovals({ companyId, days = 60 } = {}) {
+  if (!companyId) {
+    throw new Error('companyId is required');
+  }
 
+  const prisma = getSharedPrismaClient();
   const gte = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   const orders = await prisma.order.findMany({
     where: {
-      paymentStatus: 'COMPLETED',
+      companyId,
       createdAt: { gte },
     },
     select: {
+      id: true,
       orderNumber: true,
+      companyId: true,
+      status: true,
       subtotal: true,
       discount: true,
       total: true,
@@ -47,11 +55,13 @@ async function reportStuckDiscountApprovals({ days = 60 } = {}) {
 
   const headers = [
     'orderNumber',
+    'companyId',
+    'orderStatus',
+    'paymentStatus',
     'createdAt',
     'subtotal',
     'discount',
     'total',
-    'paymentStatus',
     'discountSource',
     'discountReason',
   ];
@@ -62,11 +72,13 @@ async function reportStuckDiscountApprovals({ days = 60 } = {}) {
     const meta = safeParseJson(order.metadata);
     const row = [
       `"${order.orderNumber}"`,
+      `"${order.companyId || ''}"`,
+      `"${order.status || ''}"`,
+      `"${order.paymentStatus || ''}"`,
       `"${order.createdAt ? new Date(order.createdAt).toISOString() : ''}"`,
       Number(order.subtotal || 0).toFixed(2),
       Number(order.discount || 0).toFixed(2),
       Number(order.total || 0).toFixed(2),
-      `"${order.paymentStatus || ''}"`,
       `"${meta.discountSource || 'SYSTEM'}"`,
       `"${String(meta.discountReason || '').replace(/"/g, '""')}"`,
     ];
@@ -76,15 +88,79 @@ async function reportStuckDiscountApprovals({ days = 60 } = {}) {
   return stuckOrders;
 }
 
+async function releaseStuckDiscountApproval({ companyId, orderNumber, releasedBy = 'CLI_MANUAL' } = {}) {
+  if (!orderNumber) {
+    throw new Error('orderNumber is required');
+  }
+
+  const prisma = getSharedPrismaClient();
+  const where = { orderNumber };
+  if (companyId) {
+    where.companyId = companyId;
+  }
+
+  const order = await prisma.order.findFirst({ where });
+  if (!order) {
+    throw new Error(`Order ${orderNumber} not found`);
+  }
+
+  const isPaid = PAID_PAYMENT_STATUSES.has(String(order.paymentStatus || '').toUpperCase());
+  if (!isPaid) {
+    throw new Error(
+      `Order ${orderNumber} is not paid (paymentStatus: ${order.paymentStatus || 'UNPAID'}). Cannot release discount approval for unpaid order.`
+    );
+  }
+
+  const meta = safeParseJson(order.metadata);
+  meta.discountApprovalStatus = 'AUTO_APPROVED_PAID';
+  meta.needsDiscountApproval = false;
+  meta.discountReleasedAt = new Date().toISOString();
+  meta.discountReleasedBy = releasedBy;
+  meta.discountReleaseReason = 'Manual CLI release of stuck paid discount approval';
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      metadata: JSON.stringify(meta),
+    },
+  });
+
+  console.log(`✅ [RELEASE] Successfully released discount approval for paid order ${orderNumber} to AUTO_APPROVED_PAID`);
+  return updatedOrder;
+}
+
 if (require.main === module) {
-  reportStuckDiscountApprovals()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error('❌ [REPORT-STUCK-DISCOUNTS] Error:', err);
-      process.exit(1);
-    });
+  const args = process.argv.slice(2);
+  let companyIdArg = null;
+  let releaseOrderArg = null;
+  let daysArg = 60;
+
+  for (const arg of args) {
+    if (arg.startsWith('--company-id=')) companyIdArg = arg.split('=')[1];
+    else if (arg.startsWith('--companyId=')) companyIdArg = arg.split('=')[1];
+    else if (arg.startsWith('--release=')) releaseOrderArg = arg.split('=')[1];
+    else if (arg.startsWith('--days=')) daysArg = Number(arg.split('=')[1]) || 60;
+  }
+
+  if (releaseOrderArg) {
+    releaseStuckDiscountApproval({ companyId: companyIdArg, orderNumber: releaseOrderArg })
+      .then(() => process.exit(0))
+      .catch((err) => {
+        console.error('❌ [RELEASE-STUCK-DISCOUNTS] Error:', err.message);
+        process.exit(1);
+      });
+  } else {
+    reportStuckDiscountApprovals({ companyId: companyIdArg, days: daysArg })
+      .then(() => process.exit(0))
+      .catch((err) => {
+        console.error('❌ [REPORT-STUCK-DISCOUNTS] Error:', err.message);
+        process.exit(1);
+      });
+  }
 }
 
 module.exports = {
   reportStuckDiscountApprovals,
+  releaseStuckDiscountApproval,
+  PAID_PAYMENT_STATUSES,
 };

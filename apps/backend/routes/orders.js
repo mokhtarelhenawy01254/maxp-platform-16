@@ -6826,6 +6826,22 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
 
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
+    // فحص صلاحيات اعتماد/رفض الخصم (OWNER / COMPANY_ADMIN / MANAGER أو صلاحية orders.approve_discount)
+    const userRole = String(req.user?.role || '').toUpperCase();
+    const allowedRoles = ['OWNER', 'COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'];
+    const userPerms = Array.isArray(req.user?.permissions)
+      ? req.user.permissions
+      : (Array.isArray(req.user?.userPermissions) ? req.user.userPermissions : []);
+    const hasDiscountPermission = userPerms.includes('orders.approve_discount');
+    const isAuthorized = allowedRoles.includes(userRole) || hasDiscountPermission;
+
+    if (!isAuthorized) {
+      return res.status(403).json({
+        success: false,
+        message: 'غير مصرح لك باعتماد أو رفض الخصم. يتطلب دور مدير (OWNER / COMPANY_ADMIN / MANAGER) أو صلاحية orders.approve_discount',
+      });
+    }
+
     if (!['APPROVE', 'REJECT'].includes(action)) {
       return res.status(400).json({
         success: false,

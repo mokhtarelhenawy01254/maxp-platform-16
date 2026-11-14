@@ -2284,7 +2284,10 @@ router.post('/', async (req, res) => {
           totalDiscount: discountAmount
         });
 
-        const discountSource = resolveDiscountSource({ appliedAdminDiscount: isVerifiedAdminConvert ? discountAmount : 0 });
+        const adminDiscountOnly = (isVerifiedAdminConvert || req.headers['x-admin-convert']) && req.body?.discountAmount !== undefined
+          ? Number(req.body.discountAmount) || 0
+          : undefined;
+        const discountSource = resolveDiscountSource({ appliedAdminDiscount: adminDiscountOnly });
         orderMetadata.discountSource = discountSource;
         const approval = resolveDiscountApproval({
           discountAmount,
