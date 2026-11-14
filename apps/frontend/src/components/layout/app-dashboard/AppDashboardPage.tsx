@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { ChartBarIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
-import { Sparkles, LayoutGrid } from 'lucide-react';
+import { ChartBarIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Sparkles, LayoutGrid, ChevronDown } from 'lucide-react';
 import AppCard from './AppCard';
 import AppCardSkeleton from './AppCardSkeleton';
 import { AppLaunchpadGrid } from './launchpad/AppLaunchpadGrid';
@@ -248,169 +248,107 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-8 pb-[calc(3rem+env(safe-area-inset-bottom,20px))]">
-        <div className="hidden sm:block mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t('appDashboard.title')}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t('appDashboard.subtitle')}
-          </p>
-        </div>
-
-        <div className="mb-3 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <div className="relative flex-1">
-            <label htmlFor="app-dashboard-search" className="sr-only">
-              {t('appDashboard.searchLabel')}
-            </label>
-            <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-2.5 sm:right-3' : 'left-2.5 sm:left-3'} top-1/2 -translate-y-1/2 h-3.5 sm:h-5 w-3.5 sm:w-5 text-gray-400`} />
-            <input
-              ref={searchInputRef}
-              id="app-dashboard-search"
-              name="app-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => updateDashboardParams({ q: e.target.value })}
-              placeholder={String(t('appDashboard.searchPlaceholder'))}
-              autoComplete="off"
-              className={`
-                w-full ${isRtl ? 'pr-8 pl-6' : 'pl-8 pr-6'} sm:${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-1.5 sm:py-2.5 text-sm sm:text-base
-                rounded-lg sm:rounded-xl
-                border border-gray-200 dark:border-gray-700
-                bg-white dark:bg-gray-800
-                text-gray-900 dark:text-white
-                placeholder-gray-400
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-transparent
-                transition-[border-color,box-shadow] duration-200
-              `}
-            />
-            <button
-              type="button"
-              popovertarget="shortcuts-popover"
-              popovertargetaction="toggle"
-              className={`hidden sm:inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
-              title={String(t('appDashboard.shortcuts'))}
-            >
-              <span className="text-xs">⌘</span>K
-            </button>
-
-            <div
-              id="shortcuts-popover"
-              popover="auto"
-              className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-4 text-sm min-w-[220px]"
-            >
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('appDashboard.shortcuts')}</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-gray-600 dark:text-gray-400">{t('appDashboard.shortcutFocusSearch')}</span>
-                  <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                    <span className="text-xs">⌘</span>K
-                  </kbd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-gray-600 dark:text-gray-400">{t('appDashboard.shortcutClose')}</span>
-                  <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Esc</kbd>
-                </div>
-              </div>
-            </div>
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-[calc(3rem+env(safe-area-inset-bottom,20px))]">
+        {/* Streamlined Top Control Bar: Title, Count, Category Filter, Search, and View Switcher */}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          {/* Title & Count Badge */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+              {t('appDashboard.title')}
+            </h1>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200/80 dark:bg-gray-800 text-gray-600 dark:text-gray-300 tabular-nums">
+              {filteredApps.length}
+            </span>
           </div>
-        </div>
 
-        <nav className="mb-3 sm:mb-6 flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:flex-wrap scrollbar-none" aria-label={String(t('appDashboard.categoryFilterLabel'))}>
-          <button
-            type="button"
-            aria-pressed={selectedCategory === 'all'}
-            onClick={() => updateDashboardParams({ category: 'all' })}
-            className={`
-              shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
-              ${selectedCategory === 'all'
-                ? 'bg-indigo-500 text-white shadow-sm'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-              }
-            `}
-          >
-            {t('appDashboard.category.all')}
-          </button>
+          {/* Unified Controls Toolbar: Category + Search + View Switcher */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5">
+            {/* Category Filter Dropdown */}
+            <div className="relative inline-flex items-center">
+              <select
+                value={selectedCategory}
+                onChange={(e) => updateDashboardParams({ category: e.target.value as any })}
+                className={`appearance-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg py-1.5 ${isRtl ? 'pl-8 pr-3' : 'pr-8 pl-3'} hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors h-[34px]`}
+                aria-label={String(t('appDashboard.categoryFilterLabel'))}
+              >
+                <option value="all">{t('appDashboard.category.all')}</option>
+                {favoriteApps.length > 0 && (
+                  <option value="favorites">{t('appDashboard.category.favorites')} ★</option>
+                )}
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {t(APP_CATEGORIES[cat].nameKey)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className={`absolute ${isRtl ? 'left-2.5' : 'right-2.5'} size-3.5 text-gray-400 pointer-events-none`} />
+            </div>
 
-          {favoriteApps.length > 0 && (
-            <button
-              type="button"
-              aria-pressed={selectedCategory === 'favorites'}
-              onClick={() => updateDashboardParams({ category: 'favorites' })}
-              className={`
-                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150 flex items-center gap-1 sm:gap-1.5
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400
-                ${selectedCategory === 'favorites'
-                  ? 'bg-yellow-500 text-white shadow-sm'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-                }
-              `}
+            {/* Compact Search Box */}
+            <div className="relative w-44 sm:w-56 md:w-64">
+              <MagnifyingGlassIcon aria-hidden="true" className={`absolute ${isRtl ? 'right-2.5' : 'left-2.5'} top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400`} />
+              <input
+                ref={searchInputRef}
+                id="app-dashboard-search"
+                name="app-search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => updateDashboardParams({ q: e.target.value })}
+                placeholder={String(t('appDashboard.searchPlaceholder'))}
+                autoComplete="off"
+                className={`
+                  w-full ${isRtl ? 'pr-8 pl-10' : 'pl-8 pr-10'} py-1 text-xs sm:text-sm
+                  rounded-lg
+                  border border-gray-200 dark:border-gray-700
+                  bg-white dark:bg-gray-800
+                  text-gray-900 dark:text-white
+                  placeholder-gray-400
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-transparent
+                  transition-[border-color,box-shadow] duration-200 h-[34px]
+                `}
+              />
+              <kbd
+                className={`hidden sm:inline-flex absolute ${isRtl ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600`}
+              >
+                <span className="text-[10px]">⌘</span>K
+              </kbd>
+            </div>
+
+            {/* View Mode Toggle: Launchpad vs Classic */}
+            <div
+              className="flex items-center gap-0.5 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs shrink-0 h-[34px]"
+              role="group"
+              aria-label="طريقة عرض التطبيقات"
             >
-              <StarIcon aria-hidden="true" className="h-3 sm:h-4 w-3 sm:w-4" />
-              {t('appDashboard.category.favorites')}
-            </button>
-          )}
-
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              aria-pressed={selectedCategory === cat}
-              onClick={() => updateDashboardParams({ category: cat })}
-              className={`
-                shrink-0 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-150
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
-                ${selectedCategory === cat
-                  ? 'bg-indigo-500 text-white shadow-sm'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
-                }
-              `}
-            >
-              {t(APP_CATEGORIES[cat].nameKey)}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex mb-4 items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-500 dark:text-gray-400" aria-hidden="true">
-            {filteredApps.length} {t('appDashboard.title')}
-          </p>
-
-          {/* View Mode Toggle: Launchpad (New Zero-Box) vs Classic */}
-          <div
-            className="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs shrink-0"
-            role="group"
-            aria-label="طريقة عرض التطبيقات"
-          >
-            <button
-              type="button"
-              onClick={() => handleViewModeChange('launchpad')}
-              aria-pressed={viewMode === 'launchpad'}
-              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'launchpad'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-              title="عرض اللانش باد الحديث (بدون بوكسات)"
-            >
-              <Sparkles className="size-3.5 text-indigo-500" />
-              <span>لانش باد</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleViewModeChange('classic')}
-              aria-pressed={viewMode === 'classic'}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'classic'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-bold'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-              title="العرض الكلاسيكي السابق"
-            >
-              <LayoutGrid className="size-3.5" />
-              <span>كلاسيكي</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('launchpad')}
+                aria-pressed={viewMode === 'launchpad'}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === 'launchpad'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+                title="عرض اللانش باد الحديث (بدون بوكسات)"
+              >
+                <Sparkles className="size-3.5 text-indigo-500" />
+                <span className="hidden sm:inline">لانش باد</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('classic')}
+                aria-pressed={viewMode === 'classic'}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  viewMode === 'classic'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-xs font-bold'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+                title="العرض الكلاسيكي السابق"
+              >
+                <LayoutGrid className="size-3.5" />
+                <span className="hidden sm:inline">كلاسيكي</span>
+              </button>
+            </div>
           </div>
         </div>
 
