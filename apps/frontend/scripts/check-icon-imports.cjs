@@ -40,6 +40,14 @@ function extractLocalConsts(source) {
   return locals;
 }
 
+// Types are not icon references: `icon: any` / `icon: unknown` inside an
+// interface describes the field, it does not reference a component.
+const TS_TYPE_NAMES = new Set([
+  'any', 'unknown', 'string', 'number', 'boolean', 'object', 'never', 'void',
+  'undefined', 'null', 'ReactNode', 'ReactElement', 'ComponentType',
+  'ElementType', 'LucideIcon', 'IconType',
+]);
+
 function extractIconReferences(source) {
   const refs = new Set();
   const re = /\bicon\s*:\s*([A-Za-z_$][\w$]*)/g;
@@ -47,6 +55,7 @@ function extractIconReferences(source) {
   while ((m = re.exec(source)) !== null) {
     const after = source.charAt(m.index + m[0].length);
     if (after === '.') continue;
+    if (TS_TYPE_NAMES.has(m[1])) continue;
     refs.add(m[1]);
   }
   return refs;
