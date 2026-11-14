@@ -1,0 +1,318 @@
+{
+  "id": "tpl-014-modest-porto-editorial",
+  "name": "Porto Edit — عبايات",
+  "description": "قالب عبايات بمنطق المجلة: تايبوجرافي كبير ومحاذاة يسار، هيرو هادئ، قصة خامات، مخطّط إطلالة بخطوات، وشريط يوميات. إيقاع تحريري بدل زحمة الكتالوج.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "20 30% 22%",
+      "primaryForeground": "40 45% 96%",
+      "secondary": "30 22% 89%",
+      "secondaryForeground": "20 30% 18%",
+      "accent": "18 55% 44%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 38% 97%",
+      "foreground": "20 26% 13%",
+      "muted": "35 18% 92%",
+      "mutedForeground": "25 10% 44%",
+      "border": "30 16% 85%",
+      "card": "0 0% 100%",
+      "cardForeground": "20 26% 13%",
+      "ring": "20 30% 22%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.25rem",
+      "buttonRadius": "0.25rem"
+    },
+    "productCard": {
+      "borderRadius": "0.25rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | PORTO EDIT",
+    "description": "قالب عبايات بمنطق المجلة: تايبوجرافي كبير ومحاذاة يسار، هيرو هادئ، قصة خامات، مخطّط إطلالة بخطوات، وشريط يوميات. إيقاع تحريري بدل زحمة الكتالوج."
+  },
+  "preview": {
+    "colors": [
+      "20 30% 22%",
+      "18 55% 44%",
+      "40 38% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-014-modest-porto-editorial/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "PORTO EDIT",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "العدد",
+        "to": "/collections"
+      },
+      {
+        "label": "عبايات",
+        "to": "/shop?category=abaya"
+      },
+      {
+        "label": "طرح",
+        "to": "/shop?category=scarves"
+      },
+      {
+        "label": "قصتنا",
+        "to": "/about"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "PORTO EDIT — قالب عبايات بمنطق المجلة.",
+    "copyrightText": "© 2026 PORTO EDIT",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "العدد",
+            "to": "/collections"
+          },
+          {
+            "label": "عبايات",
+            "to": "/shop?category=abaya"
+          },
+          {
+            "label": "طرح",
+            "to": "/shop?category=scarves"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "boutique-muse",
+          "settings": {
+            "eyebrow": "العدد الجديد",
+            "title": "محتشمة… وواضحة الشخصية",
+            "subtitle": "المرة دي بنحكي عن القماش: كتان، كريب، وشيفون مطفي — وبنقولك كل خامة تصلح لفصل إيه.",
+            "ctaText": "اقرأي العدد",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "eyebrow": "قصتنا",
+            "title": "الخامات: 3 قماشات وفرقهم في اللبس",
+            "subtitle": "كتان للصيف، كريب للسواريه، شيفون مطفي لليومي."
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "ملف العدد",
+            "subtitle": "أقسام مختارة بعناية"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "اختاري إطلالتك",
+            "subtitle": "3 اختيارات: المناسبة ← المقاس ← الستايل"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "آراء بصوت العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards"
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "fashion-counter-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "standard"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

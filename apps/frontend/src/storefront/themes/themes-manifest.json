@@ -53,12 +53,12 @@
     ],
     "previewImage": "/assets/themes/academy-little-coders/preview.png",
     "pageStats": {
-      "homeSections": 9,
+      "homeSections": 10,
       "shopSections": 4,
       "checkoutSections": 0,
       "pdpSections": 4,
       "cartSections": 3,
-      "totalSections": 20
+      "totalSections": 21
     }
   },
   {
@@ -1823,9 +1823,9 @@
       "homeSections": 8,
       "shopSections": 3,
       "checkoutSections": 0,
-      "pdpSections": 3,
+      "pdpSections": 5,
       "cartSections": 2,
-      "totalSections": 16
+      "totalSections": 18
     }
   },
   {
@@ -1854,9 +1854,9 @@
       "homeSections": 8,
       "shopSections": 3,
       "checkoutSections": 0,
-      "pdpSections": 3,
+      "pdpSections": 5,
       "cartSections": 2,
-      "totalSections": 16
+      "totalSections": 18
     }
   },
   {
@@ -3348,6 +3348,378 @@
     }
   },
   {
+    "id": "tpl-013-modest-warehouse-atelier",
+    "name": "Atelier Warehouse — عبايات",
+    "description": "قالب عبايات محتشمة بكثافة كتالوج عالية: هيرو كاسكيد، ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وآراء تحريرية. مبني لمنطق متجر يفتح بكتالوج كبير مش بصورة واحدة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "عبايات ومحجبات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "280 24% 24%",
+      "280 14% 90%",
+      "28 62% 52%"
+    ],
+    "previewImage": "/assets/themes/tpl-013-modest-warehouse-atelier/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-014-modest-porto-editorial",
+    "name": "Porto Edit — عبايات",
+    "description": "قالب عبايات بمنطق المجلة: تايبوجرافي كبير ومحاذاة يسار، هيرو هادئ، قصة خامات، مخطّط إطلالة بخطوات، وشريط يوميات. إيقاع تحريري بدل زحمة الكتالوج.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "عبايات ومحجبات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "20 30% 22%",
+      "30 22% 89%",
+      "18 55% 44%"
+    ],
+    "previewImage": "/assets/themes/tpl-014-modest-porto-editorial/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-015-modest-souq-cod",
+    "name": "Souq Modest — عبايات",
+    "description": "قالب عبايات موبايل-أولًا بمنطق السوق المحلي: شريط أسود صريح، هيرو ناعم، فئات سريعة، باقات كمية، وآراء بشارات ثقة. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "عبايات ومحجبات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "345 45% 32%",
+      "345 30% 92%",
+      "38 70% 50%"
+    ],
+    "previewImage": "/assets/themes/tpl-015-modest-souq-cod/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-016-modest-veil-story",
+    "name": "Veil Story — عبايات",
+    "description": "قالب عبايات أصلي بحكاية: هيرو طبقات بارالاكس، مخطّط إطلالة أقراص، ريل مناسبات، شريط «شوفي اللوك كامل»، وآراء بنوتات مختلفة. هوية بصرية خاصة مش مبنية على قالب منافس.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "modest-fashion",
+        "label": "عبايات ومحجبات"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "255 30% 30%",
+      "255 18% 90%",
+      "15 65% 58%"
+    ],
+    "previewImage": "/assets/themes/tpl-016-modest-veil-story/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-017-shoes-impulse-grid",
+    "name": "Impulse Grid — أحذية",
+    "description": "قالب أحذية بكثافة شبكة: هيرو رَنواي جريء، فئات سريعة، شبكة منتجات كثيفة، بنتو عروض يومية، وآراء مختصرة. مبني لكتالوج أحذية كبير بيتغيّر كل أسبوع.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "12 78% 46%",
+      "12 20% 90%",
+      "205 85% 45%"
+    ],
+    "previewImage": "/assets/themes/tpl-017-shoes-impulse-grid/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-018-shoes-kadence-clean",
+    "name": "Kadence Clean — أحذية",
+    "description": "قالب أحذية نظيف بمساحات بيضاء: هيرو بانر هادي، قصة تحريرية، أعمدة فئات، وشبكة مرتبة بلا زحمة. مناسب لمتجر بيبيع 30 موديل مختارين مش ألف.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "170 45% 26%",
+      "170 18% 90%",
+      "25 60% 50%"
+    ],
+    "previewImage": "/assets/themes/tpl-018-shoes-kadence-clean/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-019-shoes-cairo-cod",
+    "name": "Cairo Stride — أحذية",
+    "description": "قالب أحذية بمنطق الدفع عند الاستلام: هيرو أمر مباشر، شريط عروض أحمر، فئات أقراص، شبكة كثيفة، باقات توفير، وشريط توصيل صريح (استلام/شحن/استبدال).",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "350 70% 42%",
+      "350 25% 91%",
+      "40 90% 52%"
+    ],
+    "previewImage": "/assets/themes/tpl-019-shoes-cairo-cod/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-020-shoes-sole-atelier",
+    "name": "Sole Atelier — أحذية",
+    "description": "قالب أحذية أصلي بليل داكن: هيرو مسرح بارز، مخطّط إطلالة، ريل فئات دوائر، شريط «اللوك كامل»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "womens-shoes",
+        "label": "أحذية حريمي"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "215 35% 18%",
+      "215 20% 26%",
+      "38 70% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-020-shoes-sole-atelier/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-021-bags-motion-rail",
+    "name": "Motion Rail — شنط",
+    "description": "قالب شنط بروح الحركة: هيرو بانر عريض، شريط عروض، فئات بعمود، شبكة منتجات، حملة بنتو، وآراء قياسية. مناسب لمتجر بيغيّر الحملة كل أسبوعين.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "bags",
+        "label": "شنط وحقائب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "25 55% 40%",
+      "25 25% 90%",
+      "200 45% 40%"
+    ],
+    "previewImage": "/assets/themes/tpl-021-bags-motion-rail/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-022-bags-blocksy-mosaic",
+    "name": "Blocksy Mosaic — شنط",
+    "description": "قالب شنط موزاييك: هيرو بانل مقسوم، بنتو فئات، فئات كتالوج مربعات، قصة تحريرية، وشريط يوميات. مبني لمنطق بلوكات مرن يعرض مقاسات وألوان بسرعة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "bags",
+        "label": "شنط وحقائب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "200 30% 28%",
+      "200 16% 90%",
+      "340 45% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-022-bags-blocksy-mosaic/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-023-bags-souq-bazaar",
+    "name": "Souq Bazaar — شنط",
+    "description": "قالب شنط بازار: هيرو سلايدر فئات، دوائر فئات، باقات توفير، شريط أسود صريح، وآراء بشارات ثقة. مبني لكتالوج كبير وأسعار واضحة ودفع عند الاستلام.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "bags",
+        "label": "شنط وحقائب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "285 45% 38%",
+      "285 25% 91%",
+      "45 80% 52%"
+    ],
+    "previewImage": "/assets/themes/tpl-023-bags-souq-bazaar/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-024-bags-maison-story",
+    "name": "Maison Story — شنط",
+    "description": "قالب شنط أصلي بمنطق البيت/الأتيليه: هيرو دروب بورد، قصة تحريرية، ريل مناسبات، «شوفي اللوك»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+    "category": "fashion",
+    "categoryMeta": {
+      "primary": {
+        "id": "fashion",
+        "label": "أزياء"
+      },
+      "secondary": {
+        "id": "bags",
+        "label": "شنط وحقائب"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "30 20% 24%",
+      "30 14% 88%",
+      "355 50% 45%"
+    ],
+    "previewImage": "/assets/themes/tpl-024-bags-maison-story/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
     "id": "tpl-025-cinematic-fragrance-perfume",
     "name": "Noir Atelier — عطور",
     "description": "قالب عطور سينمائي غامق: خلفية فحمية سوداء وذهبي شامبانيا، هيرو مسرح بارز بقطعة واحدة، ريال فئات بعمود معرض، قصة عطر تحريرية توضّح النوتات، وآراء مكتوبة بأسلوب مجلة. زوايا حادة (2px) وطباعة سيريف كبيرة تخلّي الزجاجة هي البطل.",
@@ -3462,6 +3834,254 @@
       "40 48% 46%"
     ],
     "previewImage": "/assets/themes/tpl-028-ritual-apothecary-perfume/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-029-beauty-expanse-editorial",
+    "name": "Expanse Beauty — مكياج",
+    "description": "قالب مكياج تحريري: هيرو فل-بليد، فئات تحريرية بأعمدة، قصة تحريرية عن الدرجات، آراء بأسلوب مجلة، وشريط نشرة هادي. إيقاع مجلة جمال مش صفحة عروض.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "makeup",
+        "label": "مكياج"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "320 22% 26%",
+      "320 14% 90%",
+      "15 65% 60%"
+    ],
+    "previewImage": "/assets/themes/tpl-029-beauty-expanse-editorial/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-030-beauty-neve-light",
+    "name": "Neve Light — مكياج",
+    "description": "قالب مكياج خفيف موبايل-أولًا: هيرو ناعم، فئات أقراص، شبكة منتجات، مخطّط اختيار سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "makeup",
+        "label": "مكياج"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "340 35% 42%",
+      "340 18% 93%",
+      "45 75% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-030-beauty-neve-light/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-031-beauty-ritual-cod",
+    "name": "Ritual COD — مكياج",
+    "description": "قالب مكياج بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "makeup",
+        "label": "مكياج"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 30% 30%",
+      "150 18% 90%",
+      "22 65% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-031-beauty-ritual-cod/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-032-beauty-glow-lab",
+    "name": "Glow Lab — مكياج",
+    "description": "قالب مكياج أصلي بمعمل ألوان: هيرو بانر رشيق، موزاييك صور، ريل مناسبات، قصة تحريرية عن المكوّنات، وآراء بصوت العملاء. هوية بصرية خاصة.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "makeup",
+        "label": "مكياج"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "255 25% 32%",
+      "255 16% 91%",
+      "330 55% 60%"
+    ],
+    "previewImage": "/assets/themes/tpl-032-beauty-glow-lab/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-033-skincare-derme-editorial",
+    "name": "Dermé — عناية بالبشرة",
+    "description": "قالب عناية بالبشرة بمنطق تحريري: هيرو نباتي فل-بليد، فئات حسب نوع البشرة، شبكة منتجات، قصة عن المكوّنات الفعّالة، آراء بأسلوب مجلة، وشريط نشرة هادي. مبني لمتجر بيبيع بالعلم مش بالوعود.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "skincare",
+        "label": "عناية بالبشرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "150 22% 24%",
+      "150 14% 91%",
+      "35 45% 62%"
+    ],
+    "previewImage": "/assets/themes/tpl-033-skincare-derme-editorial/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-034-skincare-pure-neve",
+    "name": "Pure Neve — عناية بالبشرة",
+    "description": "قالب عناية بالبشرة نضيف موبايل-أولًا: هيرو ناعم بصورة واحدة، فئات أقراص، شبكة منتجات، مخطّط روتين سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "skincare",
+        "label": "عناية بالبشرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "205 30% 26%",
+      "200 24% 92%",
+      "188 40% 55%"
+    ],
+    "previewImage": "/assets/themes/tpl-034-skincare-pure-neve/preview.png",
+    "pageStats": {
+      "homeSections": 7,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 21
+    }
+  },
+  {
+    "id": "tpl-035-skincare-ritual-cod",
+    "name": "Ritual Skin — عناية بالبشرة",
+    "description": "قالب عناية بالبشرة بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "skincare",
+        "label": "عناية بالبشرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "24 45% 30%",
+      "35 22% 91%",
+      "18 55% 58%"
+    ],
+    "previewImage": "/assets/themes/tpl-035-skincare-ritual-cod/preview.png",
+    "pageStats": {
+      "homeSections": 8,
+      "shopSections": 5,
+      "checkoutSections": 0,
+      "pdpSections": 7,
+      "cartSections": 2,
+      "totalSections": 22
+    }
+  },
+  {
+    "id": "tpl-036-skincare-atelier-origin",
+    "name": "Skin Atelier — عناية بالبشرة",
+    "description": "قالب عناية بالبشرة أصلي بمنطق الأتيليه: هيرو بانر رشيق، موزاييك صور، ريل فئات مناسبات، قصة تحريرية عن تركيبة السيرم، وآراء بصوت العميلات. هوية بصرية خاصة.",
+    "category": "beauty",
+    "categoryMeta": {
+      "primary": {
+        "id": "beauty",
+        "label": "عطور وتجميل"
+      },
+      "secondary": {
+        "id": "skincare",
+        "label": "عناية بالبشرة"
+      }
+    },
+    "direction": "rtl",
+    "previewColors": [
+      "285 25% 26%",
+      "285 16% 91%",
+      "330 35% 60%"
+    ],
+    "previewImage": "/assets/themes/tpl-036-skincare-atelier-origin/preview.png",
     "pageStats": {
       "homeSections": 8,
       "shopSections": 5,

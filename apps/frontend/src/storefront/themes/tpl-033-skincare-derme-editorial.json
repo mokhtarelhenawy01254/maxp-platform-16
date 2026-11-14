@@ -1,0 +1,314 @@
+{
+  "id": "tpl-033-skincare-derme-editorial",
+  "name": "Dermé — عناية بالبشرة",
+  "description": "قالب عناية بالبشرة بمنطق تحريري: هيرو نباتي فل-بليد، فئات حسب نوع البشرة، شبكة منتجات، قصة عن المكوّنات الفعّالة، آراء بأسلوب مجلة، وشريط نشرة هادي. مبني لمتجر بيبيع بالعلم مش بالوعود.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "150 22% 24%",
+      "primaryForeground": "60 40% 97%",
+      "secondary": "150 14% 91%",
+      "secondaryForeground": "150 24% 20%",
+      "accent": "35 45% 62%",
+      "accentForeground": "30 40% 12%",
+      "background": "60 30% 98%",
+      "foreground": "160 18% 13%",
+      "muted": "150 12% 93%",
+      "mutedForeground": "150 8% 42%",
+      "border": "150 12% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "160 18% 13%",
+      "ring": "150 22% 24%"
+    },
+    "typography": {
+      "headingFont": "Cormorant Garamond, Georgia, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.25rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.4rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | DERMÉ",
+    "description": "قالب عناية بالبشرة بمنطق تحريري: هيرو نباتي فل-بليد، فئات حسب نوع البشرة، شبكة منتجات، قصة عن المكوّنات الفعّالة، آراء بأسلوب مجلة، وشريط نشرة هادي. مبني لمتجر بيبيع بالعلم مش بالوعود."
+  },
+  "preview": {
+    "colors": [
+      "150 22% 24%",
+      "35 45% 62%",
+      "60 30% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-033-skincare-derme-editorial/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "DERMÉ",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن مجاني فوق 750 ج.م · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "المكوّنات",
+        "to": "/collections"
+      },
+      {
+        "label": "بشرة جافة",
+        "to": "/shop?category=dry"
+      },
+      {
+        "label": "بشرة دهنية",
+        "to": "/shop?category=oily"
+      },
+      {
+        "label": "سيرومات",
+        "to": "/shop?category=serum"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "DERMÉ — عناية بالبشرة بتركيز فعّال ومكوّنات مكتوبة.",
+    "copyrightText": "© 2026 DERMÉ",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الكل",
+            "to": "/collections"
+          },
+          {
+            "label": "سيرومات",
+            "to": "/shop?category=serum"
+          },
+          {
+            "label": "مرطّبات",
+            "to": "/shop?category=moisturizer"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "boutique-muse",
+          "settings": {
+            "eyebrow": "DERMÉ · روتين علمي",
+            "title": "بشرة أهدى بخطوات مدروسة",
+            "subtitle": "تركيبات بتركيز فعّال ومكوّنات مكتوبة بوضوح — بدون وعود فارغة.",
+            "ctaText": "تسوّقي الروتين",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "اعرفي نوع بشرتك",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "title": "اختاري حسب نوع بشرتك",
+            "subtitle": "دهنية · جافة · مختلطة · حساسة"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الأكثر مبيعًا"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "eyebrow": "المكوّنات",
+            "title": "كل مكوّن بنسبة مكتوبة",
+            "subtitle": "نياسيناميد وهيالورونيك وزنك بأرقام واضحة على العلبة، مش شعارات."
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء بعد 4 أسابيع"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "دليلك للروتين",
+            "subtitle": "رسالة كل أسبوعين: خطوات مرتبة ونصائح من غير إعلانات."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "soft-sort-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "utility-rail"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

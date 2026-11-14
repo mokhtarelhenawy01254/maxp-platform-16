@@ -1,0 +1,309 @@
+{
+  "id": "tpl-017-shoes-impulse-grid",
+  "name": "Impulse Grid — أحذية",
+  "description": "قالب أحذية بكثافة شبكة: هيرو رَنواي جريء، فئات سريعة، شبكة منتجات كثيفة، بنتو عروض يومية، وآراء مختصرة. مبني لكتالوج أحذية كبير بيتغيّر كل أسبوع.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "12 78% 46%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "12 20% 90%",
+      "secondaryForeground": "12 60% 20%",
+      "accent": "205 85% 45%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "220 18% 12%",
+      "muted": "220 12% 95%",
+      "mutedForeground": "220 8% 44%",
+      "border": "220 12% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 18% 12%",
+      "ring": "12 78% 46%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Inter, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | IMPULSE GRID",
+    "description": "قالب أحذية بكثافة شبكة: هيرو رَنواي جريء، فئات سريعة، شبكة منتجات كثيفة، بنتو عروض يومية، وآراء مختصرة. مبني لكتالوج أحذية كبير بيتغيّر كل أسبوع."
+  },
+  "preview": {
+    "colors": [
+      "12 78% 46%",
+      "205 85% 45%",
+      "0 0% 100%"
+    ],
+    "imageUrl": "/assets/themes/tpl-017-shoes-impulse-grid/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "IMPULSE GRID",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "سنيكرز",
+        "to": "/shop?category=sneakers"
+      },
+      {
+        "label": "صنادل",
+        "to": "/shop?category=sandals"
+      },
+      {
+        "label": "بوت",
+        "to": "/shop?category=boots"
+      },
+      {
+        "label": "عروض",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "IMPULSE GRID — قالب أحذية بكثافة شبكة.",
+    "copyrightText": "© 2026 IMPULSE GRID",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "سنيكرز",
+            "to": "/shop?category=sneakers"
+          },
+          {
+            "label": "صنادل",
+            "to": "/shop?category=sandals"
+          },
+          {
+            "label": "بوت",
+            "to": "/shop?category=boots"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "runway-grid",
+          "settings": {
+            "eyebrow": "نزلة الأسبوع",
+            "title": "14 موديل جديد — مقاسات 36 لـ 42",
+            "subtitle": "سنيكرز، صنادل، وبوت خفيف. كل موديل بصورة على رجل حقيقية مش على ستاند.",
+            "ctaText": "اتفرجي على الشبكة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "أقسام سريعة",
+            "subtitle": "سنيكرز · صنادل · بوت · رياضة"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "daily-picks"
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات سريعة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "نزلة كل أسبوع",
+            "subtitle": "اعرفي الجديد قبل ما يخلص."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "soft-sort-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "atelier-editorial-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "utility-rail"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "market-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

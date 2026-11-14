@@ -1,0 +1,313 @@
+{
+  "id": "tpl-021-bags-motion-rail",
+  "name": "Motion Rail — شنط",
+  "description": "قالب شنط بروح الحركة: هيرو بانر عريض، شريط عروض، فئات بعمود، شبكة منتجات، حملة بنتو، وآراء قياسية. مناسب لمتجر بيغيّر الحملة كل أسبوعين.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "25 55% 40%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "25 25% 90%",
+      "secondaryForeground": "25 55% 20%",
+      "accent": "200 45% 40%",
+      "accentForeground": "0 0% 100%",
+      "background": "35 40% 97%",
+      "foreground": "25 25% 14%",
+      "muted": "30 18% 93%",
+      "mutedForeground": "25 10% 44%",
+      "border": "30 18% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "25 25% 14%",
+      "ring": "25 55% 40%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.6rem",
+      "buttonRadius": "0.6rem"
+    },
+    "productCard": {
+      "borderRadius": "0.6rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | MOTION RAIL",
+    "description": "قالب شنط بروح الحركة: هيرو بانر عريض، شريط عروض، فئات بعمود، شبكة منتجات، حملة بنتو، وآراء قياسية. مناسب لمتجر بيغيّر الحملة كل أسبوعين."
+  },
+  "preview": {
+    "colors": [
+      "25 55% 40%",
+      "200 45% 40%",
+      "35 40% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-021-bags-motion-rail/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "MOTION RAIL",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "شنط",
+        "to": "/shop?category=bags"
+      },
+      {
+        "label": "كروس",
+        "to": "/shop?category=crossbody"
+      },
+      {
+        "label": "توت",
+        "to": "/shop?category=tote"
+      },
+      {
+        "label": "كلاتش",
+        "to": "/shop?category=clutch"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "MOTION RAIL — قالب شنط بروح الحركة.",
+    "copyrightText": "© 2026 MOTION RAIL",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "شنط",
+            "to": "/shop?category=bags"
+          },
+          {
+            "label": "كروس",
+            "to": "/shop?category=crossbody"
+          },
+          {
+            "label": "توت",
+            "to": "/shop?category=tote"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "حملة الخريف",
+            "title": "شنطة واحدة… 3 استخدامات",
+            "subtitle": "كروس للنهار، توت للشغل، وكلاتش للمساء — بنقسّمها في الكتالوج بالاستخدام مش بالشكل.",
+            "ctaText": "اتفرجي على الحملة",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "pastel-category-lane",
+          "settings": {
+            "title": "بالاستخدام",
+            "subtitle": "شغل · نهار · مساء"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "standard"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "campaign-stack"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard",
+          "settings": {
+            "title": "آراء العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "حملة الخريف",
+            "subtitle": "خصومات على مجموعة الجلد."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "boutique-discovery"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "boutique-portrait-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "boutique-ledger"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

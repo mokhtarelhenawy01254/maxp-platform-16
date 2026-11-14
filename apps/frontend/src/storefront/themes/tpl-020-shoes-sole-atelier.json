@@ -1,0 +1,320 @@
+{
+  "id": "tpl-020-shoes-sole-atelier",
+  "name": "Sole Atelier — أحذية",
+  "description": "قالب أحذية أصلي بليل داكن: هيرو مسرح بارز، مخطّط إطلالة، ريل فئات دوائر، شريط «اللوك كامل»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "215 35% 18%",
+      "primaryForeground": "45 30% 94%",
+      "secondary": "215 20% 26%",
+      "secondaryForeground": "45 30% 96%",
+      "accent": "38 70% 55%",
+      "accentForeground": "215 40% 12%",
+      "background": "220 30% 10%",
+      "foreground": "40 30% 94%",
+      "muted": "220 18% 18%",
+      "mutedForeground": "220 10% 68%",
+      "border": "220 16% 24%",
+      "card": "220 24% 14%",
+      "cardForeground": "40 30% 94%",
+      "ring": "38 70% 55%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Teko, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.35rem",
+      "buttonRadius": "0.35rem"
+    },
+    "productCard": {
+      "borderRadius": "0.35rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | SOLE ATELIER",
+    "description": "قالب أحذية أصلي بليل داكن: هيرو مسرح بارز، مخطّط إطلالة، ريل فئات دوائر، شريط «اللوك كامل»، وآراء بصوت العملاء. هوية بصرية خاصة."
+  },
+  "preview": {
+    "colors": [
+      "215 35% 18%",
+      "38 70% 55%",
+      "220 30% 10%"
+    ],
+    "imageUrl": "/assets/themes/tpl-020-shoes-sole-atelier/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "SOLE ATELIER",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "المعرض",
+        "to": "/collections"
+      },
+      {
+        "label": "سنيكرز",
+        "to": "/shop?category=sneakers"
+      },
+      {
+        "label": "كلاسيك",
+        "to": "/shop?category=classic"
+      },
+      {
+        "label": "اللوك",
+        "to": "/shop"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "SOLE ATELIER — قالب أحذية أصلي بليل داكن.",
+    "copyrightText": "© 2026 SOLE ATELIER",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "المعرض",
+            "to": "/collections"
+          },
+          {
+            "label": "سنيكرز",
+            "to": "/shop?category=sneakers"
+          },
+          {
+            "label": "كلاسيك",
+            "to": "/shop?category=classic"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "cinematic-plinth",
+          "settings": {
+            "eyebrow": "المعرض",
+            "title": "الحذاء هو البطل",
+            "subtitle": "قطع محدودة على ستاند إضاءة — كل موديل بعدد قطع معروف ومكتوب.",
+            "ctaText": "ادخلي المعرض",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "ركّبي اللوك",
+            "subtitle": "3 اختيارات: المناسبة ← المقاس ← الستايل"
+          }
+        },
+        {
+          "type": "shop-the-look",
+          "variant": "full",
+          "settings": {
+            "title": "شوفي اللوك كامل"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "floating-bubbles",
+          "settings": {
+            "title": "المعرض",
+            "subtitle": "قطع محدودة"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "صوت العملاء"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "قطعة كل خميس",
+            "subtitle": "عدد محدود — بنعلن العدد قبل البيع."
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "fit-finder"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "fashion-direct-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "nature-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

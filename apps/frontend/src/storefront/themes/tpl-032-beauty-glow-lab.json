@@ -1,0 +1,318 @@
+{
+  "id": "tpl-032-beauty-glow-lab",
+  "name": "Glow Lab — مكياج",
+  "description": "قالب مكياج أصلي بمعمل ألوان: هيرو بانر رشيق، موزاييك صور، ريل مناسبات، قصة تحريرية عن المكوّنات، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "255 25% 32%",
+      "primaryForeground": "45 40% 97%",
+      "secondary": "255 16% 91%",
+      "secondaryForeground": "255 28% 22%",
+      "accent": "330 55% 60%",
+      "accentForeground": "0 0% 100%",
+      "background": "250 25% 98%",
+      "foreground": "255 22% 14%",
+      "muted": "255 12% 93%",
+      "mutedForeground": "255 8% 44%",
+      "border": "255 14% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "255 22% 14%",
+      "ring": "255 25% 32%"
+    },
+    "typography": {
+      "headingFont": "Rubik, Cairo, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | GLOW LAB",
+    "description": "قالب مكياج أصلي بمعمل ألوان: هيرو بانر رشيق، موزاييك صور، ريل مناسبات، قصة تحريرية عن المكوّنات، وآراء بصوت العملاء. هوية بصرية خاصة."
+  },
+  "preview": {
+    "colors": [
+      "255 25% 32%",
+      "330 55% 60%",
+      "250 25% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-032-beauty-glow-lab/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "GLOW LAB",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "المعمل",
+        "to": "/collections"
+      },
+      {
+        "label": "شفايف",
+        "to": "/shop?category=lips"
+      },
+      {
+        "label": "بشرة",
+        "to": "/shop?category=skin"
+      },
+      {
+        "label": "عيون",
+        "to": "/shop?category=eyes"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "GLOW LAB — قالب مكياج أصلي بمعمل ألوان.",
+    "copyrightText": "© 2026 GLOW LAB",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "المعمل",
+            "to": "/collections"
+          },
+          {
+            "label": "شفايف",
+            "to": "/shop?category=lips"
+          },
+          {
+            "label": "بشرة",
+            "to": "/shop?category=skin"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "graceful-banner",
+          "settings": {
+            "eyebrow": "معمل الألوان",
+            "title": "بنخلط الدرجة قبل ما نبيعها",
+            "subtitle": "كل درجة بنجرّبها على 5 درجات بشرة، واللي مش ثابتة بنشيلها من الكتالوج.",
+            "ctaText": "دخلي المعمل",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "masonry"
+        },
+        {
+          "type": "featured-collections",
+          "variant": "occasion-ribbon",
+          "settings": {
+            "title": "حسب المناسبة",
+            "subtitle": "يومي · سهرة · فرح"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "eyebrow": "قصتنا",
+            "title": "بنختبر قبل ما نعرض",
+            "subtitle": "5 درجات بشرة، 3 أنواع إضاءة، وقرار واحد."
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "صوت العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "كل خميس",
+            "subtitle": "درجة جديدة وقصة اختبارها."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "fit-finder"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "fashion-direct-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "nature-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

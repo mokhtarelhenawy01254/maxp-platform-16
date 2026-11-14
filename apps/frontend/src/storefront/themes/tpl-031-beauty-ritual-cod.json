@@ -1,0 +1,317 @@
+{
+  "id": "tpl-031-beauty-ritual-cod",
+  "name": "Ritual COD — مكياج",
+  "description": "قالب مكياج بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "150 30% 30%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "150 18% 90%",
+      "secondaryForeground": "150 32% 20%",
+      "accent": "22 65% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "60 30% 98%",
+      "foreground": "150 20% 14%",
+      "muted": "150 12% 93%",
+      "mutedForeground": "150 8% 44%",
+      "border": "150 14% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "150 20% 14%",
+      "ring": "150 30% 30%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Noto Kufi Arabic, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.15rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.15rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | RITUAL COD",
+    "description": "قالب مكياج بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر."
+  },
+  "preview": {
+    "colors": [
+      "150 30% 30%",
+      "22 65% 55%",
+      "60 30% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-031-beauty-ritual-cod/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "RITUAL COD",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الروتين",
+        "to": "/collections"
+      },
+      {
+        "label": "صبح",
+        "to": "/shop?category=morning"
+      },
+      {
+        "label": "ليل",
+        "to": "/shop?category=night"
+      },
+      {
+        "label": "باقات",
+        "to": "/shop?category=bundles"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "RITUAL COD — قالب مكياج بمنطق الروتين والدفع عند الاستلام.",
+    "copyrightText": "© 2026 RITUAL COD",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الروتين",
+            "to": "/collections"
+          },
+          {
+            "label": "صبح",
+            "to": "/shop?category=morning"
+          },
+          {
+            "label": "ليل",
+            "to": "/shop?category=night"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "dawn-image-banner",
+          "settings": {
+            "eyebrow": "روتين 2026",
+            "title": "روتينك مش رفّ منتجات",
+            "subtitle": "خطوتين الصبح وتلاتة بالليل — وبنقولك إيه اللي ينفع مع إيه.",
+            "ctaText": "اعملي روتينك",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1552046122-03184de85e08?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1552046122-03184de85e08?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "اعملي روتينك",
+            "subtitle": "3 اختيارات: المناسبة ← المقاس ← الستايل"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "floating-bubbles",
+          "settings": {
+            "title": "خطوات الروتين",
+            "subtitle": "صبح · ليل · باقات"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "scent-notes",
+          "settings": {
+            "title": "تجارب حقيقية"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "روتينك على واتساب",
+            "subtitle": "بنبعتلك خطواتك حسب نوع بشرتك."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "graceful-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "atelier-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

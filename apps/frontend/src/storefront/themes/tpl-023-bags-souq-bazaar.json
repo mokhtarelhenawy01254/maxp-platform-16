@@ -1,0 +1,313 @@
+{
+  "id": "tpl-023-bags-souq-bazaar",
+  "name": "Souq Bazaar — شنط",
+  "description": "قالب شنط بازار: هيرو سلايدر فئات، دوائر فئات، باقات توفير، شريط أسود صريح، وآراء بشارات ثقة. مبني لكتالوج كبير وأسعار واضحة ودفع عند الاستلام.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "285 45% 38%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "285 25% 91%",
+      "secondaryForeground": "285 45% 24%",
+      "accent": "45 80% 52%",
+      "accentForeground": "285 40% 14%",
+      "background": "0 0% 100%",
+      "foreground": "285 20% 15%",
+      "muted": "285 14% 94%",
+      "mutedForeground": "285 8% 45%",
+      "border": "285 18% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "285 20% 15%",
+      "ring": "285 45% 38%"
+    },
+    "typography": {
+      "headingFont": "Tajawal, sans-serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.2rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.2rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | SOUQ BAZAAR",
+    "description": "قالب شنط بازار: هيرو سلايدر فئات، دوائر فئات، باقات توفير، شريط أسود صريح، وآراء بشارات ثقة. مبني لكتالوج كبير وأسعار واضحة ودفع عند الاستلام."
+  },
+  "preview": {
+    "colors": [
+      "285 45% 38%",
+      "45 80% 52%",
+      "0 0% 100%"
+    ],
+    "imageUrl": "/assets/themes/tpl-023-bags-souq-bazaar/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "SOUQ BAZAAR",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "أقل من 300",
+        "to": "/shop?category=under300"
+      },
+      {
+        "label": "300-600",
+        "to": "/shop?category=mid"
+      },
+      {
+        "label": "فوق 600",
+        "to": "/shop?category=premium"
+      },
+      {
+        "label": "باقات",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "SOUQ BAZAAR — قالب شنط بازار.",
+    "copyrightText": "© 2026 SOUQ BAZAAR",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "أقل من 300",
+            "to": "/shop?category=under300"
+          },
+          {
+            "label": "300-600",
+            "to": "/shop?category=mid"
+          },
+          {
+            "label": "فوق 600",
+            "to": "/shop?category=premium"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "marketplace-slider",
+          "settings": {
+            "eyebrow": "بازار الشنط",
+            "title": "من 199 جنيه… لحد 899",
+            "subtitle": "بنقسّم البازار بالسعر مش بالماركة: كل قسم فيه 8-12 موديل بأسعار واضحة.",
+            "ctaText": "دخلي البازار",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "easyorders-circles",
+          "settings": {
+            "title": "أقسام بالسعر",
+            "subtitle": "تحت 300 · 300-600 · فوق 600"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "easyorders-black-bar"
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "command-proof",
+          "settings": {
+            "title": "تجارب العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "عروض البازار",
+            "subtitle": "خصم على باقات 2 و3 قطع."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "specs-grid"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

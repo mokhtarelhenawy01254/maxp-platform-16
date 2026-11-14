@@ -1,0 +1,313 @@
+{
+  "id": "tpl-019-shoes-cairo-cod",
+  "name": "Cairo Stride — أحذية",
+  "description": "قالب أحذية بمنطق الدفع عند الاستلام: هيرو أمر مباشر، شريط عروض أحمر، فئات أقراص، شبكة كثيفة، باقات توفير، وشريط توصيل صريح (استلام/شحن/استبدال).",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "350 70% 42%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "350 25% 91%",
+      "secondaryForeground": "350 60% 22%",
+      "accent": "40 90% 52%",
+      "accentForeground": "20 40% 12%",
+      "background": "0 0% 100%",
+      "foreground": "350 15% 14%",
+      "muted": "350 14% 94%",
+      "mutedForeground": "350 8% 44%",
+      "border": "350 16% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "350 15% 14%",
+      "ring": "350 70% 42%"
+    },
+    "typography": {
+      "headingFont": "Almarai, sans-serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | CAIRO STRIDE",
+    "description": "قالب أحذية بمنطق الدفع عند الاستلام: هيرو أمر مباشر، شريط عروض أحمر، فئات أقراص، شبكة كثيفة، باقات توفير، وشريط توصيل صريح (استلام/شحن/استبدال)."
+  },
+  "preview": {
+    "colors": [
+      "350 70% 42%",
+      "40 90% 52%",
+      "0 0% 100%"
+    ],
+    "imageUrl": "/assets/themes/tpl-019-shoes-cairo-cod/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "CAIRO STRIDE",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "حريمي",
+        "to": "/shop?category=women"
+      },
+      {
+        "label": "رجالي",
+        "to": "/shop?category=men"
+      },
+      {
+        "label": "عروض",
+        "to": "/collections"
+      },
+      {
+        "label": "المقاسات",
+        "to": "/shop"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "CAIRO STRIDE — قالب أحذية بمنطق الدفع عند الاستلام.",
+    "copyrightText": "© 2026 CAIRO STRIDE",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "حريمي",
+            "to": "/shop?category=women"
+          },
+          {
+            "label": "رجالي",
+            "to": "/shop?category=men"
+          },
+          {
+            "label": "عروض",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "retail-command",
+          "settings": {
+            "eyebrow": "توصيل 2-4 يوم",
+            "title": "مقاسك مضمون أو استبدال مجاني",
+            "subtitle": "لو المقاس مش مظبوط، بنستبدله من غير أي مصاريف — والدفع عند الاستلام.",
+            "ctaText": "اطلبي مقاسك",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal"
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "title": "اختاري بسرعة",
+            "subtitle": "الأكثر طلبًا"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "bundle-matrix"
+        },
+        {
+          "type": "reviews",
+          "variant": "command-proof",
+          "settings": {
+            "title": "تجارب حقيقية"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "كود 10% لأول طلب",
+            "subtitle": "على واتساب — من غير مكالمات."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "graceful-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "atelier-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

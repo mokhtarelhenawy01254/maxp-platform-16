@@ -1,0 +1,321 @@
+{
+  "id": "tpl-024-bags-maison-story",
+  "name": "Maison Story — شنط",
+  "description": "قالب شنط أصلي بمنطق البيت/الأتيليه: هيرو دروب بورد، قصة تحريرية، ريل مناسبات، «شوفي اللوك»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "30 20% 24%",
+      "primaryForeground": "40 40% 96%",
+      "secondary": "30 14% 88%",
+      "secondaryForeground": "30 24% 18%",
+      "accent": "355 50% 45%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 30% 97%",
+      "foreground": "30 20% 13%",
+      "muted": "30 12% 92%",
+      "mutedForeground": "30 8% 44%",
+      "border": "30 12% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "30 20% 13%",
+      "ring": "30 20% 24%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Playfair Display, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.35rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.35rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | MAISON STORY",
+    "description": "قالب شنط أصلي بمنطق البيت/الأتيليه: هيرو دروب بورد، قصة تحريرية، ريل مناسبات، «شوفي اللوك»، وآراء بصوت العملاء. هوية بصرية خاصة."
+  },
+  "preview": {
+    "colors": [
+      "30 20% 24%",
+      "355 50% 45%",
+      "40 30% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-024-bags-maison-story/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "MAISON STORY",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "القطع",
+        "to": "/collections"
+      },
+      {
+        "label": "شنط",
+        "to": "/shop?category=bags"
+      },
+      {
+        "label": "اللوك",
+        "to": "/shop"
+      },
+      {
+        "label": "الضمان",
+        "to": "/about"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "MAISON STORY — قالب شنط أصلي بمنطق البيت/الأتيليه.",
+    "copyrightText": "© 2026 MAISON STORY",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "القطع",
+            "to": "/collections"
+          },
+          {
+            "label": "شنط",
+            "to": "/shop?category=bags"
+          },
+          {
+            "label": "اللوك",
+            "to": "/shop"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "drop-board",
+          "settings": {
+            "eyebrow": "قطعة الشهر",
+            "title": "شنطة بتكبر معاك",
+            "subtitle": "قابلة للتوسيع بحزامين، جيب مبطن للابتوب 14 بوصة، وضمان خياطة سنة.",
+            "ctaText": "اعرفي القطعة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "eyebrow": "قصتنا",
+            "title": "حزامين… مقاسين",
+            "subtitle": "بنتوسّع 8 سم — وبنشرح الفرق بالصور."
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "occasion-ribbon",
+          "settings": {
+            "title": "حسب المناسبة",
+            "subtitle": "شغل · سفر · سهرة"
+          }
+        },
+        {
+          "type": "shop-the-look",
+          "variant": "standard",
+          "settings": {
+            "title": "شوفي اللوك كامل"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "العملاء بيتكلموا"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "قطعة كل شهر",
+            "subtitle": "رسالة واحدة: القطعة وتفاصيلها."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "stacked"
+        },
+        {
+          "type": "product-info",
+          "variant": "style-ledger"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

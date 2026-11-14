@@ -1,0 +1,313 @@
+{
+  "id": "tpl-034-skincare-pure-neve",
+  "name": "Pure Neve — عناية بالبشرة",
+  "description": "قالب عناية بالبشرة نضيف موبايل-أولًا: هيرو ناعم بصورة واحدة، فئات أقراص، شبكة منتجات، مخطّط روتين سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "205 30% 26%",
+      "primaryForeground": "200 40% 98%",
+      "secondary": "200 24% 92%",
+      "secondaryForeground": "205 30% 22%",
+      "accent": "188 40% 55%",
+      "accentForeground": "190 40% 10%",
+      "background": "200 40% 99%",
+      "foreground": "210 22% 14%",
+      "muted": "200 20% 95%",
+      "mutedForeground": "205 10% 44%",
+      "border": "200 18% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "210 22% 14%",
+      "ring": "205 30% 26%"
+    },
+    "typography": {
+      "headingFont": "Rubik, Cairo, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "0.75rem"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | PURE NEVE",
+    "description": "قالب عناية بالبشرة نضيف موبايل-أولًا: هيرو ناعم بصورة واحدة، فئات أقراص، شبكة منتجات، مخطّط روتين سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ."
+  },
+  "preview": {
+    "colors": [
+      "205 30% 26%",
+      "188 40% 55%",
+      "200 40% 99%"
+    ],
+    "imageUrl": "/assets/themes/tpl-034-skincare-pure-neve/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "PURE NEVE",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "دفع عند الاستلام · شحن 2-4 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "3 خطوات",
+        "to": "/collections"
+      },
+      {
+        "label": "بشرة جافة",
+        "to": "/shop?category=dry"
+      },
+      {
+        "label": "بشرة دهنية",
+        "to": "/shop?category=oily"
+      },
+      {
+        "label": "مرطّبات",
+        "to": "/shop?category=moisturizer"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "PURE NEVE — روتين بسيط لبشرة أهدى.",
+    "copyrightText": "© 2026 PURE NEVE",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الكل",
+            "to": "/collections"
+          },
+          {
+            "label": "سيرومات",
+            "to": "/shop?category=serum"
+          },
+          {
+            "label": "مرطّبات",
+            "to": "/shop?category=moisturizer"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "PURE NEVE",
+            "title": "روتين بسيط ٣ خطوات",
+            "subtitle": "منظّف، سيرم، مرطّب — كل اللي بشرتك محتاجه فعلاً.",
+            "ctaText": "ابدئي الروتين",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "split",
+          "settings": {
+            "title": "بشرتك إيه؟",
+            "subtitle": "4 أنواع وروتين لكل واحدة"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "الأكثر طلبًا"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "chips",
+          "settings": {
+            "title": "روتين في ٣ خطوات",
+            "subtitle": "صبح · قبل النوم · مرة أسبوعيًا"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات مختصرة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خصم 10% على أول طلب",
+            "subtitle": "اشتركي واستلمي الكود على الواتساب."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

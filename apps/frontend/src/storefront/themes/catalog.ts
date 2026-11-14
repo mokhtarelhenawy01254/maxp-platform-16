@@ -125,6 +125,126 @@ export const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
   string,
   StorefrontThemeCategoryMeta
 > = {
+  "tpl-013-modest-warehouse-atelier": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "modest-fashion",
+    "عبايات ومحجبات",
+  ),
+  "tpl-014-modest-porto-editorial": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "modest-fashion",
+    "عبايات ومحجبات",
+  ),
+  "tpl-015-modest-souq-cod": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "modest-fashion",
+    "عبايات ومحجبات",
+  ),
+  "tpl-016-modest-veil-story": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "modest-fashion",
+    "عبايات ومحجبات",
+  ),
+  "tpl-017-shoes-impulse-grid": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-shoes",
+    "أحذية حريمي",
+  ),
+  "tpl-018-shoes-kadence-clean": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-shoes",
+    "أحذية حريمي",
+  ),
+  "tpl-019-shoes-cairo-cod": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-shoes",
+    "أحذية حريمي",
+  ),
+  "tpl-020-shoes-sole-atelier": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-shoes",
+    "أحذية حريمي",
+  ),
+  "tpl-021-bags-motion-rail": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "bags",
+    "شنط وحقائب",
+  ),
+  "tpl-022-bags-blocksy-mosaic": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "bags",
+    "شنط وحقائب",
+  ),
+  "tpl-023-bags-souq-bazaar": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "bags",
+    "شنط وحقائب",
+  ),
+  "tpl-024-bags-maison-story": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "bags",
+    "شنط وحقائب",
+  ),
+  "tpl-029-beauty-expanse-editorial": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "makeup",
+    "مكياج",
+  ),
+  "tpl-030-beauty-neve-light": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "makeup",
+    "مكياج",
+  ),
+  "tpl-031-beauty-ritual-cod": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "makeup",
+    "مكياج",
+  ),
+  "tpl-032-beauty-glow-lab": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "makeup",
+    "مكياج",
+  ),
+  "tpl-033-skincare-derme-editorial": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "skincare",
+    "عناية بالبشرة",
+  ),
+  "tpl-034-skincare-pure-neve": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "skincare",
+    "عناية بالبشرة",
+  ),
+  "tpl-035-skincare-ritual-cod": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "skincare",
+    "عناية بالبشرة",
+  ),
+  "tpl-036-skincare-atelier-origin": createThemeCategoryMeta(
+    "beauty",
+    "عطور وتجميل",
+    "skincare",
+    "عناية بالبشرة",
+  ),
   "modern-minimal": createThemeCategoryMeta(
     "fashion",
     "أزياء",
@@ -675,6 +795,46 @@ export const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "tpl-013-modest-warehouse-atelier":
+    "قالب عبايات محتشمة بكثافة كتالوج عالية: هيرو كاسكيد، ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وآراء تحريرية. مبني لمنطق متجر يفتح بكتالوج كبير مش بصورة واحدة.",
+  "tpl-014-modest-porto-editorial":
+    "قالب عبايات بمنطق المجلة: تايبوجرافي كبير ومحاذاة يسار، هيرو هادئ، قصة خامات، مخطّط إطلالة بخطوات، وشريط يوميات. إيقاع تحريري بدل زحمة الكتالوج.",
+  "tpl-015-modest-souq-cod":
+    "قالب عبايات موبايل-أولًا بمنطق السوق المحلي: شريط أسود صريح، هيرو ناعم، فئات سريعة، باقات كمية، وآراء بشارات ثقة. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+  "tpl-016-modest-veil-story":
+    "قالب عبايات أصلي بحكاية: هيرو طبقات بارالاكس، مخطّط إطلالة أقراص، ريل مناسبات، شريط «شوفي اللوك كامل»، وآراء بنوتات مختلفة. هوية بصرية خاصة مش مبنية على قالب منافس.",
+  "tpl-017-shoes-impulse-grid":
+    "قالب أحذية بكثافة شبكة: هيرو رَنواي جريء، فئات سريعة، شبكة منتجات كثيفة، بنتو عروض يومية، وآراء مختصرة. مبني لكتالوج أحذية كبير بيتغيّر كل أسبوع.",
+  "tpl-018-shoes-kadence-clean":
+    "قالب أحذية نظيف بمساحات بيضاء: هيرو بانر هادي، قصة تحريرية، أعمدة فئات، وشبكة مرتبة بلا زحمة. مناسب لمتجر بيبيع 30 موديل مختارين مش ألف.",
+  "tpl-019-shoes-cairo-cod":
+    "قالب أحذية بمنطق الدفع عند الاستلام: هيرو أمر مباشر، شريط عروض أحمر، فئات أقراص، شبكة كثيفة، باقات توفير، وشريط توصيل صريح (استلام/شحن/استبدال).",
+  "tpl-020-shoes-sole-atelier":
+    "قالب أحذية أصلي بليل داكن: هيرو مسرح بارز، مخطّط إطلالة، ريل فئات دوائر، شريط «اللوك كامل»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "tpl-021-bags-motion-rail":
+    "قالب شنط بروح الحركة: هيرو بانر عريض، شريط عروض، فئات بعمود، شبكة منتجات، حملة بنتو، وآراء قياسية. مناسب لمتجر بيغيّر الحملة كل أسبوعين.",
+  "tpl-022-bags-blocksy-mosaic":
+    "قالب شنط موزاييك: هيرو بانل مقسوم، بنتو فئات، فئات كتالوج مربعات، قصة تحريرية، وشريط يوميات. مبني لمنطق بلوكات مرن يعرض مقاسات وألوان بسرعة.",
+  "tpl-023-bags-souq-bazaar":
+    "قالب شنط بازار: هيرو سلايدر فئات، دوائر فئات، باقات توفير، شريط أسود صريح، وآراء بشارات ثقة. مبني لكتالوج كبير وأسعار واضحة ودفع عند الاستلام.",
+  "tpl-024-bags-maison-story":
+    "قالب شنط أصلي بمنطق البيت/الأتيليه: هيرو دروب بورد، قصة تحريرية، ريل مناسبات، «شوفي اللوك»، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "tpl-029-beauty-expanse-editorial":
+    "قالب مكياج تحريري: هيرو فل-بليد، فئات تحريرية بأعمدة، قصة تحريرية عن الدرجات، آراء بأسلوب مجلة، وشريط نشرة هادي. إيقاع مجلة جمال مش صفحة عروض.",
+  "tpl-030-beauty-neve-light":
+    "قالب مكياج خفيف موبايل-أولًا: هيرو ناعم، فئات أقراص، شبكة منتجات، مخطّط اختيار سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+  "tpl-031-beauty-ritual-cod":
+    "قالب مكياج بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+  "tpl-032-beauty-glow-lab":
+    "قالب مكياج أصلي بمعمل ألوان: هيرو بانر رشيق، موزاييك صور، ريل مناسبات، قصة تحريرية عن المكوّنات، وآراء بصوت العملاء. هوية بصرية خاصة.",
+  "tpl-033-skincare-derme-editorial":
+    "قالب عناية بالبشرة بمنطق تحريري: هيرو نباتي فل-بليد، فئات حسب نوع البشرة، شبكة منتجات، قصة عن المكوّنات الفعّالة، آراء بأسلوب مجلة، وشريط نشرة هادي. مبني لمتجر بيبيع بالعلم مش بالوعود.",
+  "tpl-034-skincare-pure-neve":
+    "قالب عناية بالبشرة نضيف موبايل-أولًا: هيرو ناعم بصورة واحدة، فئات أقراص، شبكة منتجات، مخطّط روتين سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+  "tpl-035-skincare-ritual-cod":
+    "قالب عناية بالبشرة بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+  "tpl-036-skincare-atelier-origin":
+    "قالب عناية بالبشرة أصلي بمنطق الأتيليه: هيرو بانر رشيق، موزاييك صور، ريل فئات مناسبات، قصة تحريرية عن تركيبة السيرم، وآراء بصوت العميلات. هوية بصرية خاصة.",
   "menswear-regent":
     "قالب أزياء رجالي بمنطق تايلورنج: هيرو سينمائي هادي، ريل فئات تحريري، لوك بوك ستوري بورد، وقسم آراء بمقاسات حقيقية. كثافة عرض مريحة ومساحات واسعة بين السكشنز.",
   "menswear-oxford":
@@ -846,6 +1006,46 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
+  "tpl-013-modest-warehouse-atelier":
+    "/assets/themes/tpl-013-modest-warehouse-atelier/preview.png",
+  "tpl-014-modest-porto-editorial":
+    "/assets/themes/tpl-014-modest-porto-editorial/preview.png",
+  "tpl-015-modest-souq-cod":
+    "/assets/themes/tpl-015-modest-souq-cod/preview.png",
+  "tpl-016-modest-veil-story":
+    "/assets/themes/tpl-016-modest-veil-story/preview.png",
+  "tpl-017-shoes-impulse-grid":
+    "/assets/themes/tpl-017-shoes-impulse-grid/preview.png",
+  "tpl-018-shoes-kadence-clean":
+    "/assets/themes/tpl-018-shoes-kadence-clean/preview.png",
+  "tpl-019-shoes-cairo-cod":
+    "/assets/themes/tpl-019-shoes-cairo-cod/preview.png",
+  "tpl-020-shoes-sole-atelier":
+    "/assets/themes/tpl-020-shoes-sole-atelier/preview.png",
+  "tpl-021-bags-motion-rail":
+    "/assets/themes/tpl-021-bags-motion-rail/preview.png",
+  "tpl-022-bags-blocksy-mosaic":
+    "/assets/themes/tpl-022-bags-blocksy-mosaic/preview.png",
+  "tpl-023-bags-souq-bazaar":
+    "/assets/themes/tpl-023-bags-souq-bazaar/preview.png",
+  "tpl-024-bags-maison-story":
+    "/assets/themes/tpl-024-bags-maison-story/preview.png",
+  "tpl-029-beauty-expanse-editorial":
+    "/assets/themes/tpl-029-beauty-expanse-editorial/preview.png",
+  "tpl-030-beauty-neve-light":
+    "/assets/themes/tpl-030-beauty-neve-light/preview.png",
+  "tpl-031-beauty-ritual-cod":
+    "/assets/themes/tpl-031-beauty-ritual-cod/preview.png",
+  "tpl-032-beauty-glow-lab":
+    "/assets/themes/tpl-032-beauty-glow-lab/preview.png",
+  "tpl-033-skincare-derme-editorial":
+    "/assets/themes/tpl-033-skincare-derme-editorial/preview.png",
+  "tpl-034-skincare-pure-neve":
+    "/assets/themes/tpl-034-skincare-pure-neve/preview.png",
+  "tpl-035-skincare-ritual-cod":
+    "/assets/themes/tpl-035-skincare-ritual-cod/preview.png",
+  "tpl-036-skincare-atelier-origin":
+    "/assets/themes/tpl-036-skincare-atelier-origin/preview.png",
   "menswear-regent":
     "/assets/themes/menswear-regent/preview.png",
   "menswear-oxford":

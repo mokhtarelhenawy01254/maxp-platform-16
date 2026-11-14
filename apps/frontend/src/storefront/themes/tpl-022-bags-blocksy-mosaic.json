@@ -1,0 +1,314 @@
+{
+  "id": "tpl-022-bags-blocksy-mosaic",
+  "name": "Blocksy Mosaic — شنط",
+  "description": "قالب شنط موزاييك: هيرو بانل مقسوم، بنتو فئات، فئات كتالوج مربعات، قصة تحريرية، وشريط يوميات. مبني لمنطق بلوكات مرن يعرض مقاسات وألوان بسرعة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "200 30% 28%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "200 16% 90%",
+      "secondaryForeground": "200 32% 20%",
+      "accent": "340 45% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "200 22% 97%",
+      "foreground": "200 24% 14%",
+      "muted": "200 12% 93%",
+      "mutedForeground": "200 8% 44%",
+      "border": "200 14% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "200 24% 14%",
+      "ring": "200 30% 28%"
+    },
+    "typography": {
+      "headingFont": "Rubik, Cairo, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "0.75rem"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | BLOCKSY MOSAIC",
+    "description": "قالب شنط موزاييك: هيرو بانل مقسوم، بنتو فئات، فئات كتالوج مربعات، قصة تحريرية، وشريط يوميات. مبني لمنطق بلوكات مرن يعرض مقاسات وألوان بسرعة."
+  },
+  "preview": {
+    "colors": [
+      "200 30% 28%",
+      "340 45% 55%",
+      "200 22% 97%"
+    ],
+    "imageUrl": "/assets/themes/tpl-022-bags-blocksy-mosaic/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "BLOCKSY MOSAIC",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "شنط",
+        "to": "/shop?category=bags"
+      },
+      {
+        "label": "مقاسات",
+        "to": "/shop"
+      },
+      {
+        "label": "مواسم",
+        "to": "/collections"
+      },
+      {
+        "label": "الخامات",
+        "to": "/about"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "BLOCKSY MOSAIC — قالب شنط موزاييك.",
+    "copyrightText": "© 2026 BLOCKSY MOSAIC",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "شنط",
+            "to": "/shop?category=bags"
+          },
+          {
+            "label": "مقاسات",
+            "to": "/shop"
+          },
+          {
+            "label": "مواسم",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "موزاييك",
+            "title": "كل مقاس… وكل استخدام",
+            "subtitle": "بنعرض الشنطة بمقاساتها الحقيقية جنب لابتوب وموبايل — عشان تعرفي تدخّل إيه.",
+            "ctaText": "شوفي المقاسات",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "bento"
+        },
+        {
+          "type": "featured-collections",
+          "variant": "marketplace-tiles",
+          "settings": {
+            "title": "بلوكات الفئات",
+            "subtitle": "شنط · مقاسات · مواسم"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "split-editorial",
+          "settings": {
+            "eyebrow": "قصتنا",
+            "title": "الخامة بتفرق",
+            "subtitle": "جلد طبيعي، جلد صناعي، وكانفس — وبنقول كل واحدة تصلح لإيه."
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "vela-customer-testimonials"
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "fashion-counter-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "standard"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,318 @@
+{
+  "id": "tpl-036-skincare-atelier-origin",
+  "name": "Skin Atelier — عناية بالبشرة",
+  "description": "قالب عناية بالبشرة أصلي بمنطق الأتيليه: هيرو بانر رشيق، موزاييك صور، ريل فئات مناسبات، قصة تحريرية عن تركيبة السيرم، وآراء بصوت العميلات. هوية بصرية خاصة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "285 25% 26%",
+      "primaryForeground": "285 30% 98%",
+      "secondary": "285 16% 91%",
+      "secondaryForeground": "285 28% 22%",
+      "accent": "330 35% 60%",
+      "accentForeground": "0 0% 100%",
+      "background": "285 20% 98%",
+      "foreground": "285 22% 13%",
+      "muted": "285 14% 93%",
+      "mutedForeground": "285 8% 44%",
+      "border": "285 14% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "285 22% 13%",
+      "ring": "285 25% 26%"
+    },
+    "typography": {
+      "headingFont": "Cormorant Garamond, Georgia, serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.75rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | SKIN ATELIER",
+    "description": "قالب عناية بالبشرة أصلي بمنطق الأتيليه: هيرو بانر رشيق، موزاييك صور، ريل فئات مناسبات، قصة تحريرية عن تركيبة السيرم، وآراء بصوت العميلات. هوية بصرية خاصة."
+  },
+  "preview": {
+    "colors": [
+      "285 25% 26%",
+      "330 35% 60%",
+      "285 20% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-036-skincare-atelier-origin/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "SKIN ATELIER",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "دفعات محدودة · شحن 2-4 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الأتيليه",
+        "to": "/collections"
+      },
+      {
+        "label": "سيرومات",
+        "to": "/shop?category=serum"
+      },
+      {
+        "label": "مرطّبات",
+        "to": "/shop?category=moisturizer"
+      },
+      {
+        "label": "دفعات",
+        "to": "/shop?category=limited"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "SKIN ATELIER — تركيبات عناية تحضّر ببطء.",
+    "copyrightText": "© 2026 SKIN ATELIER",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الكل",
+            "to": "/collections"
+          },
+          {
+            "label": "سيرومات",
+            "to": "/shop?category=serum"
+          },
+          {
+            "label": "مرطّبات",
+            "to": "/shop?category=moisturizer"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "full-bleed",
+          "settings": {
+            "eyebrow": "SKIN ATELIER",
+            "title": "تركيبات تُحضّر ببطء",
+            "subtitle": "دفعات صغيرة، مكوّنات محدودة، وتركيز يفرق على البشرة.",
+            "ctaText": "شوفي التركيبات",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "قصة الأتيليه",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1631730359585-38a4935cbec4?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1631730359585-38a4935cbec4?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "masonry"
+        },
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "title": "روتين كل مناسبة",
+            "subtitle": "سفر · شمس · ليل · بعد الجلسات"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "تركيبات الأتيليه"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "eyebrow": "التركيبة",
+            "title": "سيرم بثلاث طبقات ترطيب",
+            "subtitle": "هيالورونيك ثلاثي الوزن + سيراميدات + بانثينول، مرتّبين بترتيب الامتصاص."
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "بصوت العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "دفعة الشهر",
+            "subtitle": "الدفعات محدودة — اعرفي موعد الإصدار قبل الجميع."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "fit-finder"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "fashion-direct-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "nature-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

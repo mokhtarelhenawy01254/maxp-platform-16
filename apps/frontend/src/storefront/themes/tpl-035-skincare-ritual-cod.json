@@ -1,0 +1,317 @@
+{
+  "id": "tpl-035-skincare-ritual-cod",
+  "name": "Ritual Skin — عناية بالبشرة",
+  "description": "قالب عناية بالبشرة بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "24 45% 30%",
+      "primaryForeground": "35 45% 97%",
+      "secondary": "35 22% 91%",
+      "secondaryForeground": "24 40% 22%",
+      "accent": "18 55% 58%",
+      "accentForeground": "20 40% 99%",
+      "background": "35 40% 98%",
+      "foreground": "25 30% 14%",
+      "muted": "35 22% 93%",
+      "mutedForeground": "25 12% 42%",
+      "border": "35 20% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "25 30% 14%",
+      "ring": "24 45% 30%"
+    },
+    "typography": {
+      "headingFont": "Cairo, Rubik, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.25rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.15rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | RITUAL SKIN",
+    "description": "قالب عناية بالبشرة بمنطق الروتين والدفع عند الاستلام: هيرو نباتي، مخطّط روتين بخطوات، فئات دوائر، باقة منتجين، وآراء بشارات ثقة. مبني لحملات السوشيال والطلب المباشر."
+  },
+  "preview": {
+    "colors": [
+      "24 45% 30%",
+      "18 55% 58%",
+      "35 40% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-035-skincare-ritual-cod/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "RITUAL SKIN",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "الدفع عند الاستلام · استلام في 48 ساعة",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الروتين",
+        "to": "/collections"
+      },
+      {
+        "label": "صبح",
+        "to": "/shop?category=morning"
+      },
+      {
+        "label": "ليل",
+        "to": "/shop?category=night"
+      },
+      {
+        "label": "باقات",
+        "to": "/shop?category=bundles"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "RITUAL SKIN — روتين عناية بالدفع عند الاستلام.",
+    "copyrightText": "© 2026 RITUAL SKIN",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الكل",
+            "to": "/collections"
+          },
+          {
+            "label": "سيرومات",
+            "to": "/shop?category=serum"
+          },
+          {
+            "label": "مرطّبات",
+            "to": "/shop?category=moisturizer"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "scent-portrait",
+          "settings": {
+            "eyebrow": "الروتين المصري",
+            "title": "روتينك جه لبيتك",
+            "subtitle": "سيرم ومرطّب ومنظّف — تدفع عند الاستلام وتستلم في 48 ساعة.",
+            "ctaText": "اطلبي الروتين",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "شوفي الخطوات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "4 خطوات بالليل",
+            "subtitle": "منظّف ← تونر ← سيرم ← مرطّب"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "standard",
+          "settings": {
+            "title": "اختاري مشكلتك",
+            "subtitle": "جفاف · حبوب · تصبغات · مسام"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "boutique-duo"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "الأكثر طلبًا"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "scent-notes",
+          "settings": {
+            "title": "آراء العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "عروض الواتساب",
+            "subtitle": "ابعتيلنا رقمك وهنبعت الروتين المناسب لبشرتك."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "graceful-bar"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "atelier-buybox"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "fitting-room-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,313 @@
+{
+  "id": "tpl-030-beauty-neve-light",
+  "name": "Neve Light — مكياج",
+  "description": "قالب مكياج خفيف موبايل-أولًا: هيرو ناعم، فئات أقراص، شبكة منتجات، مخطّط اختيار سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "340 35% 42%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "340 18% 93%",
+      "secondaryForeground": "340 40% 26%",
+      "accent": "45 75% 55%",
+      "accentForeground": "30 30% 12%",
+      "background": "0 0% 100%",
+      "foreground": "340 18% 15%",
+      "muted": "340 10% 96%",
+      "mutedForeground": "340 8% 46%",
+      "border": "340 14% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "340 18% 15%",
+      "ring": "340 35% 42%"
+    },
+    "typography": {
+      "headingFont": "Almarai, sans-serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.25rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | NEVE LIGHT",
+    "description": "قالب مكياج خفيف موبايل-أولًا: هيرو ناعم، فئات أقراص، شبكة منتجات، مخطّط اختيار سريع، وآراء مختصرة. خفيف بصريًا وتقنيًا — مناسب لمتجر صغير بيبدأ."
+  },
+  "preview": {
+    "colors": [
+      "340 35% 42%",
+      "45 75% 55%",
+      "0 0% 100%"
+    ],
+    "imageUrl": "/assets/themes/tpl-030-beauty-neve-light/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "NEVE LIGHT",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "3 خطوات",
+        "to": "/collections"
+      },
+      {
+        "label": "شفايف",
+        "to": "/shop?category=lips"
+      },
+      {
+        "label": "بشرة",
+        "to": "/shop?category=skin"
+      },
+      {
+        "label": "عيون",
+        "to": "/shop?category=eyes"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "NEVE LIGHT — قالب مكياج خفيف موبايل-أولًا.",
+    "copyrightText": "© 2026 NEVE LIGHT",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "3 خطوات",
+            "to": "/collections"
+          },
+          {
+            "label": "شفايف",
+            "to": "/shop?category=lips"
+          },
+          {
+            "label": "بشرة",
+            "to": "/shop?category=skin"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "soft-showcase",
+          "settings": {
+            "eyebrow": "بسيط وسريع",
+            "title": "مكياجك في 3 خطوات",
+            "subtitle": "بيس، بلاشر، ولمعة — بس. بنرشحلك 3 منتجات على حسب نوع بشرتك.",
+            "ctaText": "ابدأي بـ 3 خطوات",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "title": "ابدأي من هنا",
+            "subtitle": "3 منتجات بس"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "chips",
+          "settings": {
+            "title": "اختاري روتينك",
+            "subtitle": "3 اختيارات: المناسبة ← المقاس ← الستايل"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات سريعة"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "روتينك في رسالة",
+            "subtitle": "3 منتجات + طريقة استخدامها."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

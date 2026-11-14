@@ -56,6 +56,8 @@ export const MARKETPLACE_SUBCATEGORY_ORDER: Record<string, string[]> = {
     "luxury-fashion",
     "heritage-fashion",
     "accessories",
+    "modest-fashion",
+    "bags",
   ],
   food: ["restaurants"],
   electronics: ["mobile-store", "tech-store"],

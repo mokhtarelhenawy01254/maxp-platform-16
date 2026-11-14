@@ -1,0 +1,320 @@
+{
+  "id": "tpl-016-modest-veil-story",
+  "name": "Veil Story — عبايات",
+  "description": "قالب عبايات أصلي بحكاية: هيرو طبقات بارالاكس، مخطّط إطلالة أقراص، ريل مناسبات، شريط «شوفي اللوك كامل»، وآراء بنوتات مختلفة. هوية بصرية خاصة مش مبنية على قالب منافس.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "255 30% 30%",
+      "primaryForeground": "45 40% 97%",
+      "secondary": "255 18% 90%",
+      "secondaryForeground": "255 32% 22%",
+      "accent": "15 65% 58%",
+      "accentForeground": "0 0% 100%",
+      "background": "250 30% 98%",
+      "foreground": "255 22% 15%",
+      "muted": "255 14% 92%",
+      "mutedForeground": "255 10% 44%",
+      "border": "255 16% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "255 22% 15%",
+      "ring": "255 30% 30%"
+    },
+    "typography": {
+      "headingFont": "Noto Kufi Arabic, Cairo, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | VEIL STORY",
+    "description": "قالب عبايات أصلي بحكاية: هيرو طبقات بارالاكس، مخطّط إطلالة أقراص، ريل مناسبات، شريط «شوفي اللوك كامل»، وآراء بنوتات مختلفة. هوية بصرية خاصة مش مبنية على قالب منافس."
+  },
+  "preview": {
+    "colors": [
+      "255 30% 30%",
+      "15 65% 58%",
+      "250 30% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-016-modest-veil-story/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "VEIL STORY",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الحكايات",
+        "to": "/collections"
+      },
+      {
+        "label": "عبايات",
+        "to": "/shop?category=abaya"
+      },
+      {
+        "label": "مناسبات",
+        "to": "/shop?category=occasion"
+      },
+      {
+        "label": "اللوك",
+        "to": "/shop"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "VEIL STORY — قالب عبايات أصلي بحكاية.",
+    "copyrightText": "© 2026 VEIL STORY",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الحكايات",
+            "to": "/collections"
+          },
+          {
+            "label": "عبايات",
+            "to": "/shop?category=abaya"
+          },
+          {
+            "label": "مناسبات",
+            "to": "/shop?category=occasion"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "layered-parallax-sky",
+          "settings": {
+            "eyebrow": "حكاية قطعة",
+            "title": "كل عبايه ليها حكاية",
+            "subtitle": "بنصمّمها مع 3 مصممات، وبنصوّرها على 3 ستات بمقاسات مختلفة — عشان تشوفيها على جسم زيك.",
+            "ctaText": "اقرأي الحكاية",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1631541909061-71e349d1f2df?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1631541909061-71e349d1f2df?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "chips",
+          "settings": {
+            "title": "اختاري إطلالتك",
+            "subtitle": "3 اختيارات: المناسبة ← المقاس ← الستايل"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "occasion-ribbon",
+          "settings": {
+            "title": "حسب المناسبة",
+            "subtitle": "فرح · عزومة · يوم عادي"
+          }
+        },
+        {
+          "type": "shop-the-look",
+          "variant": "spotlight",
+          "settings": {
+            "title": "شوفي اللوك كامل"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "scent-notes",
+          "settings": {
+            "title": "ستات بيتكلموا"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "system-assurance"
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "حكاية كل خميس",
+            "subtitle": "قطعة واحدة وحكايتها — من غير إعلانات."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "marketplace-dense"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "stacked"
+        },
+        {
+          "type": "product-info",
+          "variant": "style-ledger"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,313 @@
+{
+  "id": "tpl-013-modest-warehouse-atelier",
+  "name": "Atelier Warehouse — عبايات",
+  "description": "قالب عبايات محتشمة بكثافة كتالوج عالية: هيرو كاسكيد، ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وآراء تحريرية. مبني لمنطق متجر يفتح بكتالوج كبير مش بصورة واحدة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "280 24% 24%",
+      "primaryForeground": "40 40% 96%",
+      "secondary": "280 14% 90%",
+      "secondaryForeground": "280 26% 20%",
+      "accent": "28 62% 52%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 26% 96%",
+      "foreground": "280 20% 14%",
+      "muted": "280 10% 90%",
+      "mutedForeground": "280 8% 42%",
+      "border": "280 12% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "280 20% 14%",
+      "ring": "280 24% 24%"
+    },
+    "typography": {
+      "headingFont": "Almarai, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.9rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "0.9rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | ATELIER WAREHOUSE",
+    "description": "قالب عبايات محتشمة بكثافة كتالوج عالية: هيرو كاسكيد، ريل فئات مربعات، شريط عروض، شبكة منتجات كثيفة، وآراء تحريرية. مبني لمنطق متجر يفتح بكتالوج كبير مش بصورة واحدة."
+  },
+  "preview": {
+    "colors": [
+      "280 24% 24%",
+      "28 62% 52%",
+      "40 26% 96%"
+    ],
+    "imageUrl": "/assets/themes/tpl-013-modest-warehouse-atelier/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "ATELIER WAREHOUSE",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "الجديد",
+        "to": "/shop?sort=new"
+      },
+      {
+        "label": "عبايات",
+        "to": "/shop?category=abaya"
+      },
+      {
+        "label": "طرح",
+        "to": "/shop?category=scarves"
+      },
+      {
+        "label": "أطقم",
+        "to": "/collections"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "ATELIER WAREHOUSE — قالب عبايات محتشمة بكثافة كتالوج عالية.",
+    "copyrightText": "© 2026 ATELIER WAREHOUSE",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "الجديد",
+            "to": "/shop?sort=new"
+          },
+          {
+            "label": "عبايات",
+            "to": "/shop?category=abaya"
+          },
+          {
+            "label": "طرح",
+            "to": "/shop?category=scarves"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "modest-cascade",
+          "settings": {
+            "eyebrow": "كتالوج 2026",
+            "title": "العباية اللي بتتنفّس مع يومك",
+            "subtitle": "قصّات واسعة، أقمشة صيفية، ومقاسات من XS لـ 3XL — كل حاجة معروضة بالتفصيل قبل ما تطلبي.",
+            "ctaText": "اتفرجي على الكتالوج",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "retail-category-tiles",
+          "settings": {
+            "title": "أقسام المتجر",
+            "subtitle": "عبايات · طرح · أطقم · إكسسوارات محتشمة"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "look-mosaic",
+          "variant": "masonry"
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "نزلة جديدة كل خميس",
+            "subtitle": "رسالة واحدة: القطع الجديدة ومقاساتها."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "boutique-discovery"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "boutique-portrait-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "boutique-ledger"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

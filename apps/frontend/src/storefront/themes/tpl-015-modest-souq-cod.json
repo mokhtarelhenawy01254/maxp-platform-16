@@ -1,0 +1,313 @@
+{
+  "id": "tpl-015-modest-souq-cod",
+  "name": "Souq Modest — عبايات",
+  "description": "قالب عبايات موبايل-أولًا بمنطق السوق المحلي: شريط أسود صريح، هيرو ناعم، فئات سريعة، باقات كمية، وآراء بشارات ثقة. مبني لحملات الدفع عند الاستلام والطلب من الموبايل.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "345 45% 32%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "345 30% 92%",
+      "secondaryForeground": "345 45% 25%",
+      "accent": "38 70% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 99%",
+      "foreground": "345 20% 15%",
+      "muted": "345 16% 94%",
+      "mutedForeground": "345 8% 45%",
+      "border": "345 20% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "345 20% 15%",
+      "ring": "345 45% 32%"
+    },
+    "typography": {
+      "headingFont": "Tajawal, Cairo, sans-serif",
+      "bodyFont": "Almarai, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.1rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | SOUQ MODEST",
+    "description": "قالب عبايات موبايل-أولًا بمنطق السوق المحلي: شريط أسود صريح، هيرو ناعم، فئات سريعة، باقات كمية، وآراء بشارات ثقة. مبني لحملات الدفع عند الاستلام والطلب من الموبايل."
+  },
+  "preview": {
+    "colors": [
+      "345 45% 32%",
+      "38 70% 50%",
+      "0 0% 99%"
+    ],
+    "imageUrl": "/assets/themes/tpl-015-modest-souq-cod/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "SOUQ MODEST",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "عبايات",
+        "to": "/shop?category=abaya"
+      },
+      {
+        "label": "طرح",
+        "to": "/shop?category=scarves"
+      },
+      {
+        "label": "باقات",
+        "to": "/collections"
+      },
+      {
+        "label": "مقاسات",
+        "to": "/shop"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "SOUQ MODEST — قالب عبايات موبايل-أولًا بمنطق السوق المحلي.",
+    "copyrightText": "© 2026 SOUQ MODEST",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "عبايات",
+            "to": "/shop?category=abaya"
+          },
+          {
+            "label": "طرح",
+            "to": "/shop?category=scarves"
+          },
+          {
+            "label": "باقات",
+            "to": "/collections"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "soft-showcase",
+          "settings": {
+            "eyebrow": "دفع عند الاستلام",
+            "title": "عبايتك توصل لباب البيت",
+            "subtitle": "اختاري، ابعتيلنا مقاسك على واتساب، وبندفع لما تستلمي — شحن لكل المحافظات في 2-4 يوم.",
+            "ctaText": "اطلبي على واتساب",
+            "ctaLink": "/contact",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1622122201714-77da0ca8e5d2?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1622122201714-77da0ca8e5d2?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "اختاري بسرعة",
+            "subtitle": "اللي بيتطلب أكتر"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "easyorders-black-bar"
+        },
+        {
+          "type": "reviews",
+          "variant": "command-proof",
+          "settings": {
+            "title": "تجارب العميلات"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity"
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خصم 10% على أول طلب",
+            "subtitle": "اكتبي رقمك ويوصلك كود الخصم على واتساب."
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "specs-grid"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}

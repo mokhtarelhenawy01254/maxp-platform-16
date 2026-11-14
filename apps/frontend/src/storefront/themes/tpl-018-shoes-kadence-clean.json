@@ -1,0 +1,310 @@
+{
+  "id": "tpl-018-shoes-kadence-clean",
+  "name": "Kadence Clean — أحذية",
+  "description": "قالب أحذية نظيف بمساحات بيضاء: هيرو بانر هادي، قصة تحريرية، أعمدة فئات، وشبكة مرتبة بلا زحمة. مناسب لمتجر بيبيع 30 موديل مختارين مش ألف.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "170 45% 26%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "170 18% 90%",
+      "secondaryForeground": "170 45% 18%",
+      "accent": "25 60% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "160 20% 98%",
+      "foreground": "170 25% 13%",
+      "muted": "170 12% 93%",
+      "mutedForeground": "170 8% 44%",
+      "border": "170 12% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "170 25% 13%",
+      "ring": "170 45% 26%"
+    },
+    "typography": {
+      "headingFont": "IBM Plex Sans Arabic, sans-serif",
+      "bodyFont": "IBM Plex Sans Arabic, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.75rem"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 6px 22px hsl(220 18% 13% / .08)",
+      "hoverShadow": "0 22px 40px -24px hsl(220 18% 13% / .28)"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | KADENCE CLEAN",
+    "description": "قالب أحذية نظيف بمساحات بيضاء: هيرو بانر هادي، قصة تحريرية، أعمدة فئات، وشبكة مرتبة بلا زحمة. مناسب لمتجر بيبيع 30 موديل مختارين مش ألف."
+  },
+  "preview": {
+    "colors": [
+      "170 45% 26%",
+      "25 60% 50%",
+      "160 20% 98%"
+    ],
+    "imageUrl": "/assets/themes/tpl-018-shoes-kadence-clean/preview.png"
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "KADENCE CLEAN",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "شحن 2-4 يوم · استبدال خلال 14 يوم",
+    "announcementLinkText": "اعرفي أكتر",
+    "announcementLinkTo": "/collections",
+    "navigation": [
+      {
+        "label": "المختار",
+        "to": "/collections"
+      },
+      {
+        "label": "حريمي",
+        "to": "/shop?category=women"
+      },
+      {
+        "label": "رجالي",
+        "to": "/shop?category=men"
+      },
+      {
+        "label": "العناية",
+        "to": "/shop?category=care"
+      },
+      {
+        "label": "كلمنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "KADENCE CLEAN — قالب أحذية نظيف بمساحات بيضاء.",
+    "copyrightText": "© 2026 KADENCE CLEAN",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com"
+    },
+    "navigation": [
+      {
+        "title": "المتجر",
+        "links": [
+          {
+            "label": "المختار",
+            "to": "/collections"
+          },
+          {
+            "label": "حريمي",
+            "to": "/shop?category=women"
+          },
+          {
+            "label": "رجالي",
+            "to": "/shop?category=men"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال",
+            "to": "/returns"
+          },
+          {
+            "label": "كلمنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "dawn-image-banner",
+          "settings": {
+            "eyebrow": "اختيار محدود",
+            "title": "30 موديل… وكل واحد ليه سبب",
+            "subtitle": "بنختار أحذية بتتكسر بعد سنة؟ لأ. كل موديل بنلبسه 3 شهور قبل ما نعرضه.",
+            "ctaText": "اعرفي الاختيار",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "كل المنتجات",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=2000",
+            "panelImage": "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=2000"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "eyebrow": "قصتنا",
+            "title": "3 شهور تجربة قبل العرض",
+            "subtitle": "بنلبس الموديل، بنمشي بيه، وبعدها بنقرر نعرضه ولا لأ."
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "أقسام المتجر",
+            "subtitle": "حريمي · رجالي · عناية"
+          }
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "المنتجات"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "title": "آراء العملاء"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip"
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards"
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-hero"
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner"
+        },
+        {
+          "type": "filters-sidebar"
+        },
+        {
+          "type": "shop-product-grid"
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail"
+        }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "conversion",
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs"
+        },
+        {
+          "type": "delivery-proof"
+        },
+        {
+          "type": "trusted-badges"
+        },
+        {
+          "type": "reviews",
+          "variant": "standard"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact"
+        },
+        {
+          "type": "related-products",
+          "variant": "compact"
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "standard",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي القطع قبل الدفع.",
+            "emptyText": "لسه ما اخترتيش حاجة.",
+            "continueLabel": "كمّلي تسوّق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary"
+        }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "collection-tab",
+          "variant": "pills"
+        },
+        {
+          "type": "product-grid",
+          "settings": {
+            "title": "كل المنتجات"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail"
+        }
+      ]
+    },
+    "contact": {
+      "pageGoal": "support",
+      "sections": [
+        {
+          "type": "contact-form",
+          "settings": {
+            "title": "كلمنا",
+            "subtitle": "اسألي عن المقاس أو المقارنة — بنرد في نفس اليوم."
+          }
+        },
+        {
+          "type": "whatsapp-cta",
+          "variant": "green"
+        }
+      ]
+    }
+  }
+}
