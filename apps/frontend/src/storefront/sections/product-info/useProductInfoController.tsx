@@ -24,6 +24,7 @@ import {
 } from '../../utils/marketplaceApps';
 import { usePdpSelectionStore } from '../../store/usePdpSelectionStore';
 import { getActiveQuantityOffers } from '@/utils/quantityOffers';
+import { isProductPageCheckoutEnabledForProduct } from '../../../utils/productPageCheckout';
 import PdpQuickOrderPanel from '../PdpQuickOrderPanel';
 import QuantityOffersSection from '../QuantityOffersSection';
 import { Ruler } from 'lucide-react';
@@ -228,7 +229,12 @@ export const useProductInfoController = ({
     isKhemetLuxeTheme && variant === 'elessi-care-buybox' && !isKhemetLuxeV2Theme;
 
   const productPageCheckoutEnabled =
-    storefrontSettings?.storefrontSettings?.productPageShowCheckoutForm !== false;
+    isProductPageCheckoutEnabledForProduct(product, storefrontSettings);
+
+  const isMarketplaceAvenueTheme = Boolean(
+    (theme?.id && theme.id.includes('marketplace-avenue')) ||
+      variant === 'marketplace-bazaar',
+  );
 
   const supportsInlineQuickOrderPlacement =
     !isIntruderNft &&
@@ -250,9 +256,7 @@ export const useProductInfoController = ({
     isKhemetInlineQuickOrderBuybox && productPageCheckoutEnabled;
 
   const forceInlineMarketplaceQuickOrder =
-    (variant === 'marketplace-bazaar' ||
-      Boolean(theme?.id && theme.id.includes('marketplace-avenue'))) &&
-    productPageCheckoutEnabled;
+    isMarketplaceAvenueTheme && productPageCheckoutEnabled;
 
   const shouldRenderInlinePdpQuickOrder =
     forceInlineKhemetQuickOrder ||
@@ -313,13 +317,35 @@ export const useProductInfoController = ({
     shouldRenderInlineQuantityOffers &&
     embeddedQuantityOffersSettings?.decisionMode === 'primary';
 
-  const inlinePdpQuickOrder = shouldRenderInlinePdpQuickOrder ? (
-    <PdpQuickOrderPanel
-      product={product}
-      sectionSettings={undefined}
-      isOpen={shouldRenderInlinePdpQuickOrder}
-    />
-  ) : null;
+  const enrichedProductForQuickOrder = useMemo(() => {
+    if (!product) return null;
+    return {
+      ...product,
+      id: product.id,
+      name: product.name,
+      slug: product.slug || id,
+      description: product.description || '',
+      price: product.price,
+      imageUrl: product.imageUrl,
+      images: product.images,
+      productVariants: product.productVariants,
+      hasVariants: Boolean(product.productVariants?.length),
+      metadata: (product as any)?.metadata,
+    };
+  }, [product, id]);
+
+  const inlinePdpQuickOrder =
+    shouldRenderInlinePdpQuickOrder && enrichedProductForQuickOrder ? (
+      <PdpQuickOrderPanel
+        product={enrichedProductForQuickOrder}
+        sectionSettings={{
+          placement: 'inline-buybox',
+          surfaceMode: 'merged-buybox',
+          formVariant: isMarketplaceAvenueTheme ? 'marketplace-bazaar' : undefined,
+        }}
+        isOpen={shouldRenderInlinePdpQuickOrder}
+      />
+    ) : null;
 
   const inlineQuantityOffers = shouldRenderInlineQuantityOffers ? (
     <QuantityOffersSection

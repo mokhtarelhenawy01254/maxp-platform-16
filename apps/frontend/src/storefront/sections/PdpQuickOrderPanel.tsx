@@ -102,6 +102,10 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     (theme.id === "khemet-luxe-eg" ||
       configuredFormVariant === "khemet-luxe-eg") &&
     !isRedlineAutoQuickOrder;
+  const isMarketplaceQuickOrder =
+    (Boolean(theme.id && theme.id.includes("marketplace-avenue")) ||
+      configuredFormVariant === "marketplace-bazaar") &&
+    !isRedlineAutoQuickOrder;
   const isMergedBuyboxSurface = configuredSurfaceMode === "merged-buybox";
   const isPrimaryQuantityOfferDecision = configuredDecisionMode === "primary";
   const activeQuantityOffer =
@@ -121,6 +125,10 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       ? prefersArabicCopy
         ? "بيانات الشحن وتأكيد الطلب"
         : "Shipping & Order Confirmation"
+      : isMarketplaceQuickOrder
+      ? prefersArabicCopy
+        ? "الطلب السريع المباشر"
+        : "Direct Quick Order"
       : isMenShoesQuickOrder
       ? prefersArabicCopy
         ? "أكمل الطلب من هنا"
@@ -136,6 +144,10 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       ? prefersArabicCopy
         ? "استلم وجرب الستارة على حلق باب عربيتك وتأكد من المقاس الفابريقة قبل دفع أي قرش."
         : "Inspect on your car door frame before paying."
+      : isMarketplaceQuickOrder
+      ? prefersArabicCopy
+        ? "أدخل بيانات الاستلام وسنتواصل معك لتأكيد وشحن طلبك فوراً."
+        : "Enter your delivery details and we will confirm and ship your order immediately."
       : isMenShoesQuickOrder
       ? prefersArabicCopy
         ? "بعد اختيار المقاس، اكتب بياناتك فقط وسنؤكد معك الطلب."
@@ -154,6 +166,8 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     ? className
     : isRedlineAutoQuickOrder
       ? "space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4.5 sm:p-6 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-950/70 dark:ring-white/10 transition-shadow"
+      : isMarketplaceQuickOrder && isMergedBuyboxSurface
+      ? "space-y-4 rounded-2xl border border-border/80 bg-card/60 p-4 sm:p-5 shadow-sm"
       : isSoleaFemmeQuickOrder
       ? isMergedBuyboxSurface
         ? "space-y-0"

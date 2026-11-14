@@ -1,11 +1,17 @@
+// @vitest-environment jsdom
+
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketplaceBuybox } from '../sections/product-info/buyboxes/MarketplaceBuybox';
 import type { ProductInfoController } from '../sections/product-info/productInfoTypes';
 
 describe('MarketplaceBuybox with PDP Checkout and Quantity Offers', () => {
+  afterEach(() => {
+    cleanup();
+  });
   const createMockCtrl = (overrides?: Partial<ProductInfoController>): ProductInfoController => {
     return {
       product: {
@@ -112,6 +118,21 @@ describe('MarketplaceBuybox with PDP Checkout and Quantity Offers', () => {
     // 5. Verify Shipping & Delivery Rail (WoodMart Column 3) is present
     expect(screen.getByText('ضمان سنة على المنتج')).toBeTruthy();
     expect(screen.getByText('إرجاع مجاني خلال 30 يوم')).toBeTruthy();
+  });
+
+  it('correctly mounts marketplace checkout for marketplace-avenue-ar theme', () => {
+    const ctrl = createMockCtrl({
+      theme: { id: 'marketplace-avenue-ar', name: 'Marketplace Avenue' } as any,
+      variant: 'marketplace-bazaar',
+    });
+    render(
+      <MemoryRouter>
+        <MarketplaceBuybox ctrl={ctrl} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('شاشة سامسونج سمارت 55 بوصة')).toBeTruthy();
+    expect(screen.getByTestId('pdp-quick-order-form')).toBeTruthy();
   });
 });
 

@@ -72,6 +72,10 @@ export const useQuickOrderThemeStyles = ({
     (theme.id === 'vela-fashion-eg' ||
       configuredFormVariant === 'vela-fashion-eg') &&
     !isRedlineAutoQuickOrder;
+  const isMarketplaceQuickOrder =
+    (Boolean(theme.id && theme.id.includes('marketplace-avenue')) ||
+      configuredFormVariant === 'marketplace-bazaar') &&
+    !isRedlineAutoQuickOrder;
   const isMergedBuyboxSurface = configuredSurfaceMode === 'merged-buybox';
   const isKhemetMergedBuyboxQuickOrder =
     isKhemetLuxeQuickOrder && isMergedBuyboxSurface;
@@ -112,6 +116,8 @@ export const useQuickOrderThemeStyles = ({
       ? prefersArabicCopy
         ? 'بيانات الطلب'
         : 'Order details'
+      : isMarketplaceQuickOrder
+      ? configuredTitle || (prefersArabicCopy ? 'الطلب السريع المباشر' : 'Direct Quick Order')
       : isVelaFashionQuickOrder
         ? prefersArabicCopy
           ? 'أكملي الطلب الآن'
@@ -137,6 +143,10 @@ export const useQuickOrderThemeStyles = ({
       ? prefersArabicCopy
         ? 'اختاري اللون والمقاس الأول، وبعدها سيبي بياناتك وسنأكد معاكي الطلب.'
         : 'Choose the color and size first, then leave your details and we will confirm the order.'
+      : isMarketplaceQuickOrder
+      ? prefersArabicCopy
+        ? 'أدخل بيانات الاستلام وسنتواصل معك لتأكيد وشحن طلبك فوراً.'
+        : 'Enter your delivery details and we will confirm and ship your order immediately.'
       : isMenShoesQuickOrder
       ? ''
       : '');
@@ -198,6 +208,8 @@ export const useQuickOrderThemeStyles = ({
           ? 'تأكيد الطلب'
           : isKhemetLuxeQuickOrder && prefersArabicCopy
             ? 'تأكيد الطلب'
+          : isMarketplaceQuickOrder && prefersArabicCopy
+            ? 'تأكيد الطلب الآن'
           : prefersArabicCopy
             ? 'اشتر الآن'
             : 'Buy now');
@@ -277,6 +289,8 @@ export const useQuickOrderThemeStyles = ({
       : 'rounded-[1.55rem] border border-[#d8dfd2] bg-white/95 p-4 shadow-[0_20px_56px_-52px_rgba(17,24,39,0.18)]'
     : isVelaFashionQuickOrder
       ? 'rounded-[1.45rem] border border-[#efd9df] bg-[linear-gradient(180deg,#fffefe_0%,#fff7f9_100%)] p-4 shadow-[0_20px_60px_-52px_rgba(176,125,139,0.18)] sm:p-5'
+    : isMarketplaceQuickOrder && isMergedBuyboxSurface
+      ? 'space-y-4'
     : 'rounded-[1.85rem] border border-border/70 bg-background p-5 shadow-[0_34px_100px_-78px_rgba(15,23,42,0.38)] sm:p-6';
 
   const quantitySurfaceClassName = isRedlineAutoQuickOrder
@@ -315,6 +329,8 @@ export const useQuickOrderThemeStyles = ({
     ? 'min-h-[3.4rem] rounded-[1rem] bg-[#111111] px-4 text-sm font-black text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60'
     : isVelaFashionQuickOrder
       ? 'min-h-[3.4rem] rounded-[1rem] border border-[#7a5260] bg-[#7a5260] px-4 text-sm font-black text-white transition hover:bg-[#946777] disabled:cursor-not-allowed disabled:opacity-60'
+    : isMarketplaceQuickOrder
+      ? 'min-h-[3.5rem] w-full rounded-full !bg-[#eb485b] hover:!bg-[#d93a4d] px-5 py-3.5 text-sm sm:text-base font-bold !text-white shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer border-0'
     : 'min-h-[3.65rem] rounded-[1.05rem] bg-black px-4 text-sm font-black text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 
   const resolvedInputClassName = isRedlineAutoQuickOrder
@@ -327,6 +343,8 @@ export const useQuickOrderThemeStyles = ({
       ? 'w-full rounded-[1rem] border border-[#efd9df] bg-white px-4 py-3 text-sm font-medium text-[#5f3f48] outline-none transition focus:border-[#b07d8b] focus:ring-2 focus:ring-[#b07d8b]/12'
     : isWomenMergedBuyboxQuickOrder
       ? 'w-full rounded-[0.95rem] border border-[#ead8cf] bg-white px-3.5 py-2.5 text-sm text-[#3f2432] outline-none transition focus:border-[#8b3d33]/35 focus:ring-2 focus:ring-[#8b3d33]/10'
+    : isMarketplaceQuickOrder
+      ? 'w-full rounded-xl border border-border bg-background px-3.5 py-2.5 sm:py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-[#eb485b] focus:ring-2 focus:ring-[#eb485b]/15'
     : inputClassName;
 
   const fieldStackClassName = isRedlineAutoQuickOrder
