@@ -774,9 +774,11 @@ router.post('/kashier/webhook', async (req, res) => {
     }
 
     if (isGuest) {
+      // GuestOrder schema does not have a paymentStatus column
+      const { paymentStatus: _omittedPaymentStatus, ...guestUpdateData } = updateData;
       await prisma.guestOrder.update({
         where: { id: order.id },
-        data: updateData,
+        data: guestUpdateData,
       });
     } else {
       await prisma.order.update({

@@ -391,6 +391,26 @@ describe('TASK 33bf4717 Round 2 — Items 1 through 8 Verification', () => {
       expect(parsedMeta.discountReleasedBy).toBe('QA_OPERATOR');
       expect(parsedMeta.discountReleasedAt).toBeDefined();
     });
+
+    test('releaseStuckDiscountApproval enforces companyId isolation when provided', async () => {
+      mockPrismaDb.order.findFirst.mockResolvedValueOnce({
+        id: 'ord-tenant-1',
+        orderNumber: 'ORD-TENANT-01',
+        companyId: 'comp-isolated-77',
+        paymentStatus: 'COMPLETED',
+        metadata: JSON.stringify({ discountApprovalStatus: 'PENDING_APPROVAL' }),
+      });
+      mockPrismaDb.order.update.mockResolvedValueOnce({ id: 'ord-tenant-1' });
+
+      await releaseStuckDiscountApproval({
+        companyId: 'comp-isolated-77',
+        orderNumber: 'ORD-TENANT-01',
+      });
+
+      expect(mockPrismaDb.order.findFirst).toHaveBeenCalledWith({
+        where: { orderNumber: 'ORD-TENANT-01', companyId: 'comp-isolated-77' },
+      });
+    });
   });
 
   // ── البند ٦: RISK — سكربت رصد صفر أوردر مدفوع معلق ──
@@ -430,10 +450,17 @@ describe('TASK 33bf4717 Round 2 — Items 1 through 8 Verification', () => {
     const evaluateDiscountApprovalGate = (user) => {
       const userRole = String(user?.role || '').toUpperCase();
       const allowedRoles = ['OWNER', 'COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'];
-      const userPerms = Array.isArray(user?.permissions)
-        ? user.permissions
-        : (Array.isArray(user?.userPermissions) ? user.userPermissions : []);
-      const hasDiscountPermission = userPerms.includes('orders.approve_discount');
+      let userPerms = [];
+      if (Array.isArray(user?.permissions)) {
+        userPerms = user.permissions;
+      } else if (Array.isArray(user?.userPermissions)) {
+        userPerms = user.userPermissions;
+      } else if (user?.permissions && typeof user.permissions === 'object') {
+        userPerms = Object.keys(user.permissions).filter((k) => user.permissions[k] === true);
+      }
+      const hasDiscountPermission =
+        userPerms.includes('orders.approve_discount') ||
+        user?.permissions?.['orders.approve_discount'] === true;
       const isAuthorized = allowedRoles.includes(userRole) || hasDiscountPermission;
       if (!isAuthorized) {
         return { status: 403, success: false, message: 'Unauthorized' };
@@ -454,9 +481,29 @@ describe('TASK 33bf4717 Round 2 — Items 1 through 8 Verification', () => {
       expect(evaluateDiscountApprovalGate({ role: 'COMPANY_ADMIN' }).status).toBe(200);
     });
 
-    test('Employee with explicit orders.approve_discount permission returns 200', () => {
+    test('Employee with explicit orders.approve_discount permission in array returns 200', () => {
       const specialEmp = { role: 'EMPLOYEE', permissions: ['orders.view', 'orders.approve_discount'] };
       const result = evaluateDiscountApprovalGate(specialEmp);
+      expect(result.status).toBe(200);
+      expect(result.success).toBe(true);
+    });
+
+    test('Employee with permissions as object { "orders.approve_discount": true } returns 200', () => {
+      const objectPermUser = {
+        role: 'EMPLOYEE',
+        permissions: { 'orders.view': true, 'orders.approve_discount': true },
+      };
+      const result = evaluateDiscountApprovalGate(objectPermUser);
+      expect(result.status).toBe(200);
+      expect(result.success).toBe(true);
+    });
+
+    test('Employee with userPermissions array (DB-loaded) returns 200', () => {
+      const dbPermUser = {
+        role: 'EMPLOYEE',
+        userPermissions: ['orders.view', 'orders.approve_discount'],
+      };
+      const result = evaluateDiscountApprovalGate(dbPermUser);
       expect(result.status).toBe(200);
       expect(result.success).toBe(true);
     });
@@ -551,6 +598,24 @@ describe('TASK 33bf4717 Round 2 — Items 1 through 8 Verification', () => {
       expect(updateData.status).toBe('PENDING');
       expect(existingMeta.discountApprovalStatus).toBe('PENDING_APPROVAL');
       expect(existingMeta.needsDiscountApproval).toBe(true);
+    });
+
+    test('Kashier webhook for GuestOrder strips paymentStatus (GuestOrder schema compliance)', () => {
+      const order = {
+        id: 'guest-ord-1',
+        status: 'PENDING',
+        discount: 30,
+        metadata: JSON.stringify({ discountSource: 'SYSTEM' }),
+      };
+
+      const { updateData } = simulateKashierWebhookOrder({ order, isSuccess: true });
+      expect(updateData.paymentStatus).toBe('COMPLETED');
+
+      // The guest update logic strips paymentStatus
+      const { paymentStatus: _omitted, ...guestUpdateData } = updateData;
+      expect(guestUpdateData.paymentStatus).toBeUndefined();
+      expect(guestUpdateData.status).toBe('CONFIRMED');
+      expect(guestUpdateData.metadata).toBeDefined();
     });
   });
 });

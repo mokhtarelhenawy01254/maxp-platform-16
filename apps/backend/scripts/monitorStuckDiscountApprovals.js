@@ -62,11 +62,16 @@ if (require.main === module) {
   let companyIdArg = null;
   let minDaysArg = null;
 
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
     if (arg.startsWith('--company-id=')) companyIdArg = arg.split('=')[1];
+    else if (arg === '--company-id' && args[i + 1]) companyIdArg = args[++i];
     else if (arg.startsWith('--companyId=')) companyIdArg = arg.split('=')[1];
+    else if (arg === '--companyId' && args[i + 1]) companyIdArg = args[++i];
     else if (arg.startsWith('--min-days=')) minDaysArg = Number(arg.split('=')[1]);
+    else if (arg === '--min-days' && args[i + 1]) minDaysArg = Number(args[++i]);
     else if (arg.startsWith('--days=')) minDaysArg = Number(arg.split('=')[1]);
+    else if (arg === '--days' && args[i + 1]) minDaysArg = Number(args[++i]);
   }
 
   monitorStuckDiscountApprovals({ companyId: companyIdArg, minDays: minDaysArg })

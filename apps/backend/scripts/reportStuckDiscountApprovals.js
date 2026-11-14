@@ -135,11 +135,16 @@ if (require.main === module) {
   let releaseOrderArg = null;
   let daysArg = 60;
 
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
     if (arg.startsWith('--company-id=')) companyIdArg = arg.split('=')[1];
+    else if (arg === '--company-id' && args[i + 1]) companyIdArg = args[++i];
     else if (arg.startsWith('--companyId=')) companyIdArg = arg.split('=')[1];
+    else if (arg === '--companyId' && args[i + 1]) companyIdArg = args[++i];
     else if (arg.startsWith('--release=')) releaseOrderArg = arg.split('=')[1];
+    else if (arg === '--release' && args[i + 1]) releaseOrderArg = args[++i];
     else if (arg.startsWith('--days=')) daysArg = Number(arg.split('=')[1]) || 60;
+    else if (arg === '--days' && args[i + 1]) daysArg = Number(args[++i]) || 60;
   }
 
   if (releaseOrderArg) {

@@ -6829,10 +6829,17 @@ router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateTo
     // فحص صلاحيات اعتماد/رفض الخصم (OWNER / COMPANY_ADMIN / MANAGER أو صلاحية orders.approve_discount)
     const userRole = String(req.user?.role || '').toUpperCase();
     const allowedRoles = ['OWNER', 'COMPANY_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN'];
-    const userPerms = Array.isArray(req.user?.permissions)
-      ? req.user.permissions
-      : (Array.isArray(req.user?.userPermissions) ? req.user.userPermissions : []);
-    const hasDiscountPermission = userPerms.includes('orders.approve_discount');
+    let userPerms = [];
+    if (Array.isArray(req.user?.permissions)) {
+      userPerms = req.user.permissions;
+    } else if (Array.isArray(req.user?.userPermissions)) {
+      userPerms = req.user.userPermissions;
+    } else if (req.user?.permissions && typeof req.user.permissions === 'object') {
+      userPerms = Object.keys(req.user.permissions).filter((k) => req.user.permissions[k] === true);
+    }
+    const hasDiscountPermission =
+      userPerms.includes('orders.approve_discount') ||
+      req.user?.permissions?.['orders.approve_discount'] === true;
     const isAuthorized = allowedRoles.includes(userRole) || hasDiscountPermission;
 
     if (!isAuthorized) {
