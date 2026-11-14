@@ -249,6 +249,12 @@ async function createCourier(companyId, data) {
     return isNaN(d.getTime()) ? null : d;
   };
 
+  const parseSafeInt = (val) => {
+    if (val === undefined || val === null || val === '') return null;
+    const num = parseInt(val, 10);
+    return Number.isFinite(num) ? num : null;
+  };
+
   const created = await prisma.courier.create({
     data: {
       companyId,
@@ -266,7 +272,7 @@ async function createCourier(companyId, data) {
       salaryBase: data.salaryBase !== undefined && data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null,
       compensationModel: data.compensationModel || (data.commissionType === 'SALARY_ONLY' ? 'SALARY_ONLY' : 'COMMISSION_ONLY'),
       bonusPerOrder: data.bonusPerOrder !== undefined && data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null,
-      bonusStartsAfterOrders: data.bonusStartsAfterOrders !== undefined && data.bonusStartsAfterOrders !== null ? parseInt(data.bonusStartsAfterOrders, 10) : null,
+      bonusStartsAfterOrders: parseSafeInt(data.bonusStartsAfterOrders),
       bonusTiers: data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null,
       status: data.status || 'AVAILABLE',
       notes: data.notes?.trim() || null,
@@ -328,7 +334,14 @@ async function updateCourier(companyId, courierId, data) {
   if (data.salaryBase !== undefined) updateData.salaryBase = data.salaryBase !== null ? normalizeAmount(data.salaryBase) : null;
   if (data.compensationModel !== undefined) updateData.compensationModel = data.compensationModel;
   if (data.bonusPerOrder !== undefined) updateData.bonusPerOrder = data.bonusPerOrder !== null ? normalizeAmount(data.bonusPerOrder) : null;
-  if (data.bonusStartsAfterOrders !== undefined) updateData.bonusStartsAfterOrders = data.bonusStartsAfterOrders !== null ? parseInt(data.bonusStartsAfterOrders, 10) : null;
+  if (data.bonusStartsAfterOrders !== undefined) {
+    if (data.bonusStartsAfterOrders === null || data.bonusStartsAfterOrders === '') {
+      updateData.bonusStartsAfterOrders = null;
+    } else {
+      const num = parseInt(data.bonusStartsAfterOrders, 10);
+      updateData.bonusStartsAfterOrders = Number.isFinite(num) ? num : null;
+    }
+  }
   if (data.bonusTiers !== undefined) {
     updateData.bonusTiers = data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null;
   }
