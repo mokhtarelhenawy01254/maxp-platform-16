@@ -681,7 +681,7 @@ const AGENT_ICONS = {
   MARKETING: '📢', ORDER: '📦', INVENTORY: '📊', COMPETITOR: '🔍',
   FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️', SALES_REP: '🛒',
   ORDER_CONFIRMATION: '✅', VOICE_ORDER_CONFIRMATION: '📞', SHIPPING: '🚚', STOCK_TARGET_MONITOR: '📈',
-  BROWSER_COPILOT: '🌐',
+  BROWSER_COPILOT: '🌐', EDUCATION_CENTER: '🎓', COURSE_COACH: '🧑‍🏫', ACADEMY_GRADER: '📝',
 };
 
 const AGENT_INDUSTRIES = {
@@ -701,6 +701,9 @@ const AGENT_INDUSTRIES = {
   'facebook-sales-support-agent': ['مبيعات فيسبوك', 'خدمة عملاء', 'تجارة إلكترونية', 'شات ومحادثات'],
   'customer-ceo': ['خدمة عملاء', 'تجارة إلكترونية'],
   'sas-sales-agent': ['مبيعات', 'تجارة إلكترونية', 'فيس بوك'],
+  'education-center-agent': ['تعليم وتدريب', 'أكاديميات', 'مدارس وسناتر'],
+  'course-coach-agent': ['تعليم وتدريب', 'أكاديميات', 'دورات تعليمية'],
+  'academy-grader-agent': ['تعليم وتدريب', 'أكاديميات', 'تصحيح وتقييم'],
 };
 
 function getDiskAgentTemplates() {

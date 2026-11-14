@@ -38,7 +38,7 @@
     "education-session-booking",
     "handoff-to-human"
   ],
-  "channels": ["dashboard", "whatsapp", "messenger"],
+  "channels": ["dashboard", "whatsapp", "messenger", "facebook"],
   "humanApproval": {
     "mode": "ON_WRITE",
     "requiredTools": ["education_enroll", "education_schedule_session", "education_cancel_session"],
