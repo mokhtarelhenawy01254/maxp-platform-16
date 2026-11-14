@@ -2177,18 +2177,13 @@ declare module 'react-i18next' {
         };
         settingsTab: {
           loading: string;
-          badge: string;
           title: string;
-          description: string;
           resetDefaults: string;
           saveChanges: string;
           modeTitle: string;
-          modeDesc: string;
           presetsTitle: string;
-          presetsSub: string;
           systemNameTitle: string;
           sectionsTitle: string;
-          sectionsHint: string;
           previewTitle: string;
         };
       };
@@ -7214,6 +7209,22 @@ declare module 'react-i18next' {
           edit: string;
           personaLabel: string;
           personaOverrideHint: string;
+          reasoningTitle: string;
+          reasoningHint: string;
+          reasoningNone: string;
+          reasoningNoneDesc: string;
+          reasoningMinimal: string;
+          reasoningMinimalDesc: string;
+          reasoningLow: string;
+          reasoningLowDesc: string;
+          reasoningMedium: string;
+          reasoningMediumDesc: string;
+          reasoningHigh: string;
+          reasoningHighDesc: string;
+          reasoningXHigh: string;
+          reasoningXHighDesc: string;
+          reasoningMax: string;
+          reasoningMaxDesc: string;
           lockedByAdmin: string;
         };
         quickTest: {
@@ -18613,6 +18624,7 @@ declare module 'react-i18next' {
         overlayCampaigns: string;
         productLandingPages: string;
         facebookInbox: string;
+        facebookPageInsights: string;
         facebookIntegrationSettings: string;
         facebookBlocked: string;
         facebookConnect: string;
@@ -20249,6 +20261,12 @@ declare module 'react-i18next' {
           aiKeyManager: string;
           aiKeyLogs: string;
           aiPlayground: string;
+          payoutRequests: string;
+          billingActivity: string;
+          externalApi: string;
+          aiIncidents: string;
+          appVersion: string;
+          metaApps: string;
           productEmbeddings: string;
           visualSearchLogs: string;
           aiHubSkills: string;
