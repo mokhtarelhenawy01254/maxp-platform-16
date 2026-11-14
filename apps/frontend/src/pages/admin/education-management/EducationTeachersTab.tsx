@@ -271,7 +271,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
               </div>
             )}
 
-            {/* Add Instructor Button */}
+            {/* Add Teacher Button */}
             <button
               type="button"
               onClick={() => setTeacherModal({})}
@@ -469,11 +469,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                         ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
                         : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                     }`}
-<<<<<<< Updated upstream
-                    aria-label={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")} title={t.isActive ? (isEn ? "Deactivate Instructor" : "تعطيل المهندس") : (isEn ? "Activate Instructor" : "تفعيل المهندس")}
-=======
-                    title={t.isActive ? (isEn ? "Deactivate Teacher" : "تعطيل المدرس") : (isEn ? "Activate Teacher" : "تفعيل المدرس")}
->>>>>>> Stashed changes
+                    aria-label={t.isActive ? (isEn ? "Deactivate Teacher" : "تعطيل المدرس") : (isEn ? "Activate Teacher" : "تفعيل المدرس")} title={t.isActive ? (isEn ? "Deactivate Teacher" : "تعطيل المدرس") : (isEn ? "Activate Teacher" : "تفعيل المدرس")}
                   >
                     <Power className="w-3 h-3" />
                     <span>{t.isActive ? (isEn ? "Deactivate" : "تعطيل") : (isEn ? "Activate" : "تفعيل")}</span>
@@ -484,11 +480,7 @@ export const EducationTeachersTab: React.FC<EducationTeachersTabProps> = ({
                     type="button"
                     onClick={() => handleDeleteTeacher(t.id)}
                     className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-<<<<<<< Updated upstream
-                    aria-label={isEn ? "Delete Instructor" : "حذف المهندس"} title={isEn ? "Delete Instructor" : "حذف المهندس"}
-=======
-                    title={isEn ? "Delete Teacher" : "حذف المدرس"}
->>>>>>> Stashed changes
+                    aria-label={isEn ? "Delete Teacher" : "حذف المدرس"} title={isEn ? "Delete Teacher" : "حذف المدرس"}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
