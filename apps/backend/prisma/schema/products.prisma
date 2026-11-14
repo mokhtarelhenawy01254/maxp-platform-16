@@ -27,6 +27,8 @@ model Customer {
   followUpReminderSentAt         DateTime?
   firstContactAt                 DateTime?
   slaFirstContactEscalatedAt     DateTime?
+  dealValue                      Decimal?                        @db.Decimal(12, 2)
+  expectedCloseDate              DateTime?
   tags                           String?
   notes                          String?
   metadata                       String?

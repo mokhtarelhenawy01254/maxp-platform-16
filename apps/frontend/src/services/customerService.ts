@@ -102,6 +102,8 @@ interface DueFollowUpLead {
     lastName: string;
   } | null;
   nextFollowUpDate?: string | null;
+  dealValue?: number | string | null;
+  expectedCloseDate?: string | null;
 }
 
 interface DueFollowUpsBucket {
@@ -121,6 +123,11 @@ interface LeadAnalytics {
   conversionRate: number;
   avgFirstResponseHours: number | null;
   firstContactTracked: boolean;
+  money?: {
+    openPipeline: number;
+    expectedThisMonth: number;
+    won: number;
+  };
 }
 
 interface CustomerFilters {

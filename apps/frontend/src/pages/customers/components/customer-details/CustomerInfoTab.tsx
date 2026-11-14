@@ -324,7 +324,7 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
           <span className="text-[11px] text-zinc-500">حالة المتابعة والجدول الزمني</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
           <div className="space-y-0.5">
             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">مرحلة المتابعة:</span>
             <span className="font-semibold text-purple-600 dark:text-purple-400">
@@ -373,6 +373,26 @@ export const CustomerInfoTab: React.FC<CustomerInfoTabProps> = ({
                 ? new Date(customer.nextFollowUpDate).toLocaleString("ar-EG", {
                     dateStyle: "short",
                     timeStyle: "short",
+                  })
+                : "غير محدد"}
+            </span>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">قيمة الصفقة:</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {customer.dealValue != null && Number(customer.dealValue) > 0
+                ? `${Number(customer.dealValue).toLocaleString("en-US")} ج.م`
+                : "غير محددة"}
+            </span>
+          </div>
+
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block">الإغلاق المتوقع:</span>
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200 tabular-nums">
+              {customer.expectedCloseDate
+                ? new Date(customer.expectedCloseDate).toLocaleDateString("ar-EG", {
+                    dateStyle: "medium",
                   })
                 : "غير محدد"}
             </span>

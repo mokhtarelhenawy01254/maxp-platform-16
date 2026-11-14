@@ -35,6 +35,8 @@ export interface CustomerDetailsData {
     expectedBudget?: string;
     preferredContactMethod?: string;
     nextFollowUpDate?: string;
+    dealValue?: number | string | null;
+    expectedCloseDate?: string | null;
     followUpLog?: Array<{
       id: string;
       type: string;

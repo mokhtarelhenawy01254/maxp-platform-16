@@ -24,6 +24,13 @@ const parseLeadDate = (value) => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 };
 
+// 🆕 Wave money: parse deal value ("12,500" / 12500 / "" → number | null | undefined)
+const parseDealValue = (value) => {
+  if (value === undefined || value === null || String(value).trim() === '') return value === '' ? null : undefined;
+  const parsed = parseFloat(String(value).replace(/,/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const getAllCustomer = async (req, res) => {
   try {
     // التحقق من المصادقة والشركة
@@ -2455,6 +2462,8 @@ const updateCustomer = async (req, res) => {
       expectedBudget,
       preferredContactMethod,
       nextFollowUpDate,
+      dealValue,
+      expectedCloseDate,
       followUpLog,
       newFollowUpEntry
     } = req.body;
@@ -2678,6 +2687,14 @@ const updateCustomer = async (req, res) => {
       leadColumns.nextFollowUpDate = parseLeadDate(nextFollowUpDate) || null;
       leadColumns.followUpReminderSentAt = null;
     }
+    // 🆕 Money wave: deal value + expected close date
+    if (dealValue !== undefined) {
+      const parsedDeal = parseDealValue(dealValue);
+      if (parsedDeal !== undefined) leadColumns.dealValue = parsedDeal;
+    }
+    if (expectedCloseDate !== undefined) {
+      leadColumns.expectedCloseDate = parseLeadDate(expectedCloseDate) || null;
+    }
     if (newFollowUpEntry && newFollowUpEntry.nextFollowUpDate) {
       const entryNextDateColumn = parseLeadDate(newFollowUpEntry.nextFollowUpDate);
       if (entryNextDateColumn) {
@@ -2777,6 +2794,8 @@ const createCustomer = async (req, res) => {
       expectedBudget,
       preferredContactMethod,
       nextFollowUpDate,
+      dealValue,
+      expectedCloseDate,
       initialFollowUpNote,
       followUpLog
     } = req.body;
@@ -2853,6 +2872,8 @@ const createCustomer = async (req, res) => {
     const leadPriorityColumn = normalizeLeadEnum(leadPriority, LEAD_PRIORITY_VALUES);
     const leadSourceColumn = normalizeLeadEnum(leadSource, LEAD_SOURCE_VALUES);
     const nextFollowUpColumn = parseLeadDate(nextFollowUpDate);
+    const dealValueColumn = parseDealValue(dealValue);
+    const expectedCloseColumn = parseLeadDate(expectedCloseDate);
 
     const newCustomer = await getSharedPrismaClient().customer.create({
       data: {
@@ -2868,6 +2889,8 @@ const createCustomer = async (req, res) => {
         ...(leadPriorityColumn ? { leadPriority: leadPriorityColumn } : {}),
         ...(leadSourceColumn ? { leadSource: leadSourceColumn } : {}),
         ...(nextFollowUpColumn ? { nextFollowUpDate: nextFollowUpColumn } : {}),
+        ...(dealValueColumn !== undefined && dealValueColumn !== null ? { dealValue: dealValueColumn } : {}),
+        ...(expectedCloseColumn ? { expectedCloseDate: expectedCloseColumn } : {}),
         notes: notes || null,
         tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]',
         metadata: JSON.stringify(parsedMetadata),
@@ -3420,8 +3443,11 @@ const getLeadAnalytics = async (req, res) => {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
     const prisma = getSharedPrismaClient();
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    const [byStage, bySource, firstResponseAgg] = await Promise.all([
+    const [byStage, bySource, firstResponseAgg, openAgg, monthAgg, wonAgg] = await Promise.all([
       prisma.customer.groupBy({
         by: ['leadStage'],
         where: { companyId },
@@ -3449,6 +3475,30 @@ const getLeadAnalytics = async (req, res) => {
           return sum + (new Date(r.firstContactAt) - new Date(r.createdAt)) / 3600000;
         }, 0);
         return rows.length > 0 ? parseFloat((totalHours / rows.length).toFixed(1)) : null;
+      }),
+      // 🆕 Money wave: open pipeline value (active stages only)
+      prisma.customer.aggregate({
+        where: {
+          companyId,
+          dealValue: { not: null },
+          leadStage: { notIn: ['CONVERTED', 'NOT_INTERESTED', 'LOST'] }
+        },
+        _sum: { dealValue: true }
+      }),
+      // 🆕 Money wave: expected to close this month
+      prisma.customer.aggregate({
+        where: {
+          companyId,
+          dealValue: { not: null },
+          expectedCloseDate: { gte: monthStart, lte: monthEnd },
+          leadStage: { notIn: ['LOST', 'NOT_INTERESTED'] }
+        },
+        _sum: { dealValue: true }
+      }),
+      // 🆕 Money wave: won value
+      prisma.customer.aggregate({
+        where: { companyId, leadStage: 'CONVERTED', dealValue: { not: null } },
+        _sum: { dealValue: true }
       })
     ]);
 
@@ -3460,6 +3510,12 @@ const getLeadAnalytics = async (req, res) => {
     const totalLeads = Object.values(stageCounts).reduce((a, b) => a + b, 0);
     const converted = stageCounts.CONVERTED || 0;
 
+    const money = {
+      openPipeline: parseFloat(String(openAgg._sum.dealValue || 0)),
+      expectedThisMonth: parseFloat(String(monthAgg._sum.dealValue || 0)),
+      won: parseFloat(String(wonAgg._sum.dealValue || 0))
+    };
+
     res.json({
       success: true,
       data: {
@@ -3469,7 +3525,8 @@ const getLeadAnalytics = async (req, res) => {
         converted,
         conversionRate: totalLeads > 0 ? parseFloat(((converted / totalLeads) * 100).toFixed(1)) : 0,
         avgFirstResponseHours: firstResponseAgg,
-        firstContactTracked: firstResponseAgg !== null
+        firstContactTracked: firstResponseAgg !== null,
+        money
       }
     });
   } catch (error) {

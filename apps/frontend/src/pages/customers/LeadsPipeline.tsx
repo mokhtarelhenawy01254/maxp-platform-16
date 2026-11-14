@@ -8,6 +8,7 @@ import {
   User,
   RefreshCcw,
   AlertTriangle,
+  Banknote,
 } from "lucide-react";
 import {
   customerService,
@@ -215,6 +216,12 @@ const LeadsPipeline: React.FC = () => {
             </span>
           )}
         </div>
+        {c.dealValue != null && Number(c.dealValue) > 0 && (
+          <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            <Banknote className="h-3 w-3 shrink-0" />
+            <span dir="ltr">{Number(c.dealValue).toLocaleString("en-US")} ج.م</span>
+          </div>
+        )}
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground min-w-0">
           <User className="h-3 w-3 shrink-0" />
           <span className="truncate min-w-0">{assignee || "غير مُسند"}</span>
@@ -332,6 +339,22 @@ const LeadsPipeline: React.FC = () => {
               متوسط أول رد: {analytics.avgFirstResponseHours} ساعة
             </span>
           )}
+          {analytics.money && analytics.money.openPipeline > 0 && (
+            <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 tabular-nums whitespace-nowrap">
+              <Banknote className="h-3 w-3" />
+              <span dir="ltr">الخط الحي {analytics.money.openPipeline.toLocaleString("en-US")} ج.م</span>
+            </span>
+          )}
+          {analytics.money && analytics.money.expectedThisMonth > 0 && (
+            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tabular-nums whitespace-nowrap">
+              <span dir="ltr">متوقع الشهر {analytics.money.expectedThisMonth.toLocaleString("en-US")} ج.م</span>
+            </span>
+          )}
+          {analytics.money && analytics.money.won > 0 && (
+            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-card text-muted-foreground border border-border/70 tabular-nums whitespace-nowrap">
+              <span dir="ltr">محقق {analytics.money.won.toLocaleString("en-US")} ج.م</span>
+            </span>
+          )}
         </div>
       )}
 
@@ -361,6 +384,10 @@ const LeadsPipeline: React.FC = () => {
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1">
           {STAGES.map((stage) => {
             const stageLeads = filtered.filter((c) => stageOf(c) === stage.key);
+            const stageMoney = stageLeads.reduce(
+              (sum, c) => sum + (Number(c.dealValue) || 0),
+              0,
+            );
             const isDragOver = dragOverStage === stage.key;
             return (
               <div
@@ -393,6 +420,14 @@ const LeadsPipeline: React.FC = () => {
                     {stageLeads.length}
                   </span>
                 </div>
+                {stageMoney > 0 && (
+                  <div
+                    className="px-3 pb-1.5 pt-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                    dir="ltr"
+                  >
+                    {stageMoney.toLocaleString("en-US")} ج.م
+                  </div>
+                )}
                 {/* Cards */}
                 <div className="flex flex-col gap-2 p-2 min-h-24 max-h-[calc(100vh-16rem)] overflow-y-auto">
                   {stageLeads.length === 0 ? (

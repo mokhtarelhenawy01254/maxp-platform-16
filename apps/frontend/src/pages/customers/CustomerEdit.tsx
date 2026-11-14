@@ -47,6 +47,8 @@ interface CustomerFormData {
   leadStage: string;
   leadPriority: string;
   leadSource: string;
+  dealValue: string;
+  expectedCloseDate: string;
   customerJob: string;
   customerInterests: string;
   inquiryDetails: string;
@@ -98,6 +100,8 @@ const CustomerEdit: React.FC = () => {
     leadStage: "NEW_LEAD",
     leadPriority: "WARM",
     leadSource: "WHATSAPP",
+    dealValue: "",
+    expectedCloseDate: "",
     customerJob: "",
     customerInterests: "",
     inquiryDetails: "",
@@ -154,6 +158,8 @@ const CustomerEdit: React.FC = () => {
           leadStage: c?.leadStage || m?.leadStage || "NEW_LEAD",
           leadPriority: c?.leadPriority || m?.leadPriority || "WARM",
           leadSource: c?.leadSource || m?.leadSource || "WHATSAPP",
+          dealValue: c?.dealValue != null ? String(c.dealValue) : "",
+          expectedCloseDate: c?.expectedCloseDate ? String(c.expectedCloseDate).slice(0, 10) : "",
           customerJob: c?.customerJob || m?.customerJob || "",
           customerInterests: c?.customerInterests || m?.customerInterests || "",
           inquiryDetails: c?.inquiryDetails || m?.inquiryDetails || "",
@@ -219,6 +225,8 @@ const CustomerEdit: React.FC = () => {
         leadStage: formData.leadStage,
         leadPriority: formData.leadPriority,
         leadSource: formData.leadSource,
+        dealValue: formData.dealValue.trim() === "" ? null : formData.dealValue,
+        expectedCloseDate: formData.expectedCloseDate.trim() || null,
         customerJob: formData.customerJob.trim() || "",
         customerInterests: formData.customerInterests.trim() || "",
         inquiryDetails: formData.inquiryDetails.trim() || "",
@@ -572,6 +580,29 @@ const CustomerEdit: React.FC = () => {
                 <option value="WALK_IN">زيارة مباشرة للمقر (Walk-in)</option>
                 <option value="OTHER">أخرى (Other)</option>
               </select>
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-foreground">قيمة الصفقة المتوقعة (ج.م)</label>
+              <input
+                type="number"
+                name="dealValue"
+                value={formData.dealValue}
+                onChange={handleChange}
+                min="0"
+                step="any"
+                placeholder="مثال: 12500"
+                className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium tabular-nums"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-foreground">تاريخ الإغلاق المتوقع</label>
+              <input
+                type="date"
+                name="expectedCloseDate"
+                value={formData.expectedCloseDate}
+                onChange={handleChange}
+                className="w-full px-3 py-1.5 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-medium tabular-nums"
+              />
             </div>
           </div>
         </section>

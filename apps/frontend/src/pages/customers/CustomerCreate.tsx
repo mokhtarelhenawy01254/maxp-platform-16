@@ -49,6 +49,8 @@ interface CustomerFormData {
   leadStage: string;
   leadPriority: string;
   leadSource: string;
+  dealValue: string;
+  expectedCloseDate: string;
   customerJob: string;
   customerInterests: string;
   inquiryDetails: string;
@@ -96,6 +98,8 @@ const CustomerCreate: React.FC = () => {
     leadStage: "NEW_LEAD",
     leadPriority: "WARM",
     leadSource: "WHATSAPP",
+    dealValue: "",
+    expectedCloseDate: "",
     customerJob: "",
     customerInterests: "",
     inquiryDetails: "",
@@ -161,6 +165,8 @@ const CustomerCreate: React.FC = () => {
         leadStage: formData.leadStage,
         leadPriority: formData.leadPriority,
         leadSource: formData.leadSource,
+        dealValue: formData.dealValue.trim() || undefined,
+        expectedCloseDate: formData.expectedCloseDate.trim() || undefined,
         customerJob: formData.customerJob.trim() || undefined,
         customerInterests: formData.customerInterests.trim() || undefined,
         inquiryDetails: formData.inquiryDetails.trim() || undefined,
@@ -566,6 +572,33 @@ const CustomerCreate: React.FC = () => {
                 <option value="WALK_IN">زيارة مباشرة للمقر (Walk-in)</option>
                 <option value="OTHER">أخرى (Other)</option>
               </select>
+            </div>
+
+            {/* Deal Value */}
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground font-medium">قيمة الصفقة المتوقعة (ج.م)</label>
+              <input
+                type="number"
+                name="dealValue"
+                value={formData.dealValue}
+                onChange={handleChange}
+                min="0"
+                step="any"
+                placeholder="مثال: 12500"
+                className="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-medium tabular-nums"
+              />
+            </div>
+
+            {/* Expected Close Date */}
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground font-medium">تاريخ الإغلاق المتوقع</label>
+              <input
+                type="date"
+                name="expectedCloseDate"
+                value={formData.expectedCloseDate}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-medium tabular-nums"
+              />
             </div>
           </div>
         </div>
