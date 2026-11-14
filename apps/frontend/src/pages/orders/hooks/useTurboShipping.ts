@@ -58,6 +58,8 @@ export const useTurboShipping = (
                 turboTrackingNumber: response.data.data.trackingNumber,
                 turboShipmentStatus: response.data.data.status,
                 turboLabelUrl: response.data.data.labelUrl,
+                ...(response.data.data.orderStatus ? { status: response.data.data.orderStatus } : {}),
+                ...(response.data.data.metadata ? { metadata: typeof response.data.data.metadata === 'string' ? response.data.data.metadata : JSON.stringify(response.data.data.metadata) } : {}),
               }
             : null,
         );

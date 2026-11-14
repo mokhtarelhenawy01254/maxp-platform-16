@@ -60,7 +60,7 @@ export default function OrderStatusAutomationPage() {
   // Fetch store statuses
   const fetchStatuses = useCallback(async () => {
     try {
-      const res = await apiClient.get("/order-status");
+      const res = await apiClient.get("/order-status?statusType=order");
       if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
         setStatuses(res.data.data);
       }

@@ -162,4 +162,79 @@ describe('turboController.bulkCreateShipments', () => {
       })
     );
   });
+
+  test('reverts ON_HOLD_PREP orders to CONFIRMED and PENDING_PREPARATION without triggering conflicting automation', async () => {
+    mockPrisma.company.findUnique.mockResolvedValue({
+      id: 'company-1',
+      turboApiKey: 'valid-api-key',
+      turboEnabled: true,
+      settings: JSON.stringify({
+        turboAutomationEnabled: true,
+        turboAutomationStatus: 'PROCESSING',
+      }),
+    });
+
+    mockPrisma.order.findMany.mockResolvedValue([
+      {
+        id: 'ord-hold-1',
+        orderNumber: 'ORD-HOLD-1',
+        companyId: 'company-1',
+        turboShipmentId: null,
+        status: 'ON_HOLD_PREP',
+        metadata: JSON.stringify({
+          preparationStatus: 'ON_HOLD_PREP',
+          preparationHold: { state: 'held', reason: 'مشكلة عنوان' },
+        }),
+        customer: { firstName: 'Mokhtar', phone: '01012345678' },
+        customerAddress: 'طريق المحور',
+        governorate: 'الجيزة',
+        orderItems: [{ productName: 'فستان', quantity: 1, price: 500, total: 500 }],
+        turboMetadata: null,
+      },
+    ]);
+
+    mockPrisma.guestOrder.findMany.mockResolvedValue([]);
+
+    mockFormatOrderForTurbo.mockReturnValue({
+      orderId: 'ord-hold-1',
+      orderNumber: 'ORD-HOLD-1',
+    });
+
+    mockCreateShipment.mockResolvedValue({
+      shipmentId: 'TURBO-HOLD-1',
+      trackingNumber: '38129999',
+      status: 'created',
+      labelUrl: 'https://label.turbo/hold1',
+      data: { id: 'TURBO-HOLD-1' },
+    });
+
+    mockPrisma.order.updateMany.mockResolvedValue({ count: 1 });
+
+    const req = {
+      user: { companyId: 'company-1' },
+      body: { orderIds: ['ORD-HOLD-1'] },
+    };
+    const res = createMockResponse();
+
+    await turboController.bulkCreateShipments(req, res);
+
+    expect(mockPrisma.order.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { orderNumber: 'ORD-HOLD-1', companyId: 'company-1' },
+        data: expect.objectContaining({
+          status: 'CONFIRMED',
+          turboShipmentId: 'TURBO-HOLD-1',
+          turboTrackingNumber: '38129999',
+        }),
+      })
+    );
+
+    const updateCall = mockPrisma.order.updateMany.mock.calls[0][0];
+    const savedMeta = JSON.parse(updateCall.data.metadata);
+    expect(savedMeta.preparationStatus).toBe('PENDING_PREPARATION');
+    expect(savedMeta.preparationHold.state).toBe('released');
+
+    const orderService = require('../../services/orderService');
+    expect(orderService.updateOrderStatus).not.toHaveBeenCalled();
+  });
 });

@@ -96,7 +96,26 @@ const createShipment = async (req, res) => {
       orderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
     } catch (_) { orderMeta = {}; }
 
-    if (orderMeta.preparationStatus || orderMeta.preparationHold || order.status === 'ON_HOLD_PREP') {
+    const wasHeldInPrep = order.status === 'ON_HOLD_PREP' ||
+      orderMeta.preparationStatus === 'ON_HOLD_PREP' ||
+      (orderMeta.preparationHold && orderMeta.preparationHold.state === 'held');
+
+    if (wasHeldInPrep) {
+      // 🛡️ عندما يكون الأوردر معلقاً في التجهيز وتتم إعادة إرساله لتربو:
+      // يعود إلى خط التجهيز كـ "في انتظار التجهيز" (PENDING_PREPARATION) وحالته العامة "مؤكد" (CONFIRMED)
+      orderMeta.preparationStatus = 'PENDING_PREPARATION';
+      orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
+      if (orderMeta.preparationHold) {
+        orderMeta.preparationHold = {
+          ...orderMeta.preparationHold,
+          state: 'released',
+          releasedAt: new Date().toISOString(),
+          releasedBy: req.user?.name || req.user?.email || 'TURBO_DISPATCH'
+        };
+      }
+      updateData.metadata = JSON.stringify(orderMeta);
+      updateData.status = 'CONFIRMED';
+    } else if (orderMeta.preparationStatus || orderMeta.preparationHold) {
       orderMeta.preparationStatus = 'READY_TO_SHIP';
       orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
       if (orderMeta.preparationHold) {
@@ -108,9 +127,9 @@ const createShipment = async (req, res) => {
         };
       }
       updateData.metadata = JSON.stringify(orderMeta);
-    }
-    if (order.status === 'ON_HOLD_PREP' || order.status === 'PROCESSING') {
-      updateData.status = 'READY_TO_SHIP';
+      if (order.status === 'PROCESSING') {
+        updateData.status = 'READY_TO_SHIP';
+      }
     }
     if (order.tableType === 'GuestOrder') {
       await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
@@ -171,9 +190,29 @@ const createShipment = async (req, res) => {
     }
     try {
       const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
-      if (company?.settings) { const cs = JSON.parse(company.settings); if (cs.turboAutomationEnabled && cs.turboAutomationStatus && cs.turboAutomationStatus !== order.status) { await orderService.updateOrderStatus(order.orderNumber, companyId, cs.turboAutomationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح', 'SYSTEM', 'System Automation', null, true); } }
+      if (company?.settings) {
+        const cs = JSON.parse(company.settings);
+        if (!wasHeldInPrep && cs.turboAutomationEnabled && cs.turboAutomationStatus && cs.turboAutomationStatus !== order.status) {
+          if (order.tableType === 'GuestOrder') {
+            await orderService.updateGuestOrderStatus(order.orderNumber, companyId, cs.turboAutomationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح', 'SYSTEM', 'System Automation', null, { skipCallAttemptGuard: true, skipTransitionValidation: true }).catch(() => {});
+          } else {
+            await orderService.updateOrderStatus(order.orderNumber, companyId, cs.turboAutomationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح', 'SYSTEM', 'System Automation', null, true).catch(() => {});
+          }
+        }
+      }
     } catch (autoErr) { console.error('⚠️ [TURBO-AUTOMATION] Error running turbo automation:', autoErr.message); }
-    res.json({ success: true, data: { shipmentId: result.shipmentId, trackingNumber: result.trackingNumber, status: result.status, labelUrl: result.labelUrl, estimatedDelivery: result.estimatedDelivery } });
+    res.json({
+      success: true,
+      data: {
+        shipmentId: result.shipmentId,
+        trackingNumber: result.trackingNumber,
+        status: result.status,
+        labelUrl: result.labelUrl,
+        estimatedDelivery: result.estimatedDelivery,
+        orderStatus: updateData.status || order.status,
+        metadata: orderMeta
+      }
+    });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error creating shipment:', error);
     res.status(500).json({ success: false, error: error.message || 'Failed to create shipment' });
@@ -332,7 +371,24 @@ const bulkCreateShipments = async (req, res) => {
           orderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
         } catch (_) {}
 
-        if (orderMeta.preparationStatus || orderMeta.preparationHold || order.status === 'ON_HOLD_PREP') {
+        const wasHeldInPrep = order.status === 'ON_HOLD_PREP' ||
+          orderMeta.preparationStatus === 'ON_HOLD_PREP' ||
+          (orderMeta.preparationHold && orderMeta.preparationHold.state === 'held');
+
+        if (wasHeldInPrep) {
+          orderMeta.preparationStatus = 'PENDING_PREPARATION';
+          orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
+          if (orderMeta.preparationHold) {
+            orderMeta.preparationHold = {
+              ...orderMeta.preparationHold,
+              state: 'released',
+              releasedAt: new Date().toISOString(),
+              releasedBy: req.user?.name || req.user?.email || 'TURBO_BULK_DISPATCH'
+            };
+          }
+          updateData.metadata = JSON.stringify(orderMeta);
+          updateData.status = 'CONFIRMED';
+        } else if (orderMeta.preparationStatus || orderMeta.preparationHold) {
           const nextPrepStatus = automationStatus || 'READY_TO_SHIP';
           orderMeta.preparationStatus = nextPrepStatus;
           orderMeta.preparationStatusUpdatedAt = new Date().toISOString();
@@ -347,7 +403,7 @@ const bulkCreateShipments = async (req, res) => {
           updateData.metadata = JSON.stringify(orderMeta);
         }
 
-        if (!automationStatus && (order.status === 'ON_HOLD_PREP' || order.status === 'PROCESSING')) {
+        if (!wasHeldInPrep && !automationStatus && (order.status === 'ON_HOLD_PREP' || order.status === 'PROCESSING')) {
           updateData.status = 'READY_TO_SHIP';
         }
 
@@ -397,7 +453,7 @@ const bulkCreateShipments = async (req, res) => {
           }
         } catch (_) {}
 
-        if (automationStatus && automationStatus !== order.status) {
+        if (!wasHeldInPrep && automationStatus && automationStatus !== order.status) {
           try {
             await orderService.updateOrderStatus(order.orderNumber, companyId, automationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح (إرسال جماعي)', 'SYSTEM', 'System Automation', null, true);
           } catch (autoErr) {
@@ -521,7 +577,24 @@ const bulkCreateShipments = async (req, res) => {
           guestMeta = typeof guest.metadata === 'string' ? JSON.parse(guest.metadata || '{}') : (guest.metadata || {});
         } catch (_) {}
 
-        if (guestMeta.preparationStatus || guestMeta.preparationHold || guest.status === 'ON_HOLD_PREP') {
+        const wasGuestHeldInPrep = guest.status === 'ON_HOLD_PREP' ||
+          guestMeta.preparationStatus === 'ON_HOLD_PREP' ||
+          (guestMeta.preparationHold && guestMeta.preparationHold.state === 'held');
+
+        if (wasGuestHeldInPrep) {
+          guestMeta.preparationStatus = 'PENDING_PREPARATION';
+          guestMeta.preparationStatusUpdatedAt = new Date().toISOString();
+          if (guestMeta.preparationHold) {
+            guestMeta.preparationHold = {
+              ...guestMeta.preparationHold,
+              state: 'released',
+              releasedAt: new Date().toISOString(),
+              releasedBy: req.user?.name || req.user?.email || 'TURBO_BULK_DISPATCH'
+            };
+          }
+          updateData.metadata = JSON.stringify(guestMeta);
+          updateData.status = 'CONFIRMED';
+        } else if (guestMeta.preparationStatus || guestMeta.preparationHold) {
           const nextPrepStatus = automationStatus || 'READY_TO_SHIP';
           guestMeta.preparationStatus = nextPrepStatus;
           guestMeta.preparationStatusUpdatedAt = new Date().toISOString();
@@ -536,7 +609,7 @@ const bulkCreateShipments = async (req, res) => {
           updateData.metadata = JSON.stringify(guestMeta);
         }
 
-        if (!automationStatus && (guest.status === 'ON_HOLD_PREP' || guest.status === 'PROCESSING')) {
+        if (!wasGuestHeldInPrep && !automationStatus && (guest.status === 'ON_HOLD_PREP' || guest.status === 'PROCESSING')) {
           updateData.status = 'READY_TO_SHIP';
         }
 
@@ -552,7 +625,7 @@ const bulkCreateShipments = async (req, res) => {
           }), 3).catch(() => {});
         }
 
-        if (automationStatus && automationStatus !== guest.status) {
+        if (!wasGuestHeldInPrep && automationStatus && automationStatus !== guest.status) {
           try {
             await orderService.updateGuestOrderStatus(guest.orderNumber, companyId, automationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح (إرسال جماعي)', 'SYSTEM', 'System Automation', null, { skipCallAttemptGuard: true, skipTransitionValidation: true });
           } catch (autoErr) {
