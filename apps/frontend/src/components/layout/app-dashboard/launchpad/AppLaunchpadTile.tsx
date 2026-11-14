@@ -54,11 +54,11 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
   const icon = React.isValidElement(app.icon)
     ? React.cloneElement(app.icon as React.ReactElement<{ className?: string; 'aria-hidden'?: boolean }>, {
         'aria-hidden': true,
-        className: 'size-6 sm:size-7 transition-transform duration-200 group-hover:scale-110',
+        className: 'size-6 sm:size-7 md:size-8 transition-transform duration-200 group-hover:scale-110',
       })
     : React.createElement(app.icon as React.ElementType<{ className?: string; 'aria-hidden'?: boolean }>, {
         'aria-hidden': true,
-        className: 'size-6 sm:size-7 transition-transform duration-200 group-hover:scale-110',
+        className: 'size-6 sm:size-7 md:size-8 transition-transform duration-200 group-hover:scale-110',
       });
 
   const handleMouseEnter = () => {
@@ -82,7 +82,7 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
         onMouseEnter={handleMouseEnter}
         onFocus={handleMouseEnter}
         className={cn(
-          "w-full flex flex-col items-center justify-start text-center p-2 sm:p-2.5 rounded-2xl cursor-pointer select-none",
+          "w-full flex flex-col items-center justify-start text-center p-1.5 sm:p-2 rounded-2xl cursor-pointer select-none",
           "border-0 shadow-none bg-transparent",
           "transition-all duration-200 ease-out",
           "hover:bg-slate-100/90 dark:hover:bg-slate-800/60 hover:-translate-y-1",
@@ -92,7 +92,7 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
         {/* Apple/Odoo Squircle Icon — Zero Box, Pure Floating Icon */}
         <div
           className={cn(
-            "size-12 sm:size-14 rounded-2xl flex items-center justify-center shrink-0 mb-2 transition-all duration-200",
+            "size-12 sm:size-14 md:size-[60px] lg:size-16 rounded-[18px] sm:rounded-2xl flex items-center justify-center shrink-0 mb-1.5 sm:mb-2 transition-all duration-200",
             "shadow-xs group-hover:shadow-md",
             colors.bg,
             colors.shadow,
@@ -102,7 +102,7 @@ export const AppLaunchpadTile: React.FC<AppLaunchpadTileProps> = ({
         </div>
 
         {/* Clean Typography — Bold, readable, zero description chatter */}
-        <span className="text-[11.5px] sm:text-[12.5px] font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors text-center line-clamp-2 leading-tight max-w-[105px]">
+        <span className="text-[11px] sm:text-[12px] md:text-[13px] font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors text-center line-clamp-2 leading-tight max-w-[110px]">
           {appName}
         </span>
       </Link>

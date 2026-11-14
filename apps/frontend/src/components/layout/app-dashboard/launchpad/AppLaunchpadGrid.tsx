@@ -34,7 +34,7 @@ export const AppLaunchpadGrid: React.FC<AppLaunchpadGridProps> = ({
             <span className="text-[11px] text-slate-400 font-medium">وصول فوري</span>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 gap-2 sm:gap-3 md:gap-3.5 lg:gap-4">
             {favoriteApps.map((app) => (
               <AppLaunchpadTile
                 key={`fav-${app.id}`}
@@ -58,7 +58,7 @@ export const AppLaunchpadGrid: React.FC<AppLaunchpadGridProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 gap-2 sm:gap-3 md:gap-3.5 lg:gap-4">
           {apps.map((app, index) => (
             <div
               key={app.id}
