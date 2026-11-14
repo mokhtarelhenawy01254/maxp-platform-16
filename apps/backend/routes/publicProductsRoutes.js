@@ -1057,7 +1057,10 @@ function formatPublicVariantResponse(variant, wooCommerceUrl, productMetadata) {
     attributes,
     attributeValues: attributes,
     image: normalizedVariantImage,
-    description: variantMetadata.description || null,
+    description:
+      (typeof variant.description === 'string' && variant.description.trim()) ||
+      (typeof variantMetadata.description === 'string' && variantMetadata.description.trim()) ||
+      null,
   };
 }
 

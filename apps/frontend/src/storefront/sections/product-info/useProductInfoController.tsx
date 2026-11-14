@@ -701,12 +701,21 @@ export const useProductInfoController = ({
     typeof selectedVariant?.description === 'string' && selectedVariant.description.trim()
       ? selectedVariant.description.trim()
       : null;
-  const firstVariantWithDescription =
-    ((product?.productVariants || (product as any)?.variants) as any[])?.find(
-      (v: any) => typeof v?.description === 'string' && v.description.trim(),
-    )?.description?.trim() || null;
+  const firstVariantWithDescription = useMemo(() => {
+    const list = (product?.productVariants || (product as any)?.variants) as any[];
+    if (!Array.isArray(list)) return null;
+    return (
+      list.find(
+        (v: any) => typeof v?.description === 'string' && v.description.trim(),
+      )?.description?.trim() || null
+    );
+  }, [product]);
+
   const effectiveDescription =
-    selectedVariantDescription || firstVariantWithDescription || product?.description || '';
+    selectedVariantDescription ||
+    product?.description ||
+    (!selectedVariant ? firstVariantWithDescription : null) ||
+    '';
   const safeDescription = sanitizeStorefrontHtml(effectiveDescription);
 
   const effectiveShortDescription =
@@ -1052,7 +1061,7 @@ export const useProductInfoController = ({
     renderExternalPurchaseCta,
     renderAmazonBuyCta,
     specs,
-    shortDescription,
+    shortDescription: effectiveShortDescription,
     descriptionPreviewText,
     safeDescription,
     breadcrumbHomeLabel,
