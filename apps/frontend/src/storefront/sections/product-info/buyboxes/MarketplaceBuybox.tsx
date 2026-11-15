@@ -278,51 +278,54 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
           </div>
         ) : null}
 
-        {/* Variant Selector */}
-        {!isPrimaryQuantityOffersDecision && product.productVariants && product.productVariants.length > 0 && (
-          <div id={STOREFRONT_BUYBOX_ID} className="space-y-4 pt-1">
-            <VariantSelector
-              variants={product.productVariants}
-              selectedAttributes={selectedAttributes}
-              onChange={setSelectedAttributes}
-              variantSettings={variantSettings}
-            />
-          </div>
-        )}
-
-        {/* 6. Quantity Stepper + Add to Cart + Buy Now Buttons (WoodMart layout) */}
-        {externalOnlyProduct ? (
-          <div className="pt-2">{renderExternalPurchaseCta('card')}</div>
-        ) : (
-          <div className="space-y-3 pt-1">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <QuantitySelector
-                value={quantity}
-                onChange={setQuantity}
-                className="rounded-full h-12 bg-card border border-border shrink-0"
+        {/* Buy Actions & Variant Section with STOREFRONT_BUYBOX_ID */}
+        <div id={STOREFRONT_BUYBOX_ID} className="space-y-4">
+          {/* Variant Selector */}
+          {!isPrimaryQuantityOffersDecision && product.productVariants && product.productVariants.length > 0 && (
+            <div className="space-y-4 pt-1">
+              <VariantSelector
+                variants={product.productVariants}
+                selectedAttributes={selectedAttributes}
+                onChange={setSelectedAttributes}
+                variantSettings={variantSettings}
               />
-              <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={ctrl.isStrictlyOutOfStock}
-                  className="flex-1 w-full !bg-[#eb485b] hover:!bg-[#d93a4d] disabled:opacity-50 !text-white font-bold rounded-full py-3.5 px-6 shadow-sm transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border-0"
-                >
-                  {addToCartText}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={ctrl.isStrictlyOutOfStock}
-                  className="flex-1 w-full !bg-[#fdeef0] hover:!bg-[#fbdde1] disabled:opacity-50 !text-[#eb485b] font-bold rounded-full py-3.5 px-6 border border-[#fbdde1] transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {buyNowText}
-                </button>
-              </div>
             </div>
-            {showExternalAffiliateCta ? renderExternalPurchaseCta('block') : null}
-          </div>
-        )}
+          )}
+
+          {/* 6. Quantity Stepper + Add to Cart + Buy Now Buttons (WoodMart layout) */}
+          {externalOnlyProduct ? (
+            <div className="pt-2">{renderExternalPurchaseCta('card')}</div>
+          ) : (
+            <div className="space-y-3 pt-1">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <QuantitySelector
+                  value={quantity}
+                  onChange={setQuantity}
+                  className="rounded-full h-12 bg-card border border-border shrink-0"
+                />
+                <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    disabled={ctrl.isStrictlyOutOfStock}
+                    className="flex-1 w-full !bg-[#eb485b] hover:!bg-[#d93a4d] disabled:opacity-50 !text-white font-bold rounded-full py-3.5 px-6 shadow-sm transition-all text-sm flex items-center justify-center gap-2 cursor-pointer border-0"
+                  >
+                    {addToCartText}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    disabled={ctrl.isStrictlyOutOfStock}
+                    className="flex-1 w-full !bg-[#fdeef0] hover:!bg-[#fbdde1] disabled:opacity-50 !text-[#eb485b] font-bold rounded-full py-3.5 px-6 border border-[#fbdde1] transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {buyNowText}
+                  </button>
+                </div>
+              </div>
+              {showExternalAffiliateCta ? renderExternalPurchaseCta('block') : null}
+            </div>
+          )}
+        </div>
 
         {/* Merged Inline PDP Quick Order Checkout */}
         {mergedInlinePdpQuickOrder ? (

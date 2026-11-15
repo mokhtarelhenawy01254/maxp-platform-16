@@ -170,6 +170,10 @@ const StickyAddToCartHost: React.FC = () => {
   const isBiteRushPreview = searchParams.get("previewTheme") === "restaurant-demo";
   const isMenShoes = theme.id === "men-shoes-eg";
   const isKhemetLuxe = theme.id === "khemet-luxe-eg";
+  const isMarketplaceAvenue = Boolean(
+    (theme?.id && theme.id.includes("marketplace-avenue")) ||
+      searchParams.get("previewTheme")?.includes("marketplace-avenue"),
+  );
   const prefersArabicCopy =
     isBiteRushPreview ||
     (typeof document !== "undefined" && document.documentElement?.dir === "rtl") ||
@@ -228,6 +232,8 @@ const StickyAddToCartHost: React.FC = () => {
       ? "جاهز خلال 20-25 دقيقة"
       : isMenShoes
         ? "شحن واستبدال أوضح من نفس الشاشة"
+      : isMarketplaceAvenue
+        ? "توصيل سريع خلال 72 ساعة"
       : "توصيل سريع"
     : "Ready in 20-25 min";
   const stickyHintText = prefersArabicCopy
@@ -235,6 +241,8 @@ const StickyAddToCartHost: React.FC = () => {
       ? "اسحب الزر وكمّل الطلب بسرعة"
       : isMenShoes
         ? "CTA ثابتة بتصرف أقرب لتطبيقات التسوق"
+      : isMarketplaceAvenue
+        ? "الدفع عند الاستلام وضمان استرجاع"
       : "أكمل الطلب بخطوة واحدة"
     : "Finish your order in one tap";
 
@@ -386,7 +394,7 @@ const StickyAddToCartHost: React.FC = () => {
     isCartOpen ||
     isGalleryZoomOpen ||
     isBuyBoxVisible ||
-    (productPageCheckoutEnabled && !isBiteRushPreview && !isKhemetLuxe)
+    (productPageCheckoutEnabled && !isBiteRushPreview && !isKhemetLuxe && !isMarketplaceAvenue)
   ) {
     return null;
   }
@@ -398,6 +406,8 @@ const StickyAddToCartHost: React.FC = () => {
         ? "rounded-[1.35rem] border border-[#e5d7ca] bg-[rgba(255,251,247,0.97)] px-5 py-3 shadow-[0_28px_80px_-48px_rgba(91,57,40,0.3)] backdrop-blur"
       : isMenShoes
         ? "rounded-[1.9rem] border border-[#d9c7b7] bg-[linear-gradient(135deg,rgba(255,252,248,0.98),rgba(248,240,233,0.97))] p-3.5 shadow-[0_30px_90px_-42px_rgba(31,38,43,0.36)] backdrop-blur"
+      : isMarketplaceAvenue
+        ? "rounded-[1.75rem] border border-border bg-card/95 p-3.5 shadow-[0_24px_70px_-28px_rgba(235,72,91,0.35)] backdrop-blur"
       : stickyStyle === "minimal"
       ? "rounded-[1.2rem] border border-primary/10 bg-background/95 p-2.5 shadow-xl backdrop-blur"
       : stickyStyle === "balanced"
@@ -410,6 +420,8 @@ const StickyAddToCartHost: React.FC = () => {
         ? "truncate text-sm font-black uppercase tracking-[0.14em] text-[#2d211e]"
       : isMenShoes
         ? "truncate text-sm font-black text-[#1f262b]"
+      : isMarketplaceAvenue
+        ? "truncate text-sm font-black text-foreground"
       : stickyStyle === "minimal"
       ? "truncate text-[13px] font-black text-foreground"
       : "truncate text-sm font-black text-foreground";
@@ -420,6 +432,8 @@ const StickyAddToCartHost: React.FC = () => {
         ? "text-base font-black text-[#2d211e]"
       : isMenShoes
         ? "text-sm font-semibold text-[#5a4738]"
+      : isMarketplaceAvenue
+        ? "text-sm font-black text-[#eb485b]"
       : stickyStyle === "minimal"
       ? "text-xs text-muted-foreground"
       : "text-sm text-muted-foreground";
@@ -430,6 +444,8 @@ const StickyAddToCartHost: React.FC = () => {
         ? "inline-flex h-12 items-center justify-center rounded-[0.95rem] bg-[#78aa00] px-5 text-sm font-black uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#6d9a01]"
       : isMenShoes
         ? "inline-flex items-center justify-center rounded-full border border-[#d9c7b7] bg-white px-4 py-2.5 text-sm font-bold text-[#1f262b] hover:border-[#f57a1d] hover:text-[#f57a1d]"
+      : isMarketplaceAvenue
+        ? "inline-flex items-center justify-center rounded-full border border-[#fbdde1] bg-[#fdeef0] hover:bg-[#fad8de] px-4 py-2.5 text-sm font-bold text-[#eb485b] transition-all cursor-pointer"
       : stickyStyle === "minimal"
       ? "inline-flex items-center justify-center rounded-full border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
       : "inline-flex items-center justify-center rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted";
@@ -440,6 +456,8 @@ const StickyAddToCartHost: React.FC = () => {
         ? "inline-flex h-12 items-center justify-center rounded-[0.95rem] bg-primary px-5 text-sm font-black uppercase tracking-[0.16em] text-primary-foreground shadow-[0_18px_44px_-26px_hsl(var(--primary)/0.48)] transition-colors hover:opacity-95"
       : isMenShoes
         ? "inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#f57a1d_0%,#d65700_100%)] px-5 py-2.5 text-sm font-black text-white shadow-[0_18px_44px_-26px_rgba(245,122,29,0.55)] hover:opacity-95"
+      : isMarketplaceAvenue
+        ? "inline-flex items-center justify-center rounded-full bg-[#eb485b] hover:bg-[#d93a4d] px-5 py-2.5 text-sm font-black text-white shadow-[0_16px_36px_-20px_rgba(235,72,91,0.7)] transition-all cursor-pointer"
       : stickyStyle === "minimal"
       ? "inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:opacity-90"
       : "inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-black text-primary-foreground hover:opacity-90";

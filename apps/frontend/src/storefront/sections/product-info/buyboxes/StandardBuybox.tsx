@@ -141,47 +141,50 @@ export const StandardBuybox: React.FC<StandardBuyboxProps> = ({ ctrl }) => {
           </div>
         ) : null}
 
-        {/* Variant Selector */}
-        {product.productVariants && product.productVariants.length > 0 && (
-          <div id={STOREFRONT_BUYBOX_ID} className="space-y-4">
-            <VariantSelector
-              variants={product.productVariants}
-              selectedAttributes={selectedAttributes}
-              onChange={setSelectedAttributes}
-              variantSettings={variantSettings}
-            />
-          </div>
-        )}
-
-        {/* Actions */}
-        {externalOnlyProduct ? (
-          <div className="pt-2">{renderExternalPurchaseCta('card')}</div>
-        ) : shouldRenderStandaloneBuyBox ? (
-          <div className="space-y-3 pt-2">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <QuantitySelector value={quantity} onChange={setQuantity} />
-              <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  size="lg"
-                  className={addToCartButtonClassName}
-                  onClick={handleAddToCart}
-                >
-                  {addToCartText}
-                </Button>
-                <button
-                  type="button"
-                  onClick={handleBuyNow}
-                  className={buyNowButtonClassName}
-                >
-                  {buyNowText}
-                </button>
-              </div>
+        {/* Buy Actions & Variant Section with STOREFRONT_BUYBOX_ID */}
+        <div id={STOREFRONT_BUYBOX_ID} className="space-y-4">
+          {/* Variant Selector */}
+          {product.productVariants && product.productVariants.length > 0 && (
+            <div className="space-y-4">
+              <VariantSelector
+                variants={product.productVariants}
+                selectedAttributes={selectedAttributes}
+                onChange={setSelectedAttributes}
+                variantSettings={variantSettings}
+              />
             </div>
-            {showExternalAffiliateCta ? renderExternalPurchaseCta('block') : null}
-          </div>
-        ) : showExternalAffiliateCta ? (
-          renderExternalPurchaseCta('block')
-        ) : null}
+          )}
+
+          {/* Actions */}
+          {externalOnlyProduct ? (
+            <div className="pt-2">{renderExternalPurchaseCta('card')}</div>
+          ) : shouldRenderStandaloneBuyBox ? (
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <QuantitySelector value={quantity} onChange={setQuantity} />
+                <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button
+                    size="lg"
+                    className={addToCartButtonClassName}
+                    onClick={handleAddToCart}
+                  >
+                    {addToCartText}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className={buyNowButtonClassName}
+                  >
+                    {buyNowText}
+                  </button>
+                </div>
+              </div>
+              {showExternalAffiliateCta ? renderExternalPurchaseCta('block') : null}
+            </div>
+          ) : showExternalAffiliateCta ? (
+            renderExternalPurchaseCta('block')
+          ) : null}
+        </div>
 
         {/* Description Accordion */}
         <div id={STOREFRONT_PRODUCT_DESCRIPTION_ID} className="space-y-3 pt-4 border-t border-border">

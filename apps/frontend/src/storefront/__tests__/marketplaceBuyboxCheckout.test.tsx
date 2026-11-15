@@ -134,5 +134,45 @@ describe('MarketplaceBuybox with PDP Checkout and Quantity Offers', () => {
     expect(screen.getByText('شاشة سامسونج سمارت 55 بوصة')).toBeTruthy();
     expect(screen.getByTestId('pdp-quick-order-form')).toBeTruthy();
   });
+
+  it('guarantees STOREFRONT_BUYBOX_ID is mounted in DOM for products with or without variants', () => {
+    // 1. Without variants
+    const ctrlNoVariants = createMockCtrl({
+      product: {
+        id: 'p-no-variants',
+        name: 'منتج بدون متغيرات',
+        price: 500,
+        productVariants: [],
+        images: ['/test.jpg'],
+      } as any,
+    });
+    const { container: containerNoVariants } = render(
+      <MemoryRouter>
+        <MarketplaceBuybox ctrl={ctrlNoVariants} />
+      </MemoryRouter>
+    );
+    expect(containerNoVariants.querySelector('#storefront-buy-actions')).not.toBeNull();
+
+    cleanup();
+
+    // 2. With variants
+    const ctrlWithVariants = createMockCtrl({
+      product: {
+        id: 'p-variants',
+        name: 'منتج بمتغيرات',
+        price: 500,
+        productVariants: [
+          { id: 'v1', name: 'أحمر', price: 500, attributes: { Color: 'Red' } },
+        ],
+        images: ['/test.jpg'],
+      } as any,
+    });
+    const { container: containerWithVariants } = render(
+      <MemoryRouter>
+        <MarketplaceBuybox ctrl={ctrlWithVariants} />
+      </MemoryRouter>
+    );
+    expect(containerWithVariants.querySelector('#storefront-buy-actions')).not.toBeNull();
+  });
 });
 
