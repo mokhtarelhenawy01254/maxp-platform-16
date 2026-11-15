@@ -21,20 +21,22 @@ const sanitizeInstalledApps = (rawInstalledApps = [], company = null) => {
   if (!Array.isArray(rawInstalledApps) || rawInstalledApps.length === 0) {
     return [];
   }
-  return rawInstalledApps.map((ca) => {
-    const slug = String(ca?.app?.slug || ca?.slug || '').trim();
-    const isValid = isCompanyAppInstallationValid(ca, company);
-    return {
-      slug,
-      status: ca.status,
-      trialEndsAt: ca.trialEndsAt,
-      validUntil: ca.validUntil,
-      nextBillingAt: ca.nextBillingAt,
-      isExpired: !isValid,
-      monthlyPrice: ca.app?.monthlyPrice ?? null,
-      pricingModel: ca.activePricingModel || ca.app?.pricingModel || 'SUBSCRIPTION',
-    };
-  }).filter((a) => Boolean(a.slug));
+  return rawInstalledApps
+    .filter((ca) => ca && String(ca.status || '').toUpperCase() !== 'CANCELLED')
+    .map((ca) => {
+      const slug = String(ca?.app?.slug || ca?.slug || '').trim();
+      const isValid = isCompanyAppInstallationValid(ca, company);
+      return {
+        slug,
+        status: ca.status,
+        trialEndsAt: ca.trialEndsAt,
+        validUntil: ca.validUntil,
+        nextBillingAt: ca.nextBillingAt,
+        isExpired: !isValid,
+        monthlyPrice: ca.app?.monthlyPrice ?? null,
+        pricingModel: ca.activePricingModel || ca.app?.pricingModel || 'SUBSCRIPTION',
+      };
+    }).filter((a) => Boolean(a.slug));
 };
 
 const getSessionExpiryConfig = (req) => {
@@ -919,6 +921,7 @@ const login = async (req, res) => {
                 }
               },
               installedApps: {
+                where: { status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED'] } },
                 select: {
                   status: true,
                   settings: true,
@@ -965,6 +968,7 @@ const login = async (req, res) => {
                     }
                   },
                   installedApps: {
+                    where: { status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED'] } },
                     select: {
                       status: true,
                       settings: true,
@@ -1393,6 +1397,7 @@ const me = async (req, res) => {
               }
             },
             installedApps: {
+              where: { status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED'] } },
               select: {
                 status: true,
                 settings: true,
@@ -1439,6 +1444,7 @@ const me = async (req, res) => {
                   }
                 },
                 installedApps: {
+                  where: { status: { in: ['ACTIVE', 'TRIAL', 'EXPIRED'] } },
                   select: {
                     status: true,
                     settings: true,

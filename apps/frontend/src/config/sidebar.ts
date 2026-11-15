@@ -717,14 +717,29 @@ export const getSidebarConfig = (
 
     const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
     const activeApps = currentCompany?.activeApps || [];
-    const installedApps = (currentCompany as any)?.installedApps || [];
-    const installedAppSlugs: string[] = (
+    const rawInstalled = (currentCompany as any)?.installedApps || [];
+    const cancelledSlugs = new Set<string>(
+        (Array.isArray(rawInstalled)
+            ? rawInstalled
+                .filter((a: any) => String(typeof a === 'object' ? a?.status : '').toUpperCase() === 'CANCELLED')
+                .map((a: any) => String(typeof a === 'string' ? a : a?.slug || a?.app?.slug || '').trim().toLowerCase())
+            : []
+        ).filter(Boolean)
+    );
+    const installedApps = Array.isArray(rawInstalled)
+        ? rawInstalled.filter((a: any) => String(typeof a === 'object' ? a?.status : '').toUpperCase() !== 'CANCELLED')
+        : [];
+    const rawInstalledSlugs: string[] = (
         (currentCompany as any)?.installedAppSlugs ||
         (Array.isArray(installedApps)
             ? installedApps.map((a: any) => typeof a === 'string' ? a : a?.slug || a?.app?.slug)
             : []) ||
         activeApps
-    ).filter(Boolean).map((s: string) => String(s).trim().toLowerCase());
+    );
+    const installedAppSlugs: string[] = (Array.isArray(rawInstalledSlugs) ? rawInstalledSlugs : [])
+        .filter(Boolean)
+        .map((s: string) => String(s).trim().toLowerCase())
+        .filter((s: string) => !cancelledSlugs.has(s));
 
     if (shouldDebugSidebar) {
         console.log('🔍 [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
