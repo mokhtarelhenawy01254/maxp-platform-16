@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type {
   FilterTab,
   PreparationOrder,
@@ -175,6 +176,20 @@ export function usePreparationSectionsProps({
     ...fulfillmentOps,
   });
 
+  const isHeldMode = useMemo(() => {
+    if (uiState.activeStage === "ON_HOLD_PREP") return true;
+    if (!uiState.selectedOrders.length) return false;
+    const selectedSet = new Set(uiState.selectedOrders);
+    const heldCount = (enrichedOrders || []).filter(
+      (o) =>
+        selectedSet.has(o.orderNumber) &&
+        (o.status === "ON_HOLD_PREP" ||
+          o.preparationHold?.state === "held" ||
+          (o.metadata as any)?.preparationStatus === "ON_HOLD_PREP"),
+    ).length;
+    return heldCount > 0 && heldCount === uiState.selectedOrders.length;
+  }, [uiState.activeStage, uiState.selectedOrders, enrichedOrders]);
+
   const dialogsProps = usePreparationDialogOperations({
     statusChangeDialog,
     setStatusChangeDialog,
@@ -192,6 +207,7 @@ export function usePreparationSectionsProps({
     activeCarriers: fulfillmentOps.activeCarriers,
     handleDispatchToCarrier: fulfillmentOps.handleDispatchToCarrier,
     sendingToTurbo: fulfillmentOps.sendingToTurbo,
+    isHeldMode,
     showInternalCourierModal,
     setShowInternalCourierModal,
     internalCourierOrderIds,

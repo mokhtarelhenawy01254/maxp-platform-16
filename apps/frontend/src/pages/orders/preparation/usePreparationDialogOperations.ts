@@ -28,6 +28,7 @@ export interface UsePreparationDialogOperationsOptions {
   activeCarriers: any[];
   handleDispatchToCarrier: (carrier: any) => void;
   sendingToTurbo: boolean;
+  isHeldMode?: boolean;
 
   showInternalCourierModal: boolean;
   setShowInternalCourierModal: (val: boolean) => void;
@@ -66,6 +67,7 @@ export function usePreparationDialogOperations(
       activeCarriers: options.activeCarriers,
       handleDispatchToCarrier: options.handleDispatchToCarrier,
       sendingToTurbo: options.sendingToTurbo,
+      isHeldMode: options.isHeldMode,
 
       showInternalCourierModal: options.showInternalCourierModal,
       setShowInternalCourierModal: options.setShowInternalCourierModal,
@@ -96,6 +98,7 @@ export function usePreparationDialogOperations(
       options.activeCarriers,
       options.handleDispatchToCarrier,
       options.sendingToTurbo,
+      options.isHeldMode,
       options.showInternalCourierModal,
       options.setShowInternalCourierModal,
       options.internalCourierOrderIds,

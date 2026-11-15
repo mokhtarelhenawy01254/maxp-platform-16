@@ -5,7 +5,7 @@ import { DispatchCarrierModal } from "./DispatchCarrierModal";
 
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => (opts && opts.defaultValue ? opts.defaultValue : key),
+    t: (key: string, opts?: any) => (typeof opts === "string" ? opts : opts?.defaultValue || key),
   }),
 }));
 
@@ -94,5 +94,45 @@ describe("DispatchCarrierModal", () => {
     );
 
     expect(screen.getByText("لا توجد شركة شحن مفعلة حالياً")).toBeInTheDocument();
+  });
+
+  it("renders held notice when isHeldMode is true", () => {
+    render(
+      <MemoryRouter>
+        <DispatchCarrierModal
+          isOpen={true}
+          onClose={jest.fn()}
+          ordersCount={3}
+          carriers={mockCarriers}
+          onConfirm={jest.fn()}
+          loading={false}
+          isHeldMode={true}
+        />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByText("سيتم إصدار بوالص الشحن وفك التعليق وإرجاع الطلبات تلقائياً إلى «في انتظار التجهيز».")
+    ).toBeInTheDocument();
+  });
+
+  it("renders default ready notice when isHeldMode is false", () => {
+    render(
+      <MemoryRouter>
+        <DispatchCarrierModal
+          isOpen={true}
+          onClose={jest.fn()}
+          ordersCount={3}
+          carriers={mockCarriers}
+          onConfirm={jest.fn()}
+          loading={false}
+          isHeldMode={false}
+        />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByText("سيتم إصدار بوالص الشحن وتحديث حالة الطلبات تلقائياً إلى جاهز للشحن.")
+    ).toBeInTheDocument();
   });
 });

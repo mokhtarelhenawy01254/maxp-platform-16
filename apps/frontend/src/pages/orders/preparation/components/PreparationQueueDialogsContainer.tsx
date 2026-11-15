@@ -33,6 +33,7 @@ export interface PreparationQueueDialogsContainerProps {
   activeCarriers: any[];
   handleDispatchToCarrier: (carrier: any) => void;
   sendingToTurbo: boolean;
+  isHeldMode?: boolean;
 
   showInternalCourierModal: boolean;
   setShowInternalCourierModal: (val: boolean) => void;
@@ -67,6 +68,7 @@ export const PreparationQueueDialogsContainer: React.FC<PreparationQueueDialogsC
   activeCarriers,
   handleDispatchToCarrier,
   sendingToTurbo,
+  isHeldMode = false,
 
   showInternalCourierModal,
   setShowInternalCourierModal,
@@ -153,6 +155,7 @@ export const PreparationQueueDialogsContainer: React.FC<PreparationQueueDialogsC
         carriers={activeCarriers}
         onConfirm={(carrier) => void handleDispatchToCarrier(carrier)}
         loading={sendingToTurbo}
+        isHeldMode={isHeldMode}
       />
 
       {/* Dispatch to Internal Courier Modal */}

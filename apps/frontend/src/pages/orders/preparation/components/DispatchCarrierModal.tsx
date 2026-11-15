@@ -24,6 +24,7 @@ interface DispatchCarrierModalProps {
   carriers: ActiveCarrier[];
   onConfirm: (carrier: ActiveCarrier) => void;
   loading: boolean;
+  isHeldMode?: boolean;
 }
 
 export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
@@ -33,6 +34,7 @@ export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
   carriers,
   onConfirm,
   loading,
+  isHeldMode = false,
 }) => {
   const { t } = useTranslation();
   const [selectedCarrierId, setSelectedCarrierId] = useState<string>("");
@@ -94,7 +96,21 @@ export const DispatchCarrierModal: React.FC<DispatchCarrierModalProps> = ({
             </p>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-2.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
-              <span>سيتم إصدار بوالص الشحن وتحديث حالة الطلبات تلقائياً إلى جاهز للشحن.</span>
+              {isHeldMode ? (
+                <span>
+                  {t(
+                    "preparation.dispatchModal.heldNotice",
+                    "سيتم إصدار بوالص الشحن وفك التعليق وإرجاع الطلبات تلقائياً إلى «في انتظار التجهيز»."
+                  )}
+                </span>
+              ) : (
+                <span>
+                  {t(
+                    "preparation.dispatchModal.defaultNotice",
+                    "سيتم إصدار بوالص الشحن وتحديث حالة الطلبات تلقائياً إلى جاهز للشحن."
+                  )}
+                </span>
+              )}
             </div>
 
             <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
