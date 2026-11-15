@@ -178,6 +178,22 @@ const StickyAddToCartHost: React.FC = () => {
     isBiteRushPreview ||
     (typeof document !== "undefined" && document.documentElement?.dir === "rtl") ||
     location.pathname.startsWith("/ar");
+  const whatsappUrl = useMemo(() => {
+    const rawNumber =
+      (settings as any)?.storefront?.settings?.whatsappNumber ||
+      (settings as any)?.company?.phone ||
+      theme?.header?.socialLinks?.whatsapp ||
+      theme?.footer?.socialLinks?.whatsapp;
+    if (!rawNumber) return "";
+    const cleanNumber = String(rawNumber).replace(/[^0-9]/g, "");
+    if (!cleanNumber) return "";
+    const message = encodeURIComponent(
+      prefersArabicCopy
+        ? `مرحباً، أود الاستفسار عن: ${product?.name || ""}`
+        : `Hello, I'd like to ask about: ${product?.name || ""}`,
+    );
+    return `https://wa.me/${cleanNumber}?text=${message}`;
+  }, [product?.name, prefersArabicCopy, settings, theme]);
   const currency =
     settings?.storefront?.settings?.currency || settings?.company?.currency || "EGP";
   const externalProductAction = resolveExternalProductAction(product);
@@ -465,6 +481,83 @@ const StickyAddToCartHost: React.FC = () => {
     !externalOnlyProduct && canTriggerDirectPurchaseActions
       ? "grid w-full grid-cols-2 gap-2 md:w-auto"
       : "flex items-center gap-2";
+
+  if (isMarketplaceAvenue) {
+    const rawComparePrice = (product as any)?.compareAtPrice || (product as any)?.comparePrice;
+    const comparePriceNum = Number(rawComparePrice);
+    const hasDiscount = Number.isFinite(comparePriceNum) && comparePriceNum > stickyUnitPrice;
+
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-[75] w-full border-t border-slate-200/90 dark:border-slate-800 bg-white/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[0_-12px_32px_rgba(0,0,0,0.08)] pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2.5 px-3 sm:px-6">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
+          {/* Product info & Price */}
+          <div className="min-w-0 flex items-center gap-3">
+            {product.imageUrl || product.images?.[0] ? (
+              <div className="hidden sm:flex w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 overflow-hidden shrink-0 items-center justify-center shadow-xs">
+                <img
+                  src={product.imageUrl || product.images?.[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                  {formatStorefrontCurrency(stickyUnitPrice, currency)}
+                </span>
+                {hasDiscount ? (
+                  <span className="text-xs text-slate-400 line-through decoration-slate-300">
+                    {formatStorefrontCurrency(comparePriceNum, currency)}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5 truncate">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                <span>{prefersArabicCopy ? "شحن مجاني والدفع عند الاستلام" : "Free Delivery & Cash on Delivery"}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {whatsappUrl ? (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={prefersArabicCopy ? "استفسار عبر واتساب" : "WhatsApp Inquiry"}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                title={prefersArabicCopy ? "استفسار عبر واتساب" : "WhatsApp Inquiry"}
+              >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.592 2.654-.696c1.004.577 1.764.79 2.806.79 3.18 0 5.767-2.587 5.768-5.766.001-3.182-2.585-5.771-5.768-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.173.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.086s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.392-10.416c-4.28 0-7.75 3.472-7.75 7.75 0 1.37.357 2.655.978 3.774l-.999 3.642 3.743-.982c1.08.577 2.316.906 3.633.906 4.28 0 7.75-3.472 7.75-7.75 0-4.278-3.47-7.75-7.75-7.75zm0 16.5c-1.238 0-2.399-.345-3.39-1.001l-.243-.162-2.522.661.673-2.457-.177-.282c-.722-1.15-1.106-2.482-1.106-3.849 0-3.722 3.028-6.75 6.75-6.75 3.722 0 6.75 3.028 6.75 6.75 0 3.723-3.028 6.75-6.75 6.75z" />
+                </svg>
+              </a>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleSecondaryAction}
+              className="h-10 sm:h-11 px-3.5 sm:px-6 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              {secondaryLabel}
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrimaryAction}
+              className="h-10 sm:h-11 px-4 sm:px-7 rounded-xl bg-[#eb485b] hover:bg-[#d93a4d] text-white text-xs sm:text-sm font-black shadow-lg shadow-rose-600/25 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
+            >
+              <span>{primaryLabel}</span>
+              <span className="text-xs">←</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${isKhemetLuxe ? "hidden md:block" : ""} fixed inset-x-3 z-[75] md:inset-x-auto md:left-1/2 ${isKhemetLuxe ? "md:w-[min(920px,calc(100vw-4rem))]" : "md:w-[min(720px,calc(100vw-3rem))]"} md:-translate-x-1/2 ${
