@@ -2906,3 +2906,87 @@ module.exports = {
   sendLocationMessage,
   retryMessage
 };
+
+// ── 2026-11-14: Agent-initiated human escalation ─────────────────────────
+// AI agents (نور etc.) call this when the conversation needs a human teammate.
+// Marks the conversation in the inbox (metadata.needsHumanReview) + socket
+// alert + ActivityLog — the team sees it without any AI-generated customer text.
+const flagConversationForHuman = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const companyId = req.user?.companyId || req.headers['x-company-id'];
+    const reason = String(req.body?.reason || 'agent_requested').slice(0, 200);
+
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+
+    const prisma = getSharedPrismaClient();
+    const conversation = await prisma.conversation.findFirst({
+      where: { id, companyId },
+      select: { id: true, metadata: true }
+    });
+    if (!conversation) return res.status(404).json({ success: false, error: 'المحادثة غير موجودة' });
+
+    let meta = {};
+    try {
+      meta = typeof conversation.metadata === 'string'
+        ? JSON.parse(conversation.metadata || '{}')
+        : (conversation.metadata || {});
+    } catch { meta = {}; }
+    meta.needsHumanReview = true;
+    meta.needsHumanReason = reason;
+    meta.needsHumanAt = new Date().toISOString();
+
+    await prisma.conversation.update({
+      where: { id },
+      data: { metadata: JSON.stringify(meta) }
+    });
+
+    // Team notification (same channel as silent escalation, no customer text)
+    try {
+      const { flagThreadForHumanTakeover } = require('../../services/silentEscalationService');
+      await flagThreadForHumanTakeover({
+        companyId,
+        conversationId: id,
+        reason: `agent_requested: ${reason}`,
+        channel: 'FACEBOOK',
+      });
+    } catch (flagErr) {
+      console.error('⚠️ [FLAG-HUMAN] takeover flag failed:', flagErr.message);
+    }
+    try {
+      const socketService = require('../../services/socketService');
+      const io = socketService.getIO();
+      if (io) {
+        io.to(`company:${companyId}`).emit('ai:escalation', {
+          type: 'HUMAN_ESCALATION',
+          conversationId: id,
+          reason,
+          channel: 'FACEBOOK',
+          timestamp: new Date().toISOString(),
+          message: '🔔 الوكيل طلب متابعة بشرية للمحادثة دي'
+        });
+      }
+      await prisma.activityLog.create({
+        data: {
+          userId: req.user?.id || null,
+          companyId,
+          category: 'AI',
+          action: 'AGENT_HUMAN_ESCALATION',
+          description: `الوكيل طلب متابعة بشرية للمحادثة: ${reason}`,
+          targetType: 'CONVERSATION',
+          targetId: id,
+          metadata: JSON.stringify({ conversationId: id, reason })
+        }
+      });
+    } catch (notifyErr) {
+      console.error('⚠️ [FLAG-HUMAN] notify failed:', notifyErr.message);
+    }
+
+    return res.json({ success: true, flagged: true, conversationId: id });
+  } catch (error) {
+    console.error('❌ [FLAG-HUMAN] Error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+  }
+};
+
+module.exports.flagConversationForHuman = flagConversationForHuman;

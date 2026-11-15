@@ -34,7 +34,8 @@
     "education_cancel_session",
     "agent_handoff_to",
     "knowledge_search",
-    "knowledge_ask_merchant"
+    "knowledge_ask_merchant",
+    "escalate_to_human"
   ],
   "allowedSkills": [
     "education-center-info",

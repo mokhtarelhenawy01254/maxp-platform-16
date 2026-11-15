@@ -878,6 +878,14 @@ class BackendClient:
     async def create_customer(self, company_id: str, data: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", "/api/v1/customers", json_body={**data, "companyId": company_id})
 
+    async def flag_conversation_for_human(self, company_id: str, conversation_id: str, reason: str = "agent_requested") -> dict[str, Any]:
+        """Flag a conversation as needing human follow-up (agent-initiated handoff)."""
+        return await self._request(
+            "POST",
+            f"/api/v1/conversations/{conversation_id}/flag-human",
+            json_body={"companyId": company_id, "reason": reason},
+        )
+
     async def create_booking_appointment(
         self, company_id: str, data: dict[str, Any], agent_name: str | None = None
     ) -> dict[str, Any]:

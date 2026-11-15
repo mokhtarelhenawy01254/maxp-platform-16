@@ -82,6 +82,8 @@ router.get('/:id/messages', verifyToken.authenticateToken, verifyToken.requireCo
 // 🆕 Media and message management routes
 router.post('/:id/messages/media', verifyToken.authenticateToken, mediaUpload.single('file'), conversationController.sendMediaMessage);
 router.post('/:id/messages/:messageId/retry', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, messagingController.retryMessage);
+// 🆕 2026-11-14: AI agent requests human follow-up (نور etc.) — flags the inbox conversation
+router.post('/:id/flag-human', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, messagingController.flagConversationForHuman);
 router.put('/:id/messages/:messageId', verifyToken.authenticateToken, conversationController.editMessage);
 router.put('/:id/messages/:messageId/star', verifyToken.authenticateToken, conversationController.toggleMessageStar);
 router.put('/:id/messages/:messageId/reaction', verifyToken.authenticateToken, conversationController.toggleMessageReaction);

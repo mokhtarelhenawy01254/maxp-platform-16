@@ -403,6 +403,7 @@ roles:
     - agent_handoff_to
     - knowledge_search
     - knowledge_ask_merchant
+    - escalate_to_human
 
   HOTEL:
     - hotel_info
