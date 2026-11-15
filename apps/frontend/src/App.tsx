@@ -6674,7 +6674,9 @@ const AppContent = () => {
                   path="/treasury-expenses"
                   element={
                     <Layout>
-                      <TreasuryExpensesPage />
+                      <PermissionProtectedRoute requiredPermissions={['treasury.view']}>
+                        <TreasuryExpensesPage />
+                      </PermissionProtectedRoute>
                     </Layout>
                   }
                 />
@@ -9498,7 +9500,9 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']} redirectMode="overlay-blur">
-                        <DentalLabManagementPage />
+                        <PermissionProtectedRoute requiredPermissions={['dentallab.view']}>
+                          <DentalLabManagementPage />
+                        </PermissionProtectedRoute>
                       </AppAccessRoute>
                     </Layout>
                   }
@@ -9511,7 +9515,9 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <AppAccessRoute requiredAppSlugs={['accounting']} redirectMode="overlay-blur">
-                        <AccountingRoutes />
+                        <PermissionProtectedRoute requiredPermissions={['accounting.view']}>
+                          <AccountingRoutes />
+                        </PermissionProtectedRoute>
                       </AppAccessRoute>
                     </Layout>
                   }
@@ -9523,7 +9529,9 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <AppAccessRoute requiredAppSlugs={['manufacturing']} redirectMode="overlay-blur">
-                        <ManufacturingRoutes />
+                        <PermissionProtectedRoute requiredPermissions={['manufacturing.view']}>
+                          <ManufacturingRoutes />
+                        </PermissionProtectedRoute>
                       </AppAccessRoute>
                     </Layout>
                   }

@@ -229,6 +229,102 @@ const PERMISSIONS = {
   'wholesale.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
   'wholesale.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
   'wholesale.approve': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'wholesale.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Accounting & General Ledger
+  'accounting.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'accounting.coa.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'accounting.entries.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'accounting.entries.post': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'accounting.reports.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'accounting.periods.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Treasury & Expenses
+  'treasury.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'treasury.expenses.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'treasury.expenses.approve': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'treasury.capital.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Procurement & Suppliers
+  'procurement.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'procurement.suppliers.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'procurement.orders.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'procurement.orders.approve': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'procurement.payments.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Manufacturing & MES
+  'manufacturing.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'manufacturing.orders.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'manufacturing.boms.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'manufacturing.costs.view': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Medical Center & Clinics
+  'medical.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'medical.patients.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'medical.appointments.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'medical.invoices.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Dental Lab
+  'dentallab.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'dentallab.cases.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'dentallab.bench.access': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'dentallab.wages.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'dentallab.invoices.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Laboratories (Lab)
+  'lab.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'lab.tests.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'lab.patients.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'lab.invoices.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Radiology
+  'radiology.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'radiology.queue.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'radiology.reports.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Academy & Courses
+  'academy.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'academy.courses.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'academy.students.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Cafe & Restaurants
+  'cafe.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'cafe.recipes.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'cafe.pos.access': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+
+  // Tasks & Projects
+  'tasks.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'tasks.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'tasks.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Forms Builder
+  'forms.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'forms.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Service Requests
+  'services.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'services.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Competitor Tracking
+  'competitors.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'competitors.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Shipping Operations (Parcels & Hubs)
+  'shipping.ops.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'shipping.ops.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // Blog & Articles
+  'blog.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'blog.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+
+  // AI Operator & Hub
+  'ai.operator.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'ai.operator.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Financial Privacy & Margins
+  'products.cost.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'orders.profit.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'analytics.financial.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 };
 
 const {

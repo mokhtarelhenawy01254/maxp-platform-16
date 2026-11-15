@@ -32,13 +32,92 @@ import {
 } from "lucide-react";
 
 const DOMAIN_LABELS = {
-  DASHBOARD: "لوحة التحكم", ORDERS: "الطلبات", PRODUCTS: "المنتجات",
-  CUSTOMERS: "العملاء", CONVERSATIONS: "المحادثات", SETTINGS: "الإعدادات",
-  USERS: "المستخدمين", ROLES: "الأدوار والصلاحيات", REPORTS: "التقارير",
-  WHATSAPP: "واتساب", FACEBOOK: "فيسبوك", MARKETING: "التسويق",
-  STOREFRONT: "المتجر", HR: "الموارد البشرية", FINANCE: "المالية",
-  AI: "الذكاء الاصطناعي", INVENTORY: "المخزون",
+  DASHBOARD: "لوحة التحكم والإحصائيات",
+  ORDERS: "الطلبات والمبيعات",
+  PRODUCTS: "المنتجات والتصنيفات",
+  CUSTOMERS: "العملاء والليدز",
+  CONVERSATIONS: "المحادثات والإنبوكس",
+  WHATSAPP: "واتساب والأتمتة",
+  FACEBOOK: "فيسبوك والصفحات",
+  MARKETING: "التسويق والإعلانات",
+  INVENTORY: "المخزون والمستودعات",
+  ACCOUNTING: "الحسابات المالية العامة",
+  TREASURY: "الخزينة والمصروفات",
+  PROCUREMENT: "المشتريات والموردين",
+  MANUFACTURING: "التصنيع والتشغيل (MES)",
+  COURIER_FLEET: "أسطول المناديب والتوصيل",
+  SHIPPING_OPS: "تشغيل وبوليصات الشحن",
+  HR: "الموارد البشرية والموظفين",
+  MEDICAL_CENTER: "العيادات والمراكز الطبية",
+  DENTAL_LAB: "معامل الأسنان",
+  LAB: "معامل التحاليل",
+  RADIOLOGY: "مراكز الأشعة",
+  ACADEMY: "الأكاديمية والتعليم",
+  CAFE: "الكافيه والمطاعم",
+  TASKS: "المهام والمشاريع",
+  WHOLESALE: "تجارة الجملة",
+  FORMS: "النماذج واستمارات التسجيل",
+  SERVICES: "طلبات الخدمات",
+  COMPETITORS: "تحليل وتتبع المنافسين",
+  BLOG: "المدونة والمقالات",
+  AI: "الذكاء الاصطناعي والإيجنت",
+  FINANCIAL_PRIVACY: "سرية التكاليف والأرباح",
+  STOREFRONT: "تنسيق وثيم المتجر",
+  SETTINGS: "إعدادات النظام",
+  USERS: "إدارة المستخدمين",
+  ROLES: "الأدوار والصلاحيات",
+  REPORTS: "التقارير والإحصائيات",
+  FINANCE: "المالية",
 };
+
+const ROLE_PRESETS = [
+  {
+    name: "محاسب مالي",
+    description: "إدارة الحسابات العامة، شجرة الحسابات، قيود اليومية، الخزينة، والمصروفات والتقارير المالية",
+    permissions: [
+      "dashboard.view", "accounting.view", "accounting.coa.manage", "accounting.entries.create",
+      "accounting.entries.post", "accounting.reports.view", "treasury.view", "treasury.expenses.create",
+      "treasury.expenses.approve", "reports.view"
+    ]
+  },
+  {
+    name: "مسؤول مشتريات وموردين",
+    description: "إدارة الموردين، أوامر وفواتير الشراء، ومدفوعات الموردين والربط مع المخزون",
+    permissions: [
+      "dashboard.view", "procurement.view", "procurement.suppliers.manage", "procurement.orders.create",
+      "procurement.orders.approve", "procurement.payments.manage", "inventory.view", "products.view"
+    ]
+  },
+  {
+    name: "مسؤول مخازن وجرد",
+    description: "إدارة حركات المخزون، المستودعات، الجرد الدوري، ونقاط إعادة الطلب",
+    permissions: [
+      "dashboard.view", "inventory.view", "inventory.manage", "products.view", "orders.view"
+    ]
+  },
+  {
+    name: "خدمة عملاء ومبيعات",
+    description: "استقبال المحادثات، تأكيد وتعديل الطلبات، دون إمكانية رؤية أسعار التكلفة أو الأرباح",
+    permissions: [
+      "dashboard.view", "orders.view", "orders.create", "orders.status.change", "inbox.view",
+      "inbox.send", "inbox.close", "whatsapp.reply", "customers.view", "customers.create"
+    ]
+  },
+  {
+    name: "أخصائي موارد بشرية",
+    description: "إدارة ملفات الموظفين، الحضور والانصراف، الورديات، والرواتب",
+    permissions: [
+      "dashboard.view", "hr.employees", "hr.attendance", "hr.payroll"
+    ]
+  },
+  {
+    name: "مشرف تشغيل وتصنيع",
+    description: "متابعة أوامر التشغيل، التصنيع، مقايسات BOM، ومراجعة تحديثات المصانع الشركاء",
+    permissions: [
+      "dashboard.view", "manufacturing.view", "manufacturing.orders.manage", "manufacturing.boms.manage"
+    ]
+  }
+];
 
 const ROLE_COLORS = {
   OWNER: { border: "border-amber-400 dark:border-amber-600", bg: "bg-amber-50 dark:bg-amber-950/20", badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300", icon: "text-amber-600", label: "bg-amber-600" },
@@ -57,6 +136,7 @@ const RolesManagement = () => {
   const [roles, setRoles] = useState({});
   const [permissions, setPermissions] = useState([]);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsError, setPermissionsError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
@@ -114,13 +194,34 @@ const RolesManagement = () => {
 
   const fetchPermissions = useCallback(async () => {
     setPermissionsLoading(true);
+    setPermissionsError(null);
     try {
       const r = await fetch(buildApiUrl("permissions"), { headers: getAuthHeaders() });
       const d = await r.json();
-      if (r.ok && d.success) setPermissions(d.data || []);
-      else setPermissions([]);
-    } catch { setPermissions([]); }
-    finally { setPermissionsLoading(false); }
+      if (r.ok && d.success) {
+        let permsList = [];
+        if (Array.isArray(d.data)) {
+          permsList = d.data;
+        } else if (d.data && typeof d.data === "object") {
+          permsList = Object.entries(d.data).map(([key, val]) => ({
+            key,
+            name: (val && typeof val === "object" && val.name) ? val.name : key,
+            description: (val && typeof val === "object" && val.description) ? val.description : "",
+            domain: (val && typeof val === "object" && (val.domain || val.category)) ? (val.domain || val.category) : "OTHER",
+          }));
+        }
+        setPermissions(permsList);
+        setPermissionsError(null);
+      } else {
+        setPermissions([]);
+        setPermissionsError(d?.message || "تعذر تحميل الصلاحيات المتاحة");
+      }
+    } catch (err) {
+      setPermissions([]);
+      setPermissionsError(err.message?.includes("تعذر") ? err.message : ("تعذر تحميل الصلاحيات المتاحة: " + err.message));
+    } finally {
+      setPermissionsLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchRoles(); fetchPermissions(); }, [fetchPermissions, fetchRoles]);
@@ -323,6 +424,21 @@ const RolesManagement = () => {
         </Alert>
       )}
 
+      {permissionsError && (
+        <Alert variant="destructive" className="mb-4 flex items-center justify-between">
+          <AlertDescription>{permissionsError}</AlertDescription>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={fetchPermissions}
+            className="text-xs shrink-0"
+          >
+            إعادة المحاولة
+          </Button>
+        </Alert>
+      )}
+
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mb-4">
         <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40 text-xs shrink-0 self-start">
@@ -495,6 +611,47 @@ const RolesManagement = () => {
             <DialogTitle>{editModalOpen ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 overflow-y-auto px-4 flex-1 pb-4">
+            {permissionsError && (
+              <Alert variant="destructive" className="mb-2 flex items-center justify-between">
+                <AlertDescription>{permissionsError}</AlertDescription>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchPermissions}
+                  className="text-xs shrink-0"
+                >
+                  إعادة المحاولة
+                </Button>
+              </Alert>
+            )}
+            {!editModalOpen && (
+              <div className="space-y-1.5 p-2.5 rounded-xl bg-muted/40 border border-border/60">
+                <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
+                  <span>قوالب أدوار جاهزة (بنقرة واحدة):</span>
+                  <span className="text-[10px] text-primary">تعبئة الصلاحيات تلقائياً</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ROLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        setFormData({
+                          name: preset.name,
+                          description: preset.description,
+                          permissions: preset.permissions.filter((pk) => permissions.some((p) => p.key === pk)),
+                          isActive: true,
+                        });
+                      }}
+                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-primary/10 hover:border-primary/50 text-foreground transition-all cursor-pointer font-medium"
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label>اسم الدور *</Label>
@@ -531,9 +688,11 @@ const RolesManagement = () => {
             ) : Object.keys(filteredGroupedPermissions).length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">لا توجد صلاحيات تطابق البحث</p>
             ) : (
-              Object.entries(filteredGroupedPermissions).map(([domain, domainPermissions]) => (
+              Object.entries(filteredGroupedPermissions).map(([domain, domainPermissions]) => {
+                const isDomainExpanded = expandedDomain === domain || (expandedDomain === null && Object.keys(filteredGroupedPermissions).length === 1);
+                return (
                 <div key={domain} className="rounded-lg border overflow-hidden">
-                  <button onClick={() => setExpandedDomain(expandedDomain === domain ? null : domain)}
+                  <button onClick={() => setExpandedDomain(isDomainExpanded ? "none" : domain)}
                     className="flex items-center justify-between w-full p-3 sm:p-2.5 text-sm font-bold hover:bg-muted/50 transition-colors min-h-12 sm:min-h-0">
                     <span>{DOMAIN_LABELS[domain] || domain}
                       <span className="text-xs font-normal text-muted-foreground mr-1">
@@ -545,10 +704,10 @@ const RolesManagement = () => {
                         className="text-xs font-normal text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors">
                         {domainPermissions.every(p => formData.permissions.includes(p.key)) ? "إلغاء الكل" : "تحديد الكل"}
                       </span>
-                      <ChevronDown className={`size-4 transition-transform ${expandedDomain === domain ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`size-4 transition-transform ${isDomainExpanded ? "rotate-180" : ""}`} />
                     </div>
                   </button>
-                  {expandedDomain === domain && (
+                  {isDomainExpanded && (
                     <div className="border-t">
                       <div className="p-2 grid grid-cols-1 gap-0.5">
                         {domainPermissions.map(permission => (
@@ -565,12 +724,12 @@ const RolesManagement = () => {
                     </div>
                   )}
                 </div>
-              ))
+              );})
             )}
           </div>
           <DialogFooter className="pt-3 border-t mt-0 px-4 py-3 shrink-0">
             <Button variant="outline" onClick={() => { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); setSearchQuery(""); }} disabled={submitting} className="flex-1 sm:flex-none">إلغاء</Button>
-            <Button onClick={handleSubmit} disabled={submitting || permissionsLoading} className="flex-1 sm:flex-none">
+            <Button onClick={handleSubmit} disabled={submitting || permissionsLoading || !!permissionsError} className="flex-1 sm:flex-none">
               {submitting ? <LoadingSpinner size="sm" /> : editModalOpen ? "تحديث" : "إنشاء"}
             </Button>
           </DialogFooter>

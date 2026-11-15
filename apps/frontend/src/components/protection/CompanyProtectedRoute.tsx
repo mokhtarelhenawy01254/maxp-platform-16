@@ -212,6 +212,11 @@ export const PermissionProtectedRoute: React.FC<PermissionProtectedRouteProps> =
     );
   }
 
+  // Super Admin, Company Admin and Owner have unrestricted access to company features
+  if (['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user.role || '')) {
+    return <>{children}</>;
+  }
+
   const userPerms = user.permissions || [];
   const hasAccess =
     requiredPermissions.length === 0 ||

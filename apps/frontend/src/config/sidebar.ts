@@ -115,9 +115,11 @@ const mergeSectionOverrides = (
 const DOMAIN_PERMISSIONS: Record<string, string[]> = {
     'main': ['dashboard.view'],
     'unified-inbox-section': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'facebook.view', 'instagram.view', 'whatsapp.view', 'telegram.view'],
-    'facebook': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'facebook.view'],
+    'ai-operator': ['ai.operator.view', 'ai.config', 'ai.agents'],
+    'facebook': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'facebook.view', 'facebook.pages'],
     'instagram': ['inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view', 'instagram.view'],
-    'whatsapp': ['whatsapp.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
+    'whatsapp': ['whatsapp.view', 'whatsapp.sessions', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
+    'messaging-automation': ['whatsapp.broadcast', 'marketing.broadcast', 'ai.operator.view'],
     'telegram': ['telegram.view', 'inbox.view', 'inbox.view.own', 'inbox.view.team', 'inbox.view.all', 'conversations.view'],
     'orders': [
         'orders.view', 'orders.create', 'orders.edit', 'orders.delete', 'orders.status.change', 'orders.assign', 'orders.export',
@@ -129,22 +131,56 @@ const DOMAIN_PERMISSIONS: Record<string, string[]> = {
         'orders.return-settings.view', 'orders.cancellation-reasons.view', 'orders.integrations.view',
         'orders.workflow.view', 'orders.product-reviews.view', 'orders.whatsapp-notifications.view',
     ],
-    'customers': ['customers.view'],
-    'marketplace': ['settings.view'],
-    'company': ['settings.view', 'users.view', 'roles.view'],
+    'internal-courier-fleet': ['courier.view', 'orders.shipping.view', 'courier.manage', 'courier.runs.view', 'courier.settlement.view'],
+    'shipping-ops': ['shipping.ops.view', 'orders.shipping.view', 'shipping.ops.manage'],
+    'agent-reports': ['reports.view', 'reports.view.team', 'reports.view.all', 'dashboard.view'],
+    'orders-analytics': ['reports.view', 'orders.stats.view', 'analytics.view'],
     'products': ['products.view'],
-    'procurement': ['finance.view', 'finance.invoices', 'finance.payments'],
-    'analytics': ['reports.view'],
-    'marketing-agency': ['dashboard.view', 'settings.view'],
-    'marketing': ['dashboard.view', 'settings.view'],
+    'blog': ['blog.view', 'storefront.pages'],
+    'storefront-design': ['storefront.theme', 'storefront.pages', 'settings.manage'],
+    'customers': ['customers.view', 'customers.view.own', 'customers.view.team', 'customers.view.all'],
+    'procurement': ['procurement.view', 'finance.view', 'finance.invoices', 'finance.payments'],
+    'cafe': ['cafe.view', 'cafe.pos.access', 'orders.pos.view'],
+    'treasury-expenses': ['treasury.view', 'finance.invoices', 'finance.payments'],
+    'wholesale': ['wholesale.view', 'wholesale.manage'],
+    'affiliate': ['marketing.campaigns', 'marketing.coupons'],
+    'amazon-affiliate': ['marketing.campaigns'],
+    'platform-partner': ['marketing.campaigns'],
+    'inventory': ['inventory.view', 'inventory.manage'],
+    'marketing-agency': ['dashboard.view', 'settings.view', 'marketing.campaigns'],
+    'marketing': ['marketing.campaigns', 'marketing.coupons', 'marketing.broadcast', 'facebook.ads'],
+    'competitors': ['competitors.view', 'competitors.manage'],
+    'company': ['settings.view', 'users.view', 'roles.view', 'settings.roles.manage'],
+    'hr': ['hr.employees', 'hr.attendance', 'hr.payroll'],
+    'appointments': ['medical.view', 'medical.appointments.manage'],
+    'medical-center': ['medical.view', 'medical.patients.manage', 'medical.appointments.manage', 'medical.invoices.manage'],
+    'lab': ['lab.view', 'lab.tests.manage', 'lab.patients.manage', 'lab.invoices.manage'],
+    'dental-lab': ['dentallab.view', 'dentallab.cases.manage', 'dentallab.bench.access'],
+    'accounting': ['accounting.view', 'accounting.coa.manage', 'accounting.reports.view'],
+    'manufacturing': ['manufacturing.view', 'manufacturing.orders.manage', 'manufacturing.boms.manage'],
+    'academy': ['academy.view', 'academy.courses.manage', 'academy.students.manage'],
+    'education': ['academy.view', 'education.settings.manage', 'settings.manage'],
+    'radiology': ['radiology.view', 'radiology.queue.manage', 'radiology.reports.manage'],
+    'hotel': ['hotel.view'],
+    'forms': ['forms.view', 'forms.manage'],
+    'service-requests': ['services.view', 'services.manage'],
+    'tasks': ['tasks.view', 'tasks.create', 'tasks.manage'],
+    'marketplace': ['settings.view', 'settings.manage'],
+    'analytics': ['reports.view', 'analytics.view'],
     'notifications': ['settings.view', 'notifications.view']
 };
 
 const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId: string): boolean => {
     if (!user) return false;
     
+    // Super Admin and Company Owners/Admins have access to all active sections
     if (['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user.role || '')) return true;
     
+    // Super admin exclusive platform sections
+    if (sectionId.startsWith('platform-')) {
+        return user.role === 'SUPER_ADMIN';
+    }
+
     const userPerms = user.permissions || [];
     
     // Built-in roles with no explicit permissions assigned:
@@ -154,6 +190,7 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
         return false;
     }
     
+    // Account self-service and basic preferences are accessible to authenticated staff
     if (sectionId === 'settings' || sectionId === 'my-account') return true;
 
     const reqPerms = DOMAIN_PERMISSIONS[sectionId];
@@ -161,8 +198,8 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
         return reqPerms.some(p => userPerms.includes(p));
     }
     
-    // Sections that do not define domain-level restrictions (e.g. vertical apps) are accessible
-    return true;
+    // Strict Default-Deny: any section not explicitly permitted is hidden
+    return false;
 };
 
 const LOCKED_SIDEBAR_KEYS = new Set([
