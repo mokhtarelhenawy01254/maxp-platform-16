@@ -984,16 +984,22 @@ const resolveShippingQuoteForGovernorate = async (companyId, governorateInput, c
     return governorates.some((gov) => isGovernorateMatch(gov, governorateInput));
   });
 
-  if (!matchedZone) {
+  const effectiveZone = matchedZone || zones.find((zone) => {
+    const governorates = parseZoneGovernorates(zone.governorates, 'resolveShippingQuoteForGovernorate.fallback');
+    if (!governorates || governorates.length === 0) return true;
+    return governorates.some((g) => ['all', 'الكل', 'كافة المحافظات', 'جميع المحافظات', 'باقي المحافظات', 'افتراضي', 'default'].includes(String(g).trim().toLowerCase()));
+  });
+
+  if (!effectiveZone) {
     return buildShippingQuotePayload(null, null);
   }
 
   const zoneGovernorates = parseZoneGovernorates(
-    matchedZone.governorates,
+    effectiveZone.governorates,
     'resolveShippingQuoteForGovernorate.matched',
   );
-  const matchedGovernorate = findMatchedGovernorateLabel(zoneGovernorates, governorateInput);
-  return buildShippingQuotePayload(matchedZone, matchedGovernorate);
+  const matchedGovernorate = findMatchedGovernorateLabel(zoneGovernorates, governorateInput) || governorateInput;
+  return buildShippingQuotePayload(effectiveZone, matchedGovernorate);
 };
 
 const findCanonicalGovernorate = async (input = '') => {

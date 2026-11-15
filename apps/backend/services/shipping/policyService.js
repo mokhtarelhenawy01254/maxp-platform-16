@@ -320,28 +320,55 @@ async function quotePrice({
   // -------------------------------------------------------------------------
   // 1. بطاقة العميل (مدينة) -> RATE_CARD_CITY
   // -------------------------------------------------------------------------
-  if (merchantId && targetCity) {
-    const cityCards = await db.clientRateCard.findMany({
-      where: {
-        companyId,
-        merchantId,
-        isActive: true,
-        OR: [
-          { cityName: { not: null } },
-          { cities: { not: null } },
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  let matchedCityCard = null;
+  if (targetCity) {
+    if (merchantId) {
+      const cityCards = await db.clientRateCard.findMany({
+        where: {
+          companyId,
+          merchantId,
+          isActive: true,
+          OR: [
+            { cityName: { not: null } },
+            { cities: { not: null } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    const matchedCityCard = cityCards.find((c) => {
-      if (c.cityName && isCityMatch(c.cityName, targetCity)) return true;
-      if (c.cities) {
-        const list = parseList(c.cities);
-        if (list.some((item) => isCityMatch(item, targetCity))) return true;
-      }
-      return false;
-    });
+      matchedCityCard = cityCards.find((c) => {
+        if (c.cityName && isCityMatch(c.cityName, targetCity)) return true;
+        if (c.cities) {
+          const list = parseList(c.cities);
+          if (list.some((item) => isCityMatch(item, targetCity))) return true;
+        }
+        return false;
+      });
+    }
+
+    // Fallback: check company-wide rate cards for city if no merchant-specific match
+    if (!matchedCityCard) {
+      const fallbackCityCards = await db.clientRateCard.findMany({
+        where: {
+          companyId,
+          isActive: true,
+          OR: [
+            { cityName: { not: null } },
+            { cities: { not: null } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      matchedCityCard = fallbackCityCards.find((c) => {
+        if (c.cityName && isCityMatch(c.cityName, targetCity)) return true;
+        if (c.cities) {
+          const list = parseList(c.cities);
+          if (list.some((item) => isCityMatch(item, targetCity))) return true;
+        }
+        return false;
+      });
+    }
 
     if (matchedCityCard) {
       const calc = computeRateCardPrice(matchedCityCard, weight, cod);
@@ -373,6 +400,7 @@ async function quotePrice({
   // -------------------------------------------------------------------------
   // 2. بطاقة العميل (محافظة) -> RATE_CARD_GOV (source: RATE_CARD)
   // -------------------------------------------------------------------------
+  let govCard = null;
   if (merchantId) {
     const rateCards = await db.clientRateCard.findMany({
       where: {
@@ -390,38 +418,61 @@ async function quotePrice({
       ],
     });
 
-    // Exclude cards specifically scoped to a different city when city doesn't match
-    const govCard = rateCards.find((c) => {
+    govCard = rateCards.find((c) => {
       if (normalizedGov && c.governorateCode === normalizedGov) return true;
       if (!c.governorateCode && !c.cityName && !c.cities) return true;
       return false;
     });
+  }
 
-    if (govCard) {
-      const calc = computeRateCardPrice(govCard, weight, cod);
-      return {
-        price: calc.totalPrice,
-        currency: 'EGP',
-        source: 'RATE_CARD',
-        priceSource: 'RATE_CARD_GOV',
-        rateCardId: govCard.id,
-        rateCardName: govCard.name,
-        governorate: normalizedGov,
-        city: targetCity || null,
-        breakdown: {
-          basePrice: calc.basePrice,
-          baseWeightKg: calc.baseWeight,
-          actualWeightKg: weight,
-          extraWeightKg: calc.extraWeight,
-          extraUnits: calc.extraUnits,
-          extraKgPrice: calc.extraKgPrice,
-          extraWeightFee: calc.extraWeightFee,
-          codAmount: cod,
-          codFee: calc.codFee,
-          total: calc.totalPrice,
-        },
-      };
-    }
+  // Fallback: check company-wide active rate cards (e.g. general company fallback cards)
+  if (!govCard) {
+    const fallbackRateCards = await db.clientRateCard.findMany({
+      where: {
+        companyId,
+        isActive: true,
+        OR: [
+          ...(normalizedGov ? [{ governorateCode: normalizedGov }] : []),
+          { governorateCode: null },
+        ],
+      },
+      orderBy: [
+        { governorateCode: 'desc' },
+        { createdAt: 'desc' },
+      ],
+    });
+
+    govCard = fallbackRateCards.find((c) => {
+      if (normalizedGov && c.governorateCode === normalizedGov) return true;
+      if (!c.governorateCode && !c.cityName && !c.cities) return true;
+      return false;
+    });
+  }
+
+  if (govCard) {
+    const calc = computeRateCardPrice(govCard, weight, cod);
+    return {
+      price: calc.totalPrice,
+      currency: 'EGP',
+      source: 'RATE_CARD',
+      priceSource: 'RATE_CARD_GOV',
+      rateCardId: govCard.id,
+      rateCardName: govCard.name,
+      governorate: normalizedGov,
+      city: targetCity || null,
+      breakdown: {
+        basePrice: calc.basePrice,
+        baseWeightKg: calc.baseWeight,
+        actualWeightKg: weight,
+        extraWeightKg: calc.extraWeight,
+        extraUnits: calc.extraUnits,
+        extraKgPrice: calc.extraKgPrice,
+        extraWeightFee: calc.extraWeightFee,
+        codAmount: cod,
+        codFee: calc.codFee,
+        total: calc.totalPrice,
+      },
+    };
   }
 
   // -------------------------------------------------------------------------

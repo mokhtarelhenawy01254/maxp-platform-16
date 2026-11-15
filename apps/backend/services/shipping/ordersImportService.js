@@ -361,7 +361,7 @@ async function importOrdersAndShipments({ companyId, userId, userRole, req }) {
       }
     }
 
-    // 5. Governorate & Quoting verification (GOV_NOT_SERVED)
+    // 5. Resolve Merchant & Governorate Quoting (GOV_NOT_SERVED)
     if (!rawGov) {
       failed.push({
         row: rowNum,
@@ -373,6 +373,30 @@ async function importOrdersAndShipments({ companyId, userId, userRole, req }) {
       continue;
     }
 
+    // Resolve Merchant before calculating quote
+    let finalMerchantId = rowMerchantId;
+    if (merchantName && !finalMerchantId) {
+      const foundMerchant = await prisma.merchant.findFirst({
+        where: {
+          companyId,
+          name: { contains: merchantName, mode: 'insensitive' },
+        },
+        select: { id: true },
+      });
+      if (foundMerchant) {
+        finalMerchantId = foundMerchant.id;
+      }
+    }
+    if (!finalMerchantId) {
+      const defaultCompanyMerchant = await prisma.merchant.findFirst({
+        where: { companyId },
+        select: { id: true },
+      });
+      if (defaultCompanyMerchant) {
+        finalMerchantId = defaultCompanyMerchant.id;
+      }
+    }
+
     // Calculate COD amount
     const codNum = rawCod !== null && rawCod !== undefined && rawCod !== ''
       ? Number(rawCod)
@@ -382,7 +406,7 @@ async function importOrdersAndShipments({ companyId, userId, userRole, req }) {
     try {
       quote = await quotePrice({
         companyId,
-        merchantId: rowMerchantId || null,
+        merchantId: finalMerchantId || null,
         governorate: rawGov,
         city: city || null,
         weightKg: weightNum,
@@ -399,21 +423,6 @@ async function importOrdersAndShipments({ companyId, userId, userRole, req }) {
         message: quoteErr.message || 'المحافظة غير مخدومة في بطاقة الأسعار',
       });
       continue;
-    }
-
-    // 6. Resolve Merchant if merchantName provided
-    let finalMerchantId = rowMerchantId;
-    if (merchantName && !finalMerchantId) {
-      const foundMerchant = await prisma.merchant.findFirst({
-        where: {
-          companyId,
-          name: { contains: merchantName, mode: 'insensitive' },
-        },
-        select: { id: true },
-      });
-      if (foundMerchant) {
-        finalMerchantId = foundMerchant.id;
-      }
     }
 
     // Determine Mode: Full Order (Order + Shipment) OR Standalone Shipment
