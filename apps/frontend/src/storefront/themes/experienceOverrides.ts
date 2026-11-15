@@ -6615,7 +6615,7 @@ const THEME_PAGE_EXPERIENCE_OVERRIDES: Partial<
   'skill-lab': {
     shop: conversionPage(
       [
-        hero('neon-dark', {
+        hero('skill-lab-motion', {
           eyebrow: 'Skill Finder',
           title: 'اختيارات أوضح للكورسات والمنتجات الرقمية',
           subtitle:

@@ -78,14 +78,14 @@
         },
         {
           "type": "hero-banner",
-          "variant": "neon-dark",
+          "variant": "skill-lab-motion",
           "settings": {
-            "eyebrow": "Skill Lab 🎓",
-            "title": "تعلّم مهارة جديدة — من البيت، بوقتك",
-            "subtitle": "كورسات عملية بالعربي في البرمجة، التصميم، التسويق، والبيزنس — مع شهادة إتمام ودعم مباشر.",
-            "ctaText": "تصفح الكورسات",
+            "eyebrow": "أكاديمية النخبة البرمجية • مسارات 2026 المتقدمة",
+            "title": "تعلّم مهارات هندسية فائقة وانضم إلى صفوة المطورين",
+            "subtitle": "مسارات مكثفة لنقلك من مرحلة المطور التقليدي إلى بناء أنظمة معقدة، شبكات وكلاء الذكاء الاصطناعي، وواجهات موشن فائقة الأداء (60 FPS) تنافس عالمياً.",
+            "ctaText": "استكشف المسارات واشترك الآن",
             "ctaLink": "/shop",
-            "secondaryCtaText": "شاهد المسارات",
+            "secondaryCtaText": "مشاهدة المنهج والمشاريع",
             "secondaryCtaLink": "/collections"
           }
         },
@@ -166,7 +166,7 @@
     "shop": {
       "layoutHint": "commerce-3col",
       "sections": [
-        { "type": "hero-banner", "variant": "neon-dark", "settings": { "eyebrow": "الكورسات", "title": "كل الكورسات المتاحة", "subtitle": "ابحث بالمجال أو المستوى أو المدرب.", "ctaText": "ابدأ التصفح", "ctaLink": "/shop" } },
+        { "type": "hero-banner", "variant": "skill-lab-motion", "settings": { "eyebrow": "الكورسات والمسارات", "title": "كل الكورسات والمسارات المتاحة", "subtitle": "ابحث بالمجال أو المستوى أو المسار التقني المتقدم.", "ctaText": "ابدأ التصفح", "ctaLink": "/shop" } },
         { "type": "shop-command-bar", "settings": { "title": "ابحث عن كورسك", "searchPlaceholder": "ابحث (مثال: كورس رياكت)", "allCategoriesLabel": "كل المجالات", "resultsLabel": "كورس", "clearButtonText": "مسح الفلاتر", "chipLimit": 6 } },
         "filters-sidebar",
         { "type": "product-grid", "variant": "glass-card", "settings": { "title": "كل الكورسات", "limit": 12 } },

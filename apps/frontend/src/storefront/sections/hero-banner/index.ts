@@ -8,3 +8,4 @@ export * from './ElessiLifestyleHeroes';
 export * from './ElessiSpecialtyHeroes';
 export * from './ButcherHeroes';
 export * from './DentalPrecisionHero';
+export * from './SkillLabAcademyHero';

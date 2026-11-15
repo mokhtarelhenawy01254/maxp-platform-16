@@ -50,6 +50,7 @@ import {
   ButcherAtelierHero,
 } from './hero-banner/ButcherHeroes';
 import { DentalPrecisionHero } from './hero-banner/DentalPrecisionHero';
+import { SkillLabAcademyHero } from './hero-banner/SkillLabAcademyHero';
 import { EasyOrdersMasonryHero } from './hero-banner/EasyOrdersMasonryHero';
 import { DawnImageBanner } from './hero-banner/DawnImageBanner';
 import { MarketplaceSliderHero } from './hero-banner/MarketplaceSliderHero';
@@ -98,6 +99,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => 
   if (variant === 'elessi-pet-sunroom') return <ElessiPetSunroomHero {...props} />;
   if (variant === 'grooming-hero') return <GroomingProHero {...props} />;
   if (variant === 'dental-precision-hero') return <DentalPrecisionHero {...props} />;
+  if (variant === 'skill-lab-motion' || variant === 'academy-motion') return <SkillLabAcademyHero {...props} />;
   if (variant === 'centered') return <CenteredHero {...props} />;
 
   return <CenteredHero {...props} />;
