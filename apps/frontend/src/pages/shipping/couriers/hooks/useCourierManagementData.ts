@@ -29,6 +29,7 @@ export const useCourierManagementData = () => {
     commissionAmount: 0,
     isActive: true,
     notes: '',
+    pin: '',
   });
 
   const fetchData = useCallback(async () => {
@@ -85,6 +86,7 @@ export const useCourierManagementData = () => {
       bonusPerOrder: 0,
       bonusStartsAfterOrders: 0,
       bonusTiers: '',
+      pin: '',
     });
     setIsModalOpen(true);
   };
@@ -108,6 +110,7 @@ export const useCourierManagementData = () => {
       bonusPerOrder: c.bonusPerOrder ?? 0,
       bonusStartsAfterOrders: c.bonusStartsAfterOrders ?? 0,
       bonusTiers: c.bonusTiers || '',
+      pin: '',
     });
     setIsModalOpen(true);
   };
@@ -123,6 +126,7 @@ export const useCourierManagementData = () => {
     try {
       const payload: CourierInput = {
         ...formData,
+        pin: formData.pin?.trim() ? formData.pin.trim() : undefined,
         hireDate: formData.hireDate ? formData.hireDate : undefined,
       };
       if (editingCourier) {

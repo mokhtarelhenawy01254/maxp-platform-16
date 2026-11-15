@@ -3,7 +3,8 @@ import {
   UserIcon,
   BanknotesIcon,
   CalculatorIcon,
-  SparklesIcon
+  SparklesIcon,
+  KeyIcon,
 } from '@heroicons/react/24/outline';
 import { Courier, CourierInput } from '../../../../services/courierService';
 
@@ -124,6 +125,17 @@ export const CourierModal: React.FC<CourierModalProps> = ({
         <form onSubmit={onSave} className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
           {activeTab === 'info' ? (
             <>
+              {/* Login Notice Banner */}
+              <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-xl text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+                <KeyIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold">بيانات دخول المندوب على التطبيق:</p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    لا يلزم بريد إلكتروني — يدخل المندوب على التطبيق بـ <b>رقم الهاتف</b> و <b>رمز PIN الميداني</b> (الافتراضي 0000).
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-medium mb-1">اسم المندوب *</label>
@@ -152,15 +164,31 @@ export const CourierModal: React.FC<CourierModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-medium mb-1">الرقم القومي (اختياري)</label>
+                  <label className="block font-medium mb-1">
+                    رمز PIN الميداني للدخول (4-6 أرقام)
+                  </label>
                   <input
                     type="text"
-                    value={formData.nationalId || ''}
-                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none font-mono tabular-nums"
-                    placeholder="14 رقم"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={formData.pin || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        pin: e.target.value.replace(/\D/g, ''),
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none font-mono tabular-nums tracking-widest text-center"
+                    placeholder={
+                      editingCourier
+                        ? 'اتركه فارغاً للإبقاء على الرمز الحالي'
+                        : '0000 (الافتراضي)'
+                    }
                     dir="ltr"
                   />
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block">
+                    الرمز الافتراضي: 0000 إذا تركته فارغاً
+                  </span>
                 </div>
                 <div>
                   <label className="block font-medium mb-1">وسيلة الانتقال</label>
@@ -180,6 +208,17 @@ export const CourierModal: React.FC<CourierModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                  <label className="block font-medium mb-1">الرقم القومي (اختياري)</label>
+                  <input
+                    type="text"
+                    value={formData.nationalId || ''}
+                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none font-mono tabular-nums"
+                    placeholder="14 رقم"
+                    dir="ltr"
+                  />
+                </div>
+                <div>
                   <label className="block font-medium mb-1">رقم اللوحة / المركبة</label>
                   <input
                     type="text"
@@ -189,6 +228,9 @@ export const CourierModal: React.FC<CourierModalProps> = ({
                     placeholder="مثال: أ ب ج 123"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-medium mb-1">تاريخ بداية العمل / التعيين</label>
                   <input
@@ -198,17 +240,16 @@ export const CourierModal: React.FC<CourierModalProps> = ({
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none font-mono"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block font-medium mb-1">المناطق / خطوط السير المغطاة</label>
-                <input
-                  type="text"
-                  value={formData.governorates || ''}
-                  onChange={(e) => setFormData({ ...formData, governorates: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
-                  placeholder="مثال: القاهرة، مدينة نصر، مصر الجديدة، التجمع"
-                />
+                <div>
+                  <label className="block font-medium mb-1">المناطق / خطوط السير المغطاة</label>
+                  <input
+                    type="text"
+                    value={formData.governorates || ''}
+                    onChange={(e) => setFormData({ ...formData, governorates: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
+                    placeholder="مثال: القاهرة، مدينة نصر، مصر الجديدة، التجمع"
+                  />
+                </div>
               </div>
 
               <div>

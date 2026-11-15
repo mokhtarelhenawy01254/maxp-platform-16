@@ -52,6 +52,7 @@ export interface CourierInput {
   bonusPerOrder?: number | null;
   bonusStartsAfterOrders?: number | null;
   bonusTiers?: string | any[] | null;
+  pin?: string | null;
 }
 
 export interface CourierDocument {

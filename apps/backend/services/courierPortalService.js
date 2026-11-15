@@ -75,14 +75,17 @@ async function loginCourier({ phone, pin, companyId = null }) {
     ...phoneVariants,
     ...phoneVariants.filter((v) => /^20\d{10}$/.test(v)).map((v) => `+${v}`),
   ])];
-  const phoneTail = cleanPhone.length > 9 ? cleanPhone.slice(-9) : cleanPhone;
-  const phoneFilter = expandedVariants.length > 0 ? { in: expandedVariants } : { contains: phoneTail };
+  const phoneTail = cleanPhone.length >= 10 ? cleanPhone.slice(-9) : cleanPhone;
+  const phoneOrConditions = [
+    ...(expandedVariants.length > 0 ? [{ phone: { in: expandedVariants } }] : []),
+    ...(phoneTail && phoneTail.length >= 8 ? [{ phone: { endsWith: phoneTail } }] : []),
+  ];
 
   const couriers = await prisma.courier.findMany({
     where: {
-      phone: phoneFilter,
       isActive: true,
       ...(companyId ? { companyId } : {}),
+      ...(phoneOrConditions.length > 0 ? { OR: phoneOrConditions } : {}),
     },
     include: {
       company: {
@@ -95,9 +98,27 @@ async function loginCourier({ phone, pin, companyId = null }) {
     throw serviceError('بيانات الدخول غير صحيحة أو الحساب غير نشط', 401, 'INVALID_CREDENTIALS');
   }
 
-  const pinMatchedCouriers = couriers.filter(
-    (c) => c.pinHash && bcrypt.compareSync(rawPin, c.pinHash)
-  );
+  const pinMatchedCouriers = [];
+  for (const c of couriers) {
+    if (c.pinHash) {
+      if (bcrypt.compareSync(rawPin, c.pinHash)) {
+        pinMatchedCouriers.push(c);
+      }
+    } else if (rawPin === '0000') {
+      // Default fallback PIN for couriers created without an explicit PIN
+      try {
+        const hashedDefault = bcrypt.hashSync('0000', 10);
+        await prisma.courier.update({
+          where: { id: c.id },
+          data: { pinHash: hashedDefault },
+        });
+        c.pinHash = hashedDefault;
+      } catch (err) {
+        console.warn('⚠️ [COURIER-PORTAL] Auto-backfill pinHash failed:', err.message);
+      }
+      pinMatchedCouriers.push(c);
+    }
+  }
 
   if (pinMatchedCouriers.length === 0) {
     throw serviceError('بيانات الدخول غير صحيحة أو رمز PIN غير صحيح', 401, 'INVALID_CREDENTIALS');

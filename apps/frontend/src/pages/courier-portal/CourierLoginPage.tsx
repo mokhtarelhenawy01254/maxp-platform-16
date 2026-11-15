@@ -61,8 +61,15 @@ export const CourierLoginPage: React.FC = () => {
   const submitLogin = async (companyIdOverride?: string) => {
     setErrorMessage(null);
 
-    const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
-    const cleanPin = pin.trim();
+    const ar0 = 0x0660;
+    const fa0 = 0x06F0;
+    const toAscii = (s: string) =>
+      String(s || '')
+        .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - ar0))
+        .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - fa0));
+
+    const cleanPhone = toAscii(phone.trim()).replace(/[^0-9]/g, '');
+    const cleanPin = toAscii(pin.trim());
 
     if (!cleanPhone || cleanPhone.length < 10) {
       setErrorMessage('يرجى إدخال رقم هاتف صحيح');

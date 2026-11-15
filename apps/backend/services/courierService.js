@@ -255,6 +255,16 @@ async function createCourier(companyId, data) {
     return Number.isFinite(num) ? num : null;
   };
 
+  let initialPinHash = null;
+  if (data.pin && String(data.pin).trim()) {
+    initialPinHash = bcrypt.hashSync(String(data.pin).trim(), 10);
+  } else if (data.pinHash) {
+    initialPinHash = data.pinHash;
+  } else {
+    // Default PIN: 0000 so the courier can log into the mobile app out-of-the-box
+    initialPinHash = bcrypt.hashSync('0000', 10);
+  }
+
   const created = await prisma.courier.create({
     data: {
       companyId,
@@ -276,7 +286,8 @@ async function createCourier(companyId, data) {
       bonusTiers: data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null,
       status: data.status || 'AVAILABLE',
       notes: data.notes?.trim() || null,
-      userId: data.userId || null
+      userId: data.userId || null,
+      pinHash: initialPinHash
     }
   });
 
@@ -344,6 +355,14 @@ async function updateCourier(companyId, courierId, data) {
   }
   if (data.bonusTiers !== undefined) {
     updateData.bonusTiers = data.bonusTiers ? (typeof data.bonusTiers === 'object' ? JSON.stringify(data.bonusTiers) : String(data.bonusTiers)) : null;
+  }
+  if (data.pin !== undefined && data.pin !== null) {
+    const trimmedPin = String(data.pin).trim();
+    if (trimmedPin) {
+      updateData.pinHash = bcrypt.hashSync(trimmedPin, 10);
+    }
+  } else if (data.pinHash !== undefined) {
+    updateData.pinHash = data.pinHash;
   }
 
   await prisma.courier.updateMany({
