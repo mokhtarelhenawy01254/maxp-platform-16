@@ -57,7 +57,8 @@ async function main() {
         select: {
           id: true,
           email: true,
-          name: true,
+          firstName: true,
+          lastName: true,
           role: true,
           isDentalTechnician: true,
           dentalRole: true
@@ -113,7 +114,7 @@ async function main() {
     console.log(`\n👥 Users count: ${company.users.length}`);
     if (technicianUsers.length > 0) {
       console.log(`⚠️  Users with Dental Technician role (${technicianUsers.length}):`);
-      technicianUsers.forEach((u) => console.log(`   - ${u.name} (${u.email}) [ID: ${u.id}]`));
+      technicianUsers.forEach((u) => console.log(`   - ${u.firstName || ''} ${u.lastName || ''} (${u.email}) [ID: ${u.id}]`));
     } else {
       console.log(`   Zero users flagged as dental technicians.`);
     }
