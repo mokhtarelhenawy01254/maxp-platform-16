@@ -178,6 +178,16 @@ describe('ProductInfo gear-loadout variant selection', () => {
     expect(await screen.findByRole('heading', { name: 'Atlas Tee', level: 1 })).toBeInTheDocument();
 
     await waitFor(() => {
+      expect(trackingMocks.trackViewContentEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'tee-001',
+          name: 'Atlas Tee',
+          price: 1200,
+        }),
+      );
+    });
+
+    await waitFor(() => {
       expect(
         screen.getAllByRole('button', { name: /(?:Select Color|اختر اللون) Red/ }).length,
       ).toBeGreaterThan(0);

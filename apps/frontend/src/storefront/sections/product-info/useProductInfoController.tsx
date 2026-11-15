@@ -23,7 +23,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from '../../utils/marketplaceApps';
 import { usePdpSelectionStore } from '../../store/usePdpSelectionStore';
-import { getActiveQuantityOffers } from '@/utils/quantityOffers';
+import { getActiveQuantityOffers } from '../../../utils/quantityOffers';
 import { isProductPageCheckoutEnabledForProduct } from '../../../utils/productPageCheckout';
 import PdpQuickOrderPanel from '../PdpQuickOrderPanel';
 import QuantityOffersSection from '../QuantityOffersSection';
@@ -131,10 +131,26 @@ export const useProductInfoController = ({
     isElessiDigitalBuybox;
 
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const hasTrackedViewContentRef = useRef<string | null>(null);
 
   useEffect(() => {
     setSelectedAttributes({});
   }, [product?.id]);
+
+  useEffect(() => {
+    if (!product?.id || !product?.name) return;
+    if (hasTrackedViewContentRef.current === product.id) return;
+    hasTrackedViewContentRef.current = product.id;
+
+    trackViewContentEvent({
+      id: product.id,
+      productId: product.id,
+      name: product.name,
+      price: Number(product.price) || 0,
+      category: product.category?.name || undefined,
+      quantity: 1,
+    } as any);
+  }, [product?.id, product?.name, product?.price, product?.category?.name, trackViewContentEvent]);
 
   useEffect(() => {
     if (product?.productVariants?.length && Object.keys(selectedAttributes).length === 0) {
@@ -614,12 +630,13 @@ export const useProductInfoController = ({
     });
 
     trackAddToCartEvent({
+      id: product.id,
       productId: product.id,
       name: product.name,
       price: quantityPricing.effectiveUnitPrice,
       quantity,
       currency,
-    });
+    } as any);
 
     const shouldOpenCart = shouldProductInfoAddToCartOpenCart(theme.id, hasEmbeddedPdpCheckout);
     if (shouldOpenCart) {
