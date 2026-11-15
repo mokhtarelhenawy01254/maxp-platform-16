@@ -270,103 +270,103 @@ const PERMISSIONS = [
   { key: 'inventory.manage', name: 'إدارة المخزون', domain: 'INVENTORY' },
 
   // Accounting & General Ledger
-  { key: 'accounting.view', name: 'عرض الحسابات العامة', domain: 'ACCOUNTING' },
-  { key: 'accounting.coa.manage', name: 'إدارة دليل الحسابات', domain: 'ACCOUNTING' },
-  { key: 'accounting.entries.create', name: 'إنشاء قيود اليومية', domain: 'ACCOUNTING' },
-  { key: 'accounting.entries.post', name: 'ترحيل واعتماد القيود', domain: 'ACCOUNTING' },
-  { key: 'accounting.reports.view', name: 'عرض القوائم المالية والأرباح والخسائر', domain: 'ACCOUNTING' },
-  { key: 'accounting.periods.manage', name: 'إدارة وإغلاق الفترات المالية', domain: 'ACCOUNTING' },
+  { key: 'accounting.view', name: 'عرض الحسابات العامة', domain: 'FINANCE' },
+  { key: 'accounting.coa.manage', name: 'إدارة دليل الحسابات', domain: 'FINANCE' },
+  { key: 'accounting.entries.create', name: 'إنشاء قيود اليومية', domain: 'FINANCE' },
+  { key: 'accounting.entries.post', name: 'ترحيل واعتماد القيود', domain: 'FINANCE' },
+  { key: 'accounting.reports.view', name: 'عرض القوائم المالية والأرباح والخسائر', domain: 'FINANCE' },
+  { key: 'accounting.periods.manage', name: 'إدارة وإغلاق الفترات المالية', domain: 'FINANCE' },
 
   // Treasury & Expenses
-  { key: 'treasury.view', name: 'عرض الخزينة والنفقات', domain: 'TREASURY' },
-  { key: 'treasury.expenses.create', name: 'تسجيل المصروفات والنفقات', domain: 'TREASURY' },
-  { key: 'treasury.expenses.approve', name: 'اعتماد وصرف المصروفات', domain: 'TREASURY' },
-  { key: 'treasury.capital.manage', name: 'إدارة رأس المال وحركات الخزينة', domain: 'TREASURY' },
+  { key: 'treasury.view', name: 'عرض الخزينة والنفقات', domain: 'FINANCE' },
+  { key: 'treasury.expenses.create', name: 'تسجيل المصروفات والنفقات', domain: 'FINANCE' },
+  { key: 'treasury.expenses.approve', name: 'اعتماد وصرف المصروفات', domain: 'FINANCE' },
+  { key: 'treasury.capital.manage', name: 'إدارة رأس المال وحركات الخزينة', domain: 'FINANCE' },
 
   // Procurement & Suppliers
-  { key: 'procurement.view', name: 'عرض المشتريات والموردين', domain: 'PROCUREMENT' },
-  { key: 'procurement.suppliers.manage', name: 'إدارة الموردين', domain: 'PROCUREMENT' },
-  { key: 'procurement.orders.create', name: 'إنشاء أوامر الشراء', domain: 'PROCUREMENT' },
-  { key: 'procurement.orders.approve', name: 'اعتماد أوامر وفواتير الشراء', domain: 'PROCUREMENT' },
-  { key: 'procurement.payments.manage', name: 'إدارة مدفوعات الموردين', domain: 'PROCUREMENT' },
+  { key: 'procurement.view', name: 'عرض المشتريات والموردين', domain: 'INVENTORY' },
+  { key: 'procurement.suppliers.manage', name: 'إدارة الموردين', domain: 'INVENTORY' },
+  { key: 'procurement.orders.create', name: 'إنشاء أوامر الشراء', domain: 'INVENTORY' },
+  { key: 'procurement.orders.approve', name: 'اعتماد أوامر وفواتير الشراء', domain: 'INVENTORY' },
+  { key: 'procurement.payments.manage', name: 'إدارة مدفوعات الموردين', domain: 'INVENTORY' },
 
   // Manufacturing & MES
-  { key: 'manufacturing.view', name: 'عرض التصنيع والتشغيل', domain: 'MANUFACTURING' },
-  { key: 'manufacturing.orders.manage', name: 'إدارة أوامر الإنتاج والتشغيل', domain: 'MANUFACTURING' },
-  { key: 'manufacturing.boms.manage', name: 'إدارة قوائم المكونات BOM', domain: 'MANUFACTURING' },
-  { key: 'manufacturing.costs.view', name: 'عرض تكاليف التصنيع والهدر', domain: 'MANUFACTURING' },
+  { key: 'manufacturing.view', name: 'عرض التصنيع والتشغيل', domain: 'INVENTORY' },
+  { key: 'manufacturing.orders.manage', name: 'إدارة أوامر الإنتاج والتشغيل', domain: 'INVENTORY' },
+  { key: 'manufacturing.boms.manage', name: 'إدارة قوائم المكونات BOM', domain: 'INVENTORY' },
+  { key: 'manufacturing.costs.view', name: 'عرض تكاليف التصنيع والهدر', domain: 'INVENTORY' },
 
   // Medical Center & Clinics
-  { key: 'medical.view', name: 'عرض النظام الطبي والعيادات', domain: 'MEDICAL_CENTER' },
-  { key: 'medical.patients.manage', name: 'إدارة المرضى والسجلات الطبية', domain: 'MEDICAL_CENTER' },
-  { key: 'medical.appointments.manage', name: 'إدارة المواعيد والحجوزات', domain: 'MEDICAL_CENTER' },
-  { key: 'medical.invoices.manage', name: 'إدارة الفواتير والخدمات الطبية', domain: 'MEDICAL_CENTER' },
+  { key: 'medical.view', name: 'عرض النظام الطبي والعيادات', domain: 'SETTINGS' },
+  { key: 'medical.patients.manage', name: 'إدارة المرضى والسجلات الطبية', domain: 'SETTINGS' },
+  { key: 'medical.appointments.manage', name: 'إدارة المواعيد والحجوزات', domain: 'SETTINGS' },
+  { key: 'medical.invoices.manage', name: 'إدارة الفواتير والخدمات الطبية', domain: 'SETTINGS' },
 
   // Dental Lab
-  { key: 'dentallab.view', name: 'عرض معمل الأسنان', domain: 'DENTAL_LAB' },
-  { key: 'dentallab.cases.manage', name: 'إدارة الحالات ومراحل الإنتاج', domain: 'DENTAL_LAB' },
-  { key: 'dentallab.bench.access', name: 'الوصول لمحطة الفني وماسح الباركود', domain: 'DENTAL_LAB' },
-  { key: 'dentallab.wages.view', name: 'عرض مستحقات وسجل الصرف للفنيين', domain: 'DENTAL_LAB' },
-  { key: 'dentallab.invoices.manage', name: 'إدارة فواتير ومعاملات الأطباء', domain: 'DENTAL_LAB' },
+  { key: 'dentallab.view', name: 'عرض معمل الأسنان', domain: 'SETTINGS' },
+  { key: 'dentallab.cases.manage', name: 'إدارة الحالات ومراحل الإنتاج', domain: 'SETTINGS' },
+  { key: 'dentallab.bench.access', name: 'الوصول لمحطة الفني وماسح الباركود', domain: 'SETTINGS' },
+  { key: 'dentallab.wages.view', name: 'عرض مستحقات وسجل الصرف للفنيين', domain: 'SETTINGS' },
+  { key: 'dentallab.invoices.manage', name: 'إدارة فواتير ومعاملات الأطباء', domain: 'SETTINGS' },
 
   // Laboratories (Lab)
-  { key: 'lab.view', name: 'عرض نظام المعمل', domain: 'LAB' },
-  { key: 'lab.tests.manage', name: 'إدارة التحاليل والنتائج والمزارع', domain: 'LAB' },
-  { key: 'lab.patients.manage', name: 'استقبال ومرضى المعمل', domain: 'LAB' },
-  { key: 'lab.invoices.manage', name: 'فواتير وتعاقدات المعمل', domain: 'LAB' },
+  { key: 'lab.view', name: 'عرض نظام المعمل', domain: 'SETTINGS' },
+  { key: 'lab.tests.manage', name: 'إدارة التحاليل والنتائج والمزارع', domain: 'SETTINGS' },
+  { key: 'lab.patients.manage', name: 'استقبال ومرضى المعمل', domain: 'SETTINGS' },
+  { key: 'lab.invoices.manage', name: 'فواتير وتعاقدات المعمل', domain: 'SETTINGS' },
 
   // Radiology
-  { key: 'radiology.view', name: 'عرض مركز الأشعة', domain: 'RADIOLOGY' },
-  { key: 'radiology.queue.manage', name: 'إدارة طابور وغرف الفحوصات', domain: 'RADIOLOGY' },
-  { key: 'radiology.reports.manage', name: 'تقارير الأشعة والتشخيص', domain: 'RADIOLOGY' },
+  { key: 'radiology.view', name: 'عرض مركز الأشعة', domain: 'SETTINGS' },
+  { key: 'radiology.queue.manage', name: 'إدارة طابور وغرف الفحوصات', domain: 'SETTINGS' },
+  { key: 'radiology.reports.manage', name: 'تقارير الأشعة والتشخيص', domain: 'SETTINGS' },
 
   // Academy & Courses
-  { key: 'academy.view', name: 'عرض الأكاديمية والتعليم', domain: 'ACADEMY' },
-  { key: 'academy.courses.manage', name: 'إدارة الكورسات والمجموعات', domain: 'ACADEMY' },
-  { key: 'academy.students.manage', name: 'إدارة الطلاب والتقدم', domain: 'ACADEMY' },
+  { key: 'academy.view', name: 'عرض الأكاديمية والتعليم', domain: 'SETTINGS' },
+  { key: 'academy.courses.manage', name: 'إدارة الكورسات والمجموعات', domain: 'SETTINGS' },
+  { key: 'academy.students.manage', name: 'إدارة الطلاب والتقدم', domain: 'SETTINGS' },
 
   // Cafe & Restaurants
-  { key: 'cafe.view', name: 'عرض نظام الكافيه والمطعم', domain: 'CAFE' },
-  { key: 'cafe.recipes.manage', name: 'إدارة معايير الرسيبي والهدر', domain: 'CAFE' },
-  { key: 'cafe.pos.access', name: 'نقطة بيع الكافيه POS', domain: 'CAFE' },
+  { key: 'cafe.view', name: 'عرض نظام الكافيه والمطعم', domain: 'SETTINGS' },
+  { key: 'cafe.recipes.manage', name: 'إدارة معايير الرسيبي والهدر', domain: 'SETTINGS' },
+  { key: 'cafe.pos.access', name: 'نقطة بيع الكافيه POS', domain: 'SETTINGS' },
 
   // Tasks & Projects
-  { key: 'tasks.view', name: 'عرض المهام والمشاريع', domain: 'TASKS' },
-  { key: 'tasks.create', name: 'إنشاء المهام والمشاريع', domain: 'TASKS' },
-  { key: 'tasks.manage', name: 'إدارة وتعديل المهام والمشاريع', domain: 'TASKS' },
+  { key: 'tasks.view', name: 'عرض المهام والمشاريع', domain: 'SETTINGS' },
+  { key: 'tasks.create', name: 'إنشاء المهام والمشاريع', domain: 'SETTINGS' },
+  { key: 'tasks.manage', name: 'إدارة وتعديل المهام والمشاريع', domain: 'SETTINGS' },
 
   // Forms Builder
-  { key: 'forms.view', name: 'عرض نماذج التسجيل', domain: 'FORMS' },
-  { key: 'forms.manage', name: 'إنشاء وتعديل نماذج التسجيل', domain: 'FORMS' },
+  { key: 'forms.view', name: 'عرض نماذج التسجيل', domain: 'SETTINGS' },
+  { key: 'forms.manage', name: 'إنشاء وتعديل نماذج التسجيل', domain: 'SETTINGS' },
 
   // Service Requests
-  { key: 'services.view', name: 'عرض طلبات الخدمات', domain: 'SERVICES' },
-  { key: 'services.manage', name: 'إدارة وتعديل الخدمات والطلبات', domain: 'SERVICES' },
+  { key: 'services.view', name: 'عرض طلبات الخدمات', domain: 'SETTINGS' },
+  { key: 'services.manage', name: 'إدارة وتعديل الخدمات والطلبات', domain: 'SETTINGS' },
 
   // Wholesale & B2B
-  { key: 'wholesale.view', name: 'عرض البيع بالجملة', domain: 'WHOLESALE' },
-  { key: 'wholesale.manage', name: 'إدارة عملاء وقوائم أسعار الجملة والديون', domain: 'WHOLESALE' },
+  { key: 'wholesale.view', name: 'عرض البيع بالجملة', domain: 'PRODUCTS' },
+  { key: 'wholesale.manage', name: 'إدارة عملاء وقوائم أسعار الجملة والديون', domain: 'PRODUCTS' },
 
   // Competitor Tracking
-  { key: 'competitors.view', name: 'عرض ومتابعة المنافسين', domain: 'COMPETITORS' },
-  { key: 'competitors.manage', name: 'إدارة وتتبع أسعار المنافسين', domain: 'COMPETITORS' },
+  { key: 'competitors.view', name: 'عرض ومتابعة المنافسين', domain: 'MARKETING' },
+  { key: 'competitors.manage', name: 'إدارة وتتبع أسعار المنافسين', domain: 'MARKETING' },
 
   // Shipping Operations (Parcels & Hubs)
-  { key: 'shipping.ops.view', name: 'عرض لوحة تشغيل الشحن والطرود', domain: 'SHIPPING_OPS' },
-  { key: 'shipping.ops.manage', name: 'إدارة الشحنات والتوزيع والفرز والتسويات', domain: 'SHIPPING_OPS' },
+  { key: 'shipping.ops.view', name: 'عرض لوحة تشغيل الشحن والطرود', domain: 'COURIER_FLEET' },
+  { key: 'shipping.ops.manage', name: 'إدارة الشحنات والتوزيع والفرز والتسويات', domain: 'COURIER_FLEET' },
 
   // Blog & Articles
-  { key: 'blog.view', name: 'عرض مقالات المتجر والمدونة', domain: 'BLOG' },
-  { key: 'blog.manage', name: 'كتابة ونشر المقالات', domain: 'BLOG' },
+  { key: 'blog.view', name: 'عرض مقالات المتجر والمدونة', domain: 'STOREFRONT' },
+  { key: 'blog.manage', name: 'كتابة ونشر المقالات', domain: 'STOREFRONT' },
 
   // AI Operator & Hub
   { key: 'ai.operator.view', name: 'الوصول لمحادثات العميل الذكي واستوديو التصاميم', domain: 'AI' },
   { key: 'ai.operator.manage', name: 'تدريب الإيجنت وتخصيص الأدوات والمهارات', domain: 'AI' },
 
   // Financial Privacy & Margins
-  { key: 'products.cost.view', name: 'عرض أسعار التكلفة للمنتجات', domain: 'FINANCIAL_PRIVACY' },
-  { key: 'orders.profit.view', name: 'عرض صافي أرباح وهوامش الطلبات', domain: 'FINANCIAL_PRIVACY' },
-  { key: 'analytics.financial.view', name: 'عرض إجمالي الإيرادات والأرباح بالتحليلات', domain: 'FINANCIAL_PRIVACY' },
+  { key: 'products.cost.view', name: 'عرض أسعار التكلفة للمنتجات', domain: 'PRODUCTS' },
+  { key: 'orders.profit.view', name: 'عرض صافي أرباح وهوامش الطلبات', domain: 'ORDERS' },
+  { key: 'analytics.financial.view', name: 'عرض إجمالي الإيرادات والأرباح بالتحليلات', domain: 'FINANCE' },
 ];
 
 const ALL_PERMISSION_KEYS = PERMISSIONS.map(p => p.key);
