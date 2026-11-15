@@ -441,4 +441,44 @@ describe('PageComposer layouts', () => {
       'shop-promo-rail',
     ]);
   });
+
+  it('uses 2-column layout when PDP checkout is active on marketplace themes instead of 3 columns', () => {
+    const { container: containerWithCheckout } = render(
+      <PageComposer
+        pageConfig={{
+          sections: [
+            { type: 'product-gallery', variant: 'standard' },
+            { type: 'product-info', variant: 'marketplace-bazaar' },
+            'reviews',
+          ],
+        }}
+        layout="product-detail"
+        hasPdpCheckout={true}
+      />,
+    );
+
+    const composerWithCheckout = containerWithCheckout.querySelector('.storefront-page-composer');
+    expect(composerWithCheckout?.className).not.toContain('sf-pdp-3col');
+    expect(composerWithCheckout?.querySelector('.grid')?.className).toContain('lg:grid-cols-2');
+
+    cleanup();
+
+    const { container: containerWithoutCheckout } = render(
+      <PageComposer
+        pageConfig={{
+          sections: [
+            { type: 'product-gallery', variant: 'standard' },
+            { type: 'product-info', variant: 'marketplace-bazaar' },
+            'reviews',
+          ],
+        }}
+        layout="product-detail"
+        hasPdpCheckout={false}
+      />,
+    );
+
+    const composerWithoutCheckout = containerWithoutCheckout.querySelector('.storefront-page-composer');
+    expect(composerWithoutCheckout?.className).toContain('sf-pdp-3col');
+    expect(composerWithoutCheckout?.querySelector('.grid')?.className).toContain('calc(35%-20px)');
+  });
 });

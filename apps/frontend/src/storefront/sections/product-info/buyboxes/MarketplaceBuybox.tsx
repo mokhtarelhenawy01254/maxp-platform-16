@@ -81,6 +81,9 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
   if (!product) return null;
 
   const isWishlisted = hasWishlistItem(product.id);
+  const hasInlineCheckout = Boolean(
+    mergedInlinePdpQuickOrder || ctrl.hasEmbeddedPdpCheckout,
+  );
 
   // Resolve section settings from controller or active theme PDP section
   const fallbackPdpSection = ctrl.theme?.pages?.pdp?.sections?.find(
@@ -170,22 +173,137 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
   const shippingRailTitle = prefersArabicCopy ? 'الشحن والتوصيل' : 'Shipping & Delivery';
   const moreDetailsLabel = prefersArabicCopy ? 'تفاصيل أكثر' : 'More details';
 
+  const renderShippingRailCard = (asAside = false) => {
+    const cardContent = (
+      <div className="rounded-2xl border border-border/80 bg-card/60 p-5 space-y-4 shadow-xs">
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-primary shrink-0" />
+          <h2 className="text-base font-bold text-foreground tracking-tight">
+            {shippingRailTitle}
+          </h2>
+        </div>
+
+        {shippingMethods && shippingMethods.length > 0 ? (
+          <div className="space-y-3.5">
+            {shippingMethods.map((method: any, idx: number) => {
+              const label =
+                (!prefersArabicCopy && method.i18n?.en?.label) || method.label;
+              const meta =
+                (!prefersArabicCopy && method.i18n?.en?.meta) || method.meta;
+              const note =
+                (!prefersArabicCopy && method.i18n?.en?.note) || method.note;
+              const isExpress =
+                idx > 0 ||
+                String(label).toLowerCase().includes('express') ||
+                String(label).includes('إكسبريس') ||
+                String(label).includes('DHL');
+              return (
+                <div key={idx} className="flex items-start justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    {isExpress ? (
+                      <div className="h-7 w-7 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+                        <Zap className="h-3.5 w-3.5" />
+                      </div>
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+                        <Truck className="h-3.5 w-3.5" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-bold text-foreground text-[13px]">{label}</p>
+                      {note ? (
+                        <p className="text-muted-foreground text-[11px] mt-0.5 leading-snug">{note}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {meta ? (
+                    <div className="text-end shrink-0">
+                      <span className="font-bold text-foreground text-[12px] whitespace-nowrap tabular-nums">{meta}</span>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <hr className="border-border/60 my-2" />
+
+            {/* Warranty Row */}
+            {shippingWarranty ? (
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="font-bold text-foreground text-[12px]">{shippingWarranty}</span>
+                </div>
+                <span className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer">
+                  {moreDetailsLabel}
+                </span>
+              </div>
+            ) : null}
+
+            {/* Free Returns Row */}
+            {shippingReturns ? (
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-600 dark:text-blue-400">
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="font-bold text-foreground text-[12px]">{shippingReturns}</span>
+                </div>
+                <span className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer">
+                  {moreDetailsLabel}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="space-y-3 text-xs text-muted-foreground">
+            <p className="leading-relaxed">{ctrl.shippingText}</p>
+            {shippingWarranty ? (
+              <div className="flex items-center gap-2 text-foreground font-medium">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{shippingWarranty}</span>
+              </div>
+            ) : null}
+            {shippingReturns ? (
+              <div className="flex items-center gap-2 text-foreground font-medium">
+                <RotateCcw className="h-4 w-4 text-blue-600 shrink-0" />
+                <span>{shippingReturns}</span>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    );
+
+    if (asAside) {
+      return (
+        <aside className="min-w-0 w-full space-y-5">
+          {cardContent}
+        </aside>
+      );
+    }
+
+    return cardContent;
+  };
+
   return (
-    <div className="lg:contents flex flex-col gap-[30px]">
+    <div className={hasInlineCheckout ? 'flex flex-col gap-6 w-full min-w-0' : 'lg:contents flex flex-col gap-[30px]'}>
       {/* ========================================================
           COLUMN 2: Information Column (Exact WoodMart sequence)
           Order: Delivery Banner -> Title -> Price (red) -> Short Desc -> Sold Counter -> Buy Actions -> Compare/Wishlist/Share
          ======================================================== */}
       <section className="min-w-0 w-full space-y-5 selection:bg-primary selection:text-primary-foreground">
-        {/* 1. Delivery Banner (WoodMart amber pill) */}
+        {/* 1. Delivery Banner */}
         {isDeliveryBannerEnabled ? (
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#f97316] to-[#f59e0b] px-4 py-1.5 text-white shadow-sm font-bold max-w-fit">
-            <Truck className="h-4 w-4 shrink-0 text-white" />
-            <span className="text-xs sm:text-sm">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-3.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 max-w-fit shadow-xs">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>
               {deliveryBannerText}
             </span>
             {deliveryBannerSubtext ? (
-              <span className="text-xs opacity-90 hidden sm:inline font-normal">
+              <span className="text-muted-foreground font-normal hidden sm:inline">
                 • {deliveryBannerSubtext}
               </span>
             ) : null}
@@ -193,7 +311,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
         ) : null}
 
         {/* 2. Title */}
-        <h1 className="text-2xl sm:text-3xl lg:text-[2.15rem] font-black text-foreground tracking-tight leading-snug">
+        <h1 className="text-2xl sm:text-3xl lg:text-[2.15rem] font-bold text-foreground tracking-tight leading-snug [text-wrap:balance]">
           {product.name}
         </h1>
 
@@ -204,38 +322,38 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
               {originalPrice}
             </del>
           )}
-          <span className="text-3xl sm:text-4xl font-black text-[#eb485b] dark:text-[#f87171] tabular-nums">
+          <span className="text-3xl sm:text-4xl font-black text-[#eb485b] dark:text-[#f87171] tabular-nums tracking-tight">
             {displayPrice}
           </span>
           {discount && discount > 0 ? (
-            <span className="rounded-full bg-[#eb485b] px-2.5 py-0.5 text-xs font-bold text-white shadow-sm">
+            <span className="rounded-full bg-[#eb485b] px-2.5 py-0.5 text-xs font-bold text-white shadow-xs tabular-nums">
               {prefersArabicCopy ? `وفر ${discount}%` : `SAVE ${discount}%`}
             </span>
           ) : null}
         </div>
 
-        {/* Reviews / Star Rating (WoodMart exact placement below price) */}
+        {/* Reviews / Star Rating */}
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center text-amber-400">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
             ))}
           </div>
-          <span className="text-muted-foreground font-medium">
+          <span className="text-muted-foreground font-medium tabular-nums">
             ({(product as any)?.ratingCount || (product as any)?.ratingsCount || 2} {prefersArabicCopy ? 'تقييمات العملاء' : 'customer reviews'})
           </span>
         </div>
 
         {/* 4. Short Description */}
         {shortDesc ? (
-          <div className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
+          <div className="text-sm sm:text-[0.95rem] leading-relaxed text-muted-foreground line-clamp-3 [text-wrap:pretty]">
             {shortDesc}
           </div>
         ) : null}
 
         {/* 5. Sold-today counter (flame icon + text) */}
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 text-xs font-bold text-rose-600 dark:text-rose-400">
-          <Flame className="h-4 w-4 shrink-0 text-rose-500 animate-pulse" />
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 px-3 py-1 text-xs font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+          <Flame className="h-3.5 w-3.5 shrink-0 text-rose-500 animate-pulse" />
           <span>
             {prefersArabicCopy
               ? `${displaySoldCount} قطع بيعت في آخر 24 ساعة`
@@ -329,10 +447,13 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
 
         {/* Merged Inline PDP Quick Order Checkout */}
         {mergedInlinePdpQuickOrder ? (
-          <div className="pt-3">
+          <div className="pt-2">
             {mergedInlinePdpQuickOrder}
           </div>
         ) : null}
+
+        {/* When inline checkout is active on PDP, render the Shipping & Delivery / Warranty Reassurance Card directly below the checkout */}
+        {hasInlineCheckout ? renderShippingRailCard(false) : null}
 
         {/* 7. Divider */}
         <hr className="border-border/60 my-2" />
@@ -344,7 +465,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
             <button
               type="button"
               onClick={() => setIsCompared((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
               aria-label={prefersArabicCopy ? 'مقارنة' : 'Compare'}
             >
               <ArrowRightLeft
@@ -363,7 +484,7 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
             <button
               type="button"
               onClick={() => toggleWishlist(product.id)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground active:scale-[0.98]"
               aria-label={prefersArabicCopy ? 'المفضلة' : 'Wishlist'}
             >
               <Heart
@@ -410,105 +531,8 @@ export const MarketplaceBuybox: React.FC<MarketplaceBuyboxProps> = ({ ctrl }) =>
         </div>
       </section>
 
-      {/* ========================================================
-          COLUMN 3: Shipping Rail (WoodMart 3rd column)
-          Header "Shipping & Delivery" -> Courier Rows -> Warranty/Returns
-         ======================================================== */}
-      <aside className="min-w-0 w-full space-y-5">
-        <div className="rounded-[20px] border border-border/80 bg-card/60 p-6 space-y-5 shadow-sm">
-          <h2 className="text-lg font-bold text-foreground tracking-tight">
-            {shippingRailTitle}
-          </h2>
-
-          {shippingMethods && shippingMethods.length > 0 ? (
-            <div className="space-y-4">
-              {shippingMethods.map((method: any, idx: number) => {
-                const label =
-                  (!prefersArabicCopy && method.i18n?.en?.label) || method.label;
-                const meta =
-                  (!prefersArabicCopy && method.i18n?.en?.meta) || method.meta;
-                const note =
-                  (!prefersArabicCopy && method.i18n?.en?.note) || method.note;
-                const isExpress = idx > 0 || String(label).toLowerCase().includes('express') || String(label).includes('إكسبريس') || String(label).includes('DHL');
-                return (
-                  <div key={idx} className="flex items-start justify-between gap-3 text-xs">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      {isExpress ? (
-                        <div className="h-7 w-7 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
-                          <Zap className="h-4 w-4" />
-                        </div>
-                      ) : (
-                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
-                          <Truck className="h-4 w-4" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-bold text-foreground text-[13px]">{label}</p>
-                        {note ? (
-                          <p className="text-muted-foreground text-[11px] mt-0.5 leading-snug">{note}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                    {meta ? (
-                      <div className="text-end shrink-0">
-                        <span className="font-bold text-foreground text-[12px] whitespace-nowrap">{meta}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-
-              <hr className="border-border/60 my-3" />
-
-              {/* Warranty Row */}
-              {shippingWarranty ? (
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
-                      <ShieldCheck className="h-4 w-4" />
-                    </div>
-                    <span className="font-bold text-foreground text-[12px]">{shippingWarranty}</span>
-                  </div>
-                  <span className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer">
-                    {moreDetailsLabel}
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Free Returns Row */}
-              {shippingReturns ? (
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-600 dark:text-blue-400">
-                      <RotateCcw className="h-4 w-4" />
-                    </div>
-                    <span className="font-bold text-foreground text-[12px]">{shippingReturns}</span>
-                  </div>
-                  <span className="text-[11px] font-medium text-muted-foreground hover:underline cursor-pointer">
-                    {moreDetailsLabel}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="space-y-3 text-xs text-muted-foreground">
-              <p className="leading-relaxed">{ctrl.shippingText}</p>
-              {shippingWarranty ? (
-                <div className="flex items-center gap-2 text-foreground font-medium">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>{shippingWarranty}</span>
-                </div>
-              ) : null}
-              {shippingReturns ? (
-                <div className="flex items-center gap-2 text-foreground font-medium">
-                  <RotateCcw className="h-4 w-4 text-blue-600 shrink-0" />
-                  <span>{shippingReturns}</span>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
-      </aside>
+      {/* When inline checkout is NOT active, render the Shipping Rail as the 3rd column */}
+      {!hasInlineCheckout ? renderShippingRailCard(true) : null}
 
       {/* Sticky Mobile CTA & Dialogs */}
       {isStickyAddToCartEnabled && (

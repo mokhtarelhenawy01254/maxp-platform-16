@@ -42,6 +42,7 @@ interface PageComposerProps {
   /** Optional layout hint: some pages use a sidebar grid (e.g., shop, cart, checkout) */
   layout?: StorefrontPageLayout;
   prioritizeSidebarOnMobile?: boolean;
+  hasPdpCheckout?: boolean;
   renderSectionFrame?: (args: RenderSectionFrameArgs) => React.ReactNode;
   runtimeText?: {
     shouldReplaceThemeBrand: boolean;
@@ -534,6 +535,7 @@ export const PageComposer: React.FC<PageComposerProps> = ({
   pageConfig: rawPageConfig,
   layout = 'stack',
   prioritizeSidebarOnMobile = false,
+  hasPdpCheckout: propHasPdpCheckout,
   renderSectionFrame,
   runtimeText,
   locale: propLocale,
@@ -1030,9 +1032,20 @@ export const PageComposer: React.FC<PageComposerProps> = ({
         return !isProductDetailCompanionSection(sectionId, componentKey);
       });
 
+      const hasCheckoutSection = hasSection(['pdp-checkout']);
+      const isCheckoutActive =
+        propHasPdpCheckout !== undefined
+          ? propHasPdpCheckout
+          : hasCheckoutSection ||
+            (isRecord(pageConfig.settings) && pageConfig.settings['productPageShowCheckoutForm'] !== false);
+
+      // In marketplace theme/variant, if checkout is active, we MUST NOT use 3 columns!
+      // 3 columns with an inline checkout form cramps the checkout into 35% and unbalances the page.
+      // A harmonious 2-column layout provides ample room for the form, sticky gallery, and trust reassurance.
       const isMarketplace3Col =
-        getSectionVariant(infoSection) === 'marketplace-bazaar' ||
-        Boolean(activeThemeId && activeThemeId.includes('marketplace-avenue'));
+        !isCheckoutActive &&
+        (getSectionVariant(infoSection) === 'marketplace-bazaar' ||
+          Boolean(activeThemeId && activeThemeId.includes('marketplace-avenue')));
 
       const useCompactMobileProductDetail =
         pageSettings?.['compactMobileLayout'] === true;
@@ -1045,7 +1058,7 @@ export const PageComposer: React.FC<PageComposerProps> = ({
         ? 'grid grid-cols-1 gap-[30px] lg:grid-cols-[calc(35%-20px)_calc(35%-20px)_calc(30%-20px)]'
         : useCompactMobileProductDetail
           ? 'grid grid-cols-1 gap-2.5 sm:gap-3 md:gap-7 lg:grid-cols-2 lg:gap-10'
-          : 'grid grid-cols-1 gap-3 sm:gap-5 md:gap-7 lg:grid-cols-2 lg:gap-10';
+          : 'grid grid-cols-1 gap-4 sm:gap-6 md:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12';
 
       return (
         <div className={productDetailComposerClassName}>
@@ -1055,7 +1068,14 @@ export const PageComposer: React.FC<PageComposerProps> = ({
             }`}
             dir={detailColumnsDirection}
           >
-            <div dir={contentDirection} className={isMarketplace3Col ? 'lg:col-span-1' : ''}>
+            <div
+              dir={contentDirection}
+              className={
+                isMarketplace3Col
+                  ? 'lg:col-span-1'
+                  : 'lg:sticky lg:top-24 lg:self-start'
+              }
+            >
               {renderSection(gallerySection, galleryIndex)}
             </div>
             <div
@@ -1063,7 +1083,7 @@ export const PageComposer: React.FC<PageComposerProps> = ({
               className={
                 isMarketplace3Col
                   ? 'lg:col-span-2 lg:contents flex flex-col gap-[30px]'
-                  : 'flex min-w-0 flex-col gap-3 sm:gap-5'
+                  : 'flex min-w-0 flex-col gap-4 sm:gap-6'
               }
             >
               {renderSection(

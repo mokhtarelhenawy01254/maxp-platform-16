@@ -365,7 +365,9 @@ export const useQuickOrderThemeStyles = ({
     ? 'grid gap-3'
     : isCompactMergedQuickOrder
       ? 'grid grid-cols-2 gap-2.5'
-      : 'space-y-4';
+      : isMarketplaceQuickOrder
+        ? 'grid grid-cols-1 sm:grid-cols-2 gap-3'
+        : 'space-y-4';
 
   const shouldEnableMobileStickySubmitBar =
     (isWomenMergedBuyboxQuickOrder ||

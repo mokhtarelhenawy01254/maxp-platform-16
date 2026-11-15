@@ -174,5 +174,35 @@ describe('MarketplaceBuybox with PDP Checkout and Quantity Offers', () => {
     );
     expect(containerWithVariants.querySelector('#storefront-buy-actions')).not.toBeNull();
   });
+
+  it('integrates shipping rail directly below checkout in 2-column mode without separate 3rd column aside', () => {
+    const ctrlWithCheckout = createMockCtrl();
+    const { container: containerWithCheckout } = render(
+      <MemoryRouter>
+        <MarketplaceBuybox ctrl={ctrlWithCheckout} />
+      </MemoryRouter>
+    );
+
+    // When checkout is present, outer wrapper is NOT lg:contents and does not render separate aside
+    expect(containerWithCheckout.querySelector('aside')).toBeNull();
+    // But shipping & warranty reassurance is still present inside the buybox
+    expect(screen.getByText('ضمان سنة على المنتج')).toBeTruthy();
+    expect(screen.getByText('إرجاع مجاني خلال 30 يوم')).toBeTruthy();
+
+    cleanup();
+
+    // When checkout is NOT present, renders as 3-column with separate aside
+    const ctrlWithoutCheckout = createMockCtrl({
+      mergedInlinePdpQuickOrder: null,
+      hasEmbeddedPdpCheckout: false,
+    });
+    const { container: containerWithoutCheckout } = render(
+      <MemoryRouter>
+        <MarketplaceBuybox ctrl={ctrlWithoutCheckout} />
+      </MemoryRouter>
+    );
+
+    expect(containerWithoutCheckout.querySelector('aside')).not.toBeNull();
+  });
 });
 

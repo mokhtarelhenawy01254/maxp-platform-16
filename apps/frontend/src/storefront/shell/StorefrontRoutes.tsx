@@ -7,6 +7,8 @@ import {
 } from '../layout/StorefrontSectionFrame';
 import { useProduct, setGlobalPresentationSlug } from '../hooks/useProduct';
 import { useCategories } from '../hooks/useCategories';
+import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
+import { isProductPageCheckoutEnabledForProduct } from '../../utils/productPageCheckout';
 import {
   resolveThemeBuilderTemplate,
   type ThemeBuilderTemplate,
@@ -54,6 +56,7 @@ export const StorefrontThemeBuilderPdpWrapper: React.FC<{
 }> = ({ defaultPage, templates, runtimeText, currentLocale }) => {
   const { id } = useParams<{ id: string }>();
   const { product } = useProduct(id);
+  const { settings: storefrontSettings } = useStorefrontSettings();
 
   const matchedSingle = resolveThemeBuilderTemplate({
     templates,
@@ -63,11 +66,16 @@ export const StorefrontThemeBuilderPdpWrapper: React.FC<{
   });
 
   const activePdpConfig = matchedSingle?.page || defaultPage;
+  const isPdpCheckoutActive = isProductPageCheckoutEnabledForProduct(
+    product,
+    storefrontSettings,
+  );
 
   return (
     <PageComposer
       pageConfig={activePdpConfig}
       layout={resolveStorefrontPageLayout(activePdpConfig, 'product-detail')}
+      hasPdpCheckout={isPdpCheckoutActive}
       runtimeText={runtimeText}
       renderSectionFrame={StorefrontSectionFrame}
       locale={currentLocale}
