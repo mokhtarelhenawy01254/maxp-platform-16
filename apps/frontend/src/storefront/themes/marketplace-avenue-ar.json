@@ -968,27 +968,27 @@
             "subtitle": "",
             "items": [
               {
-                "icon": "grid",
+                "icon": "truck",
                 "title": "شحن سريع مجاني",
                 "description": "على الطلبات فوق 500 ج.م"
               },
               {
-                "icon": "clipboard",
+                "icon": "clock",
                 "title": "توصيل اليوم التالي",
                 "description": "مجانًا فوق 990 ج.م"
               },
               {
-                "icon": "target",
+                "icon": "refresh",
                 "title": "استرجاع خلال 60 يوم",
                 "description": "لكل طرق الشحن بحالة المنتج الأصلية"
               },
               {
-                "icon": "search",
+                "icon": "headset",
                 "title": "خدمة عملاء وخبراء",
                 "description": "شات أو مكالمة 24/7"
               },
               {
-                "icon": "shield",
+                "icon": "shield-check",
                 "title": "ضمان رسمي معتمد",
                 "description": "ماركات أصلية ومضمونة 100%"
               }
@@ -1362,27 +1362,27 @@
             "subtitle": "",
             "items": [
               {
-                "icon": "grid",
+                "icon": "truck",
                 "title": "شحن سريع مجاني",
                 "description": "على الطلبات فوق 500 ج.م"
               },
               {
-                "icon": "clipboard",
+                "icon": "clock",
                 "title": "توصيل اليوم التالي",
                 "description": "مجانًا فوق 990 ج.م"
               },
               {
-                "icon": "target",
+                "icon": "refresh",
                 "title": "استرجاع خلال 60 يوم",
                 "description": "لكل طرق الشحن بحالة المنتج الأصلية"
               },
               {
-                "icon": "search",
+                "icon": "headset",
                 "title": "خدمة عملاء وخبراء",
                 "description": "شات أو مكالمة 24/7"
               },
               {
-                "icon": "shield",
+                "icon": "shield-check",
                 "title": "ضمان رسمي معتمد",
                 "description": "ماركات أصلية ومضمونة 100%"
               }

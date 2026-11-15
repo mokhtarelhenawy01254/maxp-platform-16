@@ -569,27 +569,27 @@
             "subtitle": "",
             "items": [
               {
-                "icon": "grid",
+                "icon": "truck",
                 "title": "Free delivery over EGP 500",
                 "description": "Nationwide coverage"
               },
               {
-                "icon": "clipboard",
+                "icon": "clock",
                 "title": "Next-day dispatch",
                 "description": "Order before 3 PM"
               },
               {
-                "icon": "target",
+                "icon": "refresh",
                 "title": "14-day easy returns",
                 "description": "No-questions exchange"
               },
               {
-                "icon": "search",
+                "icon": "headset",
                 "title": "Support that answers",
                 "description": "Chat, call or WhatsApp"
               },
               {
-                "icon": "shield",
+                "icon": "shield-check",
                 "title": "Verified sellers",
                 "description": "Authentic products only"
               }
@@ -809,27 +809,27 @@
             "subtitle": "",
             "items": [
               {
-                "icon": "grid",
+                "icon": "truck",
                 "title": "Fast Free Shipping",
                 "description": "Nationwide coverage"
               },
               {
-                "icon": "clipboard",
+                "icon": "clock",
                 "title": "Next-day dispatch",
                 "description": "Order before 3 PM"
               },
               {
-                "icon": "target",
+                "icon": "refresh",
                 "title": "14-day easy returns",
                 "description": "On all eligible items"
               },
               {
-                "icon": "search",
+                "icon": "headset",
                 "title": "Expert Support",
                 "description": "Live chat or hotline 24/7"
               },
               {
-                "icon": "shield",
+                "icon": "shield-check",
                 "title": "Verified sellers",
                 "description": "Verified quality selection"
               }

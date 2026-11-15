@@ -29,7 +29,55 @@ interface FeaturesBarProps {
 
 /* ────────────── inline icons ────────────── */
 
+const TruckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+    <path d="M15 18H9" />
+    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.24-4.05a1 1 0 0 0-.78-.38H14v10" />
+    <circle cx="17" cy="18.5" r="2.5" />
+    <circle cx="6.5" cy="18.5" r="2.5" />
+  </svg>
+);
+
+const ClockIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+  </svg>
+);
+
+const HeadsetIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+  </svg>
+);
+
+const ShieldCheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <polyline points="9 12 11 14 15 10" />
+  </svg>
+);
+
 const ICONS: Record<string, React.FC<{ className?: string }>> = {
+  truck: TruckIcon,
+  shipping: TruckIcon,
+  clock: ClockIcon,
+  dispatch: ClockIcon,
+  refresh: RefreshIcon,
+  returns: RefreshIcon,
+  headset: HeadsetIcon,
+  support: HeadsetIcon,
+  'shield-check': ShieldCheckIcon,
+  warranty: ShieldCheckIcon,
   target: ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
@@ -77,6 +125,27 @@ const ICONS: Record<string, React.FC<{ className?: string }>> = {
 };
 
 const ICON_KEYS = Object.keys(ICONS);
+
+const resolveFeatureIcon = (item: FeatureItem, index: number): React.FC<{ className?: string }> => {
+  const iconKey = String(item.icon || '').trim().toLowerCase();
+  const title = String(item.title || '').toLowerCase();
+
+  if (iconKey === 'truck' || iconKey === 'shipping' || iconKey === 'delivery') return TruckIcon;
+  if (iconKey === 'clock' || iconKey === 'dispatch' || iconKey === 'bolt') return ClockIcon;
+  if (iconKey === 'refresh' || iconKey === 'returns' || iconKey === 'return') return RefreshIcon;
+  if (iconKey === 'headset' || iconKey === 'support' || iconKey === 'chat' || iconKey === 'phone') return HeadsetIcon;
+  if (iconKey === 'shield-check' || iconKey === 'warranty' || iconKey === 'verified') return ShieldCheckIcon;
+
+  // Contextual fallback for legacy generic icon keys
+  if (title.includes('شحن') || title.includes('shipping')) return TruckIcon;
+  if (title.includes('توصيل') || title.includes('dispatch') || title.includes('next day') || title.includes('سريع')) return ClockIcon;
+  if (title.includes('استرجاع') || title.includes('استبدال') || title.includes('return') || title.includes('60 يوم') || title.includes('14-day')) return RefreshIcon;
+  if (title.includes('عملاء') || title.includes('دعم') || title.includes('support') || title.includes('24/7')) return HeadsetIcon;
+  if (title.includes('ضمان') || title.includes('معتمد') || title.includes('warranty') || title.includes('verified') || title.includes('أصلية')) return ShieldCheckIcon;
+
+  if (ICONS[iconKey]) return ICONS[iconKey]!;
+  return ICONS[ICON_KEYS[index % ICON_KEYS.length]!] || ShieldCheckIcon;
+};
 
 /* ────────────── defaults ────────────── */
 
@@ -137,6 +206,11 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
   const isSmartBazaar = theme.id === 'smart-bazaar';
   const isDistrictMarket = theme.id === 'district-market';
   const isKidsPlay = theme.id === 'kids-play';
+  const isMarketplaceAvenue = Boolean(
+    theme.id === 'marketplace-avenue' ||
+    theme.id === 'marketplace-avenue-ar' ||
+    Boolean(theme.id?.startsWith('marketplace-avenue'))
+  );
   const variant = normalizeFeaturesBarVariant(settings?.variant || section?.variant);
   const isSystemAssurance = variant === 'system-assurance';
   const isButcherProofBoard = variant === 'butcher-proof-board';
@@ -178,7 +252,7 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
           >
             <div className="grid grid-cols-2 divide-y divide-white/10 sm:grid-cols-3 lg:grid-cols-5 lg:divide-y-0">
               {items.slice(0, 5).map((item, index) => {
-                const Icon = ICONS[String(item.icon || '')] || ICONS.shield;
+                const Icon = resolveFeatureIcon(item, index);
                 return (
                   <div
                     key={`${item.title}-${index}`}
@@ -191,6 +265,66 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                       <p className="truncate text-[13px] font-bold leading-tight text-white">{item.title}</p>
                       {item.description ? (
                         <p className="mt-1 truncate text-[11px] leading-tight text-white/70">{item.description}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isMarketplaceAvenue) {
+    const displayTitle = (settings?.title && settings.title.trim()) || 'مميزاتنا';
+    const hasHeader = Boolean(displayTitle || subtitle);
+
+    return (
+      <section className="w-full bg-transparent py-8 sm:py-12">
+        <div className="container mx-auto w-full max-w-[1235px] px-4 md:px-6">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_14px_-4px_rgba(0,0,0,0.04)] dark:border-slate-800 dark:bg-slate-900">
+            {hasHeader ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-7 pt-5 sm:pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-[#e14a5c]" aria-hidden="true" />
+                  <h2 className="font-heading text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight [text-wrap:balance]">
+                    {displayTitle}
+                  </h2>
+                  {subtitle ? (
+                    <>
+                      <span className="hidden sm:inline-block text-xs text-slate-300 dark:text-slate-700" aria-hidden="true">|</span>
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 [text-wrap:balance]">{subtitle}</p>
+                    </>
+                  ) : null}
+                </div>
+                <div className="self-start sm:self-auto inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-[#e14a5c] bg-rose-50 dark:bg-rose-950/40 px-3 py-1 rounded-full border border-rose-100/80 dark:border-rose-900/40">
+                  <ShieldCheckIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>تسوق آمن ومضمون 100%</span>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-slate-100 dark:divide-slate-800">
+              {items.slice(0, 5).map((item, index) => {
+                const IconComponent = resolveFeatureIcon(item, index);
+                return (
+                  <div
+                    key={`${item.title}-${index}`}
+                    className="group relative flex items-start sm:flex-col lg:items-center lg:text-center gap-3.5 p-4 sm:p-5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors duration-200"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#e14a5c] border border-rose-100/60 dark:bg-rose-950/40 dark:border-rose-900/40 dark:text-rose-400 group-hover:bg-[#e14a5c] group-hover:text-white group-hover:border-[#e14a5c] transition-all duration-200 shadow-xs">
+                      <IconComponent className="h-5 w-5 stroke-[1.8]" />
+                    </div>
+                    <div className="min-w-0 flex-1 text-start lg:text-center">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug group-hover:text-[#e14a5c] transition-colors [text-wrap:balance]">
+                        {item.title}
+                      </h3>
+                      {item.description ? (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed tabular-nums">
+                          {item.description}
+                        </p>
                       ) : null}
                     </div>
                   </div>
@@ -368,7 +502,9 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                 ? 'rounded-[2.25rem] bg-[linear-gradient(135deg,#6f2f14,#9a4020,#c45b29)] shadow-[0_30px_70px_-18px_rgba(120,45,18,0.38)]'
                 : variant === 'kids-guarantee' || isKidsPlay
                   ? 'rounded-[3rem] border-4 border-white bg-[linear-gradient(135deg,hsl(var(--secondary)/0.1),hsl(var(--accent)/0.1))] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.1)]'
-                  : 'rounded-[2.5rem] bg-[#275c4c] shadow-[0_25px_50px_-12px_rgba(20,60,40,0.5)]'
+                  : isZenOrganic
+                    ? 'rounded-[2.5rem] bg-[#275c4c] shadow-[0_25px_50px_-12px_rgba(20,60,40,0.5)]'
+                    : 'rounded-2xl border border-border bg-card text-card-foreground shadow-sm'
         }`}>
           {/* Abstract overlapping curved leaves for background texture */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -386,13 +522,13 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                 <div className="absolute -top-12 end-8 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
                 <div className="absolute bottom-0 start-0 h-36 w-36 rounded-full bg-white/10 blur-3xl" />
               </>
-            ) : (
+            ) : isZenOrganic ? (
               <>
                 <div className="absolute -top-1/2 -start-1/4 w-[150%] h-[150%] rounded-full bg-white/5 mix-blend-overlay rotate-[24deg]" />
                 <div className="absolute top-1/2 start-1/4 w-[120%] h-[150%] rounded-full bg-black/10 mix-blend-multiply rotate-[-15deg]" />
                 <div className="absolute -bottom-1/2 -end-1/4 w-[150%] h-[150%] rounded-full bg-white/5 mix-blend-overlay rotate-[-30deg]" />
               </>
-            )}
+            ) : null}
           </div>
 
           <div
@@ -465,7 +601,9 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                             ? 'h-16 w-16 bg-secondary text-secondary-foreground shadow-inner'
                           : sideImage
                             ? 'h-12 w-12 border border-white/30 bg-white/12 text-white'
-                            : 'h-[4.5rem] w-[4.5rem] border border-white/30 text-white'
+                            : isZenOrganic
+                              ? 'h-[4.5rem] w-[4.5rem] border border-white/30 text-white'
+                              : 'h-12 w-12 rounded-xl bg-primary/10 text-primary border border-primary/20'
                     }`}>
                       <IconComponent className="h-7 w-7 stroke-[1.4]" />
                       {/* Abstract offset ring for aesthetic */}
@@ -490,7 +628,9 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                               ? 'text-base font-black text-white'
                             : variant === 'kids-guarantee' || isKidsPlay
                               ? 'text-lg font-black text-foreground'
-                            : 'text-[1.1rem] font-bold tracking-wide text-white'
+                            : isZenOrganic
+                              ? 'text-[1.1rem] font-bold tracking-wide text-white'
+                              : 'text-base font-bold text-foreground'
                       }`}>
                         {item.title}
                       </h3>
@@ -505,7 +645,9 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
                               ? 'text-xs text-white/78'
                             : variant === 'kids-guarantee' || isKidsPlay
                               ? 'text-xs text-muted-foreground'
-                            : 'text-[0.7rem] text-green-100/75 mix-blend-plus-lighter sm:text-xs'
+                            : isZenOrganic
+                              ? 'text-[0.7rem] text-green-100/75 mix-blend-plus-lighter sm:text-xs'
+                              : 'text-xs text-muted-foreground'
                       }`}>
                         {item.description}
                       </p>
