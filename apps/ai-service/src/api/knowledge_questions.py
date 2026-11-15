@@ -216,6 +216,50 @@ async def answer_knowledge_question(
     }
 
 
+@router.post("/knowledge-questions/{question_id}/reject")
+async def reject_knowledge_question(
+    request: Request,
+    question_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Reject/dismiss a pending knowledge question without training the agent.
+
+    Used for junk entries (unclear questions, spam, duplicates) so they stop
+    polluting the merchant queue. Rejected questions never get embeddings, so
+    they can't influence agent replies.
+    """
+    company_id = get_company_id(request)
+
+    fetch = text("""
+        SELECT id, status
+        FROM ai.knowledge_questions
+        WHERE id = :id AND company_id = :company_id
+    """)
+    row = await session.execute(fetch, {"id": question_id, "company_id": company_id})
+    q = row.fetchone()
+    if not q:
+        raise HTTPException(status_code=404, detail="Knowledge question not found")
+    if q.status != "pending":
+        raise HTTPException(status_code=400, detail="Only pending questions can be rejected")
+
+    update = text("""
+        UPDATE ai.knowledge_questions
+        SET status = 'rejected',
+            updated_at = now()
+        WHERE id = :id
+    """)
+    await session.execute(update, {"id": question_id})
+    await session.commit()
+
+    logger.info("knowledge_question_rejected", id=question_id, company=company_id)
+
+    return {
+        "id": question_id,
+        "status": "rejected",
+        "message": "Question dismissed. It will no longer appear in the pending queue.",
+    }
+
+
 async def _upsert_faq_embedding(
     session: AsyncSession,
     company_id: str,
