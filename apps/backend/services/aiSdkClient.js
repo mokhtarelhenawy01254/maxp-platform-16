@@ -346,6 +346,32 @@ async function answerKnowledgeQuestion({ companyId, questionId, answer }) {
 }
 
 /**
+ * Reject/dismiss a pending knowledge question (junk, unclear, duplicate).
+ * The question is marked 'rejected' without creating any knowledge embedding.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {string} params.questionId
+ * @returns {Promise<Object>}
+ */
+async function rejectKnowledgeQuestion({ companyId, questionId }) {
+  const url = new URL(`/knowledge-questions/${encodeURIComponent(questionId)}/reject`, getAiServiceUrl());
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`AI service reject knowledge-question error ${response.status}: ${text}`);
+  }
+  return await response.json();
+}
+
+/**
  * Train the agent from free-form merchant text (auto-extraction to knowledge).
  * @param {Object} params
  * @param {string} params.companyId
@@ -380,6 +406,7 @@ module.exports = {
   listKnowledgeQuestions,
   countPendingKnowledgeQuestions,
   answerKnowledgeQuestion,
+  rejectKnowledgeQuestion,
   trainKnowledge,
   consolidateDreamer,
   normalizeAiServiceResponse,

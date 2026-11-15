@@ -7,7 +7,7 @@ export interface KnowledgeQuestion {
   channel: string | null;
   customer_question: string;
   context: Record<string, unknown> | null;
-  status: "pending" | "answered";
+  status: "pending" | "answered" | "rejected";
   merchant_answer: string | null;
   answered_by: string | null;
   answered_at: string | null;
@@ -53,6 +53,13 @@ export const aiKnowledgeQuestionService = {
     const response = await apiClient.post<AnswerResponse>(
       `/ai/knowledge-questions/${questionId}/answer`,
       { answer },
+    );
+    return response.data;
+  },
+
+  async reject(questionId: string) {
+    const response = await apiClient.post<AnswerResponse>(
+      `/ai/knowledge-questions/${questionId}/reject`,
     );
     return response.data;
   },

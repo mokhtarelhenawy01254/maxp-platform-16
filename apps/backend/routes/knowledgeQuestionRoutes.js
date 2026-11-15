@@ -53,6 +53,22 @@ router.post('/train', async (req, res) => {
   }
 });
 
+// POST /api/v1/ai/knowledge-questions/:id/reject - Dismiss a pending question (junk/unclear)
+router.post('/:id/reject', async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const result = await aiSdkClient.rejectKnowledgeQuestion({
+      companyId,
+      questionId: req.params.id,
+    });
+    return res.json({ success: true, question: result });
+  } catch (error) {
+    console.error('[KnowledgeQuestions] Error rejecting:', error.message);
+    res.status(502).json({ error: 'Failed to reject knowledge question', detail: error.message });
+  }
+});
+
 // POST /api/v1/ai/knowledge-questions/:id/answer - Answer a pending question
 router.post('/:id/answer', async (req, res) => {
   try {
