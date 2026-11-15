@@ -541,6 +541,17 @@ export const storefrontVariantRegistry = {
       tone: 'precision-clinical',
       status: 'implemented-now',
     },
+    {
+      id: 'skill-lab-motion',
+      section: 'HeroBanner',
+      purpose: 'Ultra-modern 2026 interactive engineering academy & courses cockpit hero with 3D mouse tilt physics, live tabbed sandbox code viewer, and student telemetry metrics',
+      bestPages: ['home', 'shop'],
+      bestArchetypes: ['digital', 'education', 'developer-tools', 'online-courses'],
+      rtlSuitability: 'high',
+      density: 'medium-high',
+      tone: 'cyber-dark-luxury',
+      status: 'implemented-now',
+    },
   ],
   ProductGrid: [
     {

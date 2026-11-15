@@ -872,6 +872,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "layered-parallax-sky", label: "سماء تفاعلية (أطفال)" },
       { value: "grooming-hero", label: "Hero مدونة Grooming (داكن)" },
       { value: "dental-precision-hero", label: "معمل أسنان رقمي CAD/CAM فاخر" },
+      { value: "skill-lab-motion", label: "أكاديمية Skill Lab بحركات 3D وساندبوكس" },
       { value: "marketplace-slider", label: "سلايدر ماركت بليس + عرض جانبي + أقسام ساخنة" },
     ],
     fields: [
