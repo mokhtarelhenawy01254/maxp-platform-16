@@ -455,7 +455,7 @@ async function handleStoreOrderWebhook(req, res) {
           lastName: customerName.split(' ').slice(1).join(' ') || '',
           phone: cleanPhone,
           phoneNormalized: cleanPhone.replace(/\D/g, ''),
-          status: 'CUSTOMER',
+          status: 'ACTIVE',
         },
       });
     }

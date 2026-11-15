@@ -450,7 +450,7 @@ async function importOrdersAndShipments({ companyId, userId, userRole, req }) {
               lastName,
               phone: cleanPhone,
               phoneNormalized: cleanPhone.replace(/\D/g, ''),
-              status: 'CUSTOMER',
+              status: 'ACTIVE',
             },
             select: { id: true },
           });
