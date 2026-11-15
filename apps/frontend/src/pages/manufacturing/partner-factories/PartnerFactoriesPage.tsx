@@ -508,6 +508,18 @@ export const PartnerFactoriesPage: React.FC = () => {
                                   )}
                                 </button>
 
+                                {factory.accessToken && (
+                                  <a
+                                    href={getFullPortalUrl(factory.accessToken)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                    title="فتح البوابة في نافذة جديدة"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+
                                 <button
                                   onClick={() => handleRotatePortalLink(factory)}
                                   className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"

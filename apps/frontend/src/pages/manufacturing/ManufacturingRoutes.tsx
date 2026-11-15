@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ManufacturingDashboardPage from './ManufacturingDashboardPage';
 import ManufacturingBomsPage from './boms/ManufacturingBomsPage';
 import ManufacturingOrdersPage from './orders/ManufacturingOrdersPage';
@@ -18,10 +18,17 @@ import SampleOrdersPage from './samples/SampleOrdersPage';
 import FactoryAgreementsPage from './agreements/FactoryAgreementsPage';
 import ManufacturingNotificationsPage from './notifications/ManufacturingNotificationsPage';
 
+const FactoryPortalRedirect: React.FC = () => {
+  const { token } = useParams<{ token?: string }>();
+  return <Navigate to={token ? `/factory-portal/${token}` : '/factory-portal'} replace />;
+};
+
 export const ManufacturingRoutes: React.FC = () => {
   return (
     <Routes>
       <Route index element={<ManufacturingDashboardPage />} />
+      <Route path="portal" element={<Navigate to="/factory-portal" replace />} />
+      <Route path="portal/:token" element={<FactoryPortalRedirect />} />
       <Route path="customer-orders" element={<CustomerOrdersListPage />} />
       <Route path="customer-orders/:id" element={<CustomerOrderDetailPage />} />
       <Route path="samples" element={<SampleOrdersPage />} />

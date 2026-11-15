@@ -2298,7 +2298,9 @@ const AppContent = () => {
     currentPath.startsWith("/feedback/") ||
     currentPath.startsWith("/portal") ||
     currentPath.startsWith("/factory-portal") ||
+    currentPath.startsWith("/manufacturing/portal") ||
     currentPath.startsWith("/customer-portal") ||
+    currentPath.startsWith("/wholesale-portal") ||
     currentPath.startsWith("/share/sample") ||
     currentPath.startsWith("/academy/portal") ||
     currentPath.startsWith("/academy/course") ||
@@ -2532,6 +2534,14 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/manufacturing/portal"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <FactoryPortalPage />
+                </React.Suspense>
+              }
+            />
+            <Route
               path="/customer-portal"
               element={
                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
@@ -2549,6 +2559,14 @@ const AppContent = () => {
             />
             <Route
               path="/factory-portal/:token"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <FactoryPortalPage />
+                </React.Suspense>
+              }
+            />
+            <Route
+              path="/manufacturing/portal/:token"
               element={
                 <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
                   <FactoryPortalPage />
