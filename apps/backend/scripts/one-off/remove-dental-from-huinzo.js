@@ -52,25 +52,13 @@ async function main() {
         include: {
           app: true
         }
-      },
-      users: {
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          isDentalTechnician: true,
-          dentalRole: true
-        }
       }
     }
   });
 
   if (matchingCompanies.length === 0) {
     console.log(`⚠️  No company found matching "${TARGET_SEARCH}".`);
-    
-    // Also check if any company has businessSpecialty = dental-lab just in case
+
     const dentalCompanies = await prisma.company.findMany({
       where: {
         OR: [
@@ -107,16 +95,19 @@ async function main() {
       console.log(`   - ${ca.app?.slug} [${ca.app?.name}] | Status: ${ca.status} | ID: ${ca.id} ${isDental ? '⚠️ [DENTAL TARGET]' : ''}`);
     });
 
-    // Inspect Users
-    const technicianUsers = company.users.filter(
-      (u) => u.isDentalTechnician === true || u.dentalRole === 'TECHNICIAN'
-    );
-    console.log(`\n👥 Users count: ${company.users.length}`);
-    if (technicianUsers.length > 0) {
-      console.log(`⚠️  Users with Dental Technician role (${technicianUsers.length}):`);
-      technicianUsers.forEach((u) => console.log(`   - ${u.firstName || ''} ${u.lastName || ''} (${u.email}) [ID: ${u.id}]`));
-    } else {
-      console.log(`   Zero users flagged as dental technicians.`);
+    // Inspect Dental Technicians in DB
+    let dentalTechs = [];
+    try {
+      if (prisma.dentalTechnician) {
+        dentalTechs = await prisma.dentalTechnician.findMany({
+          where: { companyId: company.id }
+        });
+      }
+    } catch (_) {}
+
+    console.log(`\n🦷 Dental Technicians Count: ${dentalTechs.length}`);
+    if (dentalTechs.length > 0) {
+      dentalTechs.forEach((dt) => console.log(`   - ${dt.name} (Phone: ${dt.phone || 'none'}) [ID: ${dt.id}]`));
     }
 
     // Inspect Sidebar Preferences
@@ -136,7 +127,7 @@ async function main() {
     console.log(`\n📋 Actions Required for "${company.name}":`);
     console.log(`   - Dental apps to delete/uninstall: ${dentalAppsInstalled.length}`);
     console.log(`   - Dental specialty to reset:        ${isDentalSpecialty ? 'YES' : 'NO'}`);
-    console.log(`   - Dental technician users to reset: ${technicianUsers.length}`);
+    console.log(`   - Dental technicians to deactivate: ${dentalTechs.length}`);
     console.log(`   - SidebarPreferences to clean:      ${hasDentalInSidebar ? 'YES' : 'NO'}`);
 
     if (IS_DRY_RUN) {
@@ -164,17 +155,13 @@ async function main() {
       console.log(`   ✓ Reset businessSpecialtyId to null.`);
     }
 
-    // 3. Reset users with dental technician roles
-    if (technicianUsers.length > 0) {
-      const userIds = technicianUsers.map((u) => u.id);
-      const userUpdateResult = await prisma.user.updateMany({
-        where: { id: { in: userIds } },
-        data: {
-          isDentalTechnician: false,
-          dentalRole: null
-        }
+    // 3. Deactivate or remove dental technicians
+    if (dentalTechs.length > 0 && prisma.dentalTechnician) {
+      const techUpdate = await prisma.dentalTechnician.updateMany({
+        where: { companyId: company.id },
+        data: { isActive: false }
       });
-      console.log(`   ✓ Reset ${userUpdateResult.count} technician user(s).`);
+      console.log(`   ✓ Deactivated ${techUpdate.count} dental technician(s).`);
     }
 
     // 4. Clean sidebar preferences if present
