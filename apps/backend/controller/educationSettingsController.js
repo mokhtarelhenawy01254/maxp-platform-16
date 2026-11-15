@@ -161,6 +161,18 @@ const DEFAULT_EDUCATION_TABS = [
     iconName: "Building2"
   },
   {
+    id: "flows",
+    key: "/admin/education/flows",
+    defaultLabelAr: "مسارات الرسايل والأتمتة",
+    defaultLabelEn: "Omnichannel Flows",
+    labelAr: "مسارات الرسايل والأتمتة",
+    labelEn: "Omnichannel Flows",
+    order: 9.8,
+    visible: true,
+    locked: false,
+    iconName: "GitBranch"
+  },
+  {
     id: "funnel",
     key: "/admin/education/funnel",
     defaultLabelAr: "الإشعارات والفانل",
@@ -171,6 +183,18 @@ const DEFAULT_EDUCATION_TABS = [
     visible: true,
     locked: false,
     iconName: "Megaphone"
+  },
+  {
+    id: "reports",
+    key: "/admin/education/reports",
+    defaultLabelAr: "التقارير وتحليل الحملات",
+    defaultLabelEn: "Reports & Analytics",
+    labelAr: "التقارير وتحليل الحملات",
+    labelEn: "Reports & Analytics",
+    order: 10.5,
+    visible: true,
+    locked: false,
+    iconName: "BarChart3"
   },
   {
     id: "settings",

@@ -17,6 +17,7 @@ import {
   Cpu,
   Briefcase,
   Building2,
+  GitBranch,
 } from "lucide-react";
 
 export const SECTION_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -33,6 +34,8 @@ export const SECTION_ICON_MAP: Record<string, React.ComponentType<{ className?: 
   Settings,
   History,
   Presentation,
+  Building2,
+  GitBranch,
 };
 
 interface PresetLabel {

@@ -186,6 +186,10 @@ const EDUCATION_ICON_MAP: Record<string, any> = {
     Megaphone,
     Settings,
     History,
+    Building2,
+    Presentation,
+    GitBranch,
+    MessageSquare,
 };
 
 const LEGACY_EDU_LABELS: Record<string, { ar: string; en: string; replaceAr: string; replaceEn: string }> = {
@@ -220,6 +224,7 @@ interface EducationTabDef {
 
 const EDUCATION_TAB_DEFS: EducationTabDef[] = [
     { id: 'dashboard', to: '/admin/education/dashboard', itemId: 'education-dashboard', icon: BarChart3, i18nKey: 'sidebar.educationDashboard' },
+    { id: 'branches', to: '/admin/education/branches', itemId: 'education-branches', icon: Building2, i18nKey: 'sidebar.educationBranches', defaultFallbackAr: 'الفروع والقاعات' },
     { id: 'subjects', to: '/admin/education/subjects', itemId: 'education-subjects', icon: BookOpen, i18nKey: 'sidebar.educationSubjects', defaultHidden: true },
     { id: 'packages', to: '/admin/education/packages', itemId: 'education-packages', icon: Gift, i18nKey: 'sidebar.educationPackages' },
     { id: 'groups', to: '/admin/education/groups', itemId: 'education-groups', icon: Users, i18nKey: 'sidebar.educationGroups', defaultFallbackAr: 'المجموعات الدراسية (الجروبات)' },
@@ -230,7 +235,10 @@ const EDUCATION_TAB_DEFS: EducationTabDef[] = [
     { id: 'teacher-payments', to: '/admin/education/teacher-payments', itemId: 'education-teacher-payments', icon: DollarSign, i18nKey: 'sidebar.educationTeacherPayments' },
     { id: 'sessions', to: '/admin/education/sessions', itemId: 'education-sessions', icon: Clock, i18nKey: 'sidebar.educationSessions' },
     { id: 'calendar', to: '/admin/education/calendar', itemId: 'education-calendar', icon: CalendarDays, i18nKey: 'sidebar.educationCalendar' },
+    { id: 'demo-day', to: '/admin/education/demo-day', itemId: 'education-demo-day', icon: Presentation, i18nKey: 'sidebar.educationDemoDay', defaultFallbackAr: 'الديمو داي', defaultHidden: true },
+    { id: 'flows', to: '/admin/education/flows', itemId: 'education-flows', icon: GitBranch, i18nKey: 'sidebar.educationFlows', defaultFallbackAr: 'مسارات الرسايل والأتمتة' },
     { id: 'funnel', to: '/admin/education/funnel', itemId: 'education-funnel', icon: Megaphone, i18nKey: 'sidebar.educationFunnel' },
+    { id: 'reports', to: '/admin/education/reports', itemId: 'education-reports', icon: BarChart3, i18nKey: 'sidebar.educationReports', defaultFallbackAr: 'التقارير وتحليل الحملات' },
     {
         id: 'settings',
         to: '/admin/education/settings',
@@ -280,9 +288,14 @@ const buildEducationSection = (
         }
     });
 
+    const enableDemoDay = educationSettings?.enableDemoDay !== undefined
+        ? Boolean(educationSettings.enableDemoDay)
+        : (savedTabsMap.get('demo-day')?.visible === true);
+
     const items = EDUCATION_TAB_DEFS.map((def, idx) => {
         const saved = savedTabsMap.get(def.id.toLowerCase());
         const isSubjects = def.id === 'subjects';
+        const isDemoDay = def.id === 'demo-day';
         const i18nLabel = def.defaultFallbackAr ? t(def.i18nKey, def.defaultFallbackAr) : t(def.i18nKey);
 
         let label = i18nLabel;
@@ -299,7 +312,9 @@ const buildEducationSection = (
             ? false
             : (isSubjects
                 ? !(enableSubjects && (saved ? saved.visible !== false : true))
-                : (saved ? saved.visible === false : Boolean(def.defaultHidden)));
+                : (isDemoDay
+                    ? !(enableDemoDay && (saved ? saved.visible !== false : true))
+                    : (saved ? saved.visible === false : Boolean(def.defaultHidden))));
         const hasCustomOrder = typeof saved?.order === 'number';
         const order = hasCustomOrder
             ? saved.order

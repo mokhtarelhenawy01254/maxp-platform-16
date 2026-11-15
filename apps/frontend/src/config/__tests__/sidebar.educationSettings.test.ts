@@ -112,4 +112,17 @@ describe("sidebar dynamic education-settings integration", () => {
     const configNoApp = getSidebarConfig(arT as any, makeUser("OWNER", ["academy-app"]), undefined, undefined, undefined, eduSettings);
     expect(configNoApp.find((s) => s.id === "education")?.hidden).toBe(true);
   });
+
+  it("includes branches, flows, reports by default and respects enableDemoDay toggle", () => {
+    const configWithoutDemo = getSidebarConfig(arT as any, makeUser("OWNER"), undefined, undefined, undefined, { enableDemoDay: false });
+    const eduWithout = configWithoutDemo.find((s) => s.id === "education");
+    expect(eduWithout?.items.find((i) => i.itemId === "education-branches")?.hidden).toBe(false);
+    expect(eduWithout?.items.find((i) => i.itemId === "education-flows")?.hidden).toBe(false);
+    expect(eduWithout?.items.find((i) => i.itemId === "education-reports")?.hidden).toBe(false);
+    expect(eduWithout?.items.find((i) => i.itemId === "education-demo-day")?.hidden).toBe(true);
+
+    const configWithDemo = getSidebarConfig(arT as any, makeUser("OWNER"), undefined, undefined, undefined, { enableDemoDay: true });
+    const eduWith = configWithDemo.find((s) => s.id === "education");
+    expect(eduWith?.items.find((i) => i.itemId === "education-demo-day")?.hidden).toBe(false);
+  });
 });

@@ -9618,7 +9618,9 @@ const AppContent = () => {
                   path="/admin/education/flows"
                   element={
                     <Layout fullWidth>
-                      <EducationFlowsPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationFlowsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9696,7 +9698,9 @@ const AppContent = () => {
                   path="/admin/education/branches"
                   element={
                     <Layout fullWidth>
-                      <EducationBranchesPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationBranchesPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9704,7 +9708,9 @@ const AppContent = () => {
                   path="/admin/education/demo-day"
                   element={
                     <Layout fullWidth>
-                      <EducationDemoDayPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationDemoDayPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -9712,7 +9718,9 @@ const AppContent = () => {
                   path="/admin/education/reports"
                   element={
                     <Layout fullWidth>
-                      <EducationReportsPage />
+                      <AppAccessRoute requiredAppSlugs={['education-app']}>
+                        <EducationReportsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
